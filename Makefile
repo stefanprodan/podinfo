@@ -2,17 +2,13 @@
 #
 # The release version is controlled from pkg/version
 #
-# Prerequsitesx:
-
+# Prerequisites:
+# 1) docker login (change the DOCKER_REPOSITORY to match your Docker Hub user)
+# 2) go get github.com/estesp/manifest-tool
 
 EMPTY:=
 SPACE:=$(EMPTY) $(EMPTY)
 COMMA:=$(EMPTY),$(EMPTY)
-
-ifeq (, $(shell which manifest-tool))
-    $(error "No manifest-tool in $$PATH, install with: go get github.com/estesp/manifest-tool")
-endif
-
 DOCKER_REPOSITORY:=stefanprodan
 NAME:=podinfo
 VERSION:=$(shell grep 'VERSION' pkg/version/version.go | awk '{ print $$4 }' | tr -d '"')
@@ -20,9 +16,6 @@ DOCKER_IMAGE_NAME:=$(DOCKER_REPOSITORY)/$(NAME)
 GITCOMMIT:=$(shell git describe --dirty --always)
 LINUX_ARCH:=amd64 arm arm64 ppc64le
 PLATFORMS:=$(subst $(SPACE),$(COMMA),$(foreach arch,$(LINUX_ARCH),linux/$(arch)))
-
-all:
-	@echo Use the 'release' target to start a release
 
 release: build tar
 

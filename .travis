@@ -1,0 +1,27 @@
+sudo: required
+language: go
+
+go:
+  - 1.9.x
+
+services:
+  - docker
+
+addons:
+  apt:
+    packages:
+      - docker-ce
+
+before_install:
+  - go get github.com/estesp/manifest-tool
+
+script:
+  - make build docker-build
+
+after_success:
+  - if [ -z "DOCKER_USER" ]; then
+      echo "PR build, skipping Docker Hub push";
+    else
+      docker login -u $DOCKER_USER -p $DOCKER_PASS;
+      make docker-push;
+    fi
