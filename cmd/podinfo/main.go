@@ -23,7 +23,7 @@ func init() {
 func main() {
 	flag.Parse()
 
-	glog.Infof("Starting podinfo version %v", version.VERSION)
+	glog.Infof("Starting podinfo version %s commit %s", version.VERSION, version.GITCOMMIT)
 	glog.Infof("Starting HTTP server on port %v", port)
 
 	hts := &http.Server{
