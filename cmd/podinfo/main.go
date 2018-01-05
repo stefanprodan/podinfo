@@ -9,6 +9,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/stefanprodan/k8s-podinfo/pkg/server"
 	"github.com/stefanprodan/k8s-podinfo/pkg/signals"
+	"github.com/stefanprodan/k8s-podinfo/pkg/version"
 )
 
 var (
@@ -20,9 +21,9 @@ func init() {
 }
 
 func main() {
-
 	flag.Parse()
 
+	glog.Infof("Starting podinfo version %v", version.VERSION)
 	glog.Infof("Starting HTTP server on port %v", port)
 
 	hts := &http.Server{
@@ -48,7 +49,7 @@ func shutdown(hs *http.Server, timeout time.Duration) {
 	glog.Infof("Shutdown with timeout: %s", timeout)
 
 	if err := hs.Shutdown(ctx); err != nil {
-		glog.Errorf("Error: %v\n", err)
+		glog.Error(err)
 	} else {
 		glog.Info("HTTP server stopped")
 	}
