@@ -17,16 +17,10 @@ GITCOMMIT:=$(shell git describe --dirty --always)
 LINUX_ARCH:=amd64 arm arm64 ppc64le
 PLATFORMS:=$(subst $(SPACE),$(COMMA),$(foreach arch,$(LINUX_ARCH),linux/$(arch)))
 
-release: build tar
-
-docker: docker-build docker-push
-
 .PHONY: build
 build:
 	@echo Cleaning old builds
 	@rm -rf build && mkdir build
-	@echo Building: darwin $(VERSION)
-	mkdir -p build/darwin/amd64 && CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w -X github.com/stefanprodan/k8s-podinfo/pkg/version.GITCOMMIT=$(GITCOMMIT)" -o build/darwin/amd64/$(NAME) ./cmd/podinfo
 	@echo Building: linux/$(LINUX_ARCH)  $(VERSION) ;\
 	for arch in $(LINUX_ARCH); do \
 	    mkdir -p build/linux/$$arch && CGO_ENABLED=0 GOOS=linux GOARCH=$$arch go build -ldflags="-s -w -X github.com/stefanprodan/k8s-podinfo/pkg/version.GITCOMMIT=$(GITCOMMIT)" -o build/linux/$$arch/$(NAME) ./cmd/podinfo ;\
@@ -36,7 +30,6 @@ build:
 tar:
 	@echo Cleaning old releases
 	@rm -rf release && mkdir release
-	tar -zcf release/$(NAME)_$(VERSION)_darwin_amd64.tgz -C build/darwin/amd64 $(NAME)
 	for arch in $(LINUX_ARCH); do \
 	    tar -zcf release/$(NAME)_$(VERSION)_linux_$$arch.tgz -C build/linux/$$arch $(NAME) ;\
 	done
