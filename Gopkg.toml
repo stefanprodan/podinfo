@@ -1,0 +1,7 @@
+[[constraint]]
+  branch = "master"
+  name = "github.com/golang/glog"
+
+[[constraint]]
+  branch = "v2"
+  name = "gopkg.in/yaml.v2"
