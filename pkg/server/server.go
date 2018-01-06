@@ -101,7 +101,7 @@ func filesToMap(dir string) (map[string]string, error) {
 		content := strings.TrimPrefix(string(data), "\n")
 		kv := strings.Split(content, "=")
 		if len(kv) > 1 {
-			list[kv[0]] = kv[1]
+			list[kv[0]] = strings.TrimPrefix(kv[1], "\n")
 		} else {
 			list[kv[0]] = ""
 		}
