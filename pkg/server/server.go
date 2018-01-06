@@ -12,6 +12,7 @@ import (
 
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
+	"bufio"
 )
 
 type Server struct {
@@ -94,17 +95,20 @@ func filesToMap(dir string) (map[string]string, error) {
 	}
 	list := make(map[string]string, 0)
 	for _, path := range files {
-		data, err := ioutil.ReadFile(path)
+		file, err := os.Open(path)
 		if err != nil {
-			return nil, errors.Wrapf(err, "Reading %v failed", path)
+			continue
 		}
-		content := strings.TrimPrefix(string(data), "\n")
-		kv := strings.Split(content, "=")
-		if len(kv) > 1 {
-			list[kv[0]] = strings.TrimPrefix(kv[1], "\n")
-		} else {
-			list[kv[0]] = ""
+		s := bufio.NewScanner(file)
+		for s.Scan() {
+			kv := strings.Split(s.Text(), "=")
+			if len(kv) > 1 {
+				list[kv[0]] = kv[1]
+			} else {
+				list[kv[0]] = ""
+			}
 		}
+		file.Close()
 	}
 	return list, nil
 }
