@@ -14,7 +14,7 @@ NAME:=podinfo
 VERSION:=$(shell grep 'VERSION' pkg/version/version.go | awk '{ print $$4 }' | tr -d '"')
 DOCKER_IMAGE_NAME:=$(DOCKER_REPOSITORY)/$(NAME)
 GITCOMMIT:=$(shell git describe --dirty --always)
-LINUX_ARCH:=amd64 arm arm64 ppc64le
+LINUX_ARCH:=amd64 arm arm64 ppc64le s390x
 PLATFORMS:=$(subst $(SPACE),$(COMMA),$(foreach arch,$(LINUX_ARCH),linux/$(arch)))
 
 .PHONY: build
@@ -62,7 +62,7 @@ docker-build: tar
 	            BASEIMAGE=$$arch ;\
 	            ;; \
 	        esac ;\
-	        sed -e "s/alpine:latest/$$BASEIMAGE\\/alpine:latest/" build/docker/linux/$$arch/Dockerfile.in > build/docker/linux/$$arch/Dockerfile ;\
+	        sed -e "s/alpine:latest/$$BASEIMAGE\\/alpine:latest/" -e "s/^\\s*RUN/#RUN/" build/docker/linux/$$arch/Dockerfile.in > build/docker/linux/$$arch/Dockerfile ;\
 	    fi ;\
 	    docker build -t podinfo build/docker/linux/$$arch ;\
 	    docker tag podinfo $(DOCKER_IMAGE_NAME):podinfo-$$arch ;\
