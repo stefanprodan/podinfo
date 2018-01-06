@@ -101,7 +101,7 @@ func filesToMap(dir string) (map[string]string, error) {
 		for s.Scan() {
 			kv := strings.Split(s.Text(), "=")
 			if len(kv) > 1 {
-				list[kv[0]] = kv[1]
+				list[kv[0]] = strings.Replace(kv[1], "\"", "", -1)
 			} else {
 				list[kv[0]] = ""
 			}
