@@ -31,16 +31,6 @@ func New(options ...func(*Server)) *Server {
 }
 
 func (s *Server) index(w http.ResponseWriter, r *http.Request) {
-	runtime := map[string]string{
-		"os":            runtime.GOOS,
-		"arch":          runtime.GOARCH,
-		"version":       runtime.Version(),
-		"max_procs":     strconv.FormatInt(int64(runtime.GOMAXPROCS(0)), 10),
-		"num_goroutine": strconv.FormatInt(int64(runtime.NumGoroutine()), 10),
-		"num_cpu":       strconv.FormatInt(int64(runtime.NumCPU()), 10),
-	}
-	runtime["hostname"], _ = os.Hostname()
-
 	labels, err := filesToMap("/etc/podinfod/metadata/labels")
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -54,8 +44,8 @@ func (s *Server) index(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := &Response{
-		Environment: os.Environ(),
-		Runtime:     runtime,
+		Environment: envToMap(),
+		Runtime:     runtimeToMap(),
 		Labels:      labels,
 		Annotations: annotations,
 	}
@@ -109,4 +99,30 @@ func filesToMap(dir string) (map[string]string, error) {
 		file.Close()
 	}
 	return list, nil
+}
+
+func envToMap() map[string]string {
+	list := make(map[string]string, 0)
+	for _, env := range os.Environ() {
+		kv := strings.Split(env, "=")
+		if len(kv) > 1 {
+			list[kv[0]] = strings.Replace(kv[1], "\"", "", -1)
+		} else {
+			list[kv[0]] = ""
+		}
+	}
+	return list
+}
+
+func runtimeToMap() map[string]string {
+	runtime := map[string]string{
+		"os":            runtime.GOOS,
+		"arch":          runtime.GOARCH,
+		"version":       runtime.Version(),
+		"max_procs":     strconv.FormatInt(int64(runtime.GOMAXPROCS(0)), 10),
+		"num_goroutine": strconv.FormatInt(int64(runtime.NumGoroutine()), 10),
+		"num_cpu":       strconv.FormatInt(int64(runtime.NumCPU()), 10),
+	}
+	runtime["hostname"], _ = os.Hostname()
+	return runtime
 }
