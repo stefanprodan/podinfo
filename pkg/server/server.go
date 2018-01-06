@@ -1,18 +1,16 @@
 package server
 
 import (
-	"io/ioutil"
+	"bufio"
 	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strconv"
-
 	"strings"
 
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
-	"bufio"
 )
 
 type Server struct {
