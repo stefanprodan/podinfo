@@ -1,0 +1,81 @@
+---
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: podinfo
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: podinfo
+    spec:
+      containers:
+      - name: podinfod
+        image: stefanprodan/podinfo:0.0.1
+        imagePullPolicy: Always
+        command:
+          - ./podinfo
+          - -port=9898
+          - -logtostderr=true
+          - -v=2
+        volumeMounts:
+          - name: metadata
+            mountPath: /etc/podinfod/metadata
+            readOnly: true
+          - name: resources
+            mountPath: /etc/podinfod/resources
+            readOnly: true
+        ports:
+        - containerPort: 9898
+          protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 9898
+          initialDelaySeconds: 1
+          periodSeconds: 2
+          failureThreshold: 2
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 9898
+          initialDelaySeconds: 1
+          periodSeconds: 3
+          failureThreshold: 1
+        resources:
+          requests:
+            memory: "32Mi"
+            cpu: "125m"
+          limits:
+            memory: "64Mi"
+            cpu: "250m"
+      volumes:
+        - name: metadata
+          downwardAPI:
+            items:
+              - path: "labels"
+                fieldRef:
+                  fieldPath: metadata.labels
+              - path: "annotations"
+                fieldRef:
+                  fieldPath: metadata.annotations
+        - name: resources
+          downwardAPI:
+            items:
+              - path: "cpu_limit"
+                resourceFieldRef:
+                  containerName: podinfod
+                  resource: limits.cpu
+              - path: "cpu_request"
+                resourceFieldRef:
+                  containerName: podinfod
+                  resource: requests.cpu
+              - path: "mem_limit"
+                resourceFieldRef:
+                  containerName: podinfod
+                  resource: limits.memory
+              - path: "mem_request"
+                resourceFieldRef:
+                  containerName: podinfod
+                  resource: requests.memory
