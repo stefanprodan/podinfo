@@ -8,6 +8,8 @@ import (
 	"runtime"
 	"strconv"
 
+	"strings"
+
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 )
@@ -40,13 +42,13 @@ func (s *Server) index(w http.ResponseWriter, r *http.Request) {
 	}
 	runtime["hostname"], _ = os.Hostname()
 
-	labels, err := readFiles("/etc/podinfod/metadata/labels")
+	labels, err := filesToMap("/etc/podinfod/metadata/labels")
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(err.Error()))
 	}
 
-	annotations, err := readFiles("/etc/podinfod/metadata/annotations")
+	annotations, err := filesToMap("/etc/podinfod/metadata/annotations")
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(err.Error()))
@@ -80,8 +82,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.mux.ServeHTTP(w, r)
 }
 
-func readFiles(dir string) ([]string, error) {
-	files := []string{}
+func filesToMap(dir string) (map[string]string, error) {
+	files := make([]string, 0)
 	err := filepath.Walk(dir, func(path string, f os.FileInfo, err error) error {
 		files = append(files, path)
 
@@ -90,24 +92,18 @@ func readFiles(dir string) ([]string, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "Reading from %v failed", dir)
 	}
-	list := make([]string, 0)
+	list := make(map[string]string, 0)
 	for _, path := range files {
 		data, err := ioutil.ReadFile(path)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Reading %v failed", path)
 		}
-		content := string(data)
-		duplicate := false
-		for _, p := range list {
-			if p == content {
-				duplicate = true
-				break
-			}
+		kv := strings.Split(string(data), "=")
+		if len(kv) > 1 {
+			list[kv[0]] = kv[1]
+		} else {
+			list[kv[0]] = ""
 		}
-		if duplicate {
-			continue
-		}
-		list = append(list, content)
 	}
 	return list, nil
 }
