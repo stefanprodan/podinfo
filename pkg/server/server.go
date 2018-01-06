@@ -98,7 +98,8 @@ func filesToMap(dir string) (map[string]string, error) {
 		if err != nil {
 			return nil, errors.Wrapf(err, "Reading %v failed", path)
 		}
-		kv := strings.Split(string(data), "=")
+		content := strings.TrimPrefix(string(data), "\n")
+		kv := strings.Split(content, "=")
 		if len(kv) > 1 {
 			list[kv[0]] = kv[1]
 		} else {
