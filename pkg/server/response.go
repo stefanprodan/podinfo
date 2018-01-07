@@ -2,12 +2,17 @@ package server
 
 import (
 	"bufio"
+	"crypto/tls"
+	"io/ioutil"
+	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 )
 
@@ -16,6 +21,7 @@ type Response struct {
 	Labels      map[string]string `json:"labels"`
 	Annotations map[string]string `json:"annotations"`
 	Environment map[string]string `json:"environment"`
+	ExternalIP  map[string]string `json:"externalips"`
 }
 
 func makeResponse() (*Response, error) {
@@ -34,12 +40,18 @@ func makeResponse() (*Response, error) {
 		Runtime:     runtimeToMap(),
 		Labels:      labels,
 		Annotations: annotations,
+		ExternalIP:  ipToMap(),
 	}
 
 	return resp, nil
 }
 
 func filesToMap(dir string) (map[string]string, error) {
+	list := make(map[string]string, 0)
+	if stat, err := os.Stat(dir); err != nil || !stat.IsDir() {
+		// path not found
+		return list, nil
+	}
 	files := make([]string, 0)
 	err := filepath.Walk(dir, func(path string, f os.FileInfo, err error) error {
 		files = append(files, path)
@@ -49,7 +61,6 @@ func filesToMap(dir string) (map[string]string, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "Reading from %v failed", dir)
 	}
-	list := make(map[string]string, 0)
 	for _, path := range files {
 		file, err := os.Open(path)
 		if err != nil {
@@ -93,4 +104,44 @@ func runtimeToMap() map[string]string {
 	}
 	runtime["hostname"], _ = os.Hostname()
 	return runtime
+}
+
+func ipToMap() map[string]string {
+	return map[string]string{
+		"IPv4": findIp("http://ipv4.whatip.me/?jsonp"),
+		"IPv6": findIp("http://ipv6.whatip.me/?jsonp"),
+	}
+}
+
+func findIp(url string) string {
+	ips := ""
+	client := &http.Client{
+		Transport: &http.Transport{
+			DisableKeepAlives: false,
+			TLSClientConfig:   &tls.Config{InsecureSkipVerify: true},
+		},
+		Timeout: time.Duration(1 * time.Second),
+	}
+
+	req, _ := http.NewRequest("GET", url, nil)
+	req.Header.Add("Content-Type", "application/json")
+	res, err := client.Do(req)
+	if err != nil {
+		glog.Error(errors.Wrapf(err, "cannot connect to %s", url))
+		return ips
+	}
+
+	if res.Body != nil {
+		defer res.Body.Close()
+
+		if res.StatusCode == http.StatusOK {
+			contents, err := ioutil.ReadAll(res.Body)
+			if err != nil {
+				return ips
+			}
+			return strings.Replace(strings.Replace(string(contents), "({\"ip\":\"", "", -1), "\"})", "", -1)
+		}
+	}
+
+	return ips
 }
