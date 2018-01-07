@@ -48,7 +48,7 @@ func makeResponse() (*Response, error) {
 
 func filesToMap(dir string) (map[string]string, error) {
 	list := make(map[string]string, 0)
-	if stat, err := os.Stat(dir); err != nil || !stat.IsDir() {
+	if _, err := os.Stat(dir); err != nil {
 		// path not found
 		return list, nil
 	}
