@@ -1,9 +1,12 @@
 package server
 
 import (
+	"context"
 	"net/http"
 	"runtime"
+	"time"
 
+	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"gopkg.in/yaml.v2"
 )
@@ -52,4 +55,31 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Server", runtime.Version())
 
 	s.mux.ServeHTTP(w, r)
+}
+
+func ListenAndServe(port string, timeout time.Duration, stopCh <-chan struct{}) {
+	srv := &http.Server{
+		Addr:    ":" + port,
+		Handler: New(),
+	}
+
+	// run server in background
+	go func() {
+		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
+			glog.Fatal(err)
+		}
+	}()
+
+	// wait for SIGTERM or SIGINT
+	<-stopCh
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	glog.Infof("Shutdown HTTP server with timeout: %s", timeout)
+
+	if err := srv.Shutdown(ctx); err != nil {
+		glog.Error(err)
+	} else {
+		glog.Info("HTTP server stopped")
+	}
 }

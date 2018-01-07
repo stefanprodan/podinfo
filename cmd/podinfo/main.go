@@ -1,9 +1,7 @@
 package main
 
 import (
-	"context"
 	"flag"
-	"net/http"
 	"time"
 
 	"github.com/golang/glog"
@@ -26,31 +24,6 @@ func main() {
 	glog.Infof("Starting podinfo version %s commit %s", version.VERSION, version.GITCOMMIT)
 	glog.Infof("Starting HTTP server on port %v", port)
 
-	hts := &http.Server{
-		Addr:    ":" + port,
-		Handler: server.New(),
-	}
-
-	go func() {
-		if err := hts.ListenAndServe(); err != http.ErrServerClosed {
-			glog.Fatal(err)
-		}
-	}()
-	shutdown(hts, 10*time.Second)
-}
-
-func shutdown(hs *http.Server, timeout time.Duration) {
 	stopCh := signals.SetupSignalHandler()
-	<-stopCh
-
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-
-	glog.Infof("Shutdown with timeout: %s", timeout)
-
-	if err := hs.Shutdown(ctx); err != nil {
-		glog.Error(err)
-	} else {
-		glog.Info("HTTP server stopped")
-	}
+	server.ListenAndServe(port, 5*time.Second, stopCh)
 }
