@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"runtime"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"gopkg.in/yaml.v2"
 )
 
@@ -20,6 +21,7 @@ func New(options ...func(*Server)) *Server {
 
 	s.mux.HandleFunc("/", s.index)
 	s.mux.HandleFunc("/healthz/", s.healthz)
+	s.mux.Handle("/metrics", promhttp.Handler())
 
 	return s
 }
