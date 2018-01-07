@@ -17,11 +17,11 @@ import (
 )
 
 type Response struct {
-	Runtime     map[string]string `json:"runtime"`
-	Labels      map[string]string `json:"labels"`
-	Annotations map[string]string `json:"annotations"`
-	Environment map[string]string `json:"environment"`
-	ExternalIP  map[string]string `json:"externalips"`
+	Runtime     map[string]string `json:"runtime" yaml:"runtime"`
+	Labels      map[string]string `json:"labels,omitempty" yaml:"labels,omitempty"`
+	Annotations map[string]string `json:"annotations,omitempty" yaml:"annotations,omitempty"`
+	Environment map[string]string `json:"environment" yaml:"environment"`
+	ExternalIP  map[string]string `json:"externalIP" yaml:"externalIP"`
 }
 
 func makeResponse() (*Response, error) {
