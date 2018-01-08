@@ -28,7 +28,7 @@ func New(options ...func(*Server)) *Server {
 
 	s.mux.HandleFunc("/", s.index)
 	s.mux.HandleFunc("/healthz/", s.healthz)
-	s.mux.HandleFunc("/ingest/", s.ingest)
+	s.mux.HandleFunc("/echo/", s.echo)
 	s.mux.HandleFunc("/panic/", s.panic)
 	s.mux.Handle("/metrics", promhttp.Handler())
 
@@ -55,7 +55,7 @@ func (s *Server) index(w http.ResponseWriter, r *http.Request) {
 	w.Write(d)
 }
 
-func (s *Server) ingest(w http.ResponseWriter, r *http.Request) {
+func (s *Server) echo(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "POST":
 		body, err := ioutil.ReadAll(r.Body)
@@ -65,8 +65,9 @@ func (s *Server) ingest(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte(err.Error()))
 			return
 		}
-		glog.Infof("Payload received: %s", string(body))
-		w.WriteHeader(http.StatusAccepted)
+		glog.Infof("Payload received from %s: %s", r.RemoteAddr, string(body))
+		w.Write(body)
+		w.WriteHeader(http.StatusOK)
 	default:
 		w.WriteHeader(http.StatusNotAcceptable)
 	}
