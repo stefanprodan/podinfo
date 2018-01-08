@@ -2,14 +2,15 @@ package server
 
 import (
 	"context"
+	"io/ioutil"
 	"net/http"
 	"runtime"
+	"sync/atomic"
 	"time"
 
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"gopkg.in/yaml.v2"
-	"sync/atomic"
 )
 
 var status int32
@@ -27,6 +28,7 @@ func New(options ...func(*Server)) *Server {
 
 	s.mux.HandleFunc("/", s.index)
 	s.mux.HandleFunc("/healthz/", s.healthz)
+	s.mux.HandleFunc("/ingest/", s.ingest)
 	s.mux.HandleFunc("/panic/", s.panic)
 	s.mux.Handle("/metrics", promhttp.Handler())
 
@@ -44,12 +46,31 @@ func (s *Server) index(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(err.Error()))
+		return
 	}
 
 	w.Header().Set("Content-Type", "text/x-yaml; charset=utf-8")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(http.StatusOK)
 	w.Write(d)
+}
+
+func (s *Server) ingest(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "POST":
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			glog.Errorf("Reading the request body failed: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+			return
+		}
+		glog.Infof("Payload received: %s", string(body))
+		w.WriteHeader(http.StatusAccepted)
+	default:
+		w.WriteHeader(http.StatusNotAcceptable)
+	}
+	glog.Fatal("Kill switch triggered")
 }
 
 func (s *Server) healthz(w http.ResponseWriter, r *http.Request) {
@@ -73,8 +94,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func ListenAndServe(port string, timeout time.Duration, stopCh <-chan struct{}) {
 	srv := &http.Server{
-		Addr:    ":" + port,
-		Handler: New(),
+		Addr:         ":" + port,
+		Handler:      New(),
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  15 * time.Second,
@@ -98,7 +119,7 @@ func ListenAndServe(port string, timeout time.Duration, stopCh <-chan struct{}) 
 	glog.Infof("Shutting down HTTP server with timeout: %v", timeout)
 
 	if err := srv.Shutdown(ctx); err != nil {
-		glog.Errorf("HTTP server graceful shutdown failed with error: %v",err)
+		glog.Errorf("HTTP server graceful shutdown failed with error: %v", err)
 	} else {
 		glog.Info("HTTP server stopped")
 	}
