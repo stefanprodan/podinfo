@@ -11,7 +11,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-var status int32
+var (
+	healthy int32
+	ready   int32
+)
 
 type Server struct {
 	mux *http.ServeMux
@@ -26,6 +29,9 @@ func New(options ...func(*Server)) *Server {
 
 	s.mux.HandleFunc("/", s.index)
 	s.mux.HandleFunc("/healthz/", s.healthz)
+	s.mux.HandleFunc("/readyz/", s.readyz)
+	s.mux.HandleFunc("/readyz/enable/", s.enable)
+	s.mux.HandleFunc("/readyz/disable/", s.disable)
 	s.mux.HandleFunc("/echo/", s.echo)
 	s.mux.HandleFunc("/panic/", s.panic)
 	s.mux.Handle("/metrics", promhttp.Handler())
@@ -48,7 +54,8 @@ func ListenAndServe(port string, timeout time.Duration, stopCh <-chan struct{}) 
 		IdleTimeout:  15 * time.Second,
 	}
 
-	atomic.StoreInt32(&status, 1)
+	atomic.StoreInt32(&healthy, 1)
+	atomic.StoreInt32(&ready, 1)
 
 	// run server in background
 	go func() {
@@ -62,8 +69,9 @@ func ListenAndServe(port string, timeout time.Duration, stopCh <-chan struct{}) 
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	// all calls to /healthz will fail from now on
-	atomic.StoreInt32(&status, 0)
+	// all calls to /healthz and /readyz will fail from now on
+	atomic.StoreInt32(&healthy, 0)
+	atomic.StoreInt32(&ready, 0)
 
 	glog.Infof("Shutting down HTTP server with timeout: %v", timeout)
 

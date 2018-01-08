@@ -48,12 +48,29 @@ func (s *Server) echo(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) healthz(w http.ResponseWriter, r *http.Request) {
-	if atomic.LoadInt32(&status) == 1 {
+	if atomic.LoadInt32(&healthy) == 1 {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
 		return
 	}
 	w.WriteHeader(http.StatusServiceUnavailable)
+}
+
+func (s *Server) readyz(w http.ResponseWriter, r *http.Request) {
+	if atomic.LoadInt32(&ready) == 1 {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("OK"))
+		return
+	}
+	w.WriteHeader(http.StatusServiceUnavailable)
+}
+
+func (s *Server) enable(w http.ResponseWriter, r *http.Request) {
+	atomic.StoreInt32(&ready, 1)
+}
+
+func (s *Server) disable(w http.ResponseWriter, r *http.Request) {
+	atomic.StoreInt32(&ready, 0)
 }
 
 func (s *Server) panic(w http.ResponseWriter, r *http.Request) {

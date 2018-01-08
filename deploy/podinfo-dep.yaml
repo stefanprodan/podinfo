@@ -33,7 +33,7 @@ spec:
           protocol: TCP
         readinessProbe:
           httpGet:
-            path: /healthz
+            path: /readyz
             port: 9898
           initialDelaySeconds: 1
           periodSeconds: 2
