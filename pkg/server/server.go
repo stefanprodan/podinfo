@@ -71,7 +71,6 @@ func (s *Server) echo(w http.ResponseWriter, r *http.Request) {
 	default:
 		w.WriteHeader(http.StatusNotAcceptable)
 	}
-	glog.Fatal("Kill switch triggered")
 }
 
 func (s *Server) healthz(w http.ResponseWriter, r *http.Request) {
