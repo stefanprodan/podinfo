@@ -27,6 +27,7 @@ func New(options ...func(*Server)) *Server {
 
 	s.mux.HandleFunc("/", s.index)
 	s.mux.HandleFunc("/healthz/", s.healthz)
+	s.mux.HandleFunc("/panic/", s.panic)
 	s.mux.Handle("/metrics", promhttp.Handler())
 
 	return s
@@ -58,6 +59,10 @@ func (s *Server) healthz(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusServiceUnavailable)
+}
+
+func (s *Server) panic(w http.ResponseWriter, r *http.Request) {
+	glog.Fatal("Kill switch triggered")
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
