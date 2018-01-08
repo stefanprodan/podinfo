@@ -37,21 +37,21 @@ spec:
             port: 9898
           initialDelaySeconds: 1
           periodSeconds: 2
-          failureThreshold: 2
+          failureThreshold: 1
         livenessProbe:
           httpGet:
             path: /healthz
             port: 9898
           initialDelaySeconds: 1
           periodSeconds: 3
-          failureThreshold: 1
+          failureThreshold: 2
         resources:
           requests:
             memory: "32Mi"
-            cpu: "125m"
+            cpu: "10m"
           limits:
-            memory: "64Mi"
-            cpu: "250m"
+            memory: "256Mi"
+            cpu: "100m"
       volumes:
         - name: metadata
           downwardAPI:
