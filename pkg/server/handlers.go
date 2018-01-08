@@ -40,8 +40,8 @@ func (s *Server) echo(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		glog.Infof("Payload received from %s: %s", r.RemoteAddr, string(body))
+		w.WriteHeader(http.StatusAccepted)
 		w.Write(body)
-		w.WriteHeader(http.StatusOK)
 	default:
 		w.WriteHeader(http.StatusNotAcceptable)
 	}
