@@ -9,11 +9,12 @@
 EMPTY:=
 SPACE:=$(EMPTY) $(EMPTY)
 COMMA:=$(EMPTY),$(EMPTY)
-DOCKER_REPOSITORY:=stefanprodan
 NAME:=podinfo
-VERSION:=$(shell grep 'VERSION' pkg/version/version.go | awk '{ print $$4 }' | tr -d '"')
+DOCKER_REPOSITORY:=stefanprodan
 DOCKER_IMAGE_NAME:=$(DOCKER_REPOSITORY)/$(NAME)
+GITREPO:=github.com/stefanprodan/k8s-podinfo
 GITCOMMIT:=$(shell git describe --dirty --always)
+VERSION:=$(shell grep 'VERSION' pkg/version/version.go | awk '{ print $$4 }' | tr -d '"')
 LINUX_ARCH:=amd64 arm arm64 ppc64le s390x
 PLATFORMS:=$(subst $(SPACE),$(COMMA),$(foreach arch,$(LINUX_ARCH),linux/$(arch)))
 
@@ -23,7 +24,7 @@ build:
 	@rm -rf build && mkdir build
 	@echo Building: linux/$(LINUX_ARCH)  $(VERSION) ;\
 	for arch in $(LINUX_ARCH); do \
-	    mkdir -p build/linux/$$arch && CGO_ENABLED=0 GOOS=linux GOARCH=$$arch go build -ldflags="-s -w -X github.com/stefanprodan/k8s-podinfo/pkg/version.GITCOMMIT=$(GITCOMMIT)" -o build/linux/$$arch/$(NAME) ./cmd/podinfo ;\
+	    mkdir -p build/linux/$$arch && CGO_ENABLED=0 GOOS=linux GOARCH=$$arch go build -ldflags="-s -w -X $(GITREPO)/pkg/version.GITCOMMIT=$(GITCOMMIT)" -o build/linux/$$arch/$(NAME) ./cmd/$(NAME) ;\
 	done
 
 .PHONY: tar
@@ -64,15 +65,15 @@ docker-build: tar
 	        esac ;\
 	        sed -e "s/alpine:latest/$$BASEIMAGE\\/alpine:latest/" -e "s/^\\s*RUN/#RUN/" build/docker/linux/$$arch/Dockerfile.in > build/docker/linux/$$arch/Dockerfile ;\
 	    fi ;\
-	    docker build -t podinfo build/docker/linux/$$arch ;\
-	    docker tag podinfo $(DOCKER_IMAGE_NAME):podinfo-$$arch ;\
+	    docker build -t $(NAME) build/docker/linux/$$arch ;\
+	    docker tag $(NAME) $(DOCKER_IMAGE_NAME):$(NAME)-$$arch ;\
 	done
 
 .PHONY: docker-push
 docker-push:
 	@echo Pushing: $(VERSION) to $(DOCKER_IMAGE_NAME)
 	for arch in $(LINUX_ARCH); do \
-	    docker push $(DOCKER_IMAGE_NAME):podinfo-$$arch ;\
+	    docker push $(DOCKER_IMAGE_NAME):$(NAME)-$$arch ;\
 	done
 	manifest-tool push from-args --platforms $(PLATFORMS) --template $(DOCKER_IMAGE_NAME):podinfo-ARCH --target $(DOCKER_IMAGE_NAME):$(VERSION)
 	manifest-tool push from-args --platforms $(PLATFORMS) --template $(DOCKER_IMAGE_NAME):podinfo-ARCH --target $(DOCKER_IMAGE_NAME):latest
