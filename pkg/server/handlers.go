@@ -10,6 +10,11 @@ import (
 )
 
 func (s *Server) index(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/" {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
 	resp, err := makeResponse()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)

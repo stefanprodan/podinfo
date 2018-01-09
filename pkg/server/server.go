@@ -4,25 +4,16 @@ import (
 	"context"
 	"net/http"
 	"runtime"
-	"strconv"
 	"sync/atomic"
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 var (
-	healthy             int32
-	ready               int32
-	httpRequestsCounter = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "http_requests_total",
-			Help: "The total number of HTTP requests.",
-		},
-		[]string{"method", "path", "status"},
-	)
+	healthy int32
+	ready   int32
 )
 
 type Server struct {
@@ -54,19 +45,11 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.mux.ServeHTTP(w, r)
 }
 
-func instrument(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		interceptor := &interceptor{ResponseWriter: w, statusCode: http.StatusOK}
-		next.ServeHTTP(interceptor, r)
-		var status = strconv.Itoa(interceptor.statusCode)
-		httpRequestsCounter.WithLabelValues(r.Method, r.URL.Path, status).Inc()
-	})
-}
-
 func ListenAndServe(port string, timeout time.Duration, stopCh <-chan struct{}) {
+	inst := NewInstrument()
 	srv := &http.Server{
 		Addr:         ":" + port,
-		Handler:      instrument(NewServer()),
+		Handler:      inst.Wrap(NewServer()),
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  15 * time.Second,
@@ -74,8 +57,6 @@ func ListenAndServe(port string, timeout time.Duration, stopCh <-chan struct{}) 
 
 	atomic.StoreInt32(&healthy, 1)
 	atomic.StoreInt32(&ready, 1)
-
-	prometheus.MustRegister(httpRequestsCounter)
 
 	// run server in background
 	go func() {
