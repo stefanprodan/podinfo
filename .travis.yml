@@ -13,7 +13,7 @@ addons:
       - docker-ce
 
 before_install:
-  - go get github.com/estesp/manifest-tool
+  - make dep
 
 script:
   - make test

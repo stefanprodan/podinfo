@@ -86,3 +86,7 @@ clean:
 test:
 	cd pkg/server ; go test -v -race ./...
 
+.PHONY: dep
+dep:
+	go get -u github.com/golang/dep/cmd/dep
+	go get -u github.com/estesp/manifest-tool
