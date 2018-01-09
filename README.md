@@ -10,8 +10,9 @@ Specifications:
 * Health checks (readiness and liveness)
 * Graceful shutdown on interrupt signals
 * Prometheus instrumentation
-* Standard multi-level logging with golang/glog
 * Dependency management with golang/dep
+* Multi-level logging with golang/glog
+* Error handling with pkg/errors
 
 Web API:
 

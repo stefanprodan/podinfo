@@ -16,10 +16,11 @@ before_install:
   - go get github.com/estesp/manifest-tool
 
 script:
+  - make test
   - make build docker-build
 
 after_success:
-  - if [ -z "DOCKER_USER" ]; then
+  - if [ -z "$DOCKER_USER" ]; then
       echo "PR build, skipping Docker Hub push";
     else
       docker login -u $DOCKER_USER -p $DOCKER_PASS;

@@ -81,3 +81,8 @@ docker-push:
 clean:
 	rm -rf release
 	rm -rf build
+
+.PHONY: test
+test:
+	cd pkg/server ; go test -v -race ./...
+
