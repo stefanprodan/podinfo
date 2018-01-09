@@ -8,20 +8,20 @@ Specifications:
 * Multi-arch build and release automation (TravisCI)
 * Multi-platform Docker image (amd64/arm/arm64/ppc64le/s390x)
 * Health checks (readiness and liveness)
-* Graceful shutdown
-* Standard multi-level logging (golang/glog)
+* Graceful shutdown on interrupt signals
 * Prometheus instrumentation
+* Standard multi-level logging with golang/glog
+* Dependency management with golang/dep
 
 Web API:
 
 * `GET /` prints runtime information, environment variables, labels and annotations
 * `GET /metrics` http requests duration and Go runtime metrics
-* `GET /healthz` liveness probe
-* `GET /readyz` readiness probe
-* `POST /readyz/enable` enables readiness probe
-* `POST /readyz/disable` disables readiness probe
+* `GET /healthz` used by Kubernetes liveness probe
+* `GET /readyz` used by Kubernetes readiness probe
+* `POST /readyz/enable` signals the Kubernetes LB that this instance is ready to receive traffic
+* `POST /readyz/disable` signals the Kubernetes LB to stop sending requests to this instance
 * `GET /panic` crashes the process with exit code 255
-
 
 ### Instrumentation
 
