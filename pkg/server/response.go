@@ -21,7 +21,6 @@ type Response struct {
 	Labels      map[string]string `json:"labels,omitempty" yaml:"labels,omitempty"`
 	Annotations map[string]string `json:"annotations,omitempty" yaml:"annotations,omitempty"`
 	Environment map[string]string `json:"environment" yaml:"environment"`
-	ExternalIP  map[string]string `json:"externalIP" yaml:"externalIP"`
 }
 
 func makeResponse() (*Response, error) {
@@ -40,7 +39,6 @@ func makeResponse() (*Response, error) {
 		Runtime:     runtimeToMap(),
 		Labels:      labels,
 		Annotations: annotations,
-		ExternalIP:  ipToMap(),
 	}
 
 	return resp, nil
@@ -101,20 +99,13 @@ func runtimeToMap() map[string]string {
 		"max_procs":     strconv.FormatInt(int64(runtime.GOMAXPROCS(0)), 10),
 		"num_goroutine": strconv.FormatInt(int64(runtime.NumGoroutine()), 10),
 		"num_cpu":       strconv.FormatInt(int64(runtime.NumCPU()), 10),
+		"external_ip": findIp("http://api.ipify.org"),
 	}
-	runtime["hostname"], _ = os.Hostname()
 	return runtime
 }
 
-func ipToMap() map[string]string {
-	return map[string]string{
-		"IPv4": findIp("http://ipv4.whatip.me/?jsonp"),
-		"IPv6": findIp("http://ipv6.whatip.me/?jsonp"),
-	}
-}
-
 func findIp(url string) string {
-	ips := ""
+	ip := ""
 	client := &http.Client{
 		Transport: &http.Transport{
 			DisableKeepAlives: false,
@@ -124,11 +115,10 @@ func findIp(url string) string {
 	}
 
 	req, _ := http.NewRequest("GET", url, nil)
-	req.Header.Add("Content-Type", "application/json")
 	res, err := client.Do(req)
 	if err != nil {
 		glog.Error(errors.Wrapf(err, "cannot connect to %s", url))
-		return ips
+		return ip
 	}
 
 	if res.Body != nil {
@@ -137,11 +127,11 @@ func findIp(url string) string {
 		if res.StatusCode == http.StatusOK {
 			contents, err := ioutil.ReadAll(res.Body)
 			if err != nil {
-				return ips
+				return ip
 			}
-			return strings.Replace(strings.Replace(string(contents), "({\"ip\":\"", "", -1), "\"})", "", -1)
+			return string(contents)
 		}
 	}
 
-	return ips
+	return ip
 }
