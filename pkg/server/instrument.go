@@ -15,6 +15,7 @@ import (
 
 type Instrument struct {
 	Histogram *prometheus.HistogramVec
+	Counter   *prometheus.CounterVec
 }
 
 func NewInstrument() *Instrument {
@@ -25,10 +26,21 @@ func NewInstrument() *Instrument {
 		Buckets:   prometheus.DefBuckets,
 	}, []string{"method", "path", "status"})
 
+	counter := prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Subsystem: "http",
+			Name:      "requests_total",
+			Help:      "The total number of HTTP requests.",
+		},
+		[]string{"status"},
+	)
+
 	prometheus.MustRegister(histogram)
+	prometheus.MustRegister(counter)
 
 	return &Instrument{
 		Histogram: histogram,
+		Counter:   counter,
 	}
 }
 
@@ -43,6 +55,7 @@ func (i Instrument) Wrap(next http.Handler) http.Handler {
 			took   = time.Since(begin)
 		)
 		i.Histogram.WithLabelValues(r.Method, path, status).Observe(took.Seconds())
+		i.Counter.WithLabelValues(status).Inc()
 	})
 }
 
