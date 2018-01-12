@@ -6,6 +6,7 @@ import (
 	"sync/atomic"
 
 	"github.com/golang/glog"
+	"github.com/stefanprodan/k8s-podinfo/pkg/version"
 	"gopkg.in/yaml.v2"
 )
 
@@ -50,6 +51,30 @@ func (s *Server) echo(w http.ResponseWriter, r *http.Request) {
 	default:
 		w.WriteHeader(http.StatusNotAcceptable)
 	}
+}
+
+func (s *Server) version(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/version" {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	resp := map[string]string{
+		"version": version.VERSION,
+		"commit":  version.GITCOMMIT,
+	}
+
+	d, err := yaml.Marshal(resp)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/x-yaml; charset=utf-8")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.WriteHeader(http.StatusOK)
+	w.Write(d)
 }
 
 func (s *Server) healthz(w http.ResponseWriter, r *http.Request) {

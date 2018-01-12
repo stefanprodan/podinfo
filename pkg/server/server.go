@@ -34,6 +34,7 @@ func NewServer(options ...func(*Server)) *Server {
 	s.mux.HandleFunc("/readyz/disable", s.disable)
 	s.mux.HandleFunc("/echo", s.echo)
 	s.mux.HandleFunc("/panic", s.panic)
+	s.mux.HandleFunc("/version", s.version)
 	s.mux.Handle("/metrics", promhttp.Handler())
 
 	return s
