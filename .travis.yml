@@ -19,11 +19,13 @@ before_install:
   - export PATH="$TRAVIS_BUILD_DIR/.bin:$PATH"
   - wget https://cdn.rawgit.com/Mirantis/kubeadm-dind-cluster/master/fixed/dind-cluster-v1.8.sh && chmod +x dind-cluster-v1.8.sh && ./dind-cluster-v1.8.sh up
   - export PATH="$HOME/.kubeadm-dind-cluster:$PATH"
-  - kubectl get nodes
 
 script:
+  - kubectl get nodes
+  - docker ps
   - make test
   - make build docker-build
+  - docker save stefanprodan/podinfo:latest | docker exec -i kube-node-1 docker load
 
 after_success:
   - if [ -z "$DOCKER_USER" ]; then
