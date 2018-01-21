@@ -11,9 +11,11 @@ addons:
   apt:
     packages:
       - docker-ce
+      - kubeadm
 
 before_install:
   - make dep
+  - kubeadm init
 
 script:
   - make test
