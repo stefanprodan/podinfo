@@ -17,7 +17,7 @@ before_install:
   - curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
   - mkdir -p .bin; mv ./kubectl .bin/kubectl && chmod +x .bin/kubectl
   - export PATH="$TRAVIS_BUILD_DIR/.bin:$PATH"
-  - wget https://cdn.rawgit.com/Mirantis/kubeadm-dind-cluster/master/fixed/dind-cluster-v1.9.sh && chmod +x dind-cluster-v1.9.sh && ./dind-cluster-v1.9.sh up
+  - wget https://cdn.rawgit.com/Mirantis/kubeadm-dind-cluster/master/fixed/dind-cluster-v1.8.sh && chmod +x dind-cluster-v1.8.sh && ./dind-cluster-v1.8.sh up
   - export PATH="$HOME/.kubeadm-dind-cluster:$PATH"
   - kubectl get nodes
 
