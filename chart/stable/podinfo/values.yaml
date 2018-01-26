@@ -1,6 +1,4 @@
 # Default values for podinfo.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
 
 replicaCount: 1
 
@@ -14,6 +12,12 @@ service:
   externalPort: 9898
   containerPort: 9898
   nodePort: 31198
+
+hpa:
+  enabled: false
+  maxReplicas: 10
+  cpu: 80
+  memory: 200Mi
 
 ingress:
   enabled: false
