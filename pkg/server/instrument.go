@@ -19,13 +19,14 @@ type Instrument struct {
 }
 
 func NewInstrument() *Instrument {
+	// used for monitoring and alerting (RED method)
 	histogram := prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Subsystem: "http",
 		Name:      "requests",
 		Help:      "Seconds spent serving HTTP requests.",
 		Buckets:   prometheus.DefBuckets,
 	}, []string{"method", "path", "status"})
-
+	// used for horizontal pod auto-scaling (Kubernetes HPA v2)
 	counter := prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Subsystem: "http",
