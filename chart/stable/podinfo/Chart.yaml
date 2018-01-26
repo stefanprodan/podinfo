@@ -1,0 +1,8 @@
+apiVersion: v1
+appVersion: "0.0.1"
+description: Podinfo Helm chart for Kubernetes
+name: podinfo
+version: 0.0.1
+home: https://github.com/stefanprodan/k8s-podinfo
+sources:
+- https://github.com/stefanprodan/k8s-podinfo
