@@ -5,7 +5,7 @@ that showcases best practices of running microservices in Kubernetes.
 
 Specifications:
 
-* Multi-arch build and release automation (TravisCI)
+* Multi-arch build and release automation (Make/TravisCI)
 * Multi-platform Docker image (amd64/arm/arm64/ppc64le/s390x)
 * Health checks (readiness and liveness)
 * Graceful shutdown on interrupt signals
@@ -13,6 +13,7 @@ Specifications:
 * Dependency management with golang/dep
 * Multi-level logging with golang/glog
 * Error handling with pkg/errors
+* Helm chart
 
 Web API:
 
@@ -23,6 +24,82 @@ Web API:
 * `POST /readyz/enable` signals the Kubernetes LB that this instance is ready to receive traffic
 * `POST /readyz/disable` signals the Kubernetes LB to stop sending requests to this instance
 * `GET /panic` crashes the process with exit code 255
+
+### Deployment
+
+Install Helm and deploy Tiller on your Kubernetes cluster:
+
+```bash
+# install Helm CLI
+brew install kubernetes-helm
+
+# create a service account for Tiller
+kubectl -n kube-system create sa tiller
+
+# create a cluster role binding for Tiller
+kubectl create clusterrolebinding tiller-cluster-rule \
+    --clusterrole=cluster-admin \
+    --serviceaccount=kube-system:tiller 
+
+# deploy Tiller in kube-system namespace
+helm init --skip-refresh --upgrade --service-account tiller
+```
+
+Install podinfo in the default namespace exposed via a ClusterIP service:
+
+```bash
+helm upgrade --install --wait \
+    --name prod \
+    ./podinfo
+```
+
+Check if podinfo service is accessible from within the cluster:
+
+```bash
+helm test --cleanup prod
+```
+
+Install podinfo exposed via a NodePort service:
+
+```bash
+helm upgrade --install --wait \
+    --name prod \
+    --set service.type=NodePort \
+    --set service.nodePort=31198 \
+    ./podinfo
+```
+
+Install podinfo with horizontal pod autoscaling (HPA) based on CPU average usage and memory consumption:
+
+```bash
+helm upgrade --install --wait \
+    --name prod \
+    --set hpa.enabled=true \
+    --set hpa.maxReplicas=10 \
+    --set hpa.cpu=80 \
+    --set hpa.memory=200Mi \
+    ./podinfo
+```
+
+Deploy a new podinfo release:
+
+```bash
+helm upgrade prod \
+    --set image.tag=0.0.2 \
+    ./podinfo
+```
+
+Rollback the last deploy:
+
+```bash
+helm rollback prod
+```
+
+Delete the `prod` release:
+
+```bash
+helm delete --purge prod
+```
 
 ### Instrumentation
 
