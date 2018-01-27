@@ -8,6 +8,8 @@ import (
 	"github.com/golang/glog"
 	"github.com/stefanprodan/k8s-podinfo/pkg/version"
 	"gopkg.in/yaml.v2"
+	"encoding/json"
+	"time"
 )
 
 func (s *Server) index(w http.ResponseWriter, r *http.Request) {
@@ -48,6 +50,40 @@ func (s *Server) echo(w http.ResponseWriter, r *http.Request) {
 		glog.Infof("Payload received from %s: %s", r.RemoteAddr, string(body))
 		w.WriteHeader(http.StatusAccepted)
 		w.Write(body)
+	default:
+		w.WriteHeader(http.StatusNotAcceptable)
+	}
+}
+
+func (s *Server) job(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "POST":
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			glog.Errorf("Reading the request body failed: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+			return
+		}
+		glog.Infof("Payload received from %s: %s", r.RemoteAddr, string(body))
+
+		job := struct{
+			Wait int `json:"wait"`
+		}{
+			Wait: 0,
+		}
+		err = json.Unmarshal(body, &job)
+		if err != nil {
+			glog.Errorf("Reading the request body failed: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+			return
+		}
+		if job.Wait > 0 {
+			time.Sleep(time.Duration(job.Wait) * time.Second)
+		}
+		w.WriteHeader(http.StatusAccepted)
+		w.Write([]byte("Job done"))
 	default:
 		w.WriteHeader(http.StatusNotAcceptable)
 	}
