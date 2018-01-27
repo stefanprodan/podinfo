@@ -18,6 +18,7 @@ Specifications:
 Web API:
 
 * `GET /` prints runtime information, environment variables, labels and annotations
+* `GET /version` prints podinfo version and git commit hash 
 * `GET /metrics` http requests duration and Go runtime metrics
 * `GET /healthz` used by Kubernetes liveness probe
 * `GET /readyz` used by Kubernetes readiness probe
@@ -48,9 +49,7 @@ helm init --skip-refresh --upgrade --service-account tiller
 Install podinfo in the default namespace exposed via a ClusterIP service:
 
 ```bash
-helm upgrade --install --wait \
-    --name prod \
-    ./podinfo
+helm upgrade --install --wait prod ./podinfo
 ```
 
 Check if podinfo service is accessible from within the cluster:
@@ -62,18 +61,27 @@ helm test --cleanup prod
 Install podinfo exposed via a NodePort service:
 
 ```bash
-helm upgrade --install --wait \
-    --name prod \
+helm upgrade --install --wait prod \
     --set service.type=NodePort \
     --set service.nodePort=31198 \
+    ./podinfo
+```
+
+Set CPU/memory requests and limits:
+
+```bash
+helm upgrade --install --wait prod \
+    --set resources.requests.cpu=10m \
+    --set resources.limits.cpu=100m \
+    --set resources.requests.memory=16Mi \
+    --set resources.limits.memory=128Mi \
     ./podinfo
 ```
 
 Install podinfo with horizontal pod autoscaling (HPA) based on CPU average usage and memory consumption:
 
 ```bash
-helm upgrade --install --wait \
-    --name prod \
+helm upgrade --install --wait prod \
     --set hpa.enabled=true \
     --set hpa.maxReplicas=10 \
     --set hpa.cpu=80 \
@@ -81,7 +89,7 @@ helm upgrade --install --wait \
     ./podinfo
 ```
 
-Deploy a new podinfo release:
+Upgrade podinfo version:
 
 ```bash
 helm upgrade prod \

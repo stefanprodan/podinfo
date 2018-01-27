@@ -13,11 +13,14 @@ service:
   containerPort: 9898
   nodePort: 31198
 
+# Heapster or metrics-server add-on required
 hpa:
   enabled: false
   maxReplicas: 10
-  cpu: 80
-  memory: 200Mi
+  # average total CPU usage per pod (1-100)
+  cpu:
+  # average memory usage per pod (100Mi-1Gi)
+  memory:
 
 ingress:
   enabled: false
@@ -34,8 +37,6 @@ ingress:
 
 resources:
   limits:
-    cpu: 100m
-    memory: 128Mi
   requests:
     cpu: 1m
     memory: 16Mi
