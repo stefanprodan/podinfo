@@ -49,25 +49,19 @@ kubectl create clusterrolebinding tiller-cluster-rule \
 helm init --skip-refresh --upgrade --service-account tiller
 ```
 
-Install podinfo in the default namespace exposed via a ClusterIP service:
-
-```bash
-helm upgrade --install --wait prod ./frontend
-```
-
-Check if podinfo service is accessible from within the cluster:
-
-```bash
-helm test --cleanup frontend
-```
-
-Install podinfo exposed via a NodePort service:
+Install the frontend release exposed via a NodePort service:
 
 ```bash
 helm upgrade --install --wait frontend \
     --set service.type=NodePort \
     --set service.nodePort=31198 \
     ./podinfo
+```
+
+Check if podinfo service is accessible from within the cluster:
+
+```bash
+helm test --cleanup frontend
 ```
 
 Set CPU/memory requests and limits:
@@ -81,7 +75,7 @@ helm upgrade --install --wait frontend \
     ./podinfo
 ```
 
-Install podinfo with horizontal pod autoscaling (HPA) based on CPU average usage and memory consumption:
+Install the backend release with horizontal pod autoscaling (HPA) based on CPU average usage and memory consumption:
 
 ```bash
 helm upgrade --install --wait backend \
@@ -106,10 +100,11 @@ Rollback the last deploy:
 helm rollback frontend
 ```
 
-Delete the `frontend` release:
+Delete the releases:
 
 ```bash
 helm delete --purge frontend
+helm delete --purge backend
 ```
 
 ### Instrumentation
