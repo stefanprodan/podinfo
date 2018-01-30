@@ -1,6 +1,7 @@
 # Default values for podinfo.
 
 replicaCount: 1
+backend: http://backend-podinfo:8989/echo
 
 image:
   repository: stefanprodan/podinfo

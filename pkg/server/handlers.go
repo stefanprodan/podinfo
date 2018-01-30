@@ -10,6 +10,8 @@ import (
 	"gopkg.in/yaml.v2"
 	"encoding/json"
 	"time"
+	"os"
+	"bytes"
 )
 
 func (s *Server) index(w http.ResponseWriter, r *http.Request) {
@@ -50,6 +52,46 @@ func (s *Server) echo(w http.ResponseWriter, r *http.Request) {
 		glog.Infof("Payload received from %s: %s", r.RemoteAddr, string(body))
 		w.WriteHeader(http.StatusAccepted)
 		w.Write(body)
+	default:
+		w.WriteHeader(http.StatusNotAcceptable)
+	}
+}
+
+func (s *Server) backend(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "POST":
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			glog.Errorf("Reading the request body failed: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+			return
+		}
+
+		backendURL := os.Getenv("backend_url")
+		if len(backendURL) > 0 {
+			resp, err := http.Post(backendURL, r.Header.Get("Content-type"), bytes.NewReader(body))
+			if err != nil {
+				glog.Errorf("Backend call failed: %v", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte(err.Error()))
+				return
+			}
+			defer resp.Body.Close()
+			rbody, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				glog.Errorf("Reading the backend request body failed: %v", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte(err.Error()))
+				return
+			}
+			glog.Infof("Payload received from backend: %s", string(rbody))
+			w.WriteHeader(http.StatusAccepted)
+			w.Write(rbody)
+		}else {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte("Backend not specified, set backend_url env var"))
+		}
 	default:
 		w.WriteHeader(http.StatusNotAcceptable)
 	}

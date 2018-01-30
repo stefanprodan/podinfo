@@ -30,6 +30,9 @@ spec:
             - -port={{ .Values.service.containerPort }}
             - -logtostderr=true
             - -v={{ .Values.logLevel }}
+          env:
+          - name: backend_url
+            value: {{ .Values.backend }}
           ports:
             - name: http
               containerPort: {{ .Values.service.containerPort }}
