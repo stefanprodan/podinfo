@@ -27,6 +27,7 @@ Web API:
 * `GET /panic` crashes the process with exit code 255
 * `POST /echo` echos the posted content
 * `POST /job` long running job, json body: `{"wait":2}` 
+* `POST /backend` forwards the call to the backend service on `http://backend-podinfo:9898/echo`
 
 ### Deployment
 
@@ -51,19 +52,19 @@ helm init --skip-refresh --upgrade --service-account tiller
 Install podinfo in the default namespace exposed via a ClusterIP service:
 
 ```bash
-helm upgrade --install --wait prod ./podinfo
+helm upgrade --install --wait prod ./frontend
 ```
 
 Check if podinfo service is accessible from within the cluster:
 
 ```bash
-helm test --cleanup prod
+helm test --cleanup frontend
 ```
 
 Install podinfo exposed via a NodePort service:
 
 ```bash
-helm upgrade --install --wait prod \
+helm upgrade --install --wait frontend \
     --set service.type=NodePort \
     --set service.nodePort=31198 \
     ./podinfo
@@ -72,7 +73,7 @@ helm upgrade --install --wait prod \
 Set CPU/memory requests and limits:
 
 ```bash
-helm upgrade --install --wait prod \
+helm upgrade --install --wait frontend \
     --set resources.requests.cpu=10m \
     --set resources.limits.cpu=100m \
     --set resources.requests.memory=16Mi \
@@ -83,7 +84,7 @@ helm upgrade --install --wait prod \
 Install podinfo with horizontal pod autoscaling (HPA) based on CPU average usage and memory consumption:
 
 ```bash
-helm upgrade --install --wait prod \
+helm upgrade --install --wait backend \
     --set hpa.enabled=true \
     --set hpa.maxReplicas=10 \
     --set hpa.cpu=80 \
@@ -94,21 +95,21 @@ helm upgrade --install --wait prod \
 Upgrade podinfo version:
 
 ```bash
-helm upgrade prod \
-    --set image.tag=0.0.2 \
+helm upgrade frontend \
+    --set image.tag=0.0.4 \
     ./podinfo
 ```
 
 Rollback the last deploy:
 
 ```bash
-helm rollback prod
+helm rollback frontend
 ```
 
-Delete the `prod` release:
+Delete the `frontend` release:
 
 ```bash
-helm delete --purge prod
+helm delete --purge frontend
 ```
 
 ### Instrumentation
