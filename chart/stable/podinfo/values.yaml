@@ -21,6 +21,8 @@ hpa:
   cpu:
   # average memory usage per pod (100Mi-1Gi)
   memory:
+  # average http requests per second per pod (k8s-prometheus-adapter)
+  requests:
 
 ingress:
   enabled: false

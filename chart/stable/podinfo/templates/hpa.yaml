@@ -23,4 +23,10 @@ spec:
       name: memory
       targetAverageValue: {{ .Values.hpa.memory }}
   {{- end }}
+  {{- if .Values.hpa.requests }}
+  - type: Pod
+      pods:
+        metricName: http_requests
+        targetAverageValue: {{ .Values.hpa.requests }}
+  {{- end }}
 {{- end }}

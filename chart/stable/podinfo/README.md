@@ -34,6 +34,7 @@ Parameter | Description | Default
 `hpa.enabled` | Enables HPA | `false`
 `hpa.cpu` | Target CPU usage per pod | None
 `hpa.memory` | Target memory usage per pod | None
+`hpa.requests` | Target requests per second per pod | None
 `hpa.maxReplicas` | Maximum pod replicas | `10`
 `ingress.hosts` | Ingress accepted hostnames | None
 `ingress.tls` | Ingress TLS configuration | None:
