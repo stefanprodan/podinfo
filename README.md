@@ -86,7 +86,7 @@ helm upgrade --install --wait backend \
     ./podinfo
 ```
 
-Upgrade podinfo version:
+Update podinfo version:
 
 ```bash
 helm upgrade frontend \
@@ -103,8 +103,7 @@ helm rollback frontend
 Delete the releases:
 
 ```bash
-helm delete --purge frontend
-helm delete --purge backend
+helm delete --purge frontend backend
 ```
 
 ### Instrumentation

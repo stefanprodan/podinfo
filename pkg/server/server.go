@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"net/http"
+	_ "net/http/pprof"
 	"runtime"
 	"sync/atomic"
 	"time"
@@ -21,7 +22,7 @@ type Server struct {
 }
 
 func NewServer(options ...func(*Server)) *Server {
-	s := &Server{mux: http.NewServeMux()}
+	s := &Server{mux: http.DefaultServeMux}
 
 	for _, f := range options {
 		f(s)
