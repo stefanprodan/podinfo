@@ -3,7 +3,7 @@ package server
 import (
 	"context"
 	"net/http"
-	_ "net/http/pprof"
+	"net/http/pprof"
 	"runtime"
 	"sync/atomic"
 	"time"
@@ -22,7 +22,7 @@ type Server struct {
 }
 
 func NewServer(options ...func(*Server)) *Server {
-	s := &Server{mux: http.DefaultServeMux}
+	s := &Server{mux: http.NewServeMux()}
 
 	for _, f := range options {
 		f(s)
@@ -40,6 +40,13 @@ func NewServer(options ...func(*Server)) *Server {
 	s.mux.HandleFunc("/version", s.version)
 	s.mux.Handle("/metrics", promhttp.Handler())
 
+	// Register pprof handlers
+	s.mux.HandleFunc("/debug/pprof/", pprof.Index)
+	s.mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+	s.mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	s.mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	s.mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+
 	return s
 }
 
@@ -55,7 +62,7 @@ func ListenAndServe(port string, timeout time.Duration, stopCh <-chan struct{}) 
 		Addr:         ":" + port,
 		Handler:      inst.Wrap(NewServer()),
 		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 10 * time.Second,
+		WriteTimeout: 1 * time.Minute,
 		IdleTimeout:  15 * time.Second,
 	}
 
