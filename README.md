@@ -55,7 +55,7 @@ Install the frontend release exposed via a NodePort service:
 helm upgrade --install --wait frontend \
     --set service.type=NodePort \
     --set service.nodePort=31198 \
-    ./podinfo
+    ./chart/stable/podinfo
 ```
 
 Check if podinfo service is accessible from within the cluster:
@@ -72,7 +72,7 @@ helm upgrade --install --wait frontend \
     --set resources.limits.cpu=100m \
     --set resources.requests.memory=16Mi \
     --set resources.limits.memory=128Mi \
-    ./podinfo
+    ./chart/stable/podinfo
 ```
 
 Install the backend release with horizontal pod autoscaling (HPA) based on CPU average usage and memory consumption:
@@ -83,7 +83,7 @@ helm upgrade --install --wait backend \
     --set hpa.maxReplicas=10 \
     --set hpa.cpu=80 \
     --set hpa.memory=200Mi \
-    ./podinfo
+    ./chart/stable/podinfo
 ```
 
 Update podinfo version:
@@ -91,7 +91,7 @@ Update podinfo version:
 ```bash
 helm upgrade frontend \
     --set image.tag=0.0.4 \
-    ./podinfo
+    ./chart/stable/podinfo
 ```
 
 Rollback the last deploy:
