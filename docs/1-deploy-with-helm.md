@@ -2,6 +2,8 @@
 
 Deploy and upgrade guide
 
+![OpenFaaS](diagrams/helm-deploy.png)
+
 ### Setup Helm 
 
 Install Helm CLI:
