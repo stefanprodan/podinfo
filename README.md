@@ -25,7 +25,7 @@ Web API:
 * `POST /readyz/enable` signals the Kubernetes LB that this instance is ready to receive traffic
 * `POST /readyz/disable` signals the Kubernetes LB to stop sending requests to this instance
 * `GET /panic` crashes the process with exit code 255
-* `POST /echo` echos the posted content
+* `POST /echo` echos the posted content, logs the SHA1 hash of the content
 * `POST /job` long running job, json body: `{"wait":2}` 
 * `POST /backend` forwards the call to the backend service on `http://backend-podinfo:9898/echo`
 

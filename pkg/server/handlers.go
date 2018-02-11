@@ -12,6 +12,8 @@ import (
 	"time"
 	"os"
 	"bytes"
+	"crypto/sha1"
+	"fmt"
 )
 
 func (s *Server) index(w http.ResponseWriter, r *http.Request) {
@@ -49,7 +51,8 @@ func (s *Server) echo(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte(err.Error()))
 			return
 		}
-		glog.Infof("Payload received from %s: %s", r.RemoteAddr, string(body))
+		sha1 := hash(string(body))
+		glog.Infof("Payload received from %s hash %s", r.RemoteAddr, sha1)
 		w.WriteHeader(http.StatusAccepted)
 		w.Write(body)
 	default:
@@ -183,4 +186,9 @@ func (s *Server) disable(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) panic(w http.ResponseWriter, r *http.Request) {
 	glog.Fatal("Kill switch triggered")
+}
+
+func hash(input string) string {
+	h := sha1.New()
+	return fmt.Sprintf("%x", h.Sum([]byte(input)))
 }
