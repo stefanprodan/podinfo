@@ -57,8 +57,8 @@ Run load test:
 #install hey
 go get -u github.com/rakyll/hey
 
-#do 1K requests rate limited at 20 QPS
-hey -n 1000 -q 10 -c 2 -m POST -d "testing" http://<EXTERNAL-IP>:30098/backend
+#do 10K requests rate limited at 100 QPS
+hey -n 1000 -q 10 -c 10 -m POST -d "testing" http://<EXTERNAL-IP>:30098/backend
 ```
 
 Delete the releases:
