@@ -1,8 +1,6 @@
-# Deploy 
+# Deploy and upgrade guide 
 
-Deploy and upgrade guide
-
-![OpenFaaS](diagrams/helm-deploy.png)
+![OpenFaaS](diagrams/deploy.png)
 
 ### Setup Helm 
 
