@@ -1,6 +1,6 @@
 # Auto-scaling guide 
 
-![OpenFaaS](diagrams/autoscaling.png)
+![OpenFaaS](diagrams/auto-scaling.png)
 
 ### Deploy Frontend and Backend services
 
@@ -15,13 +15,12 @@ helm upgrade --install --wait frontend \
     ./chart/stable/podinfo
 ```
 
-Setup horizontal pod auto-scaling (HPA) based on CPU average usage and memory consumption:
+Setup horizontal pod auto-scaling (HPA) based on memory consumption:
 
 ```bash
 helm upgrade --reuse-values frontend \
     --set hpa.enabled=true \
-    --set hpa.maxReplicas=10 \
-    --set hpa.cpu=80 \
+    --set hpa.maxReplicas=5 \
     --set hpa.memory=200Mi \
     ./chart/stable/podinfo
 ```
@@ -30,18 +29,19 @@ Create a release named backend:
 
 ```bash
 helm upgrade --install --wait backend \
-    --set replicaCount=2 \
+    --set replicaCount=1 \
     --set service.type=ClusterIP \
     --namespace test \
     ./chart/stable/podinfo
 ```
 
-Setup HPA based on requests per second:
+Setup HPA based on CPU usage:
 
 ```bash
 helm upgrade --reuse-values backend \
     --set hpa.enabled=true \
-    --set hpa.requests=10 \
+    --set hpa.maxReplicas=10 \
+    --set hpa.cpu=10 \
     ./chart/stable/podinfo
 ```
 
