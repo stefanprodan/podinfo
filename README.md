@@ -31,6 +31,7 @@ Web API:
 
 ### Guides
 
-* [Deploy and upgrade with Helm](docs/1-deploy-with-helm.md)
+* [Deploy and upgrade with Helm](docs/1-deploy.md)
+* [Horizontal Pod Auto-scaling with Prometheus](docs/2-autoscaling.md)
 * [Monitoring and alerting with Prometheus](docs/3-monitoring.md)
 
