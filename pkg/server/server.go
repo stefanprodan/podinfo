@@ -10,11 +10,13 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"os"
 )
 
 var (
 	healthy int32
 	ready   int32
+	dataPath string
 )
 
 type Server struct {
@@ -36,6 +38,8 @@ func NewServer(options ...func(*Server)) *Server {
 	s.mux.HandleFunc("/echo", s.echo)
 	s.mux.HandleFunc("/backend", s.backend)
 	s.mux.HandleFunc("/job", s.job)
+	s.mux.HandleFunc("/read", s.read)
+	s.mux.HandleFunc("/write", s.write)
 	s.mux.HandleFunc("/panic", s.panic)
 	s.mux.HandleFunc("/version", s.version)
 	s.mux.Handle("/metrics", promhttp.Handler())
@@ -68,6 +72,12 @@ func ListenAndServe(port string, timeout time.Duration, stopCh <-chan struct{}) 
 
 	atomic.StoreInt32(&healthy, 1)
 	atomic.StoreInt32(&ready, 1)
+
+	// local storage path
+	dataPath = os.Getenv("data")
+	if len(dataPath) < 1 {
+		dataPath = "/data"
+	}
 
 	// run server in background
 	go func() {

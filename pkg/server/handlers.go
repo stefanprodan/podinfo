@@ -1,19 +1,20 @@
 package server
 
 import (
+	"bytes"
+	"crypto/sha1"
+	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
+	"path"
 	"sync/atomic"
+	"time"
 
 	"github.com/golang/glog"
 	"github.com/stefanprodan/k8s-podinfo/pkg/version"
 	"gopkg.in/yaml.v2"
-	"encoding/json"
-	"time"
-	"os"
-	"bytes"
-	"crypto/sha1"
-	"fmt"
 )
 
 func (s *Server) index(w http.ResponseWriter, r *http.Request) {
@@ -91,7 +92,7 @@ func (s *Server) backend(w http.ResponseWriter, r *http.Request) {
 			glog.Infof("Payload received from backend: %s", string(rbody))
 			w.WriteHeader(http.StatusAccepted)
 			w.Write(rbody)
-		}else {
+		} else {
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte("Backend not specified, set backend_url env var"))
 		}
@@ -112,7 +113,7 @@ func (s *Server) job(w http.ResponseWriter, r *http.Request) {
 		}
 		glog.Infof("Payload received from %s: %s", r.RemoteAddr, string(body))
 
-		job := struct{
+		job := struct {
 			Wait int `json:"wait"`
 		}{
 			Wait: 0,
@@ -129,6 +130,62 @@ func (s *Server) job(w http.ResponseWriter, r *http.Request) {
 		}
 		w.WriteHeader(http.StatusAccepted)
 		w.Write([]byte("Job done"))
+	default:
+		w.WriteHeader(http.StatusNotAcceptable)
+	}
+}
+
+func (s *Server) write(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "POST":
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			glog.Errorf("Reading the request body failed: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+			return
+		}
+
+		sha1 := hash(string(body))
+		err = ioutil.WriteFile(path.Join(dataPath, sha1), body, 0644)
+		if err != nil {
+			glog.Errorf("Writing file to /data failed: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+			return
+		}
+
+		glog.Infof("Write command received from %s hash %s", r.RemoteAddr, sha1)
+		w.WriteHeader(http.StatusAccepted)
+		w.Write([]byte(sha1))
+	default:
+		w.WriteHeader(http.StatusNotAcceptable)
+	}
+}
+
+func (s *Server) read(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "POST":
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			glog.Errorf("Reading the request body failed: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+			return
+		}
+
+		sha1 := string(body)
+		content, err := ioutil.ReadFile(path.Join(dataPath, sha1))
+		if err != nil {
+			glog.Errorf("Reading file from /data/%s failed: %v", sha1, err)
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+			return
+		}
+
+		glog.Infof("Read command received from %s hash %s", r.RemoteAddr, sha1)
+		w.WriteHeader(http.StatusAccepted)
+		w.Write([]byte(content))
 	default:
 		w.WriteHeader(http.StatusNotAcceptable)
 	}

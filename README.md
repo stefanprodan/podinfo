@@ -27,6 +27,8 @@ Web API:
 * `GET /panic` crashes the process with exit code 255
 * `POST /echo` echos the posted content, logs the SHA1 hash of the content
 * `POST /job` long running job, json body: `{"wait":2}` 
+* `POST /write` writes the posted content to disk at /data/hash and returns the SHA1 hash of the content
+* `POST /read` receives a SHA1 hash and returns the content of the file /data/hash if exists
 * `POST /backend` forwards the call to the backend service on `http://backend-podinfo:9898/echo`
 
 ### Guides
