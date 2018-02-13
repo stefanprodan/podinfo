@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ template "podinfo.fullname" . }}-storage-test-{{ randAlphaNum 5 | lower }}
+  labels:
+    heritage: {{ .Release.Service }}
+    release: {{ .Release.Name }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    app: {{ template "podinfo.name" . }}
+  annotations:
+    "helm.sh/hook": test-success
+spec:
+  containers:
+    - name: curl
+      image: radial/busyboxplus:curl
+      command: ["/bin/sh", "/scripts/ping.sh"]
+      env:
+      - name: PODINFO_SVC
+        value: {{ template "podinfo.fullname" . }}:{{ .Values.service.externalPort }}
+      volumeMounts:
+      - name: scripts
+        mountPath: /scripts
+  restartPolicy: Never
+  volumes:
+  - name: scripts
+    configMap:
+      name: {{ template "podinfo.fullname" . }}-storage-cfg
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "podinfo.fullname" . }}-storage-cfg
+  labels:
+    heritage: {{ .Release.Service }}
+    release: {{ .Release.Name }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    app: {{ template "podinfo.name" . }}
+data:
+  ping.sh: |
+    #!/bin/sh
+    curl -sSd "$(curl -sSd 'test' ${PODINFO_SVC}/write)" ${PODINFO_SVC}/read|grep test
