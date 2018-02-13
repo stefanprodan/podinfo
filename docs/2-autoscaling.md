@@ -45,6 +45,12 @@ helm upgrade --reuse-values backend \
     ./chart/stable/podinfo
 ```
 
+Check if the backend ClusterIP service is accessible from within the cluster:
+
+```bash
+helm test --cleanup backend
+```
+
 Wait for HPA to start receiving metrics:
 
 ```bash
