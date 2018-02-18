@@ -36,4 +36,4 @@ Web API:
 * [Deploy and upgrade with Helm](docs/1-deploy.md)
 * [Horizontal Pod Auto-scaling](docs/2-autoscaling.md)
 * [Monitoring and alerting with Prometheus](docs/3-monitoring.md)
-
+* [StatefulSets with local persistent volumes](docs/4-statefulsets.md)
