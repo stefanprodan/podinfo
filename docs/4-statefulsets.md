@@ -1,10 +1,10 @@
-# StatefulSets with local storage PV
+# StatefulSets with local PV
 
 Running StatefulSet with with local persistent volumes for bare-metal Kubernetes 1.9 clusters.
 
 ### Cluster provisioning
 
-I'm assuming you have tree hosts:
+I'm assuming you have three hosts:
 
 * kube-master-0 
 * kube-node-0
