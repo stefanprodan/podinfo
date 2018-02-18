@@ -1,0 +1,76 @@
+---
+apiVersion: apps/v1beta2
+kind: StatefulSet
+metadata:
+  name: podinfo
+spec:
+  serviceName: "podinfo"
+  replicas: 2
+  podManagementPolicy: OrderedReady
+  selector:
+    matchLabels:
+      app: podinfo
+  template:
+    metadata:
+      labels:
+        app: podinfo
+      annotations:
+        prometheus.io/scrape: "true"
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: role
+                operator: In
+                values:
+                - local-ssd
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - podinfo
+            topologyKey: "kubernetes.io/hostname"
+      containers:
+        - name: probe
+          image: stefanprodan/podinfo:0.0.7
+          command:
+            - ./podinfo
+            - -port=9898
+            - -logtostderr=true
+            - -v=2
+          ports:
+            - name: http
+              containerPort: 9898
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 9898
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 9898
+          volumeMounts:
+          - name: data
+            mountPath: /data
+          resources:
+            limits:
+              cpu: 100m
+              memory: 128Mi
+            requests:
+              cpu: 100m
+              memory: 16Mi
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: local-ssd
+      resources:
+        requests:
+          storage: 1Gi
