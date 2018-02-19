@@ -223,7 +223,7 @@ Save the above definition as `service.yaml` and apply it:
 kubectl apply -f ./service.yaml
 ```
 
-Each podinfo replica has its own DNS address as in <pod-name>.<service-name>.<namespace>. 
+Each podinfo replica has its own DNS address as in `<pod-name>.<service-name>.<namespace>`. 
 
 Create a temporary curl pod in the default namespace in order to access the StatefulSet:
 
