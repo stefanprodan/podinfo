@@ -2,6 +2,8 @@
 
 Running StatefulSet with with local persistent volumes for bare-metal Kubernetes 1.9 clusters.
 
+![StatefulSets](diagrams/statefulset.png)
+
 ### Cluster provisioning
 
 I'm assuming you have three hosts:
@@ -43,7 +45,7 @@ Add the `role` label to the worker nodes:
 
 ```bash
 kubectl --kubeconfig ./admin.conf label nodes kube-node-0 role=local-ssd
-kubectl --kubeconfig ./admin.conf label nodes kube-node-0 role=local-ssd
+kubectl --kubeconfig ./admin.conf label nodes kube-node-1 role=local-ssd
 ```
 
 ### Persistent volumes provisioning

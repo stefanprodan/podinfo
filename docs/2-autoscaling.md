@@ -1,6 +1,6 @@
 # Auto-scaling guide 
 
-![OpenFaaS](diagrams/auto-scaling.png)
+![HPA](diagrams/auto-scaling.png)
 
 ### Deploy Frontend and Backend services
 
