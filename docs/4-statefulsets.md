@@ -234,14 +234,14 @@ kubectl run -i --rm --tty curl --image=radial/busyboxplus:curl --restart=Never -
 Inside the curl container issue a write command for `podinfo-0`:
 
 ```bash
-[ root@curl:/ ]$ curl -d 'test' storage-probe-0.storage-probe:9898/write
+[ root@curl:/ ]$ curl -d 'test' podinfo-0.data:9898/write
 74657374da39a3ee5e6b4b0d3255bfef95601890afd80709
 ```
 
 Now read the file using the SHA1 hash:
 
 ```bash
-[ root@curl:/ ]$ curl -d '74657374da39a3ee5e6b4b0d3255bfef95601890afd80709' storage-probe-0.storage-probe:9898/read
+[ root@curl:/ ]$ curl -d '74657374da39a3ee5e6b4b0d3255bfef95601890afd80709' podinfo-0.data:9898/read
 test
 ```
 
