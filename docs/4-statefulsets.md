@@ -2,7 +2,7 @@
 
 Running StatefulSet with with local persistent volumes for bare-metal Kubernetes 1.9 clusters.
 
-![StatefulSets](diagrams/statefulsets.png)
+![StatefulSets](diagrams/statefulset.png)
 
 ### Cluster provisioning
 
