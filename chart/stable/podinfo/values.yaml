@@ -5,7 +5,7 @@ backend: http://backend-podinfo:9898/echo
 
 image:
   repository: stefanprodan/podinfo
-  tag: 0.0.7
+  tag: 0.0.8
   pullPolicy: IfNotPresent
 
 service:
