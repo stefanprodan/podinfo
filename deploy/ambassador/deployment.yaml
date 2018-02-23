@@ -1,0 +1,70 @@
+---
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: ambassador
+  labels:
+    component: ambassador
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+     component: ambassador
+  template:
+    metadata:
+      labels:
+        component: ambassador
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9102"
+    spec:
+      serviceAccountName: ambassador
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  component: ambassador
+              topologyKey: kubernetes.io/hostname
+      containers:
+      - name: ambassador
+        image: quay.io/datawire/ambassador:0.26.1
+        ports:
+        - containerPort: 80
+          name: http
+        - containerPort: 443
+          name: https
+        - containerPort: 8877
+          name: admin
+        resources:
+          limits:
+            cpu: 1
+            memory: 1Gi
+          requests:
+            cpu: 200m
+            memory: 100Mi
+        env:
+        - name: AMBASSADOR_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        livenessProbe:
+          httpGet:
+            path: /ambassador/v0/check_alive
+            port: 8877
+          initialDelaySeconds: 10
+          periodSeconds: 3
+        readinessProbe:
+          httpGet:
+            path: /ambassador/v0/check_ready
+            port: 8877
+          initialDelaySeconds: 10
+          periodSeconds: 3
+      - name: statsd-sink
+        image: datawire/prom-statsd-exporter:0.6.0
+        ports:
+        - containerPort: 9102
+          name: metrics
+      restartPolicy: Always

@@ -1,0 +1,22 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: blue
+  annotations:
+    getambassador.io/config: |
+      ---
+      apiVersion: ambassador/v0
+      kind: Mapping
+      name: blue
+      prefix: /
+      host: blue.test
+      service: blue.default:9898
+spec:
+  type: ClusterIP
+  ports:
+    - port: 9898
+      targetPort: 9898
+      protocol: TCP
+  selector:
+    app: blue

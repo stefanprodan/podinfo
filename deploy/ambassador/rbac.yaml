@@ -1,0 +1,36 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: ambassador
+rules:
+- apiGroups: [""]
+  resources:
+  - services
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources:
+  - configmaps
+  verbs: ["create", "update", "patch", "get", "list", "watch"]
+- apiGroups: [""]
+  resources:
+  - secrets
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ambassador
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: ambassador
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ambassador
+subjects:
+- kind: ServiceAccount
+  name: ambassador
+  namespace: default
