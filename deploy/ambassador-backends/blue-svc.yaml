@@ -10,7 +10,7 @@ metadata:
       kind: Mapping
       name: blue
       prefix: /
-      host: blue.test
+      host: podinfo.test
       service: blue.default:9898
 spec:
   type: ClusterIP
