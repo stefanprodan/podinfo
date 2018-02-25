@@ -1,3 +1,5 @@
+# test cmd:
+# while true; do sleep 1; curl -sS -H "Host: podinfo.test" -H "x-subscription: trial"  http://35.198.122.99:30080|grep HOSTNAME;done
 ---
 apiVersion: v1
 kind: Service
