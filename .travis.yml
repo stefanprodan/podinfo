@@ -31,3 +31,9 @@ after_success:
       docker login -u $DOCKER_USER -p $DOCKER_PASS;
       make docker-push;
     fi
+  - if [ -z "$QUAY_USER" ]; then
+      echo "PR build, skipping Quay push";
+    else
+      docker login -u $QUAY_USER -p $QUAY_PASS;
+      make quay-push;
+    fi

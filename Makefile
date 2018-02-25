@@ -78,6 +78,11 @@ docker-push:
 	manifest-tool push from-args --platforms $(PLATFORMS) --template $(DOCKER_IMAGE_NAME):podinfo-ARCH --target $(DOCKER_IMAGE_NAME):$(VERSION)
 	manifest-tool push from-args --platforms $(PLATFORMS) --template $(DOCKER_IMAGE_NAME):podinfo-ARCH --target $(DOCKER_IMAGE_NAME):latest
 
+.PHONY: quay-push
+quay-push:
+	@echo Pushing: $(VERSION) to quay.io/$(DOCKER_IMAGE_NAME):$(VERSION)
+	@cd build/docker/linux/amd64/ ; docker build -t quay.io/$(DOCKER_IMAGE_NAME):$(VERSION) . ; docker push quay.io/$(DOCKER_IMAGE_NAME):$(VERSION)
+
 .PHONY: clean
 clean:
 	rm -rf release
