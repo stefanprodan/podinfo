@@ -61,6 +61,20 @@ func (s *Server) echo(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (s *Server) echoHeaders(w http.ResponseWriter, r *http.Request) {
+	d, err := yaml.Marshal(r.Header)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.WriteHeader(http.StatusOK)
+	w.Write(d)
+}
+
 func (s *Server) backend(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "POST":

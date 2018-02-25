@@ -37,7 +37,7 @@ spec:
             topologyKey: "kubernetes.io/hostname"
       containers:
         - name: probe
-          image: stefanprodan/podinfo:0.0.8
+          image: stefanprodan/podinfo:0.0.9
           command:
             - ./podinfo
             - -port=9898

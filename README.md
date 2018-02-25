@@ -26,6 +26,7 @@ Web API:
 * `POST /readyz/disable` signals the Kubernetes LB to stop sending requests to this instance
 * `GET /panic` crashes the process with exit code 255
 * `POST /echo` echos the posted content, logs the SHA1 hash of the content
+* `GET /echoheaders` prints the request HTTP headers
 * `POST /job` long running job, json body: `{"wait":2}` 
 * `POST /write` writes the posted content to disk at /data/hash and returns the SHA1 hash of the content
 * `POST /read` receives a SHA1 hash and returns the content of the file /data/hash if exists

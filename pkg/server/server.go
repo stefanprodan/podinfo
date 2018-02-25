@@ -36,6 +36,7 @@ func NewServer(options ...func(*Server)) *Server {
 	s.mux.HandleFunc("/readyz/enable", s.enable)
 	s.mux.HandleFunc("/readyz/disable", s.disable)
 	s.mux.HandleFunc("/echo", s.echo)
+	s.mux.HandleFunc("/echoheaders", s.echoHeaders)
 	s.mux.HandleFunc("/backend", s.backend)
 	s.mux.HandleFunc("/job", s.job)
 	s.mux.HandleFunc("/read", s.read)

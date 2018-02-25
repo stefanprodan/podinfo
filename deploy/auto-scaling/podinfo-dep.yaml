@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: podinfod
-        image: stefanprodan/podinfo:0.0.8
+        image: stefanprodan/podinfo:0.0.9
         imagePullPolicy: Always
         command:
           - ./podinfo
