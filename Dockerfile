@@ -1,6 +1,6 @@
 FROM alpine:latest
 
-RUN apk add --no-cache curl openssl
+RUN apk add --no-cache curl openssl netcat-openbsd
 
 ADD podinfo /podinfo
 
