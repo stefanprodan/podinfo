@@ -1,0 +1,11 @@
+apiVersion: v1
+appVersion: "0.28.2"
+description: A Helm chart for Datawire Ambassador
+name: ambassador
+version: 0.1.0
+sources:
+- https://github.com/datawire/ambassador
+maintainers:
+  - name: stefanprodan
+    email: stefanprodan@users.noreply.github.com
+engine: gotpl
