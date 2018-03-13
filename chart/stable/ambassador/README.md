@@ -47,19 +47,21 @@ The following tables lists the configurable parameters of the Ambassador chart a
 | `image` | Image | `quay.io/datawire/ambassador` 
 | `imageTag` | Image tag | `0.28.0` 
 | `imagePullPolicy` | Image pull policy | `IfNotPresent` 
-| `replicaCount`  | Number of ambassador replicas  | `1` 
+| `replicaCount`  | Number of Ambassador replicas  | `1` 
 | `resources` | CPU/memory resource requests/limits | None 
 | `rbac.create` | If `true`, create and use RBAC resources | `true`
 | `serviceAccount.create` | If `true`, create a new service account | `true`
 | `serviceAccount.name` | Service account to be used | `ambassador`
 | `service.type` | Service type to be used | `LoadBalancer`
+| `adminService.create` | If `true`, create a service for Ambassador's admin UI | `true`
+| `adminService.type` | Ambassador's admin service type to be used | `ClusterIP`
 | `exporter.image` | Prometheus exporter image | `datawire/prom-statsd-exporter:0.6.0`
 
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`. For example,
 
 ```console
 $ helm upgrade --install --wait --name my-release \
-    --set service.type=NodePort \
+    --set adminService.type=NodePort \
     stable/ambassador
 ```
 

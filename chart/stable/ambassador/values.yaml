@@ -13,6 +13,10 @@ service:
   type: LoadBalancer
   port: 80
 
+adminService:
+  create: true
+  type: ClusterIP
+
 rbac:
   # Specifies whether RBAC resources should be created
   create: true
