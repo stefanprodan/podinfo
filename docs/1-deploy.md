@@ -32,6 +32,12 @@ helm init --skip-refresh --upgrade --service-account tiller
 
 ### Using the Helm chart
 
+Add k8s-podinfo repo:
+
+```bash
+helm repo add sp https://stefanprodan.github.io/k8s-podinfo
+```
+
 Create a namespace:
 
 ```bash
@@ -45,7 +51,7 @@ helm upgrade --install --wait frontend \
     --set service.type=NodePort \
     --set service.nodePort=30098 \
     --namespace test \
-    ./chart/stable/podinfo
+    sp/podinfo
 ```
 
 Check if frontend is accessible from within the cluster:
@@ -68,7 +74,7 @@ helm upgrade --reuse-values frontend \
     --set resources.limits.cpu=100m \
     --set resources.requests.memory=16Mi \
     --set resources.limits.memory=128Mi \
-    ./chart/stable/podinfo
+    sp/podinfo
 ```
 
 Setup horizontal pod autoscaling (HPA) based on CPU average usage and memory consumption:
@@ -79,7 +85,7 @@ helm upgrade --reuse-values frontend \
     --set hpa.maxReplicas=10 \
     --set hpa.cpu=80 \
     --set hpa.memory=200Mi \
-    ./chart/stable/podinfo
+    sp/podinfo
 ```
 
 Increase the minimum replica count:
@@ -87,7 +93,7 @@ Increase the minimum replica count:
 ```bash
 helm upgrade --reuse-values frontend \
     --set replicaCount=2 \
-    ./chart/stable/podinfo
+    sp/podinfo
 ```
 
 Update podinfo version:
@@ -95,7 +101,7 @@ Update podinfo version:
 ```bash
 helm upgrade --reuse-values frontend \
     --set image.tag=0.0.6 \
-    ./chart/stable/podinfo
+    sp/podinfo
 ```
 
 Rollback to the previous version:
