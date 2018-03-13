@@ -1,0 +1,36 @@
+apiVersion: v1
+entries:
+  ambassador:
+  - apiVersion: v1
+    appVersion: 0.28.2
+    created: 2018-03-13T19:59:18.402232008+02:00
+    description: A Helm chart for Datawire Ambassador
+    digest: f25410467fb044d11f8787106b27e59ca3577db5e0c77a5a90ec8e8b5777925a
+    engine: gotpl
+    maintainers:
+    - email: stefanprodan@users.noreply.github.com
+      name: stefanprodan
+    name: ambassador
+    sources:
+    - https://github.com/datawire/ambassador
+    urls:
+    - https://stefanprodan.github.io/k8s-podinfo/ambassador-0.1.0.tgz
+    version: 0.1.0
+  podinfo:
+  - apiVersion: v1
+    appVersion: 0.1.0
+    created: 2018-03-13T19:59:18.402664458+02:00
+    description: Podinfo Helm chart for Kubernetes
+    digest: 7358049c9147a9bbca0b19139ca38e60974af2d9c912654ba811c0e9affa1b85
+    engine: gotpl
+    home: https://github.com/stefanprodan/k8s-podinfo
+    maintainers:
+    - email: stefanprodan@users.noreply.github.com
+      name: stefanprodan
+    name: podinfo
+    sources:
+    - https://github.com/stefanprodan/k8s-podinfo
+    urls:
+    - https://stefanprodan.github.io/k8s-podinfo/podinfo-0.1.0.tgz
+    version: 0.1.0
+generated: 2018-03-13T19:59:18.401518369+02:00
