@@ -96,3 +96,11 @@ test:
 dep:
 	go get -u github.com/golang/dep/cmd/dep
 	go get -u github.com/estesp/manifest-tool
+
+.PHONY: package
+package:
+	cd chart/stable/ && helm package podinfo/
+	mv chart/stable/podinfo-0.1.0.tgz docs/
+	cd chart/stable/ && helm package ambassador/
+	mv chart/stable/ambassador-0.1.0.tgz docs/
+	helm repo index docs --url https://stefanprodan.github.io/k8s-podinfo --merge ./docs/index.yaml
