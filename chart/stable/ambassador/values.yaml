@@ -6,7 +6,7 @@ replicaCount: 1
 
 image:
   repository: quay.io/datawire/ambassador
-  tag: 0.28.0
+  tag: 0.29.0
   pullPolicy: IfNotPresent
 
 service:
@@ -46,3 +46,11 @@ affinity: {}
 
 exporter:
   image: datawire/prom-statsd-exporter:0.6.0
+
+timing:
+  # sets the minimum number of seconds between Envoy restarts
+  restart: 15
+  # sets the number of seconds that the Envoy will wait for open connections to drain on a restart
+  drain: 5
+  # sets the number of seconds that Ambassador will wait for the old Envoy to clean up and exit on a restart
+  shutdown: 10

@@ -44,17 +44,23 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: metadata.namespace
+          - name: AMBASSADOR_RESTART_TIME
+            value: {{ .Values.timing.restart | quote }}
+          - name: AMBASSADOR_DRAIN_TIME
+            value: {{ .Values.timing.drain | quote }}
+          - name: AMBASSADOR_SHUTDOWN_TIME
+            value: {{ .Values.timing.shutdown | quote }}
           livenessProbe:
             httpGet:
               path: /ambassador/v0/check_alive
               port: admin
-            initialDelaySeconds: 10
+            initialDelaySeconds: 30
             periodSeconds: 3
           readinessProbe:
             httpGet:
               path: /ambassador/v0/check_ready
               port: admin
-            initialDelaySeconds: 10
+            initialDelaySeconds: 30
             periodSeconds: 3
           resources:
 {{ toYaml .Values.resources | indent 12 }}

@@ -45,7 +45,7 @@ The following tables lists the configurable parameters of the Ambassador chart a
 | Parameter                       | Description                                | Default                                                    |
 | ------------------------------- | ------------------------------------------ | ---------------------------------------------------------- |
 | `image` | Image | `quay.io/datawire/ambassador` 
-| `imageTag` | Image tag | `0.28.0` 
+| `imageTag` | Image tag | `0.29.0` 
 | `imagePullPolicy` | Image pull policy | `IfNotPresent` 
 | `replicaCount`  | Number of Ambassador replicas  | `1` 
 | `resources` | CPU/memory resource requests/limits | None 
@@ -56,17 +56,8 @@ The following tables lists the configurable parameters of the Ambassador chart a
 | `adminService.create` | If `true`, create a service for Ambassador's admin UI | `true`
 | `adminService.type` | Ambassador's admin service type to be used | `ClusterIP`
 | `exporter.image` | Prometheus exporter image | `datawire/prom-statsd-exporter:0.6.0`
+| `timing.restart` | The minimum number of seconds between Envoy restarts | `15`
+| `timing.drain` | The number of seconds that the Envoy will wait for open connections to drain on a restart | `5`
+| `timing.shutdown` | The number of seconds that Ambassador will wait for the old Envoy to clean up and exit on a restart | `10`
 
-Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`. For example,
 
-```console
-$ helm upgrade --install --wait --name my-release \
-    --set adminService.type=NodePort \
-    stable/ambassador
-```
-
-Alternatively, a YAML file that specifies the values for the above parameters can be provided while installing the chart. For example,
-
-```console
-$ helm upgrade --install --wait --name my-release -f values.yaml stable/ambassador
-```
