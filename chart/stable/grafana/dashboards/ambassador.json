@@ -334,7 +334,7 @@
       "targets": [
         {
           "$$hashKey": "object:3472",
-          "expr": "min(envoy_server_uptime)",
+          "expr": "avg(envoy_server_uptime)",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "",
@@ -354,7 +354,7 @@
           "value": "null"
         }
       ],
-      "valueName": "min"
+      "valueName": "current"
     },
     {
       "aliasColors": {},
@@ -752,7 +752,23 @@
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
-      "seriesOverrides": [],
+      "seriesOverrides": [
+        {
+          "$$hashKey": "object:2157",
+          "alias": "5xx",
+          "color": "#890f02"
+        },
+        {
+          "$$hashKey": "object:2167",
+          "alias": "4xx",
+          "color": "#ef843c"
+        },
+        {
+          "$$hashKey": "object:2177",
+          "alias": "2xx",
+          "color": "#82b5d8"
+        }
+      ],
       "spaceLength": 10,
       "stack": false,
       "steppedLine": false,
@@ -785,7 +801,7 @@
       "thresholds": [],
       "timeFrom": null,
       "timeShift": null,
-      "title": "Downstream",
+      "title": "Downstream Requests",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -803,7 +819,215 @@
         {
           "$$hashKey": "object:3936",
           "format": "short",
-          "label": "req/sec",
+          "label": "requests/sec",
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "$$hashKey": "object:3937",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ]
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "prometheus",
+      "fill": 1,
+      "gridPos": {
+        "h": 6,
+        "w": 24,
+        "x": 0,
+        "y": 20
+      },
+      "id": 14,
+      "legend": {
+        "alignAsTable": true,
+        "avg": true,
+        "current": true,
+        "max": true,
+        "min": true,
+        "rightSide": true,
+        "show": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "percentage": false,
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [
+        {
+          "$$hashKey": "object:2255",
+          "alias": "HTTP/1.1",
+          "color": "#e0f9d7"
+        }
+      ],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "$$hashKey": "object:3678",
+          "expr": "sum(rate(envoy_http_ingress_http_downstream_cx_http1_total[1m]))",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "HTTP/1.1",
+          "refId": "A"
+        },
+        {
+          "$$hashKey": "object:3679",
+          "expr": "sum(rate(envoy_http_ingress_http_downstream_cx_http2_total[1m]))",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "HTTP/2",
+          "refId": "B"
+        },
+        {
+          "$$hashKey": "object:3680",
+          "expr": "sum(rate(envoy_http_ingress_http_downstream_cx_websocket_total[1m]))",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "WebSocket",
+          "refId": "C"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "Downstream Connections",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:3936",
+          "format": "short",
+          "label": "connections/sec",
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "$$hashKey": "object:3937",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ]
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "prometheus",
+      "fill": 1,
+      "gridPos": {
+        "h": 6,
+        "w": 24,
+        "x": 0,
+        "y": 26
+      },
+      "id": 13,
+      "legend": {
+        "alignAsTable": true,
+        "avg": true,
+        "current": true,
+        "max": true,
+        "min": true,
+        "rightSide": true,
+        "show": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "percentage": false,
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "$$hashKey": "object:3678",
+          "expr": "avg(envoy_listener_0_0_0_0_80_downstream_cx_length_ms{quantile=\"0.5\"})",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "0.5",
+          "refId": "A"
+        },
+        {
+          "$$hashKey": "object:3679",
+          "expr": "avg(envoy_listener_0_0_0_0_80_downstream_cx_length_ms{quantile=\"0.9\"})",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "0.9",
+          "refId": "B"
+        },
+        {
+          "$$hashKey": "object:3680",
+          "expr": "avg(envoy_listener_0_0_0_0_80_downstream_cx_length_ms{quantile=\"0.99\"})",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "0.99",
+          "refId": "C"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "Downstream Connections Length",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:3936",
+          "format": "ms",
+          "label": "milliseconds",
           "logBase": 1,
           "max": null,
           "min": "0",
@@ -829,7 +1053,7 @@
     "list": []
   },
   "time": {
-    "from": "now-6h",
+    "from": "now-1h",
     "to": "now"
   },
   "timepicker": {
@@ -860,5 +1084,5 @@
   "timezone": "",
   "title": "Ambassador",
   "uid": "v6VLQ9gik",
-  "version": 10
+  "version": 2
 }
