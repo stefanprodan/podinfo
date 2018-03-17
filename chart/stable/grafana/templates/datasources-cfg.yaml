@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "grafana.fullname" . }}-datasources
+data:
+  datasources.yaml: |-
+    apiVersion: 1
+
+    deleteDatasources:
+      - name: prometheus
+{{- if .Values.token }}
+    datasources:
+    - name: prometheus
+      type: prometheus
+      access: proxy
+      url: https://cloud.weave.works/api/prom
+      isDefault: true
+      editable: true
+      version: 1
+      basicAuth: true
+      basicAuthUser: weave
+      basicAuthPassword: {{ .Values.token }}
+{{- else }}
+    datasources:
+    - name: prometheus
+      type: prometheus
+      access: proxy
+      url: {{ .Values.url }}
+      isDefault: true
+      editable: true
+      version: 1
+{{- end }}
