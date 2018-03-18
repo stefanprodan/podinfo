@@ -24,8 +24,7 @@ spec:
         command:
           - ./podinfo
           - -port=9898
-          - -logtostderr=true
-          - -v=2
+          - -debug=true
         ports:
         - containerPort: 9898
           protocol: TCP
