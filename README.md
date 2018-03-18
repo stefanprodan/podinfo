@@ -24,6 +24,7 @@ Web API:
 * `GET /readyz` used by Kubernetes readiness probe
 * `POST /readyz/enable` signals the Kubernetes LB that this instance is ready to receive traffic
 * `POST /readyz/disable` signals the Kubernetes LB to stop sending requests to this instance
+* `GET /error` returns code 500 and logs the error
 * `GET /panic` crashes the process with exit code 255
 * `POST /echo` echos the posted content, logs the SHA1 hash of the content
 * `GET /echoheaders` prints the request HTTP headers
@@ -38,3 +39,4 @@ Web API:
 * [Horizontal Pod Auto-scaling](docs/2-autoscaling.md)
 * [Monitoring and alerting with Prometheus](docs/3-monitoring.md)
 * [StatefulSets with local persistent volumes](docs/4-statefulsets.md)
+* [Canary Deployments and A/B Testing](docs/5-canary.md)

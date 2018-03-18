@@ -9,3 +9,4 @@ that showcases best practices of running microservices in Kubernetes.
 * [Horizontal Pod Auto-scaling](2-autoscaling.md)
 * [Monitoring and alerting with Prometheus](3-monitoring.md)
 * [StatefulSets with local persistent volumes](4-statefulsets.md)
+* [Canary Deployments and A/B Testing](5-canary.md)
