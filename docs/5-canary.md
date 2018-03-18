@@ -32,7 +32,7 @@ server: envoy
 
 ### Expose services via the API gateway
 
-Deploy podinfo version 0.0.9 as the general available release:
+Deploy podinfo version 0.1.0 as the general available release:
 
 ```yaml
 kubectl apply -f ./deploy/canary/ga-dep.yaml
@@ -70,11 +70,11 @@ Apply the GA service:
 kubectl apply -f ./deploy/canary/ga-svc.yaml
 ```
 
-Test that v0.0.9 is available at `podinfo.test` with curl:
+Test that v0.1.0 is available at `podinfo.test` with curl:
 
 ```bash
 curl -H 'Host: podinfo.test' -sS http://$ENVOY/version | grep version
-version: 0.0.9
+version: 0.1.0
 ```
 
 ### Canary deployment
@@ -86,10 +86,10 @@ Simulate an insider user call with:
 
 ```bash
 curl -H 'X-User: insider' -H 'Host: podinfo.test' -sS http://$ENVOY/version | grep version
-version: 0.0.9
+version: 0.1.0
 ```
 
-Deploy podinfo version 0.1.0 as a release candidate:
+Deploy podinfo version 0.2.0 as a release candidate:
 
 ```bash
 kubectl apply -f ./deploy/canary/canarya-dep.yaml
@@ -129,14 +129,15 @@ Apply the service with:
 kubectl apply -f ./deploy/canary/canarya-svc.yaml
 ```
 
-Now if a normal user calls podinfo nothing changed, but if an insider calls podinfo he/she will be routed to version 0.1.0:
+Now if a normal user calls podinfo nothing changed, 
+but if an insider calls podinfo he/she will be routed to version 0.2.0:
 
 ```bash
 curl -H 'Host: podinfo.test' -sS http://$ENVOY/version|grep version
-version: 0.0.9
+version: 0.1.0
 
 curl -H 'X-User: insider' -H 'Host: podinfo.test' -sS http://$ENVOY/version|grep version
-version: 0.1.0
+version: 0.2.0
 ```
 
 ### A/B testing
@@ -144,14 +145,14 @@ version: 0.1.0
 Let's assume you have a new release candidate version that you want to test on a small subset of your 
 insiders. 
 
-Deploy podinfo version 0.1.1 as a release candidate:
+Deploy podinfo version 0.2.1 as a release candidate:
 
 ```bash
 kubectl apply -f ./deploy/canary/canaryb-dep.yaml
 ```
 
 Create a service named `canaryb-podinfo` and instruct Ambassador to shift ten percent of
-the insiders traffic to v0.1.1:
+the insiders traffic to v0.2.1:
 
 ```yaml
 apiVersion: v1
@@ -186,18 +187,18 @@ Apply the service with:
 kubectl apply -f ./deploy/canary/canaryb-svc.yaml
 ```
 
-Now let's call the service in a while loop, one in ten calls will be routed to v0.1.1:
+Now let's call the service in a while loop, one in ten calls will be routed to v0.2.1:
 
 ```bash
 while true; do sleep 1; curl -H 'X-User: insider' -H 'Host: podinfo.test' -sS http://$ENVOY/version|grep version; done
-version: 0.1.0
-version: 0.1.0
-version: 0.1.0
-version: 0.1.0
-version: 0.1.0
-version: 0.1.0
-version: 0.1.0
-version: 0.1.0
-version: 0.1.0
-version: 0.1.1
+version: 0.2.0
+version: 0.2.0
+version: 0.2.0
+version: 0.2.0
+version: 0.2.0
+version: 0.2.0
+version: 0.2.0
+version: 0.2.0
+version: 0.2.0
+version: 0.2.1
 ```

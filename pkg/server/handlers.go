@@ -53,7 +53,7 @@ func (s *Server) echo(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		hash := hash(string(body))
-		log.Info().Msgf("Payload received from %s hash %s", r.RemoteAddr, hash)
+		log.Debug().Msgf("Payload received from %s hash %s", r.RemoteAddr, hash)
 		w.WriteHeader(http.StatusAccepted)
 		w.Write(body)
 	default:
@@ -103,7 +103,7 @@ func (s *Server) backend(w http.ResponseWriter, r *http.Request) {
 				w.Write([]byte(err.Error()))
 				return
 			}
-			log.Info().Msgf("Payload received from backend: %s", string(rbody))
+			log.Debug().Msgf("Payload received from backend: %s", string(rbody))
 			w.WriteHeader(http.StatusAccepted)
 			w.Write(rbody)
 		} else {
@@ -125,7 +125,7 @@ func (s *Server) job(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte(err.Error()))
 			return
 		}
-		log.Info().Msgf("Payload received from %s: %s", r.RemoteAddr, string(body))
+		log.Debug().Msgf("Payload received from %s: %s", r.RemoteAddr, string(body))
 
 		job := struct {
 			Wait int `json:"wait"`
@@ -169,7 +169,7 @@ func (s *Server) write(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		log.Info().Msgf("Write command received from %s hash %s", r.RemoteAddr, hash)
+		log.Debug().Msgf("Write command received from %s hash %s", r.RemoteAddr, hash)
 		w.WriteHeader(http.StatusAccepted)
 		w.Write([]byte(hash))
 	default:
@@ -197,7 +197,7 @@ func (s *Server) read(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		log.Info().Msgf("Read command received from %s hash %s", r.RemoteAddr, hash)
+		log.Debug().Msgf("Read command received from %s hash %s", r.RemoteAddr, hash)
 		w.WriteHeader(http.StatusAccepted)
 		w.Write([]byte(content))
 	default:

@@ -96,15 +96,15 @@ helm upgrade --reuse-values frontend \
     sp/podinfo
 ```
 
-Update podinfo version:
+Downgrade podinfo to version 0.2.0:
 
 ```bash
 helm upgrade --reuse-values frontend \
-    --set image.tag=0.0.6 \
+    --set image.tag=0.2.0 \
     sp/podinfo
 ```
 
-Rollback to the previous version:
+Rollback to the latest version:
 
 ```bash
 helm rollback frontend

@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
       - name: podinfod
-        image: quay.io/stefanprodan/podinfo:0.0.9
+        image: quay.io/stefanprodan/podinfo:0.1.0
         imagePullPolicy: Always
         command:
           - ./podinfo
