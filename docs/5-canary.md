@@ -2,7 +2,7 @@
 
 Canary Deployment and A/B testing with Ambassador's Envoy API Gateway. 
 
-![StatefulSets](diagrams/canary.png)
+![canary](diagrams/ambassador.png)
 
 ### Deploy Ambassador
 
@@ -202,3 +202,29 @@ version: 0.2.0
 version: 0.2.0
 version: 0.2.1
 ```
+
+### CI/CD Automation
+
+Once you have in place the GA and Canary releases you would probably want to automate 
+the deployment of patches for 0.1.x and 0.2.x. 
+
+Continuous delivery can be accomplished with a GitOps pipeline that involves several tools 
+like TravisCI and Weave Flux.  
+
+![Weave Flux](diagrams/flux.png)
+
+GA GitOps pipeline steps:
+
+* An engineer cuts a new release by tagging the master branch as `0.1.1`
+* GitHub notifies TravisCI that a new tag has been committed
+* TravisCI builds the Docker image, tags it as `0.1.1` and pushes it to Docker Hub
+* Weave Flux detects the new tag on Docker Hub and updates the GA deployment definition 
+* Weave Flux commits the GA deployment definition to GitHub
+* Weave Flux triggers a rolling update of the GA deployment 
+
+The canary continuous delivery follows the same pattern, the only difference is that Weave Flux must be 
+configured with a different filter:
+
+* `0.1.*` for GA 
+* `0.2.*` for Canary
+
