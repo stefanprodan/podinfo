@@ -819,7 +819,7 @@
         {
           "$$hashKey": "object:3936",
           "format": "short",
-          "label": "requests/sec",
+          "label": "req/sec",
           "logBase": 1,
           "max": null,
           "min": "0",
@@ -845,7 +845,7 @@
       "fill": 1,
       "gridPos": {
         "h": 6,
-        "w": 24,
+        "w": 12,
         "x": 0,
         "y": 20
       },
@@ -856,7 +856,7 @@
         "current": true,
         "max": true,
         "min": true,
-        "rightSide": true,
+        "rightSide": false,
         "show": true,
         "total": false,
         "values": true
@@ -882,7 +882,7 @@
       "targets": [
         {
           "$$hashKey": "object:3678",
-          "expr": "sum(rate(envoy_http_ingress_http_downstream_cx_http1_total[1m]))",
+          "expr": "sum(irate(envoy_http_ingress_http_downstream_cx_http1_total[1m]))",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "HTTP/1.1",
@@ -890,7 +890,7 @@
         },
         {
           "$$hashKey": "object:3679",
-          "expr": "sum(rate(envoy_http_ingress_http_downstream_cx_http2_total[1m]))",
+          "expr": "sum(irate(envoy_http_ingress_http_downstream_cx_http2_total[1m]))",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "HTTP/2",
@@ -898,7 +898,7 @@
         },
         {
           "$$hashKey": "object:3680",
-          "expr": "sum(rate(envoy_http_ingress_http_downstream_cx_websocket_total[1m]))",
+          "expr": "sum(irate(envoy_http_ingress_http_downstream_cx_websocket_total[1m]))",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "WebSocket",
@@ -952,9 +952,9 @@
       "fill": 1,
       "gridPos": {
         "h": 6,
-        "w": 24,
-        "x": 0,
-        "y": 26
+        "w": 12,
+        "x": 12,
+        "y": 20
       },
       "id": 13,
       "legend": {
@@ -963,7 +963,7 @@
         "current": true,
         "max": true,
         "min": true,
-        "rightSide": true,
+        "rightSide": false,
         "show": true,
         "total": false,
         "values": true
@@ -985,6 +985,7 @@
           "$$hashKey": "object:3678",
           "expr": "avg(envoy_listener_0_0_0_0_80_downstream_cx_length_ms{quantile=\"0.5\"})",
           "format": "time_series",
+          "hide": true,
           "intervalFactor": 1,
           "legendFormat": "0.5",
           "refId": "A"
@@ -993,6 +994,7 @@
           "$$hashKey": "object:3679",
           "expr": "avg(envoy_listener_0_0_0_0_80_downstream_cx_length_ms{quantile=\"0.9\"})",
           "format": "time_series",
+          "hide": true,
           "intervalFactor": 1,
           "legendFormat": "0.9",
           "refId": "B"
@@ -1027,7 +1029,7 @@
         {
           "$$hashKey": "object:3936",
           "format": "ms",
-          "label": "milliseconds",
+          "label": "",
           "logBase": 1,
           "max": null,
           "min": "0",
@@ -1084,5 +1086,5 @@
   "timezone": "",
   "title": "Ambassador",
   "uid": "v6VLQ9gik",
-  "version": 2
+  "version": 3
 }
