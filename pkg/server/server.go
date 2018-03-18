@@ -4,18 +4,18 @@ import (
 	"context"
 	"net/http"
 	"net/http/pprof"
+	"os"
 	"runtime"
 	"sync/atomic"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"os"
+	"github.com/rs/zerolog/log"
 )
 
 var (
-	healthy int32
-	ready   int32
+	healthy  int32
+	ready    int32
 	dataPath string
 )
 
@@ -84,7 +84,7 @@ func ListenAndServe(port string, timeout time.Duration, stopCh <-chan struct{}) 
 	// run server in background
 	go func() {
 		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
-			glog.Fatal(err)
+			log.Fatal().Err(err).Msg("HTTP server crashed")
 		}
 	}()
 
@@ -97,11 +97,11 @@ func ListenAndServe(port string, timeout time.Duration, stopCh <-chan struct{}) 
 	atomic.StoreInt32(&healthy, 0)
 	atomic.StoreInt32(&ready, 0)
 
-	glog.Infof("Shutting down HTTP server with timeout: %v", timeout)
+	log.Info().Msgf("Shutting down HTTP server with timeout: %v", timeout)
 
 	if err := srv.Shutdown(ctx); err != nil {
-		glog.Errorf("HTTP server graceful shutdown failed with error: %v", err)
+		log.Error().Err(err).Msg("HTTP server graceful shutdown failed")
 	} else {
-		glog.Info("HTTP server stopped")
+		log.Info().Msg("HTTP server stopped")
 	}
 }

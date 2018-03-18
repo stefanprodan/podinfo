@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
 )
 
 type Response struct {
@@ -92,16 +92,16 @@ func envToMap() map[string]string {
 }
 
 func runtimeToMap() map[string]string {
-	runtime := map[string]string{
+	info := map[string]string{
 		"os":            runtime.GOOS,
 		"arch":          runtime.GOARCH,
 		"version":       runtime.Version(),
 		"max_procs":     strconv.FormatInt(int64(runtime.GOMAXPROCS(0)), 10),
 		"num_goroutine": strconv.FormatInt(int64(runtime.NumGoroutine()), 10),
 		"num_cpu":       strconv.FormatInt(int64(runtime.NumCPU()), 10),
-		"external_ip": findIp("http://api.ipify.org"),
+		"external_ip":   findIp("http://api.ipify.org"),
 	}
-	return runtime
+	return info
 }
 
 func findIp(url string) string {
@@ -117,7 +117,7 @@ func findIp(url string) string {
 	req, _ := http.NewRequest("GET", url, nil)
 	res, err := client.Do(req)
 	if err != nil {
-		glog.Error(errors.Wrapf(err, "cannot connect to %s", url))
+		log.Error().Err(errors.Wrapf(err, "cannot connect to %s", url)).Msg("ipify timeout")
 		return ip
 	}
 

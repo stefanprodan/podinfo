@@ -77,7 +77,7 @@ curl -H 'Host: podinfo.test' -sS http://$ENVOY/version | grep version
 version: 0.0.9
 ```
 
-# Canary deployment
+### Canary deployment
 
 Let's assume you have an insiders program for your users and some of them enrolled.
 Once enrolled your users requests will have a HTTP header like `X-User: insider` attached to every request.
@@ -139,7 +139,7 @@ curl -H 'X-User: insider' -H 'Host: podinfo.test' -sS http://$ENVOY/version|grep
 version: 0.1.0
 ```
 
-# A/B testing
+### A/B testing
 
 Let's assume you have a new release candidate version that you want to test on a small subset of your 
 insiders. 

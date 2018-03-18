@@ -5,7 +5,7 @@ backend: http://backend-podinfo:9898/echo
 
 image:
   repository: stefanprodan/podinfo
-  tag: 0.1.1
+  tag: 0.2.0
   pullPolicy: IfNotPresent
 
 service:
@@ -50,4 +50,4 @@ tolerations: []
 
 affinity: {}
 
-logLevel: 2
+logLevel: debug

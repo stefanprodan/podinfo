@@ -28,8 +28,9 @@ spec:
           command:
             - ./podinfo
             - -port={{ .Values.service.containerPort }}
-            - -logtostderr=true
-            - -v={{ .Values.logLevel }}
+            {{- if .Values.logLevel }}
+            - -debug=true
+            {{- end }}
           env:
           - name: backend_url
             value: {{ .Values.backend }}

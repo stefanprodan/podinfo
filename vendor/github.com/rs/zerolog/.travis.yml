@@ -1,0 +1,11 @@
+language: go
+go:
+- 1.7
+- 1.8
+- 1.9
+- tip
+matrix:
+  allow_failures:
+      - go: tip
+script:
+  go test -v -race -cpu=1,2,4 -bench . -benchmem ./...

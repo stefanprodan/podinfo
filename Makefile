@@ -97,8 +97,8 @@ dep:
 	go get -u github.com/golang/dep/cmd/dep
 	go get -u github.com/estesp/manifest-tool
 
-.PHONY: package
-package:
+.PHONY: charts
+charts:
 	cd chart/stable/ && helm package podinfo/
 	mv chart/stable/podinfo-0.1.0.tgz docs/
 	cd chart/stable/ && helm package ambassador/

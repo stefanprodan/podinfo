@@ -11,7 +11,7 @@ Specifications:
 * Graceful shutdown on interrupt signals
 * Prometheus instrumentation (RED metrics)
 * Dependency management with golang/dep
-* Multi-level logging with golang/glog
+* Structured logging with zerolog
 * Error handling with pkg/errors
 * Helm chart
 

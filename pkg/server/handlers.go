@@ -12,7 +12,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/golang/glog"
+	"github.com/rs/zerolog/log"
 	"github.com/stefanprodan/k8s-podinfo/pkg/version"
 	"gopkg.in/yaml.v2"
 )
@@ -47,13 +47,13 @@ func (s *Server) echo(w http.ResponseWriter, r *http.Request) {
 	case "POST":
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			glog.Errorf("Reading the request body failed: %v", err)
+			log.Error().Msgf("Reading the request body failed: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(err.Error()))
 			return
 		}
-		sha1 := hash(string(body))
-		glog.Infof("Payload received from %s hash %s", r.RemoteAddr, sha1)
+		hash := hash(string(body))
+		log.Info().Msgf("Payload received from %s hash %s", r.RemoteAddr, hash)
 		w.WriteHeader(http.StatusAccepted)
 		w.Write(body)
 	default:
@@ -80,7 +80,7 @@ func (s *Server) backend(w http.ResponseWriter, r *http.Request) {
 	case "POST":
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			glog.Errorf("Reading the request body failed: %v", err)
+			log.Error().Msgf("Reading the request body failed: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(err.Error()))
 			return
@@ -90,7 +90,7 @@ func (s *Server) backend(w http.ResponseWriter, r *http.Request) {
 		if len(backendURL) > 0 {
 			resp, err := http.Post(backendURL, r.Header.Get("Content-type"), bytes.NewReader(body))
 			if err != nil {
-				glog.Errorf("Backend call failed: %v", err)
+				log.Error().Msgf("Backend call failed: %v", err)
 				w.WriteHeader(http.StatusInternalServerError)
 				w.Write([]byte(err.Error()))
 				return
@@ -98,12 +98,12 @@ func (s *Server) backend(w http.ResponseWriter, r *http.Request) {
 			defer resp.Body.Close()
 			rbody, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
-				glog.Errorf("Reading the backend request body failed: %v", err)
+				log.Error().Msgf("Reading the backend request body failed: %v", err)
 				w.WriteHeader(http.StatusInternalServerError)
 				w.Write([]byte(err.Error()))
 				return
 			}
-			glog.Infof("Payload received from backend: %s", string(rbody))
+			log.Info().Msgf("Payload received from backend: %s", string(rbody))
 			w.WriteHeader(http.StatusAccepted)
 			w.Write(rbody)
 		} else {
@@ -120,12 +120,12 @@ func (s *Server) job(w http.ResponseWriter, r *http.Request) {
 	case "POST":
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			glog.Errorf("Reading the request body failed: %v", err)
+			log.Error().Msgf("Reading the request body failed: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(err.Error()))
 			return
 		}
-		glog.Infof("Payload received from %s: %s", r.RemoteAddr, string(body))
+		log.Info().Msgf("Payload received from %s: %s", r.RemoteAddr, string(body))
 
 		job := struct {
 			Wait int `json:"wait"`
@@ -134,7 +134,7 @@ func (s *Server) job(w http.ResponseWriter, r *http.Request) {
 		}
 		err = json.Unmarshal(body, &job)
 		if err != nil {
-			glog.Errorf("Reading the request body failed: %v", err)
+			log.Error().Msgf("Reading the request body failed: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(err.Error()))
 			return
@@ -154,24 +154,24 @@ func (s *Server) write(w http.ResponseWriter, r *http.Request) {
 	case "POST":
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			glog.Errorf("Reading the request body failed: %v", err)
+			log.Error().Msgf("Reading the request body failed: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(err.Error()))
 			return
 		}
 
-		sha1 := hash(string(body))
-		err = ioutil.WriteFile(path.Join(dataPath, sha1), body, 0644)
+		hash := hash(string(body))
+		err = ioutil.WriteFile(path.Join(dataPath, hash), body, 0644)
 		if err != nil {
-			glog.Errorf("Writing file to /data failed: %v", err)
+			log.Error().Msgf("Writing file to /data failed: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(err.Error()))
 			return
 		}
 
-		glog.Infof("Write command received from %s hash %s", r.RemoteAddr, sha1)
+		log.Info().Msgf("Write command received from %s hash %s", r.RemoteAddr, hash)
 		w.WriteHeader(http.StatusAccepted)
-		w.Write([]byte(sha1))
+		w.Write([]byte(hash))
 	default:
 		w.WriteHeader(http.StatusNotAcceptable)
 	}
@@ -182,22 +182,22 @@ func (s *Server) read(w http.ResponseWriter, r *http.Request) {
 	case "POST":
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			glog.Errorf("Reading the request body failed: %v", err)
+			log.Error().Msgf("Reading the request body failed: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(err.Error()))
 			return
 		}
 
-		sha1 := string(body)
-		content, err := ioutil.ReadFile(path.Join(dataPath, sha1))
+		hash := string(body)
+		content, err := ioutil.ReadFile(path.Join(dataPath, hash))
 		if err != nil {
-			glog.Errorf("Reading file from /data/%s failed: %v", sha1, err)
+			log.Error().Msgf("Reading file from /data/%s failed: %v", hash, err)
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(err.Error()))
 			return
 		}
 
-		glog.Infof("Read command received from %s hash %s", r.RemoteAddr, sha1)
+		log.Info().Msgf("Read command received from %s hash %s", r.RemoteAddr, hash)
 		w.WriteHeader(http.StatusAccepted)
 		w.Write([]byte(content))
 	default:
@@ -256,14 +256,14 @@ func (s *Server) disable(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) error(w http.ResponseWriter, r *http.Request) {
-	glog.Error("Error triggered")
+	log.Error().Msg("Error triggered")
 	w.WriteHeader(http.StatusInternalServerError)
 	w.Write([]byte("Internal server error"))
 	return
 }
 
 func (s *Server) panic(w http.ResponseWriter, r *http.Request) {
-	glog.Fatal("Kill switch triggered")
+	log.Fatal().Msg("Kill switch triggered")
 }
 
 func hash(input string) string {
