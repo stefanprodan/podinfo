@@ -13,7 +13,7 @@ helm repo add sp https://stefanprodan.github.io/k8s-podinfo
 
 helm upgrade --install --wait envoy \
     --set service.type=LoadBalancer \
-    --namespace default \
+    --set replicaCount=2 \
     sp/ambassador
 ```
 
@@ -234,15 +234,18 @@ Install Grafana chart with Weave Cloud data source:
 
 ```bash
 helm install --name weave \
- --set token=yghrfcs5berdqp68z7wfndcea93rq6nx \
  --set service.type=LoadBalancer \
+ --set token=WEAVE-CLOUD-TOKEN \
  sp/grafana
 ```
 
 Start a load test for both GA and Canary deployments:
 
 ```bash
+# GA
 hey -n 10000 -host podinfo.test http://$ENVOY
+
+# Canary
 hey -n 10000 -host podinfo.test -H 'X-Client: insider' http://$ENVOY
 ```
 
