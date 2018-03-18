@@ -228,3 +228,26 @@ configured with a different filter:
 * `0.1.*` for GA 
 * `0.2.*` for Canary
 
+### Monitoring
+
+Install Grafana chart with Weave Cloud data source:
+
+```bash
+helm install --name weave \
+ --set token=yghrfcs5berdqp68z7wfndcea93rq6nx \
+ --set service.type=LoadBalancer \
+ sp/grafana
+```
+
+Start a load test for both GA and Canary deployments:
+
+```bash
+hey -n 10000 -host podinfo.test http://$ENVOY
+hey -n 10000 -host podinfo.test -H 'X-Client: insider' http://$ENVOY
+```
+
+Open Grafana's URL and navigate to Ambassador dashboard:
+
+![Ambassador metrics](diagrams/ambassador-dash.png)
+
+TODO: GA vs Canary RED metrics dashboard
