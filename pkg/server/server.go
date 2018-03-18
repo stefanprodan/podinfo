@@ -41,6 +41,7 @@ func NewServer(options ...func(*Server)) *Server {
 	s.mux.HandleFunc("/job", s.job)
 	s.mux.HandleFunc("/read", s.read)
 	s.mux.HandleFunc("/write", s.write)
+	s.mux.HandleFunc("/error", s.error)
 	s.mux.HandleFunc("/panic", s.panic)
 	s.mux.HandleFunc("/version", s.version)
 	s.mux.Handle("/metrics", promhttp.Handler())

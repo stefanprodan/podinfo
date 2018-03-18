@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
       - name: podinfod
-        image: stefanprodan/podinfo:0.1.0
+        image: quay.io/stefanprodan/podinfo:0.1.0
         imagePullPolicy: Always
         command:
           - ./podinfo
@@ -34,19 +34,16 @@ spec:
             path: /readyz
             port: 9898
           initialDelaySeconds: 1
-          periodSeconds: 2
+          periodSeconds: 5
           failureThreshold: 1
         livenessProbe:
           httpGet:
             path: /healthz
             port: 9898
           initialDelaySeconds: 1
-          periodSeconds: 3
+          periodSeconds: 10
           failureThreshold: 2
         resources:
           requests:
             memory: "32Mi"
             cpu: "10m"
-          limits:
-            memory: "256Mi"
-            cpu: "100m"

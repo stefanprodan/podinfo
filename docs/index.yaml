@@ -3,7 +3,7 @@ entries:
   ambassador:
   - apiVersion: v1
     appVersion: 0.29.0
-    created: 2018-03-18T11:24:18.344805724+02:00
+    created: 2018-03-18T13:54:18.70787901+02:00
     description: A Helm chart for Datawire Ambassador
     digest: a30c8cb38e696b09fda8269ad8465ce6fec6100cfc108ca85ecbc85913ca5c7f
     engine: gotpl
@@ -19,7 +19,7 @@ entries:
   grafana:
   - apiVersion: v1
     appVersion: "1.0"
-    created: 2018-03-18T11:24:18.345660109+02:00
+    created: 2018-03-18T13:54:18.708795011+02:00
     description: A Helm chart for Kubernetes
     digest: 2cd44688a5f7ad13d384806b60edd0c4a646af28354db4a444073d167b24a9cb
     name: grafana
@@ -28,10 +28,10 @@ entries:
     version: 0.1.0
   podinfo:
   - apiVersion: v1
-    appVersion: 0.1.0
-    created: 2018-03-18T11:24:18.34608315+02:00
+    appVersion: 0.1.1
+    created: 2018-03-18T13:54:18.70929786+02:00
     description: Podinfo Helm chart for Kubernetes
-    digest: 7358049c9147a9bbca0b19139ca38e60974af2d9c912654ba811c0e9affa1b85
+    digest: e18f82b36450beb2b0b17fb007b1ef76cac518bb04a466d207df0a5ebedf45e7
     engine: gotpl
     home: https://github.com/stefanprodan/k8s-podinfo
     maintainers:
@@ -43,4 +43,4 @@ entries:
     urls:
     - https://stefanprodan.github.io/k8s-podinfo/podinfo-0.1.0.tgz
     version: 0.1.0
-generated: 2018-03-18T11:24:18.343769088+02:00
+generated: 2018-03-18T13:54:18.706824878+02:00

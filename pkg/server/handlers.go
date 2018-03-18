@@ -255,6 +255,13 @@ func (s *Server) disable(w http.ResponseWriter, r *http.Request) {
 	atomic.StoreInt32(&ready, 0)
 }
 
+func (s *Server) error(w http.ResponseWriter, r *http.Request) {
+	glog.Error("Error triggered")
+	w.WriteHeader(http.StatusInternalServerError)
+	w.Write([]byte("Internal server error"))
+	return
+}
+
 func (s *Server) panic(w http.ResponseWriter, r *http.Request) {
 	glog.Fatal("Kill switch triggered")
 }
