@@ -24,7 +24,9 @@ script:
   - make test
   - make build docker-build
   - kubectl get nodes
-  - kubectl run podinfo --image=podinfo:latest --port=9898 --dry-run
+  - kubectl run podinfo --image=podinfo:latest --port=9898
+  - sleep 5
+  - kubectl get pods
 
 after_success:
   - if [ -z "$DOCKER_USER" ]; then
