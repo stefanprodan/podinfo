@@ -1,10 +1,6 @@
 # Makefile for releasing Alpine multi-arch Docker images
 #
 # The release version is controlled from pkg/version
-#
-# Prerequisites:
-# 1) docker login (change the DOCKER_REPOSITORY to match your Docker Hub user)
-# 2) go get github.com/estesp/manifest-tool
 
 EMPTY:=
 SPACE:=$(EMPTY) $(EMPTY)
@@ -15,7 +11,7 @@ DOCKER_IMAGE_NAME:=$(DOCKER_REPOSITORY)/$(NAME)
 GITREPO:=github.com/stefanprodan/k8s-podinfo
 GITCOMMIT:=$(shell git describe --dirty --always)
 VERSION:=$(shell grep 'VERSION' pkg/version/version.go | awk '{ print $$4 }' | tr -d '"')
-LINUX_ARCH:=amd64 arm arm64 ppc64le s390x
+LINUX_ARCH:=arm arm64 ppc64le s390x amd64
 PLATFORMS:=$(subst $(SPACE),$(COMMA),$(foreach arch,$(LINUX_ARCH),linux/$(arch)))
 
 .PHONY: build
@@ -28,7 +24,7 @@ build:
 	done
 
 .PHONY: tar
-tar:
+tar: build
 	@echo Cleaning old releases
 	@rm -rf release && mkdir release
 	for arch in $(LINUX_ARCH); do \
@@ -49,10 +45,13 @@ docker-build: tar
 	@for arch in $(LINUX_ARCH); do \
 	    mkdir -p build/docker/linux/$$arch ;\
 	    tar -xzf release/$(NAME)_$(VERSION)_linux_$$arch.tgz -C build/docker/linux/$$arch ;\
-	    cp Dockerfile build/docker/linux/$$arch ;\
-	    cp Dockerfile build/docker/linux/$$arch/Dockerfile.in ;\
-	    if [ $$arch != amd64 ]; then \
-		case $$arch in \
+	    if [ $$arch == amd64 ]; then \
+		cp Dockerfile build/docker/linux/$$arch ;\
+		cp Dockerfile build/docker/linux/$$arch/Dockerfile.in ;\
+	    else \
+		cp Dockerfile.build build/docker/linux/$$arch/Dockerfile ;\
+		cp Dockerfile.build build/docker/linux/$$arch/Dockerfile.in ;\
+	    case $$arch in \
 	        arm) \
 	            BASEIMAGE=arm32v6 ;\
 	            ;; \

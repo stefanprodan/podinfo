@@ -1,8 +1,16 @@
-FROM alpine:latest
+FROM alpine:3.7
 
-RUN apk add --no-cache curl openssl netcat-openbsd
+RUN addgroup -S app \
+    && adduser -S -g app app \
+    && apk --no-cache add \
+    curl openssl netcat-openbsd
 
-ADD podinfo /podinfo
+WORKDIR /home/app
 
-EXPOSE 9898
+ADD podinfo .
+
+RUN chown -R app:app ./
+
+USER app
+
 CMD ["./podinfo"]
