@@ -10,3 +10,4 @@ that showcases best practices of running microservices in Kubernetes.
 * [Monitoring and alerting with Prometheus](3-monitoring.md)
 * [StatefulSets with local persistent volumes](4-statefulsets.md)
 * [Canary Deployments and A/B Testing](5-canary.md)
+* [Expose Kubernetes services over HTTPS with Ngrok](6-ngrok.md)

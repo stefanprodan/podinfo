@@ -40,3 +40,4 @@ Web API:
 * [Monitoring and alerting with Prometheus](docs/3-monitoring.md)
 * [StatefulSets with local persistent volumes](docs/4-statefulsets.md)
 * [Canary Deployments and A/B Testing](docs/5-canary.md)
+* [Expose Kubernetes services over HTTPS with Ngrok](docs/6-ngrok.md)
