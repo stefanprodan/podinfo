@@ -13,14 +13,14 @@ a ClusterIP service that will get exposed on the internet.
 What follows is a step-by-step guide on how you can use Ngrok as a reverse proxy to 
 receive GitHub notifications via webhooks in an application hosted on your local Minikube. 
 
-### Deploy podinfo demo app
+### Deploy a webhook receiver
 
 In order to receive notifications from GitHub you need a web application that exposes a 
 HTTP POST endpoint and accepts a JSON payload. [Podinfo](https://github.com/stefanprodan/k8s-podinfo) 
-is tiny web app made with Go that can receive any kind of payload on the `/echo` route. 
+is a tiny web app made with Go that can receive any kind of payload on the `/echo` route. 
 Let's deploy podinfo using Helm. 
 
-If you don't have Helm running on your Kubernetes cluster here how you can set it up.
+If you don't have Helm running on your Kubernetes cluster here is how you can set it up.
 
 First install Helm CLI:
 
@@ -48,26 +48,26 @@ Deploy Tiller in kube-system namespace:
 helm init --skip-refresh --upgrade --service-account tiller
 ```
 
-The podinfo and ngrok charts are hosted on GitHub. Add the k8s-podinfo repo:
+The `podinfo` and `ngrok` charts are hosted on GitHub. Add the k8s-podinfo repo:
 
 ```bash
 helm repo add sp https://stefanprodan.github.io/k8s-podinfo
 ```
 
-Install podinfo:
+Install `podinfo`:
 
 ```bash
 helm install sp/podinfo --name webhook 
 ``` 
 
-This will deploy `podinfo` in the default namespace and 
-will create a ClusterIP service with the address `webhook-podinfo:9898`.
+This deploys `podinfo` in the default namespace and 
+creates a ClusterIP service with the address `webhook-podinfo:9898`.
 
-### Deploy Ngrok reverse proxy
+### Deploy Ngrok
 
 Before you begin go to [ngrok.com](https://ngrok.com) and register for a free account. 
 
-Ngrok will create a token for you, use it when installing Ngrok chart.
+Ngrok will create a token for you, use it when installing the Ngrok chart.
 
 Install Ngrok:
 
@@ -78,8 +78,8 @@ $ helm install sp/ngrok --name tunnel \
   --set expose.service=webhook-podinfo:9898
 ``` 
 
-The above command will deploy Ngrok and will expose the Ngrok web UI on a random node port.
-Find the port with:
+The above command deploys Ngrok in the default namespace and exposes the Ngrok web UI 
+on a random node port. Find the port with:
 
 ```bash
 kubectl get --namespace default -o jsonpath="{.spec.ports[0].nodePort}" services tunnel-ngrok
