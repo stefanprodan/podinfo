@@ -114,7 +114,12 @@ should see the request body:
 
 ![Ngrok Inspect](screens/ngrok-inspect.png)
 
-Ngrok not only make it very easy to expose Kubernetes services on the internet 
+Ngrok not only makes it very easy to expose Kubernetes services on the internet 
 but also gives a powerful tool to inspect the traffic to your applications. 
 
+You can tear all down by deleting the Helm releases with:
+
+```bash
+helm delete --purge tunnel webhook
+```
 
