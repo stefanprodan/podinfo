@@ -98,10 +98,10 @@ dep:
 
 .PHONY: charts
 charts:
-	cd chart/stable/ && helm package podinfo/
-	mv chart/stable/podinfo-0.1.0.tgz docs/
-	cd chart/stable/ && helm package ambassador/
-	mv chart/stable/ambassador-0.1.0.tgz docs/
-	cd chart/stable/ && helm package grafana/
-	mv chart/stable/grafana-0.1.0.tgz docs/
+	cd charts/ && helm package podinfo/
+	mv charts/podinfo-0.1.0.tgz docs/
+	cd charts/ && helm package ambassador/
+	mv charts/ambassador-0.1.0.tgz docs/
+	cd charts/ && helm package grafana/
+	mv charts/grafana-0.1.0.tgz docs/
 	helm repo index docs --url https://stefanprodan.github.io/k8s-podinfo --merge ./docs/index.yaml
