@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "ngrok.fullname" . }}
+  labels:
+    app: {{ template "ngrok.name" . }}
+    chart: {{ template "ngrok.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app: {{ template "ngrok.name" . }}
+    release: {{ .Release.Name }}
