@@ -24,14 +24,15 @@ spec:
       - command:
         - /bin/sh
         - -c
-        - test -d /workspace/k8s-podinfo || git clone https://github.com/stefanprodan/k8s-podinfo
-          k8s-podinfo
+        - test -d /workspace/k8s-podinfo || git clone -b master ssh://git@gitsrv/git-server/repos/k8s-podinfo.git
         image: stefanprodan/k9c:0.1.0
         imagePullPolicy: IfNotPresent
         name: git-clone
         volumeMounts:
         - mountPath: /workspace
-          name: data
+          name: ide-workspace-data
+        - mountPath: /root/.ssh
+          name: ssh-git
       containers:
       - name: ide
         args:
@@ -71,7 +72,7 @@ spec:
           timeoutSeconds: 1
         volumeMounts:
         - mountPath: /workspace
-          name: data
+          name: ide-workspace-data
         - mountPath: /var/run/docker.sock
           name: dockersocket
         - mountPath: /root/.ssh
@@ -81,12 +82,12 @@ spec:
         secret:
           defaultMode: 0600
           secretName: ssh-git
-      - name: data
+      - name: dockersocket
+        hostPath:
+          path: /var/run/docker.sock
+          type: ""
+      - name: ide-workspace-data
         emptyDir: {}
 #      - name: ide-workspace-data
 #        persistentVolumeClaim:
 #          claimName: ide-workspace-data
-      - hostPath:
-          path: /var/run/docker.sock
-          type: ""
-        name: dockersocket

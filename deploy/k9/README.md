@@ -31,18 +31,18 @@ Find the public IP:
 kubectl -n ide get svc --selector=name=ide
 ```
 
-Open Cloud9 IDE in your browser, login with `username/password` and run the following commands:
+Open Cloud9 IDE in your browser, login with `username/password` and config git:
 
 ```bash
-ssh-keyscan gitsrv >> ~/.ssh/known_hosts
 git config --global user.email "user@weavedx.com" 
 git config --global user.name "User"
 ```
 
-Clone the repo:
+Commit a change to podinfo repo:
 
 ```bash
-git clone ssh://git@gitsrv/git-server/repos/k8s-podinfo.git
+cd k8s-podinfo
+rm Dockerfile.build
 git add .
 git commit -m "test"
 git push origin master
