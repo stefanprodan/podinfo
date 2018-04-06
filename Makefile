@@ -87,6 +87,10 @@ clean:
 	rm -rf release
 	rm -rf build
 
+.PHONY: gcr-build
+gcr-build:
+	docker build -t gcr.io/$(DOCKER_IMAGE_NAME):$(VERSION) -f Dockerfile.ci .
+
 .PHONY: test
 test:
 	cd pkg/server ; go test -v -race ./...
