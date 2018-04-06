@@ -3,8 +3,8 @@ package server
 import (
 	"bytes"
 	"crypto/sha1"
+	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -268,5 +268,6 @@ func (s *Server) panic(w http.ResponseWriter, r *http.Request) {
 
 func hash(input string) string {
 	h := sha1.New()
-	return fmt.Sprintf("%x", h.Sum([]byte(input)))
+	h.Write([]byte(input))
+	return hex.EncodeToString(h.Sum(nil))
 }
