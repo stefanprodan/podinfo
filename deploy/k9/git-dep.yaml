@@ -17,8 +17,13 @@ spec:
         name: gitsrv
     spec:
       containers:
-      - image: jkarlos/git-server-docker
+      - image: stefanprodan/gitsrv:0.0.5
         name: git
+        env:
+        - name: REPO
+          value: "k8s-podinfo.git"
+        - name: TAR_URL
+          value: "https://github.com/stefanprodan/k8s-podinfo/archive/0.2.2.tar.gz"
         ports:
         - containerPort: 22
           name: ssh
@@ -33,5 +38,7 @@ spec:
         secret:
           secretName: ssh-git
       - name: git-server-data
-        persistentVolumeClaim:
-          claimName: git-server-data
+        emptyDir: {}
+#      - name: git-server-data
+#        persistentVolumeClaim:
+#          claimName: git-server-data

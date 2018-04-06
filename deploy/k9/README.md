@@ -39,26 +39,10 @@ git config --global user.email "user@weavedx.com"
 git config --global user.name "User"
 ```
 
-Exec into the Git server and create a repo:
+Clone the repo:
 
 ```bash
-kubectl -n ide exec -it gitsrv-69b4cd5fc-dd6rf -- sh
-
-/git-server # cd repos
-/git-server # mkdir myrepo.git
-/git-server # cd myrepo.git
-/git-server # git init --shared=true
-/git-server # git add .
-/git-server # git config --global user.email "user@weavedx.com" 
-/git-server # git config --global user.name "User"
-/git-server # git commit -m "init"
-/git-server # git checkout -b dummy
-```
-
-Go back to the Cloud9 IDE and clone the repo:
-
-```bash
-git clone ssh://git@gitsrv/git-server/repos/myrepo.git
+git clone ssh://git@gitsrv/git-server/repos/k8s-podinfo.git
 git add .
 git commit -m "test"
 git push origin master
