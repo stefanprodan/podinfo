@@ -31,7 +31,7 @@ Find the public IP:
 kubectl -n ide get svc --selector=name=ide
 ```
 
-Open Cloud9 IDE in your browser and run the following commands:
+Open Cloud9 IDE in your browser, login with `username/password` and run the following commands:
 
 ```bash
 ssh-keyscan gitsrv >> ~/.ssh/known_hosts
