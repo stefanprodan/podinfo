@@ -1,0 +1,37 @@
+---
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    name: gitsrv
+  name: gitsrv
+  namespace: ide
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: gitsrv
+  template:
+    metadata:
+      labels:
+        name: gitsrv
+    spec:
+      containers:
+      - image: jkarlos/git-server-docker
+        name: git
+        ports:
+        - containerPort: 22
+          name: ssh
+          protocol: TCP
+        volumeMounts:
+        - mountPath: /git-server/repos
+          name: git-server-data
+        - mountPath: /git-server/keys
+          name: ssh-git
+      volumes:
+      - name: ssh-git
+        secret:
+          secretName: ssh-git
+      - name: git-server-data
+        persistentVolumeClaim:
+          claimName: git-server-data

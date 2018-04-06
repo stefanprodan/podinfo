@@ -1,0 +1,92 @@
+---
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    name: ide
+  name: ide
+  namespace: ide
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      name: ide
+  template:
+    metadata:
+      labels:
+        name: ide
+    spec:
+      serviceAccount: ide
+      serviceAccountName: ide
+      initContainers:
+      - command:
+        - /bin/sh
+        - -c
+        - test -d /workspace/k8s-podinfo || git clone https://github.com/stefanprodan/k8s-podinfo
+          k8s-podinfo
+        image: stefanprodan/k9c:0.1.0
+        imagePullPolicy: IfNotPresent
+        name: git-clone
+        volumeMounts:
+        - mountPath: /workspace
+          name: data
+      containers:
+      - name: ide
+        args:
+        - --auth
+        - username:password
+        image: stefanprodan/k9c:0.1.0
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            httpHeaders:
+            - name: Authorization
+              value: Basic dXNlcm5hbWU6cGFzc3dvcmQ=
+            path: /ide.html
+            port: http
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 1
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            httpHeaders:
+            - name: Authorization
+              value: Basic dXNlcm5hbWU6cGFzc3dvcmQ=
+            path: /ide.html
+            port: http
+            scheme: HTTP
+          initialDelaySeconds: 5
+          periodSeconds: 1
+          successThreshold: 1
+          timeoutSeconds: 1
+        volumeMounts:
+        - mountPath: /workspace
+          name: data
+        - mountPath: /var/run/docker.sock
+          name: dockersocket
+        - mountPath: /root/.ssh
+          name: ssh-git
+      volumes:
+      - name: ssh-git
+        secret:
+          defaultMode: 0600
+          secretName: ssh-git
+      - name: data
+        emptyDir: {}
+#      - name: ide-workspace-data
+#        persistentVolumeClaim:
+#          claimName: ide-workspace-data
+      - hostPath:
+          path: /var/run/docker.sock
+          type: ""
+        name: dockersocket
