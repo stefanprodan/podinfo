@@ -12,11 +12,20 @@ Create a secret with the Git ssh key:
 kubectl apply -f ./deploy/k9/ssh-key.yaml
 ```
 
-Create the Git Server deploy and service:
+Create the Git Server deployment and service:
 
 ```bash
 kubectl apply -f ./deploy/k9/git-dep.yaml
 kubectl apply -f ./deploy/k9/git-svc.yaml
+```
+
+Deploy Flux (modify fux-dep.yaml and add your weave token):
+
+```bash
+kubectl apply -f ./deploy/k9/memcache-dep.yaml
+kubectl apply -f ./deploy/k9/memcache-svc.yaml
+kubectl apply -f ./deploy/k9/flux-rbac.yaml
+kubectl apply -f ./deploy/k9/flux-dep.yaml
 ```
 
 Create the Cloud9 IDE deployment:
@@ -47,3 +56,5 @@ git add .
 git commit -m "test"
 git push origin master
 ```
+
+
