@@ -26,7 +26,7 @@ spec:
         - /bin/sh
         - -c
         - test -d /workspace/k8s-podinfo || git clone -b master ssh://git@gitsrv/git-server/repos/k8s-podinfo.git
-        image: stefanprodan/k9c:golang-1.9
+        image: stefanprodan/k9c:v2-gcloud
         imagePullPolicy: IfNotPresent
         volumeMounts:
         - mountPath: /workspace
@@ -38,7 +38,7 @@ spec:
         args:
         - --auth
         - username:password
-        image: stefanprodan/k9c:golang-1.9
+        image: stefanprodan/k9c:v2-gcloud
         imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 3
