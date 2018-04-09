@@ -45,8 +45,8 @@ spec:
         args:
         - --ssh-keygen-dir=/var/fluxd/keygen
         - --k8s-secret-name=ssh-git
-        - --git-url=ssh://git@gitsrv/git-server/repos/k8s-podinfo.git
+        - --git-url=ssh://git@gitsrv/git-server/repos/cluster.git
         - --git-branch=master
-        - --git-path=deploy/canary
+        #- --git-path=deploy/canary
         #- --connect=wss://cloud.weave.works/api/flux
         #- --token=yghrfcs5berdqp68z7wfndcea93rq6nx
