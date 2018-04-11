@@ -1,0 +1,18 @@
+---
+apiVersion: config.istio.io/v1alpha2
+kind: RouteRule
+metadata:
+  name: podinfo-ga
+  namespace: default
+spec:
+  match:
+    request:
+      headers:
+        x-user:
+          regex: .*
+  destination:
+    name: podinfo
+  route:
+  - labels:
+      release: ga
+    weight: 100

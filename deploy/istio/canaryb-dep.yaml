@@ -1,0 +1,52 @@
+---
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: podinfo-canaryb
+  labels:
+    app: podinfo
+    release: canaryb
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+     app: podinfo
+     release: canaryb
+  template:
+    metadata:
+      labels:
+        app: podinfo
+        release: canaryb
+      annotations:
+        prometheus.io/scrape: 'true'
+    spec:
+      containers:
+      - name: podinfod
+        image: quay.io/stefanprodan/podinfo:0.2.0
+        imagePullPolicy: Always
+        command:
+          - ./podinfo
+          - -port=9898
+          - -debug=true
+        ports:
+        - name: http
+          containerPort: 9898
+          protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 9898
+          initialDelaySeconds: 1
+          periodSeconds: 5
+          failureThreshold: 1
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 9898
+          initialDelaySeconds: 1
+          periodSeconds: 10
+          failureThreshold: 2
+        resources:
+          requests:
+            memory: "32Mi"
+            cpu: "10m"

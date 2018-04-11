@@ -1,0 +1,22 @@
+apiVersion: config.istio.io/v1alpha2
+kind: RouteRule
+metadata:
+  name: podinfo-canary
+  namespace: default
+spec:
+  precedence: 2
+  match:
+    request:
+      headers:
+        x-user:
+          regex: .*insider.*
+#          exact: insider
+  destination:
+    name: podinfo
+  route:
+  - labels:
+      release: canary
+    weight: 50
+  - labels:
+      release: canaryb
+    weight: 50
