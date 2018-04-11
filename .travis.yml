@@ -32,7 +32,7 @@ after_success:
   - if [ -z "$DOCKER_USER" ]; then
       echo "PR build, skipping Docker Hub push";
     else
-      docker login -u $DOCKER_USER -p $DOCKER_PASS;
+      echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin;
       make docker-push;
     fi
   - if [ -z "$QUAY_USER" ]; then
