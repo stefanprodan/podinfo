@@ -6,7 +6,7 @@ metadata:
     kubernetes.io/ingress.class: istio
 spec:
   rules:
-  - host: podinfo.test
+  - host: podinfo.co.uk
     http:
       paths:
       - path: /.*
