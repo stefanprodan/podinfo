@@ -9,8 +9,7 @@ spec:
     request:
       headers:
         x-user:
-          regex: .*insider.*
-#          exact: insider
+          exact: insider
   destination:
     name: podinfo
   route:
