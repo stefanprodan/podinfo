@@ -1,0 +1,69 @@
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: podinfo-gateway
+  namespace: default
+spec:
+  selector:
+    app: podinfo
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - podinfo-vs.default.svc.cluster.local
+    - podinfo.example.com
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: podinfo
+  namespace: default
+spec:
+  hosts:
+  - podinfo-vs.default.svc.cluster.local
+  gateways:
+  - podinfo-gateway
+  http:
+  - match:
+    - headers:
+        x-user:
+          exact: insider
+    route:
+    - destination:
+        port:
+          number: 9898
+        name: podinfo.default.svc.cluster.local
+        subset: canary
+  - route:
+    - destination:
+        port:
+          number: 9898
+        name: podinfo.default.svc.cluster.local
+        subset: ga
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: podinfo-ga
+  namespace: default
+spec:
+  host: podinfo.default.svc.cluster.local
+  subsets:
+  - name: ga
+    labels:
+      release: ga
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: podinfo-canary
+  namespace: default
+spec:
+  host: podinfo.default.svc.cluster.local
+  subsets:
+  - name: canary
+    labels:
+      release: canary
