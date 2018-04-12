@@ -38,6 +38,6 @@ after_success:
   - if [ -z "$QUAY_USER" ]; then
       echo "PR build, skipping Quay push";
     else
-      docker login -u $QUAY_USER -p $QUAY_PASS quay.io;
+      echo $QUAY_PASS | docker login -u $QUAY_USER --password-stdin quay.io;
       make quay-push;
     fi

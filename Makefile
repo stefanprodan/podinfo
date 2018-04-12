@@ -80,7 +80,7 @@ docker-push:
 .PHONY: quay-push
 quay-push:
 	@echo Pushing: $(VERSION) to quay.io/$(DOCKER_IMAGE_NAME):$(VERSION)
-	@cd build/docker/linux/amd64/ ; docker build -t quay.io/$(DOCKER_IMAGE_NAME):$(VERSION) . ; docker push quay.io/$(DOCKER_IMAGE_NAME):$(VERSION)
+	@cd docker build -t quay.io/$(DOCKER_IMAGE_NAME):$(VERSION) -f Dockerfile.ci . ; docker push quay.io/$(DOCKER_IMAGE_NAME):$(VERSION)
 
 .PHONY: clean
 clean:
