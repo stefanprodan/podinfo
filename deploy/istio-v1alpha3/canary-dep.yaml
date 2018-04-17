@@ -3,7 +3,7 @@ apiVersion: apps/v1beta2
 kind: Deployment
 metadata:
   name: podinfo-canary
-  namespace: default
+  namespace: test
   labels:
     app: podinfo
     release: canary

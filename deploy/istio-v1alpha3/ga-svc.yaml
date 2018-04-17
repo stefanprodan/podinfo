@@ -3,7 +3,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: podinfo-ga
-  namespace: default
+  namespace: test
   labels:
     app: podinfo-ga
 spec:

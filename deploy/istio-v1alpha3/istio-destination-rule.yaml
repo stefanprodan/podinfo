@@ -3,9 +3,9 @@ apiVersion: networking.istio.io/v1alpha3
 kind: DestinationRule
 metadata:
   name: podinfo
-  namespace: default
+  namespace: test
 spec:
-  name: podinfo
+  name: podinfo.test
   subsets:
   - name: ga
     labels:

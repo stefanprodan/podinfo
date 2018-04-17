@@ -3,7 +3,7 @@ apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
   name: podinfo
-  namespace: default
+  namespace: test
 spec:
   hosts:
   - podinfo
@@ -27,10 +27,10 @@ spec:
         x-user:
           regex: ".*insider.*"
     route:
-      - destination:
-          name: podinfo
-          subset: canary
+    - destination:
+        name: podinfo.test
+        subset: canary
   - route:
     - destination:
-        name: podinfo
+        name: podinfo.test
         subset: ga

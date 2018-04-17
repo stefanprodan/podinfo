@@ -3,7 +3,7 @@ apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:
   name: podinfo-gateway
-  namespace: default
+  namespace: test
 spec:
   selector:
     app: podinfo
@@ -14,6 +14,6 @@ spec:
       protocol: HTTP
     hosts:
     - podinfo.co.uk
-    - podinfo.default.svc.cluster.local
+    - podinfo.test.svc.cluster.local
 
 
