@@ -14,6 +14,7 @@ spec:
       protocol: HTTP
     hosts:
     - podinfo.co.uk
+    - podinfo.default.svc.cluster.local
 ---
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
@@ -22,6 +23,7 @@ metadata:
   namespace: default
 spec:
   hosts:
+  - podinfo.co.uk
   - podinfo.default.svc.cluster.local
   gateways:
   - podinfo-gateway

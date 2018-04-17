@@ -29,3 +29,4 @@ spec:
   route:
   - labels:
       release: ga
+    weight: 100
