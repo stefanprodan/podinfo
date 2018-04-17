@@ -1,0 +1,36 @@
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: podinfo
+  namespace: default
+spec:
+  hosts:
+  - podinfo
+  - podinfo.co.uk
+  gateways:
+  - mesh
+  - podinfo-gateway
+#  http:
+#  - route:
+#    - destination:
+#        name: podinfo
+#        subset: canary
+#      weight: 50
+#    - destination:
+#        name: podinfo
+#        subset: ga
+#      weight: 50
+  http:
+  - match:
+    - headers:
+        x-user:
+          regex: ".*insider.*"
+    route:
+      - destination:
+          name: podinfo
+          subset: canary
+  - route:
+    - destination:
+        name: podinfo
+        subset: ga

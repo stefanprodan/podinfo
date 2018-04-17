@@ -1,0 +1,15 @@
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: podinfo
+  namespace: default
+spec:
+  name: podinfo
+  subsets:
+  - name: ga
+    labels:
+      release: ga
+  - name: canary
+    labels:
+      release: canary
