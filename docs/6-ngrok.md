@@ -1,13 +1,13 @@
 # Expose Kubernetes services over HTTPS with Ngrok
 
 Have you ever wanted to expose a Kubernetes service running on Minikube on the internet and have a 
-temporary HTTPS address for it? If so then Ngrok is the perfect solution to do that without any 
+temporary HTTPS address for it? If so then Ngrok is a great fit to do that without any 
 firewall, NAT or DNS configurations.
 If you are developing an application that works with webhooks or oauth callbacks 
 Ngrok can create a tunnel between your Kubernetes service and their cloud platform and provide you with 
 a unique HTTPS URL that you can use to test and debug your service. 
 
-For this purpose I've made a Helm chart that you can use to deploy Ngrok on Kubernetes by specifying 
+I've made a Helm chart that you can use to deploy Ngrok on Kubernetes by specifying 
 a ClusterIP service that will get exposed on the internet.
 
 What follows is a step-by-step guide on how you can use Ngrok as a reverse proxy to 
@@ -63,13 +63,36 @@ helm install sp/podinfo --name webhook
 This deploys `podinfo` in the default namespace and 
 creates a ClusterIP service with the address `webhook-podinfo:9898`.
 
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: podinfo
+    chart: podinfo-0.1.0
+    heritage: Tiller
+    release: webhook
+  name: webhook-podinfo
+  namespace: default
+spec:
+  ports:
+  - name: http
+    port: 9898
+    protocol: TCP
+    targetPort: http
+  selector:
+    app: podinfo
+    release: webhook
+  type: ClusterIP
+```
+
 ### Deploy Ngrok
 
 Before you begin go to [ngrok.com](https://ngrok.com) and register for a free account. 
 
 Ngrok will create a token for you, use it when installing the Ngrok chart.
 
-Install Ngrok:
+Install Ngrok by specifying the ClusterIP address you want to expose:
 
 ```bash
 $ helm install sp/ngrok --name tunnel \
