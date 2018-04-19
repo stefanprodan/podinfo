@@ -80,18 +80,14 @@ kubectl -n test apply -f ./deploy/istio-v1alpha3/istio-virtual-service.yaml
 kubectl -n test apply -f ./deploy/istio-v1alpha3/istio-gateway.yaml
 ```
 
-Create a `curl` pod for testing:
+Create a `loadtest` pod for testing:
 
 ```bash
-kubectl -n test run -i --rm --tty curl --image=radial/busyboxplus:curl --restart=Never -- sh
+kubectl -n test run -i --rm --tty loadtest --image=stefanprodan/loadtest --restart=Never -- sh
 ```
 
-Run inside the `curl` pod:
+Start the load test:
 
 ```bash
-curl -v -H "Host: podinfo.test" http://podinfo.test:9898/version
-version: 0.2.1
-
-curl -v -H "x-user: insider" -H "Host: podinfo.test" http://podinfo.test:9898/version
-version: 0.2.2
+hey -n 100000 -c 2 -q 5 http://podinfo.test:9898/version
 ```

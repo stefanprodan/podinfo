@@ -11,26 +11,30 @@ spec:
   gateways:
   - mesh
   - podinfo-gateway
-#  http:
-#  - route:
-#    - destination:
-#        name: podinfo
-#        subset: canary
-#      weight: 50
-#    - destination:
-#        name: podinfo
-#        subset: ga
-#      weight: 50
   http:
-  - match:
-    - headers:
-        x-user:
-          regex: ".*insider.*"
-    route:
-    - destination:
-        name: podinfo.test
-        subset: canary
   - route:
     - destination:
         name: podinfo.test
+        subset: canary
+      weight: 20
+    - destination:
+        name: podinfo.test
         subset: ga
+      weight: 80
+#  http:
+#  - match:
+#    - headers:
+#        x-user:
+#          exact: insider
+#      source_labels:
+#        release: ga
+#    route:
+#    - destination:
+#        name: podinfo.test
+#        subset: canary
+#      weight: 100
+#  - route:
+#    - destination:
+#        name: podinfo.test
+#        subset: ga
+#      weight: 100

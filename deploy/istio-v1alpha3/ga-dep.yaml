@@ -8,7 +8,7 @@ metadata:
     app: podinfo
     release: ga
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
      app: podinfo
