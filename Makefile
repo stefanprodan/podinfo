@@ -110,4 +110,6 @@ charts:
 	mv charts/grafana-0.1.0.tgz docs/
 	cd charts/ && helm package ngrok/
 	mv charts/ngrok-0.1.0.tgz docs/
+	cd charts/ && helm package weave-flux/
+	mv charts/weave-flux-0.1.0.tgz docs/
 	helm repo index docs --url https://stefanprodan.github.io/k8s-podinfo --merge ./docs/index.yaml
