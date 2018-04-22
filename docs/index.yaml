@@ -3,7 +3,7 @@ entries:
   ambassador:
   - apiVersion: v1
     appVersion: 0.29.0
-    created: 2018-04-22T12:15:20.174766976+03:00
+    created: 2018-04-22T13:38:40.997174933+03:00
     description: A Helm chart for Datawire Ambassador
     digest: a30c8cb38e696b09fda8269ad8465ce6fec6100cfc108ca85ecbc85913ca5c7f
     engine: gotpl
@@ -19,7 +19,7 @@ entries:
   grafana:
   - apiVersion: v1
     appVersion: "1.0"
-    created: 2018-04-22T12:15:20.175783483+03:00
+    created: 2018-04-22T13:38:40.998183639+03:00
     description: A Helm chart for Kubernetes
     digest: abdcadc5cddcb7c015aa5bb64e59bfa246774ad9243b3eb3c2a814abb38f2776
     name: grafana
@@ -29,7 +29,7 @@ entries:
   ngrok:
   - apiVersion: v1
     appVersion: "1.0"
-    created: 2018-04-22T12:15:20.176151057+03:00
+    created: 2018-04-22T13:38:40.998537731+03:00
     description: A Ngrok Helm chart for Kubernetes
     digest: 7bf5ed2ef63ccd5efb76bcd9a086b04816a162c51d6ab592bccf58c283acd2ea
     name: ngrok
@@ -39,7 +39,7 @@ entries:
   podinfo:
   - apiVersion: v1
     appVersion: 0.2.1
-    created: 2018-04-22T12:15:20.176642386+03:00
+    created: 2018-04-22T13:38:40.998990682+03:00
     description: Podinfo Helm chart for Kubernetes
     digest: f762207915a73faee72683b8ef8ac53da9db2dcbcf2107b2479d11beeb8f661f
     engine: gotpl
@@ -56,10 +56,10 @@ entries:
   weave-flux:
   - apiVersion: v1
     appVersion: 1.2.5
-    created: 2018-04-22T12:15:20.177557232+03:00
+    created: 2018-04-22T13:38:40.999693028+03:00
     description: Flux is a tool that automatically ensures that the state of a cluster
       matches what is specified in version control
-    digest: 40a06aa6a6eb1f2a82090b429406af934cc69ea5af0f028d4d041832461bc693
+    digest: a69e714356f331f89f272a43028ad3f3d7bfde373aff2ad98a34c44731bf7458
     engine: gotpl
     home: https://weave.works
     icon: https://www.weave.works/assets/images/bltd108e8f850ae9e7c/weave-logo-512.png
@@ -72,4 +72,4 @@ entries:
     urls:
     - https://stefanprodan.github.io/k8s-podinfo/weave-flux-0.1.0.tgz
     version: 0.1.0
-generated: 2018-04-22T12:15:20.17383917+03:00
+generated: 2018-04-22T13:38:40.996475166+03:00

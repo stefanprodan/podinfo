@@ -5,7 +5,7 @@ It is most useful when used as a deployment tool at the end of a Continuous Deli
 
 ## Introduction
 
-This chart bootstraps an [Weave Flux](https://github.com/weaveworks/flux) deployment on 
+This chart bootstraps a [Weave Flux](https://github.com/weaveworks/flux) deployment on 
 a [Kubernetes](http://kubernetes.io) cluster using the [Helm](https://helm.sh) package manager.
 
 ## Prerequisites
@@ -23,6 +23,20 @@ $ helm install --name cd \
 ./charts/weave-flux
 ```
 
+To install Flux with the Helm operator:
+
+```console
+$ helm install --name cd \
+--set git.url=git@github.com:stefanprodan/weave-flux-helm-demo \
+--set git.user="Stefan Prodan" \
+--set git.email="stefan.prodan@gmail.com" \
+--set helmOperator.create=true \
+--namespace flux \
+./charts/weave-flux
+```
+
+Be aware that the Helm operator is alpha quality, DO NOT use it on a production cluster.
+
 The [configuration](#configuration) section lists the parameters that can be configured during installation.
 
 ### Setup Git deploy 
@@ -31,8 +45,8 @@ At startup Flux generates a SSH key and logs the public key.
 Find the SSH public key with:
 
 ```bash
-FLUX_POD=$(kubectl get pods --namespace flux -l "app=weave-flux,release=cd" -o jsonpath="{.items[0].metadata.name}")
-kubectl logs $FLUX_POD | grep identity.pub | cut -d '"' -f2 | sed 's/.\{2\}$//'
+export FLUX_POD=$(kubectl get pods --namespace flux -l "app=weave-flux,release=cd" -o jsonpath="{.items[0].metadata.name}")
+kubectl -n flux logs $FLUX_POD | grep identity.pub | cut -d '"' -f2 | sed 's/.\{2\}$//'
 ```
 
 In order to sync your cluster state with GitHub you need to copy the public key and 
@@ -69,6 +83,11 @@ The following tables lists the configurable parameters of the Weave Flux chart a
 | `git.path` | Path within git repo to locate Kubernetes manifests (relative path) | None
 | `git.user` | Username to use as git committer | `Weave Flux`
 | `git.email` | Email to use as git committer | `support@weave.works`
+| `git.chartsPath` | Path within git repo to locate Helm charts (relative path) | `charts`
+| `helmOperator.create` | If `true`, install the Helm operator | `false`
+| `helmOperator.repository` | Helm operator image repository | `quay.io/weaveworks/helm-operator` 
+| `helmOperator.tag` | Helm operator image tag | `master-6f427cb` 
+| `helmOperator.pullPolicy` | Helm operator image pull policy | `IfNotPresent` 
 
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`. For example:
 

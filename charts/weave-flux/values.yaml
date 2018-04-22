@@ -11,6 +11,12 @@ service:
   type: ClusterIP
   port: 3030
 
+helmOperator:
+  create: false
+  repository: quay.io/weaveworks/helm-operator
+  tag: master-6f427cb
+  pullPolicy: IfNotPresent
+
 rbac:
   # Specifies whether RBAC resources should be created
   create: true
@@ -49,3 +55,5 @@ git:
   user: "Weave Flux"
   # Email to use as git committer
   email: "support@weave.works"
+  # Path within git repo to locate Helm charts (relative path)
+  chartsPath: "charts"
