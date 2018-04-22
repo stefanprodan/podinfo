@@ -18,21 +18,25 @@ To install the chart with the release name `cd`:
 
 ```console
 $ helm install --name cd \
---set git.url=git@github.com:weaveworks/flux-example
-stable/weave-flux
+--set git.url=git@github.com:weaveworks/flux-example \
+--namespace flux \
+./charts/weave-flux
 ```
 
 The [configuration](#configuration) section lists the parameters that can be configured during installation.
 
-At startup Flux generates a SSH key and stores it on the git-deploy secret. 
-Find the SSH public key in Flux logs with:
+### Setup Git deploy 
+
+At startup Flux generates a SSH key and logs the public key. 
+Find the SSH public key with:
 
 ```bash
-POD_NAME=$(kubectl get pods --namespace default -l "app=weave-flux,release=cd" -o jsonpath="{.items[0].metadata.name}")
-kubectl logs $POD_NAME | grep identity.pub | cut -d '"' -f2 | sed 's/.\{2\}$//'
+FLUX_POD=$(kubectl get pods --namespace flux -l "app=weave-flux,release=cd" -o jsonpath="{.items[0].metadata.name}")
+kubectl logs $FLUX_POD | grep identity.pub | cut -d '"' -f2 | sed 's/.\{2\}$//'
 ```
 
-Copy the public key and use it to create a deploy key with write access on your GitHub repository.
+In order to sync your cluster state with GitHub you need to copy the public key and 
+create a deploy key with write access on your GitHub repository.
 
 ## Uninstalling the Chart
 
@@ -42,7 +46,8 @@ To uninstall/delete the `cd` deployment:
 $ helm delete --purge cd
 ```
 
-The command removes all the Kubernetes components associated with the chart and deletes the release.
+The command removes all the Kubernetes components associated with the chart and deletes the release. 
+You should also remove the deploy key from your GitHub repository.
 
 ## Configuration
 
@@ -50,18 +55,40 @@ The following tables lists the configurable parameters of the Weave Flux chart a
 
 | Parameter                       | Description                                | Default                                                    |
 | ------------------------------- | ------------------------------------------ | ---------------------------------------------------------- |
-| `image` | Image | `quay.io/weaveworks/flux` 
-| `imageTag` | Image tag | `1.2.5` 
-| `imagePullPolicy` | Image pull policy | `IfNotPresent` 
+| `image.repository` | Image repository | `quay.io/weaveworks/flux` 
+| `image.tag` | Image tag | `1.2.5` 
+| `image.pullPolicy` | Image pull policy | `IfNotPresent` 
 | `resources` | CPU/memory resource requests/limits | None 
 | `rbac.create` | If `true`, create and use RBAC resources | `true`
 | `serviceAccount.create` | If `true`, create a new service account | `true`
 | `serviceAccount.name` | Service account to be used | `weave-flux`
 | `service.type` | Service type to be used | `ClusterIP`
+| `service.port` | Service port to be used | `3030`
 | `git.url` | URL of git repo with Kubernetes manifests | None
 | `git.branch` | Branch of git repo to use for Kubernetes manifests | `master`
 | `git.path` | Path within git repo to locate Kubernetes manifests (relative path) | None
 | `git.user` | Username to use as git committer | `Weave Flux`
 | `git.email` | Email to use as git committer | `support@weave.works`
+
+Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`. For example:
+
+```console
+$ helm upgrade --install --wait cd \
+--set git.url=git@github.com:stefanprodan/podinfo \
+--set git.path=deploy/auto-scaling \
+--namespace flux \
+./charts/weave-flux
+```
+
+## Upgrade
+
+Update Weave Flux version with:
+
+```console
+helm upgrade --reuse-values cd \
+--set image.tag=1.2.6 \
+./charts/weave-flux
+```
+
 
 
