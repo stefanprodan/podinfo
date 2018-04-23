@@ -14,7 +14,7 @@ service:
 helmOperator:
   create: false
   repository: quay.io/weaveworks/helm-operator
-  tag: master-6f427cb
+  tag: master-d5c374c
   pullPolicy: IfNotPresent
 
 rbac:

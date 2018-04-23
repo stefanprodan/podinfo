@@ -71,7 +71,7 @@ The following tables lists the configurable parameters of the Weave Flux chart a
 | ------------------------------- | ------------------------------------------ | ---------------------------------------------------------- |
 | `image.repository` | Image repository | `quay.io/weaveworks/flux` 
 | `image.tag` | Image tag | `1.2.5` 
-| `image.pullPolicy` | Image pull policy | `IfNotPresent` 
+| `image.pullPoliwell cy` | Image pull policy | `IfNotPresent` 
 | `resources` | CPU/memory resource requests/limits | None 
 | `rbac.create` | If `true`, create and use RBAC resources | `true`
 | `serviceAccount.create` | If `true`, create a new service account | `true`
