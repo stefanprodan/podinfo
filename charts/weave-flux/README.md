@@ -88,6 +88,7 @@ The following tables lists the configurable parameters of the Weave Flux chart a
 | `helmOperator.repository` | Helm operator image repository | `quay.io/weaveworks/helm-operator` 
 | `helmOperator.tag` | Helm operator image tag | `master-6f427cb` 
 | `helmOperator.pullPolicy` | Helm operator image pull policy | `IfNotPresent` 
+| `token` | Weave Cloud service token | None 
 
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`. For example:
 

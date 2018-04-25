@@ -1,5 +1,8 @@
 # Default values for weave-flux.
 
+# Weave Cloud service token
+token: ""
+
 replicaCount: 1
 
 image:
