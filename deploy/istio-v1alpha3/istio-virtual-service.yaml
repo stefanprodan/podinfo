@@ -16,11 +16,11 @@ spec:
     - destination:
         name: podinfo.test
         subset: canary
-      weight: 100
+      weight: 20
     - destination:
         name: podinfo.test
         subset: ga
-      weight: 0
+      weight: 80
 #  http:
 #  - match:
 #    - headers:
