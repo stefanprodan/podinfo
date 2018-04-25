@@ -190,6 +190,7 @@ Observe the traffic shift with Scope:
 
 Prerequisites for automating Istio canary deployments:
 
+* create a cluster config Git repo that contains the desire state of your cluster
 * keep the GA and Canary deployment definitions in Git 
 * keep the Istio destination rule, virtual service and gateway definitions in Git
 * any changes to the above resources are performed via `git commit` instead of `kubectl apply`
@@ -212,7 +213,7 @@ CD GitOps pipeline steps:
 * GitHub notifies GCP Container Builder that a new tag has been committed
 * GCP Container Builder builds the Docker image, tags it as 0.2.1 and pushes it to Google Container Registry
 * Weave Flux detects the new tag on GCR and updates the Canary deployment definition
-* Weave Flux commits the Canary deployment definition to GitHub
+* Weave Flux commits the Canary deployment definition to GitHub in the cluster repo
 * Weave Flux triggers a rolling update of the Canary deployment
 * Weave Cloud sends a Slack notification that the 0.2.1 patch has been released 
 
@@ -222,5 +223,7 @@ desired state described in git and will apply the changes.
 
 If you notice that the Canary doesn't behave well under load you can revert the changes in Git and 
 Weave Flux will undo the weight settings by applying the desired state from Git on the cluster.
+
+Keep iterating on the Canary code until the SLA is on a par with the GA release. 
 
 
