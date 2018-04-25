@@ -180,4 +180,8 @@ Full promotion, 100% of the traffic to the canary:
 
 Measure requests latency for each deployment:
 
- ![s5](https://github.com/stefanprodan/k8s-podinfo/blob/master/docs/screens/istio-c-s5.png)
+![s5](https://github.com/stefanprodan/k8s-podinfo/blob/master/docs/screens/istio-c-s5.png)
+ 
+Observe the traffic shift with Scope:
+
+![s0](https://github.com/stefanprodan/k8s-podinfo/blob/master/docs/screens/istio-c-s0.png)
