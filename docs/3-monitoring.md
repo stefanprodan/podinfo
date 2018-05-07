@@ -7,26 +7,26 @@ Prometheus query examples of key metrics to measure and alert upon.
 **Request Rate** - the number of requests per second by instance
 
 ```
-sum(irate(http_requests_count{job=~".*podinfo"}[1m])) by (instance)
+sum(irate(http_request_duration_seconds_count{job=~".*podinfo"}[1m])) by (instance)
 ```
 
 **Request Errors** - the number of failed requests per second by URL path
 
 ```
-sum(irate(http_requests_count{job=~".*podinfo", status=~"5.."}[1m])) by (path)
+sum(irate(http_request_duration_seconds_count{job=~".*podinfo", status=~"5.."}[1m])) by (path)
 ```
 
 **Request Duration** - average duration of each request over 10 minutes
 
 ```
-sum(rate(http_requests_sum{job=~".*podinfo"}[10m])) / 
-sum(rate(http_requests_count{job=~".*podinfo"}[10m]))
+sum(rate(http_request_duration_seconds_sum{job=~".*podinfo"}[10m])) / 
+sum(rate(http_request_duration_seconds_count{job=~".*podinfo"}[10m]))
 ```
 
 **Request Latency** - 99th percentile request latency over 10 minutes
 
 ```
-histogram_quantile(0.99, sum(rate(http_requests_bucket{job=~".*podinfo"}[10m])) by (le))
+histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{job=~".*podinfo"}[10m])) by (le))
 ```
 
 **Goroutines Rate** - the number of running goroutines over 10 minutes

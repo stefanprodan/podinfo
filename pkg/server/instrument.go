@@ -22,7 +22,7 @@ func NewInstrument() *Instrument {
 	// used for monitoring and alerting (RED method)
 	histogram := prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Subsystem: "http",
-		Name:      "requests",
+		Name:      "request_duration_seconds",
 		Help:      "Seconds spent serving HTTP requests.",
 		Buckets:   prometheus.DefBuckets,
 	}, []string{"method", "path", "status"})
