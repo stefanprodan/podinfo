@@ -7,7 +7,7 @@ replicaCount: 1
 
 image:
   repository: quay.io/weaveworks/flux
-  tag: 1.2.5
+  tag: 1.3.0
   pullPolicy: IfNotPresent
 
 service:
@@ -17,7 +17,7 @@ service:
 helmOperator:
   create: false
   repository: quay.io/weaveworks/helm-operator
-  tag: master-d5c374c
+  tag: 0.1.0-alpha
   pullPolicy: IfNotPresent
 
 rbac:
