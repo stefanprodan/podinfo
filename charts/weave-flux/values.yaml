@@ -60,3 +60,5 @@ git:
   email: "support@weave.works"
   # Path within git repo to locate Helm charts (relative path)
   chartsPath: "charts"
+  # Period at which to poll git repo for new commits
+  pollInterval: "30s"

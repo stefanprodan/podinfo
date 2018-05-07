@@ -53,6 +53,8 @@ spec:
           - --git-path={{ .Values.git.path }}
           - --git-user={{ .Values.git.user }}
           - --git-email={{ .Values.git.email }}
+          - --git-poll-interval={{ .Values.git.pollInterval }}
+          - --sync-interval={{ .Values.git.pollInterval }}
           {{- if .Values.token }}
           - --connect=wss://cloud.weave.works/api/flux
           - --token={{ .Values.token }}
