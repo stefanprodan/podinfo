@@ -1,4 +1,4 @@
-# GitOps for Istio Canary Deployments
+# Canary Deployments with Istio
 
 ### Install Istio
 
@@ -187,6 +187,8 @@ Observe the traffic shift with Scope:
 ![s0](https://github.com/stefanprodan/k8s-podinfo/blob/master/docs/screens/istio-c-s0.png)
 
 ### Applying GitOps
+
+![gitops](https://github.com/stefanprodan/k8s-podinfo/blob/master/docs/diagrams/istio-gitops.png)
 
 Prerequisites for automating Istio canary deployments:
 

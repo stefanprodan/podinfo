@@ -1,4 +1,4 @@
-# Canary Deployments and A/B Testing
+# A/B Testing and Canary Deployments
 
 Canary Deployment and A/B testing with Ambassador's Envoy API Gateway. 
 

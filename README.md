@@ -39,5 +39,6 @@ Web API:
 * [Horizontal Pod Auto-scaling](docs/2-autoscaling.md)
 * [Monitoring and alerting with Prometheus](docs/3-monitoring.md)
 * [StatefulSets with local persistent volumes](docs/4-statefulsets.md)
-* [Canary Deployments and A/B Testing](docs/5-canary.md)
 * [Expose Kubernetes services over HTTPS with Ngrok](docs/6-ngrok.md)
+* [A/B Testing with Ambassador API Gateway](docs/5-canary.md)
+* [Canary Deployments with Istio](docs/7-istio.md)

@@ -9,5 +9,6 @@ that showcases best practices of running microservices in Kubernetes.
 * [Horizontal Pod Auto-scaling](2-autoscaling.md)
 * [Monitoring and alerting with Prometheus](3-monitoring.md)
 * [StatefulSets with local persistent volumes](4-statefulsets.md)
-* [Canary Deployments and A/B Testing](5-canary.md)
 * [Expose Kubernetes services over HTTPS with Ngrok](6-ngrok.md)
+* [A/B Testing with Ambassador API Gateway](5-canary.md)
+* [Canary Deployments with Istio](7-istio.md)
