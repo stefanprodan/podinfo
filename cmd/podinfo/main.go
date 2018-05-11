@@ -17,7 +17,7 @@ var (
 )
 
 func init() {
-	flag.StringVar(&port, "port", "8989", "Port to listen on.")
+	flag.StringVar(&port, "port", "9898", "Port to listen on.")
 	flag.BoolVar(&debug, "debug", false, "sets log level to debug")
 }
 
