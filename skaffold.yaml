@@ -1,0 +1,27 @@
+apiVersion: skaffold/v1alpha2
+kind: Config
+
+build:
+
+  artifacts:
+  - imageName: podinfo
+    docker:
+      dockerfilePath: ./Dockerfile.ci
+
+deploy:
+
+  kubectl: { manifests: [ deploy/skaffold/* ] }
+
+profiles:
+
+  - name: production
+
+    build:
+
+      local: { skipPush: false }
+      artifacts:
+      - imageName: podinfo
+        docker:
+          dockerfilePath: ./Dockerfile.ci
+
+    deploy: {}
