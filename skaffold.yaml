@@ -1,27 +1,33 @@
 apiVersion: skaffold/v1alpha2
 kind: Config
 
+## Default profile for use with `skaffold dev`
 build:
-
   artifacts:
   - imageName: podinfo
     docker:
       dockerfilePath: ./Dockerfile.ci
-
 deploy:
-
-  kubectl: { manifests: [ deploy/skaffold/* ] }
+  kubectl: { manifests: [ deploy/skaffold/dev/* ] }
 
 profiles:
 
-  - name: production
-
+  - name: test
+    ## This profile runs unit tests and builds the image
     build:
-
-      local: { skipPush: false }
+      local: { skipPush: true }
       artifacts:
-      - imageName: podinfo
+      - imageName: stefanprodan/podinfo
         docker:
           dockerfilePath: ./Dockerfile.ci
+    deploy: {} # not needed here as such
 
-    deploy: {}
+  - name: production
+    ## This profile pushes the image
+    build:
+      local: { skipPush: false }
+      artifacts:
+      - imageName: stefanprodan/podinfo
+        docker:
+          dockerfilePath: ./Dockerfile.ci
+    deploy: {} # no-op, flux will take care of this

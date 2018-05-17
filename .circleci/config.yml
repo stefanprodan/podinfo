@@ -1,0 +1,35 @@
+version: 2
+jobs:
+
+  build:
+    docker:
+      - image: errordeveloper/skaffold:66cc263ef18f107adce245b8fc622a8ea46385f2
+    steps:
+      - checkout
+      - setup_remote_docker: {docker_layer_caching: true}
+      - run:
+          name: Run unit tests and build the image with Skaffold
+          command: skaffold build --profile=test
+
+  deploy:
+    docker:
+      - image: errordeveloper/skaffold:66cc263ef18f107adce245b8fc622a8ea46385f2
+    steps:
+      - checkout
+      - setup_remote_docker: {docker_layer_caching: true}
+      - run:
+          name: Login to the registry
+          command: echo $REGISTRY_PASSWORD | docker login --username $REGISTRY_USERNAME --password-stdin
+      - run:
+          name: Build and push the image to the registry with Skaffold
+          command: skaffold build --profile=production
+
+workflows:
+  version: 2
+  main:
+    jobs:
+      - build
+      - deploy:
+          requires: [build]
+          filters:
+            branches: {only: [master]}
