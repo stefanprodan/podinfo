@@ -19,10 +19,10 @@ jobs:
       - setup_remote_docker: {docker_layer_caching: true}
       - run:
           name: Login to the registry
-          command: echo $REGISTRY_PASSWORD | docker login --username $REGISTRY_USERNAME --password-stdin
+          command: '[[ -z "${CIRCLE_PR_NUMBER}" ]] && (echo $REGISTRY_PASSWORD | docker login --username $REGISTRY_USERNAME --password-stdin)'
       - run:
           name: Build and push the image to the registry with Skaffold
-          command: skaffold build --profile=production
+          command: '[[ -z "${CIRCLE_PR_NUMBER}" ]] && skaffold build --profile=production'
 
 workflows:
   version: 2
