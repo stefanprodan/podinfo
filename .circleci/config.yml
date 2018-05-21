@@ -18,11 +18,14 @@ jobs:
       - checkout
       - setup_remote_docker: {docker_layer_caching: true}
       - run:
-          name: Login to the registry
-          command: '[[ -z "${CIRCLE_PR_NUMBER}" ]] && (echo $REGISTRY_PASSWORD | docker login --username $REGISTRY_USERNAME --password-stdin)'
-      - run:
           name: Build and push the image to the registry with Skaffold
-          command: '[[ -z "${CIRCLE_PR_NUMBER}" ]] && skaffold build --profile=production'
+          command: |
+            if [[ -z "${CIRCLE_PULL_REQUEST}" ]] && [[ "${CIRCLE_PROJECT_USERNAME}" = "stefanprodan" ]] ; then
+              echo $REGISTRY_PASSWORD | docker login --username $REGISTRY_USERNAME --password-stdin
+              skaffold build --profile=production
+            else
+              echo "Do not push image"
+            fi
 
 workflows:
   version: 2
