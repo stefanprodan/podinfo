@@ -5,7 +5,7 @@ that showcases best practices of running microservices in Kubernetes.
 
 Specifications:
 
-* Multi-arch build and release automation (Make/TravisCI)
+* Release automation (Make/TravisCI/CircleCI/Quay.io/Google Cloud Container Builder/Skaffold/Weave Flux)
 * Multi-platform Docker image (amd64/arm/arm64/ppc64le/s390x)
 * Health checks (readiness and liveness)
 * Graceful shutdown on interrupt signals
