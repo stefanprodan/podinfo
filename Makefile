@@ -71,7 +71,7 @@ docker-build: tar
 .PHONY: docker-push
 docker-push:
 	@echo Pushing: $(VERSION) to $(DOCKER_IMAGE_NAME)
-	for arch in $(LINUX_ARCH); do \
+	for arch in $(LINUX_ARCH); do \ 
 	    docker push $(DOCKER_IMAGE_NAME):$(NAME)-$$arch ;\
 	done
 	manifest-tool push from-args --platforms $(PLATFORMS) --template $(DOCKER_IMAGE_NAME):podinfo-ARCH --target $(DOCKER_IMAGE_NAME):$(VERSION)
