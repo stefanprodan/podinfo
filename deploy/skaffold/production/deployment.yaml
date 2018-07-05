@@ -5,6 +5,8 @@ metadata:
   name: podinfo
   labels:
     app: podinfo
+  annotations:
+    flux.weave.works/automated: 'true'
 spec:
   replicas: 1
   selector:
