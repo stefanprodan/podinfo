@@ -2,7 +2,7 @@ package server
 
 import (
 	"bytes"
-	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"io/ioutil"
@@ -267,7 +267,7 @@ func (s *Server) panic(w http.ResponseWriter, r *http.Request) {
 }
 
 func hash(input string) string {
-	h := sha1.New()
+	h := sha256.New()
 	h.Write([]byte(input))
 	return hex.EncodeToString(h.Sum(nil))
 }
