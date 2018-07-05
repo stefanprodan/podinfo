@@ -9,7 +9,7 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-     app: podinfo
+      app: podinfo
   template:
     metadata:
       labels:
@@ -19,11 +19,11 @@ spec:
     spec:
       containers:
       - name: podinfod
-        image: stefanprodan/podinfo
+        image: stefanprodan/podinfo:92114c0
         command:
-          - ./podinfo
-          - -port=9898
-          - -debug=true
+        - ./podinfo
+        - -port=9898
+        - -debug=true
         ports:
         - name: http
           containerPort: 9898
