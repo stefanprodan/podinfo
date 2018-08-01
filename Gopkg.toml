@@ -15,6 +15,10 @@
   name = "gopkg.in/yaml.v2"
   version = "2.1.1"
 
+[[override]]
+  name = "github.com/fsnotify/fsnotify"
+  version = "1.2.9"
+
 [prune]
   go-tests = true
   unused-packages = true

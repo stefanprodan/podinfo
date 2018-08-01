@@ -9,6 +9,7 @@ Specifications:
 * Multi-platform Docker image (amd64/arm/arm64/ppc64le/s390x)
 * Health checks (readiness and liveness)
 * Graceful shutdown on interrupt signals
+* Watches for secrets and configmaps changes and updates the in-memory cache
 * Prometheus instrumentation (RED metrics)
 * Dependency management with golang/dep
 * Structured logging with zerolog
@@ -29,6 +30,7 @@ Web API:
 * `POST /echo` echos the posted content, logs the SHA1 hash of the content
 * `GET /echoheaders` prints the request HTTP headers
 * `POST /job` long running job, json body: `{"wait":2}` 
+* `GET /configs` prints the configmaps and/or secrets mounted in the `config` volume
 * `POST /write` writes the posted content to disk at /data/hash and returns the SHA1 hash of the content
 * `POST /read` receives a SHA1 hash and returns the content of the file /data/hash if exists
 * `POST /backend` forwards the call to the backend service on `http://backend-podinfo:9898/echo`

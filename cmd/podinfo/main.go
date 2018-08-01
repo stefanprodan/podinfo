@@ -24,6 +24,8 @@ func init() {
 func main() {
 	flag.Parse()
 
+	//fscache.ReadAllFile("/Users/aleph/go/src/github.com/stefanprodan/k8s-podinfo/")
+
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	if debug {
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)

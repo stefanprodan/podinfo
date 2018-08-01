@@ -11,12 +11,14 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog/log"
+	"github.com/stefanprodan/k8s-podinfo/pkg/fscache"
 )
 
 var (
 	healthy  int32
 	ready    int32
 	dataPath string
+	watcher  *fscache.Watcher
 )
 
 type Server struct {
@@ -24,6 +26,7 @@ type Server struct {
 }
 
 func NewServer(options ...func(*Server)) *Server {
+
 	s := &Server{mux: http.NewServeMux()}
 
 	for _, f := range options {
@@ -43,6 +46,7 @@ func NewServer(options ...func(*Server)) *Server {
 	s.mux.HandleFunc("/write", s.write)
 	s.mux.HandleFunc("/error", s.error)
 	s.mux.HandleFunc("/panic", s.panic)
+	s.mux.HandleFunc("/configs", s.configs)
 	s.mux.HandleFunc("/version", s.version)
 	s.mux.Handle("/metrics", promhttp.Handler())
 
@@ -79,6 +83,18 @@ func ListenAndServe(port string, timeout time.Duration, stopCh <-chan struct{}) 
 	dataPath = os.Getenv("data")
 	if len(dataPath) < 1 {
 		dataPath = "/data"
+	}
+
+	// config path
+	configPath := os.Getenv("configPath")
+	if len(configPath) > 0 {
+		var err error
+		watcher, err = fscache.NewWatch(configPath)
+		if err != nil {
+			log.Error().Err(err).Msgf("%s watch error", configPath)
+		} else {
+			watcher.Watch()
+		}
 	}
 
 	// run server in background

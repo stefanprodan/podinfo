@@ -205,6 +205,33 @@ func (s *Server) read(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (s *Server) configs(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "GET":
+		files := make(map[string]string)
+		if watcher != nil {
+			watcher.Cache.Range(func(key interface{}, value interface{}) bool {
+				files[key.(string)] = value.(string)
+				return true
+			})
+		}
+
+		d, err := yaml.Marshal(files)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+			return
+		}
+
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.WriteHeader(http.StatusOK)
+		w.Write(d)
+	default:
+		w.WriteHeader(http.StatusNotAcceptable)
+	}
+}
+
 func (s *Server) version(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/version" {
 		w.WriteHeader(http.StatusNotFound)
