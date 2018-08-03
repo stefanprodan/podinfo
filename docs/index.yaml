@@ -3,7 +3,7 @@ entries:
   ambassador:
   - apiVersion: v1
     appVersion: 0.29.0
-    created: 2018-05-10T11:55:31.454625986+03:00
+    created: 2018-08-04T02:00:00.9435927+03:00
     description: A Helm chart for Datawire Ambassador
     digest: a30c8cb38e696b09fda8269ad8465ce6fec6100cfc108ca85ecbc85913ca5c7f
     engine: gotpl
@@ -19,7 +19,7 @@ entries:
   grafana:
   - apiVersion: v1
     appVersion: "1.0"
-    created: 2018-05-10T11:55:31.455693067+03:00
+    created: 2018-08-04T02:00:00.944250297+03:00
     description: A Helm chart for Kubernetes
     digest: abdcadc5cddcb7c015aa5bb64e59bfa246774ad9243b3eb3c2a814abb38f2776
     name: grafana
@@ -29,7 +29,7 @@ entries:
   ngrok:
   - apiVersion: v1
     appVersion: "1.0"
-    created: 2018-05-10T11:55:31.456078781+03:00
+    created: 2018-08-04T02:00:00.944555634+03:00
     description: A Ngrok Helm chart for Kubernetes
     digest: 7bf5ed2ef63ccd5efb76bcd9a086b04816a162c51d6ab592bccf58c283acd2ea
     name: ngrok
@@ -38,8 +38,24 @@ entries:
     version: 0.1.0
   podinfo:
   - apiVersion: v1
+    appVersion: 0.5.0
+    created: 2018-08-04T02:00:00.946091506+03:00
+    description: Podinfo Helm chart for Kubernetes
+    digest: dfe7cf44aef0d170549918b00966422a07e7611f9d0081fb34f5b5beb0641c00
+    engine: gotpl
+    home: https://github.com/stefanprodan/k8s-podinfo
+    maintainers:
+    - email: stefanprodan@users.noreply.github.com
+      name: stefanprodan
+    name: podinfo
+    sources:
+    - https://github.com/stefanprodan/k8s-podinfo
+    urls:
+    - https://stefanprodan.github.io/k8s-podinfo/podinfo-0.2.0.tgz
+    version: 0.2.0
+  - apiVersion: v1
     appVersion: 0.3.0
-    created: 2018-05-10T11:55:31.456571425+03:00
+    created: 2018-08-04T02:00:00.945649351+03:00
     description: Podinfo Helm chart for Kubernetes
     digest: 4865a2d8b269cf453935cda9661c2efb82c16411471f8c11221a6d03d9bb58b1
     engine: gotpl
@@ -56,7 +72,7 @@ entries:
   weave-flux:
   - apiVersion: v1
     appVersion: 1.3.0
-    created: 2018-05-10T11:55:31.457640563+03:00
+    created: 2018-08-04T02:00:00.947870112+03:00
     description: Flux is a tool that automatically ensures that the state of a cluster
       matches what is specified in version control
     digest: 1f52e427bb1d728641405f5ad9c514e8861905c110c14db95516629d24443b7d
@@ -74,7 +90,7 @@ entries:
     version: 0.2.0
   - apiVersion: v1
     appVersion: 1.2.5
-    created: 2018-05-10T11:55:31.457125049+03:00
+    created: 2018-08-04T02:00:00.947340919+03:00
     description: Flux is a tool that automatically ensures that the state of a cluster
       matches what is specified in version control
     digest: 9e18fb8d175f4fac3b054905c7110d18b6d18f884011df9e9d010c66337da7ec
@@ -90,4 +106,4 @@ entries:
     urls:
     - https://stefanprodan.github.io/k8s-podinfo/weave-flux-0.1.0.tgz
     version: 0.1.0
-generated: 2018-05-10T11:55:31.453916675+03:00
+generated: 2018-08-04T02:00:00.942959149+03:00
