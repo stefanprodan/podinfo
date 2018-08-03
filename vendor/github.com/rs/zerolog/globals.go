@@ -19,6 +19,9 @@ var (
 	// CallerFieldName is the field name used for caller field.
 	CallerFieldName = "caller"
 
+	// CallerSkipFrameCount is the number of stack frames to skip to find the caller.
+	CallerSkipFrameCount = 2
+
 	// TimeFieldFormat defines the time format of the Time field type.
 	// If set to an empty string, the time is formatted as an UNIX timestamp
 	// as integer.
@@ -49,7 +52,8 @@ func SetGlobalLevel(l Level) {
 	atomic.StoreUint32(gLevel, uint32(l))
 }
 
-func globalLevel() Level {
+// GlobalLevel returns the current global log level
+func GlobalLevel() Level {
 	return Level(atomic.LoadUint32(gLevel))
 }
 

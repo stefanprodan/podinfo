@@ -1,10 +1,9 @@
 package zerolog
 
 import (
+	"net"
 	"sort"
 	"time"
-
-	"github.com/rs/zerolog/internal/json"
 )
 
 func appendFields(dst []byte, fields map[string]interface{}) []byte {
@@ -14,82 +13,129 @@ func appendFields(dst []byte, fields map[string]interface{}) []byte {
 	}
 	sort.Strings(keys)
 	for _, key := range keys {
-		dst = json.AppendKey(dst, key)
-		switch val := fields[key].(type) {
+		dst = enc.AppendKey(dst, key)
+		val := fields[key]
+		if val, ok := val.(LogObjectMarshaler); ok {
+			e := newEvent(nil, 0)
+			e.buf = e.buf[:0]
+			e.appendObject(val)
+			dst = append(dst, e.buf...)
+			eventPool.Put(e)
+			continue
+		}
+		switch val := val.(type) {
 		case string:
-			dst = json.AppendString(dst, val)
+			dst = enc.AppendString(dst, val)
 		case []byte:
-			dst = json.AppendBytes(dst, val)
+			dst = enc.AppendBytes(dst, val)
 		case error:
-			dst = json.AppendError(dst, val)
+			dst = enc.AppendError(dst, val)
 		case []error:
-			dst = json.AppendErrors(dst, val)
+			dst = enc.AppendErrors(dst, val)
 		case bool:
-			dst = json.AppendBool(dst, val)
+			dst = enc.AppendBool(dst, val)
 		case int:
-			dst = json.AppendInt(dst, val)
+			dst = enc.AppendInt(dst, val)
 		case int8:
-			dst = json.AppendInt8(dst, val)
+			dst = enc.AppendInt8(dst, val)
 		case int16:
-			dst = json.AppendInt16(dst, val)
+			dst = enc.AppendInt16(dst, val)
 		case int32:
-			dst = json.AppendInt32(dst, val)
+			dst = enc.AppendInt32(dst, val)
 		case int64:
-			dst = json.AppendInt64(dst, val)
+			dst = enc.AppendInt64(dst, val)
 		case uint:
-			dst = json.AppendUint(dst, val)
+			dst = enc.AppendUint(dst, val)
 		case uint8:
-			dst = json.AppendUint8(dst, val)
+			dst = enc.AppendUint8(dst, val)
 		case uint16:
-			dst = json.AppendUint16(dst, val)
+			dst = enc.AppendUint16(dst, val)
 		case uint32:
-			dst = json.AppendUint32(dst, val)
+			dst = enc.AppendUint32(dst, val)
 		case uint64:
-			dst = json.AppendUint64(dst, val)
+			dst = enc.AppendUint64(dst, val)
 		case float32:
-			dst = json.AppendFloat32(dst, val)
+			dst = enc.AppendFloat32(dst, val)
 		case float64:
-			dst = json.AppendFloat64(dst, val)
+			dst = enc.AppendFloat64(dst, val)
 		case time.Time:
-			dst = json.AppendTime(dst, val, TimeFieldFormat)
+			dst = enc.AppendTime(dst, val, TimeFieldFormat)
 		case time.Duration:
-			dst = json.AppendDuration(dst, val, DurationFieldUnit, DurationFieldInteger)
+			dst = enc.AppendDuration(dst, val, DurationFieldUnit, DurationFieldInteger)
+		case *string:
+			dst = enc.AppendString(dst, *val)
+		case *bool:
+			dst = enc.AppendBool(dst, *val)
+		case *int:
+			dst = enc.AppendInt(dst, *val)
+		case *int8:
+			dst = enc.AppendInt8(dst, *val)
+		case *int16:
+			dst = enc.AppendInt16(dst, *val)
+		case *int32:
+			dst = enc.AppendInt32(dst, *val)
+		case *int64:
+			dst = enc.AppendInt64(dst, *val)
+		case *uint:
+			dst = enc.AppendUint(dst, *val)
+		case *uint8:
+			dst = enc.AppendUint8(dst, *val)
+		case *uint16:
+			dst = enc.AppendUint16(dst, *val)
+		case *uint32:
+			dst = enc.AppendUint32(dst, *val)
+		case *uint64:
+			dst = enc.AppendUint64(dst, *val)
+		case *float32:
+			dst = enc.AppendFloat32(dst, *val)
+		case *float64:
+			dst = enc.AppendFloat64(dst, *val)
+		case *time.Time:
+			dst = enc.AppendTime(dst, *val, TimeFieldFormat)
+		case *time.Duration:
+			dst = enc.AppendDuration(dst, *val, DurationFieldUnit, DurationFieldInteger)
 		case []string:
-			dst = json.AppendStrings(dst, val)
+			dst = enc.AppendStrings(dst, val)
 		case []bool:
-			dst = json.AppendBools(dst, val)
+			dst = enc.AppendBools(dst, val)
 		case []int:
-			dst = json.AppendInts(dst, val)
+			dst = enc.AppendInts(dst, val)
 		case []int8:
-			dst = json.AppendInts8(dst, val)
+			dst = enc.AppendInts8(dst, val)
 		case []int16:
-			dst = json.AppendInts16(dst, val)
+			dst = enc.AppendInts16(dst, val)
 		case []int32:
-			dst = json.AppendInts32(dst, val)
+			dst = enc.AppendInts32(dst, val)
 		case []int64:
-			dst = json.AppendInts64(dst, val)
+			dst = enc.AppendInts64(dst, val)
 		case []uint:
-			dst = json.AppendUints(dst, val)
+			dst = enc.AppendUints(dst, val)
 		// case []uint8:
-		// 	dst = appendUints8(dst, val)
+		// 	dst = enc.AppendUints8(dst, val)
 		case []uint16:
-			dst = json.AppendUints16(dst, val)
+			dst = enc.AppendUints16(dst, val)
 		case []uint32:
-			dst = json.AppendUints32(dst, val)
+			dst = enc.AppendUints32(dst, val)
 		case []uint64:
-			dst = json.AppendUints64(dst, val)
+			dst = enc.AppendUints64(dst, val)
 		case []float32:
-			dst = json.AppendFloats32(dst, val)
+			dst = enc.AppendFloats32(dst, val)
 		case []float64:
-			dst = json.AppendFloats64(dst, val)
+			dst = enc.AppendFloats64(dst, val)
 		case []time.Time:
-			dst = json.AppendTimes(dst, val, TimeFieldFormat)
+			dst = enc.AppendTimes(dst, val, TimeFieldFormat)
 		case []time.Duration:
-			dst = json.AppendDurations(dst, val, DurationFieldUnit, DurationFieldInteger)
+			dst = enc.AppendDurations(dst, val, DurationFieldUnit, DurationFieldInteger)
 		case nil:
-			dst = append(dst, "null"...)
+			dst = enc.AppendNil(dst)
+		case net.IP:
+			dst = enc.AppendIPAddr(dst, val)
+		case net.IPNet:
+			dst = enc.AppendIPPrefix(dst, val)
+		case net.HardwareAddr:
+			dst = enc.AppendMACAddr(dst, val)
 		default:
-			dst = json.AppendInterface(dst, val)
+			dst = enc.AppendInterface(dst, val)
 		}
 	}
 	return dst

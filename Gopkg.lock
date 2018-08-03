@@ -8,6 +8,12 @@
   revision = "4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9"
 
 [[projects]]
+  name = "github.com/fsnotify/fsnotify"
+  packages = ["."]
+  revision = "c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9"
+  version = "v1.4.7"
+
+[[projects]]
   name = "github.com/golang/protobuf"
   packages = ["proto"]
   revision = "925541529c1fa6821df4e44ce2723319eb2be768"
@@ -65,24 +71,18 @@
   name = "github.com/rs/zerolog"
   packages = [
     ".",
+    "internal/cbor",
     "internal/json",
     "log"
   ]
-  revision = "56a970de510213e50dbaa39ad73ac07c9ec75606"
-  version = "v1.5.0"
+  revision = "77db4b4f350e31be66a57c332acb7721cf9ff9bb"
+  version = "v1.8.0"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
   revision = "bd9dbc187b6e1dacfdd2722a87e83093c2d7bd6e"
-
-[[projects]]
-  name = "gopkg.in/fsnotify.v1"
-  packages = ["."]
-  revision = "c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9"
-  source = "https://github.com/fsnotify/fsnotify.git"
-  version = "v1.4.7"
 
 [[projects]]
   name = "gopkg.in/yaml.v2"
@@ -93,6 +93,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "4e2ab8e2788930163dce5359426d07cbd38bc5708a1b19660757365a0f8425ae"
+  inputs-digest = "1b88c0a618973c53f6b715dd51ad99f2952baf09c4d752bc8a985d26439a739c"
   solver-name = "gps-cdcl"
   solver-version = 1

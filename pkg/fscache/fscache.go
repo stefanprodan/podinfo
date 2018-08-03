@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync"
 
-	"gopkg.in/fsnotify.v1"
+	"github.com/fsnotify/fsnotify"
 )
 
 type Watcher struct {
@@ -35,6 +35,7 @@ func NewWatch(dir string) (*Watcher, error) {
 		Cache:     new(sync.Map),
 	}
 
+	log.Printf("fscache start watcher for %s", w.dir)
 	err = w.fswatcher.Add(w.dir)
 	if err != nil {
 		return nil, err
@@ -60,14 +61,14 @@ func (w *Watcher) Watch() {
 					if filepath.Base(event.Name) == "..data" {
 						err := w.updateCache()
 						if err != nil {
-							log.Println("fscache update error", err)
+							log.Printf("fscache update error %v", err)
 						} else {
-							log.Println("fscache sync with", w.dir)
+							log.Printf("fscache reload %s", w.dir)
 						}
 					}
 				}
 			case err := <-w.fswatcher.Errors:
-				log.Println(w.dir, "fswatcher error", err)
+				log.Printf("fswatcher %s error %v", w.dir, err)
 			}
 		}
 	}()

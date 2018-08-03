@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	stdlog "log"
 	"time"
 
 	"github.com/rs/zerolog"
@@ -12,28 +13,54 @@ import (
 )
 
 var (
-	port  string
-	debug bool
+	port     string
+	debug    bool
+	logLevel string
 )
 
 func init() {
 	flag.StringVar(&port, "port", "9898", "Port to listen on.")
 	flag.BoolVar(&debug, "debug", false, "sets log level to debug")
+	flag.StringVar(&logLevel, "logLevel", "debug", "sets log level as debug, info, warn, error, flat or panic ")
 }
 
 func main() {
 	flag.Parse()
-
-	//fscache.ReadAllFile("/Users/aleph/go/src/github.com/stefanprodan/k8s-podinfo/")
-
-	zerolog.SetGlobalLevel(zerolog.InfoLevel)
-	if debug {
-		zerolog.SetGlobalLevel(zerolog.DebugLevel)
-	}
+	setLogging()
 
 	log.Info().Msgf("Starting podinfo version %s commit %s", version.VERSION, version.GITCOMMIT)
 	log.Debug().Msgf("Starting HTTP server on port %v", port)
 
 	stopCh := signals.SetupSignalHandler()
 	server.ListenAndServe(port, 5*time.Second, stopCh)
+}
+
+func setLogging() {
+	// set global log level
+	switch logLevel {
+	case "debug":
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	case "info":
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	case "warn":
+		zerolog.SetGlobalLevel(zerolog.WarnLevel)
+	case "error":
+		zerolog.SetGlobalLevel(zerolog.ErrorLevel)
+	case "fatal":
+		zerolog.SetGlobalLevel(zerolog.FatalLevel)
+	case "panic":
+		zerolog.SetGlobalLevel(zerolog.PanicLevel)
+	default:
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+
+	}
+
+	// keep for backwards compatibility
+	if debug {
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	}
+
+	// set zerolog as standard logger
+	stdlog.SetFlags(0)
+	stdlog.SetOutput(log.Logger)
 }
