@@ -94,13 +94,16 @@ func (w *Watcher) updateCache() error {
 		}
 	}
 
-	// clear cache
+	// remove deleted files from cache
 	w.Cache.Range(func(key interface{}, value interface{}) bool {
-		w.Cache.Delete(key)
+		_, ok := fileMap[key.(string)]
+		if !ok {
+			w.Cache.Delete(key)
+		}
 		return true
 	})
 
-	// load cache
+	// sync cache
 	for k, v := range fileMap {
 		w.Cache.Store(k, v)
 	}
