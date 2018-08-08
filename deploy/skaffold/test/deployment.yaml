@@ -19,11 +19,11 @@ spec:
     spec:
       containers:
       - name: podinfod
-        image: quay.io/stefanprodan/podinfo:0.5.0-alpha6
+        image: quay.io/stefanprodan/podinfo:0.5.1
         command:
           - ./podinfo
           - -port=9898
-          - -debug=true
+          - -logLevel=debug
         ports:
         - name: http
           containerPort: 9898
