@@ -21,6 +21,7 @@ build:
 	@echo Building: linux/$(LINUX_ARCH)  $(VERSION) ;\
 	for arch in $(LINUX_ARCH); do \
 	    mkdir -p build/linux/$$arch && CGO_ENABLED=0 GOOS=linux GOARCH=$$arch go build -ldflags="-s -w -X $(GITREPO)/pkg/version.GITCOMMIT=$(GITCOMMIT)" -o build/linux/$$arch/$(NAME) ./cmd/$(NAME) ;\
+	    cp -r ui/ build/linux/$$arch/ui;\
 	done
 
 .PHONY: tar
@@ -45,6 +46,7 @@ docker-build: tar
 	@for arch in $(LINUX_ARCH); do \
 	    mkdir -p build/docker/linux/$$arch ;\
 	    tar -xzf release/$(NAME)_$(VERSION)_linux_$$arch.tgz -C build/docker/linux/$$arch ;\
+	    cp -r ui/ build/docker/linux/$$arch/ui;\
 	    if [ $$arch == amd64 ]; then \
 		cp Dockerfile build/docker/linux/$$arch ;\
 		cp Dockerfile build/docker/linux/$$arch/Dockerfile.in ;\

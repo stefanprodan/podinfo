@@ -24,7 +24,7 @@ RUN addgroup -S app \
 WORKDIR /home/app
 
 COPY --from=builder /go/src/github.com/stefanprodan/k8s-podinfo/podinfo .
-
+COPY ./ui ./ui
 RUN chown -R app:app ./
 
 USER app

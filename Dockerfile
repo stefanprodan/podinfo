@@ -6,7 +6,7 @@ RUN addgroup -S app \
     curl openssl netcat-openbsd
 
 WORKDIR /home/app
-
+COPY ./ui ./ui
 ADD podinfo .
 
 RUN chown -R app:app ./
