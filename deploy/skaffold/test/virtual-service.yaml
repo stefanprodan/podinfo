@@ -1,0 +1,15 @@
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: podinfo
+spec:
+  hosts:
+  - "podinfo.istio.weavedx.com"
+  gateways:
+  - public-gateway
+  http:
+  - timeout: 30s
+    route:
+    - destination:
+        host: podinfo

@@ -2,18 +2,18 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: podinfo
+  name: podinfo-backend
   labels:
-    app: podinfo
+    app: podinfo-backend
 spec:
   replicas: 3
   selector:
     matchLabels:
-     app: podinfo
+     app: podinfo-backend
   template:
     metadata:
       labels:
-        app: podinfo
+        app: podinfo-backend
       annotations:
         prometheus.io/scrape: 'true'
     spec:
@@ -46,16 +46,3 @@ spec:
           requests:
             memory: "32Mi"
             cpu: "10m"
-        env:
-          - name: backend_url
-            value: "http://podinfo-backend:9898"
-          - name: configPath
-            value: "/var/secrets"
-        volumeMounts:
-        - name: auth
-          readOnly: true
-          mountPath: "/var/secrets"
-      volumes:
-      - name: auth
-        secret:
-          secretName: basic-auth
