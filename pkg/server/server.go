@@ -57,6 +57,9 @@ func NewServer(options ...func(*Server)) *Server {
 	s.mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
 	s.mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
 
+	// API
+	s.mux.HandleFunc("/api/info", s.apiInfo)
+
 	return s
 }
 

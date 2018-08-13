@@ -5,10 +5,12 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"html/template"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -23,23 +25,43 @@ func (s *Server) index(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := makeResponse()
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(err.Error()))
-	}
+	log.Debug().Msgf("Request %s received from %s on %s", r.Header.Get("x-request-id"), r.RemoteAddr, r.RequestURI)
 
-	d, err := yaml.Marshal(resp)
+	resp, err := makeResponse()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(err.Error()))
 		return
 	}
 
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	w.Header().Set("X-Content-Type-Options", "nosniff")
-	w.WriteHeader(http.StatusOK)
-	w.Write(d)
+	if strings.Contains(r.UserAgent(), "Mozilla") {
+		uiPath := os.Getenv("uiPath")
+		if len(uiPath) < 1 {
+			uiPath = "ui"
+		}
+		tmpl, err := template.New("vue.html").ParseFiles(path.Join(uiPath, "vue.html"))
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(path.Join(uiPath, "vue.html") + err.Error()))
+			return
+		}
+		if err := tmpl.Execute(w, nil); err != nil {
+			http.Error(w, path.Join(uiPath, "vue.html")+err.Error(), http.StatusInternalServerError)
+		}
+
+	} else {
+		d, err := yaml.Marshal(resp)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+			return
+		}
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.WriteHeader(http.StatusOK)
+		w.Write(d)
+	}
+
 }
 
 func (s *Server) echo(w http.ResponseWriter, r *http.Request) {
@@ -88,7 +110,24 @@ func (s *Server) backend(w http.ResponseWriter, r *http.Request) {
 
 		backendURL := os.Getenv("backend_url")
 		if len(backendURL) > 0 {
-			resp, err := http.Post(backendURL, r.Header.Get("Content-type"), bytes.NewReader(body))
+
+			backendReq, err := http.NewRequest("POST", backendURL, bytes.NewReader(body))
+			if err != nil {
+				log.Error().Msgf("Backend call failed: %v", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte(err.Error()))
+				return
+			}
+
+			// forward tracing headers
+			if len(r.Header.Get("x-b3-traceid")) > 0 {
+				backendReq.Header.Set("x-request-id", r.Header.Get("x-request-id"))
+				backendReq.Header.Set("x-b3-spanid", r.Header.Get("x-b3-spanid"))
+				backendReq.Header.Set("x-b3-sampled", r.Header.Get("x-b3-sampled"))
+				backendReq.Header.Set("x-b3-traceid", r.Header.Get("x-b3-traceid"))
+			}
+
+			resp, err := http.DefaultClient.Do(backendReq)
 			if err != nil {
 				log.Error().Msgf("Backend call failed: %v", err)
 				w.WriteHeader(http.StatusInternalServerError)
