@@ -1,0 +1,17 @@
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: podinfo-backend
+spec:
+  hosts:
+  - podinfo-backend
+  http:
+  - route:
+    - destination:
+        host: podinfo-backend
+    timeout: 30s
+    fault:
+      delay:
+        percent: 50
+        fixedDelay: 200ms

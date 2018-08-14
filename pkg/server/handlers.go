@@ -27,13 +27,6 @@ func (s *Server) index(w http.ResponseWriter, r *http.Request) {
 
 	log.Debug().Msgf("Request %s received from %s on %s", r.Header.Get("x-request-id"), r.RemoteAddr, r.RequestURI)
 
-	resp, err := makeResponse()
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(err.Error()))
-		return
-	}
-
 	if strings.Contains(r.UserAgent(), "Mozilla") {
 		uiPath := os.Getenv("uiPath")
 		if len(uiPath) < 1 {
@@ -50,6 +43,12 @@ func (s *Server) index(w http.ResponseWriter, r *http.Request) {
 		}
 
 	} else {
+		resp, err := makeResponse()
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+			return
+		}
 		d, err := yaml.Marshal(resp)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -97,6 +96,25 @@ func (s *Server) echoHeaders(w http.ResponseWriter, r *http.Request) {
 	w.Write(d)
 }
 
+func copyTracingHeaders(from *http.Request, to *http.Request) {
+	headers := []string{
+		"x-request-id",
+		"x-b3-traceid",
+		"x-b3-spanid",
+		"x-b3-parentspanid",
+		"x-b3-sampled",
+		"x-b3-flags",
+		"x-ot-span-context",
+	}
+
+	for i := range headers {
+		headerValue := from.Header.Get(headers[i])
+		if len(headerValue) > 0 {
+			to.Header.Set(headers[i], headerValue)
+		}
+	}
+}
+
 func (s *Server) backend(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "POST":
@@ -110,7 +128,6 @@ func (s *Server) backend(w http.ResponseWriter, r *http.Request) {
 
 		backendURL := os.Getenv("backend_url")
 		if len(backendURL) > 0 {
-
 			backendReq, err := http.NewRequest("POST", backendURL, bytes.NewReader(body))
 			if err != nil {
 				log.Error().Msgf("Backend call failed: %v", err)
@@ -120,12 +137,7 @@ func (s *Server) backend(w http.ResponseWriter, r *http.Request) {
 			}
 
 			// forward tracing headers
-			if len(r.Header.Get("x-b3-traceid")) > 0 {
-				backendReq.Header.Set("x-request-id", r.Header.Get("x-request-id"))
-				backendReq.Header.Set("x-b3-spanid", r.Header.Get("x-b3-spanid"))
-				backendReq.Header.Set("x-b3-sampled", r.Header.Get("x-b3-sampled"))
-				backendReq.Header.Set("x-b3-traceid", r.Header.Get("x-b3-traceid"))
-			}
+			copyTracingHeaders(r, backendReq)
 
 			resp, err := http.DefaultClient.Do(backendReq)
 			if err != nil {
@@ -143,6 +155,13 @@ func (s *Server) backend(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			log.Debug().Msgf("Payload received from backend: %s", string(rbody))
+
+			color := os.Getenv("color")
+			if len(color) < 1 {
+				color = "blue"
+			}
+			w.Header().Set("X-Color", color)
+
 			w.WriteHeader(http.StatusAccepted)
 			w.Write(rbody)
 		} else {

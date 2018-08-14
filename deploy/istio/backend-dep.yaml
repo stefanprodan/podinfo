@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
       - name: podinfod
-        image: quay.io/stefanprodan/podinfo:0.6.0-beta.2
+        image: quay.io/stefanprodan/podinfo:0.6.0-beta.9
         command:
           - ./podinfo
           - -port=9898
@@ -46,3 +46,10 @@ spec:
           requests:
             memory: "32Mi"
             cpu: "10m"
+        env:
+          - name: color
+            value: "blue"
+          - name: message
+            value: "Greetings from backend blue"
+          - name: backend_url
+            value: "https://httpbin.org/anything"

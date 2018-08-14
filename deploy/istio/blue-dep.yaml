@@ -2,24 +2,27 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: podinfo
+  name: podinfo-blue
   labels:
     app: podinfo
+    color: blue
 spec:
   replicas: 3
   selector:
     matchLabels:
      app: podinfo
+     color: blue
   template:
     metadata:
       labels:
         app: podinfo
+        color: blue
       annotations:
         prometheus.io/scrape: 'true'
     spec:
       containers:
       - name: podinfod
-        image: quay.io/stefanprodan/podinfo:0.6.0-beta.7
+        image: quay.io/stefanprodan/podinfo:0.6.0-beta.9
         command:
           - ./podinfo
           - -port=9898
@@ -32,16 +35,10 @@ spec:
           httpGet:
             path: /readyz
             port: 9898
-          initialDelaySeconds: 1
-          periodSeconds: 5
-          failureThreshold: 1
         livenessProbe:
           httpGet:
             path: /healthz
             port: 9898
-          initialDelaySeconds: 1
-          periodSeconds: 10
-          failureThreshold: 2
         resources:
           requests:
             memory: "32Mi"
@@ -52,14 +49,4 @@ spec:
           - name: message
             value: "Greetings from podinfo blue"
           - name: backend_url
-            value: "http://podinfo-backend:9898/echo"
-          - name: configPath
-            value: "/var/secrets"
-        volumeMounts:
-        - name: auth
-          readOnly: true
-          mountPath: "/var/secrets"
-      volumes:
-      - name: auth
-        secret:
-          secretName: basic-auth
+            value: "http://podinfo-backend:9898/backend"

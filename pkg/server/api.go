@@ -10,26 +10,34 @@ import (
 )
 
 func (s *Server) apiInfo(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path != "/api/info" {
+	if r.URL.Path != "/api/info" && r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
 	host, _ := os.Hostname()
+	color := os.Getenv("color")
+	if len(color) < 1 {
+		color = "blue"
+	}
+
+	msg := os.Getenv("message")
+	if len(msg) < 1 {
+		msg = fmt.Sprintf("Hello from podinfo v%v Git commit %v", version.VERSION, version.GITCOMMIT)
+	}
+
 	data := struct {
-		Title    string `json:"title"`
 		Message  string `json:"message"`
 		Version  string `json:"version"`
 		Revision string `json:"revision"`
 		Hostname string `json:"hostname"`
 		Color    string `json:"color"`
 	}{
-		Title:    fmt.Sprintf("podinfo v%v", version.VERSION),
-		Message:  fmt.Sprintf("Hello from podinfo v%v Git commit %v", version.VERSION, version.GITCOMMIT),
+		Message:  msg,
 		Version:  version.VERSION,
 		Revision: version.GITCOMMIT,
 		Hostname: host,
-		Color:    "green",
+		Color:    color,
 	}
 
 	d, err := json.Marshal(data)
