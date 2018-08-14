@@ -23,7 +23,7 @@ func (s *Server) apiInfo(w http.ResponseWriter, r *http.Request) {
 
 	msg := os.Getenv("message")
 	if len(msg) < 1 {
-		msg = fmt.Sprintf("Hello from podinfo v%v Git commit %v", version.VERSION, version.GITCOMMIT)
+		msg = fmt.Sprintf("Greetings from podinfo v%v", version.VERSION)
 	}
 
 	data := struct {

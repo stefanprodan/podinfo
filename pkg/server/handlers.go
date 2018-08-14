@@ -38,7 +38,15 @@ func (s *Server) index(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte(path.Join(uiPath, "vue.html") + err.Error()))
 			return
 		}
-		if err := tmpl.Execute(w, nil); err != nil {
+
+		host, _ := os.Hostname()
+		data := struct {
+			Title string
+		}{
+			Title: host,
+		}
+
+		if err := tmpl.Execute(w, data); err != nil {
 			http.Error(w, path.Join(uiPath, "vue.html")+err.Error(), http.StatusInternalServerError)
 		}
 
