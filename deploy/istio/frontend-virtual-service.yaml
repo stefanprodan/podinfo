@@ -7,7 +7,7 @@ spec:
   hosts:
   - "podinfo.istio.weavedx.com"
   gateways:
-  - public-gateway
+  - public-gateway.istio-system.svc.cluster.local
   http:
   # Opera: forward 100% of the traffic to green
   - match:
