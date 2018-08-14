@@ -3,6 +3,7 @@ package server
 import (
 	"bufio"
 	"crypto/tls"
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -99,7 +100,7 @@ func runtimeToMap() map[string]string {
 		"max_procs":     strconv.FormatInt(int64(runtime.GOMAXPROCS(0)), 10),
 		"num_goroutine": strconv.FormatInt(int64(runtime.NumGoroutine()), 10),
 		"num_cpu":       strconv.FormatInt(int64(runtime.NumCPU()), 10),
-		"external_ip":   findIp("http://api.ipify.org"),
+		"external_ip":   findIp("http://httpbin.org/ip"),
 	}
 	return info
 }
@@ -117,7 +118,7 @@ func findIp(url string) string {
 	req, _ := http.NewRequest("GET", url, nil)
 	res, err := client.Do(req)
 	if err != nil {
-		log.Error().Err(errors.Wrapf(err, "cannot connect to %s", url)).Msg("ipify timeout")
+		log.Error().Err(errors.Wrapf(err, "cannot connect to %s", url)).Msg("timeout")
 		return ip
 	}
 
@@ -129,7 +130,12 @@ func findIp(url string) string {
 			if err != nil {
 				return ip
 			}
-			return string(contents)
+			jsonMap := make(map[string]string)
+			err = json.Unmarshal([]byte(contents), &jsonMap)
+			if err != nil {
+				return ip
+			}
+			return jsonMap["origin"]
 		}
 	}
 
