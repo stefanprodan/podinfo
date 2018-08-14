@@ -4,6 +4,8 @@
   <title>{{.Title}}</title>
   <meta charset="utf-8">
   <!-- <meta http-equiv="refresh" content="5"> -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="shortcut icon" type="image/png" href="https://kubernetes.io/images/favicon.png">
   <link href='https://fonts.googleapis.com/css?family=Roboto:300,400,500,700|Material+Icons' rel="stylesheet">
   <link href="https://unpkg.com/vuetify/dist/vuetify.min.css" rel="stylesheet">
   <style>
@@ -24,22 +26,24 @@
             justify-center
             class="white--text"
           >
-            <img src="https://raw.githubusercontent.com/kubernetes/kubernetes/master/logo/logo_with_border.png" alt="kubernetes" height="200">
-            <h1 class="white--text mb-2 display-1 text-xs-center">${ info.title }</h1>
+            <img src="https://d33wubrfki0l68.cloudfront.net/33a12d8be0bc50be4738443101616e968c7afb8f/cba76/images/scalable.png" alt="kubernetes" height="200">
+            <h1 class="white--text mb-2 display-1 text-xs-center">${ info.message }</h1>
             <div class="subheading mb-3 text-xs-center">Response processed by ${ info.hostname }</div>
             <v-btn
-              class="blue darken-2 mt-5"
+              class="red darken-2 mt-5"
               dark
               large
-              @click="ping()"
+              @click="postBackend()"
             >
-              <v-icon left dark>touch_app</v-icon>
-              Ping ${ pings }
+              <v-badge left color="red">
+                <span slot="badge">${ pings }</span>
+                <v-icon left dark>touch_app</v-icon>
+              </v-badge>
+              Ping 
             </v-btn>
           </v-layout>
         </v-parallax>
       </section>
-
       <section>
         <v-layout
           column
@@ -121,8 +125,8 @@
     </v-content>
   </v-app>
  </div>
- <script src="https://unpkg.com/vue/dist/vue.js"></script>
- <script src="https://unpkg.com/vuetify/dist/vuetify.js"></script>
+ <script src="https://unpkg.com/vue/dist/vue.min.js"></script>
+ <script src="https://unpkg.com/vuetify/dist/vuetify.min.js"></script>
  <script>
    new Vue({
     delimiters: ['${', '}'],
@@ -131,37 +135,56 @@
     return {
         info: {},
         timer: '',
+        color: '',
         pings: 0
     }
     },
     created: function() {
-        this.fetchInfo();
-        this.timer = setInterval(this.fetchInfo, 3000)
+        this.getInfo();
+        this.timer = setInterval(this.getInfo, 3000)
     },
     methods: {
-        fetchInfo: function() {
+        getInfo: function() {
             var xhr = new XMLHttpRequest()
             var self = this
             xhr.open('GET', "/api/info")
             xhr.onload = function () {
-                self.info = JSON.parse(xhr.responseText)
+                data = JSON.parse(xhr.responseText)
+                // reload page when the version changes
+                if (self.info.version) {
+                    if (self.info.version != data.version) {
+                        console.log("New version", data.version)
+                        window.location.reload()
+                    }
+                }
+                self.info = data
             }
             xhr.onerror = function() {
                 console.log(xhr.responseText || 'Network request failed')
             }
             xhr.send()
         },
-        ping: function() {
-            var xhr = new XMLHttpRequest()
+        postBackend: function() {
             var self = this
-            xhr.open('POST', "/backend")
-            xhr.onload = function () {
+            fetch("/backend", {
+                method: 'post',
+                headers: {
+                "Content-type": "application/json; charset=UTF-8",
+                "X-APP": Math.random(),
+                },
+                body: JSON.stringify({random: Math.random()})
+            })
+            .then(function(response) {
                 self.pings++
-            }
-            xhr.onerror = function() {
-                console.log(xhr.responseText || 'Network request failed')
-            }
-            xhr.send(Math.random())
+                self.color = response.headers.get('X-Color')
+                return response.json()
+            })
+            .then(function(json) {
+                console.log('Request successful', json);
+            })
+            .catch(function (error) {
+                console.log('Request failed', error);
+            });
         }
     }
   })
