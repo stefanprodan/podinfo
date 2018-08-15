@@ -10,11 +10,13 @@ spec:
   # new version
   # forward 100% of the traffic to orange
   - match:
-    - headers:
-        x-api-version:
-          regex: "^(v{0,1})0\\.6\\.([0-9]{1,3}).*"
+#    - headers:
+#        x-api-version:
+#          regex: "^(v{0,1})0\\.6\\.([0-9]{1,3}).*"
+    - sourceLabels:
+        color: blue
     route:
-     - destination:
+    - destination:
         host: podinfo-backend
         subset: orange
     timeout: 20s

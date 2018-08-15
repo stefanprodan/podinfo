@@ -157,6 +157,10 @@ func (s *Server) backend(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			defer resp.Body.Close()
+			if resp.StatusCode >= 500 {
+				w.WriteHeader(resp.StatusCode)
+				return
+			}
 			rbody, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
 				log.Error().Msgf("Reading the backend request body failed: %v", err)
