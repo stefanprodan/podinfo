@@ -59,6 +59,7 @@ func NewServer(options ...func(*Server)) *Server {
 
 	// API
 	s.mux.HandleFunc("/api/info", s.apiInfo)
+	s.mux.HandleFunc("/api/echo", s.apiEcho)
 
 	return s
 }
@@ -118,6 +119,12 @@ func ListenAndServe(port string, timeout time.Duration, stopCh <-chan struct{}) 
 
 	log.Info().Msgf("Shutting down HTTP server with timeout: %v", timeout)
 
+	// wait for Kubernetes readiness probe
+	// to remove this instance from the load balancer
+	// the readiness check interval must lower than the timeout
+	time.Sleep(timeout)
+
+	// attempt graceful shutdown
 	if err := srv.Shutdown(ctx); err != nil {
 		log.Error().Err(err).Msg("HTTP server graceful shutdown failed")
 	} else {

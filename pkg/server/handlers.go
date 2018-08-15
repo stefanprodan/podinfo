@@ -104,27 +104,6 @@ func (s *Server) echoHeaders(w http.ResponseWriter, r *http.Request) {
 	w.Write(d)
 }
 
-func copyTracingHeaders(from *http.Request, to *http.Request) {
-	headers := []string{
-		"x-request-id",
-		"x-b3-traceid",
-		"x-b3-spanid",
-		"x-b3-parentspanid",
-		"x-b3-sampled",
-		"x-b3-flags",
-		"x-ot-span-context",
-	}
-
-	for i := range headers {
-		headerValue := from.Header.Get(headers[i])
-		if len(headerValue) > 0 {
-			to.Header.Set(headers[i], headerValue)
-		}
-	}
-
-	to.Header.Set("X-API-Version", version.VERSION)
-}
-
 func (s *Server) backend(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "POST":
@@ -136,7 +115,7 @@ func (s *Server) backend(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		backendURL := os.Getenv("backend_url")
+		backendURL := os.Getenv("backendURL")
 		if len(backendURL) > 0 {
 			backendReq, err := http.NewRequest("POST", backendURL, bytes.NewReader(body))
 			if err != nil {
@@ -148,6 +127,7 @@ func (s *Server) backend(w http.ResponseWriter, r *http.Request) {
 
 			// forward tracing headers
 			copyTracingHeaders(r, backendReq)
+			setVersionHeaders(backendReq)
 
 			resp, err := http.DefaultClient.Do(backendReq)
 			if err != nil {
@@ -170,17 +150,11 @@ func (s *Server) backend(w http.ResponseWriter, r *http.Request) {
 			}
 			log.Debug().Msgf("Payload received from backend: %s", string(rbody))
 
-			color := os.Getenv("color")
-			if len(color) < 1 {
-				color = "blue"
-			}
-			w.Header().Set("X-Color", color)
-
-			w.WriteHeader(http.StatusAccepted)
+			setResponseHeaders(w)
 			w.Write(rbody)
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte("Backend not specified, set backend_url env var"))
+			w.Write([]byte("Backend not specified, set backendURL env var"))
 		}
 	default:
 		w.WriteHeader(http.StatusNotAcceptable)
