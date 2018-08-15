@@ -28,7 +28,7 @@ spec:
       terminationGracePeriodSeconds: 30
       containers:
       - name: podinfod
-        image: quay.io/stefanprodan/podinfo:0.6.0-rc.10
+        image: quay.io/stefanprodan/podinfo:0.6.0
         lifecycle:
           preStop:
             exec:
@@ -64,5 +64,5 @@ spec:
             value: "green"
           - name: message
             value: "Greetings from podinfo green"
-          - name: backend_url
+          - name: backendURL
             value: "http://podinfo-backend:9898/backend"

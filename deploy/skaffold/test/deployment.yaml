@@ -7,6 +7,12 @@ metadata:
     app: podinfo
 spec:
   replicas: 3
+  minReadySeconds: 15
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
   selector:
     matchLabels:
      app: podinfo
@@ -17,9 +23,17 @@ spec:
       annotations:
         prometheus.io/scrape: 'true'
     spec:
+      terminationGracePeriodSeconds: 30
       containers:
       - name: podinfod
-        image: quay.io/stefanprodan/podinfo:0.6.0-beta.7
+        image: quay.io/stefanprodan/podinfo:0.6.0
+        lifecycle:
+          preStop:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - sleep 3
         command:
           - ./podinfo
           - -port=9898
@@ -33,7 +47,7 @@ spec:
             path: /readyz
             port: 9898
           initialDelaySeconds: 1
-          periodSeconds: 5
+          periodSeconds: 2
           failureThreshold: 1
         livenessProbe:
           httpGet:
@@ -51,7 +65,7 @@ spec:
             value: "blue"
           - name: message
             value: "Greetings from podinfo blue"
-          - name: backend_url
+          - name: backendURL
             value: "http://podinfo-backend:9898/echo"
           - name: configPath
             value: "/var/secrets"

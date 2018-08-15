@@ -9,6 +9,10 @@ metadata:
     heritage: {{ .Release.Service }}
 spec:
   replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
   selector:
     matchLabels:
       app: {{ template "podinfo.name" . }}
@@ -21,6 +25,7 @@ spec:
       annotations:
         prometheus.io/scrape: 'true'
     spec:
+      terminationGracePeriodSeconds: 30
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -30,20 +35,30 @@ spec:
             - -port={{ .Values.service.containerPort }}
             - -logLevel={{ .Values.logLevel }}
           env:
-          - name: backend_url
+          - name: color
+            value: {{ .Values.color }}
+          {{- if .Values.backend }}
+          - name: backendURL
             value: {{ .Values.backend }}
+          {{- end }}
           ports:
             - name: http
               containerPort: {{ .Values.service.containerPort }}
               protocol: TCP
-          livenessProbe:
-            httpGet:
-              path: /healthz
-              port: http
           readinessProbe:
             httpGet:
               path: /readyz
-              port: http
+              port: 9898
+            initialDelaySeconds: 1
+            periodSeconds: 2
+            failureThreshold: 1
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 9898
+            initialDelaySeconds: 1
+            periodSeconds: 10
+            failureThreshold: 2
           volumeMounts:
           - name: data
             mountPath: /data

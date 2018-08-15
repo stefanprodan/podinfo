@@ -5,7 +5,7 @@ metadata:
   labels:
     app: podinfo
 spec:
-  type: ClusterIP
+  type: LoadBalancer
   ports:
     - port: 9898
       targetPort: http
