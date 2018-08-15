@@ -55,4 +55,4 @@ spec:
           - name: message
             value: "Greetings from backend grey"
           - name: backend_url
-            value: "http://podinfo:9898/echo" #"https://httpbin.org/anything"
+            value: "http://podinfo-store:9898/echo" #"https://httpbin.org/anything"

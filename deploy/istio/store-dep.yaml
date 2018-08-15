@@ -2,21 +2,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: podinfo-backend-orange
+  name: podinfo-store
   labels:
-    app: podinfo-backend
-    color: orange
+    app: podinfo-store
+    version: "0.6"
 spec:
   replicas: 3
   selector:
     matchLabels:
-     app: podinfo-backend
-     color: orange
+     app: podinfo-store
+     version: "0.6"
   template:
     metadata:
       labels:
-        app: podinfo-backend
-        color: orange
+        app: podinfo-store
+        version: "0.6"
       annotations:
         prometheus.io/scrape: 'true'
     spec:
@@ -51,8 +51,6 @@ spec:
             cpu: "10m"
         env:
           - name: color
-            value: "orange"
+            value: "yellow"
           - name: message
-            value: "Greetings from backend orange"
-          - name: backend_url
-            value: "http://podinfo-store:9898/echo" #"https://httpbin.org/anything"
+            value: "Greetings from store yellow"
