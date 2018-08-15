@@ -2,21 +2,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: podinfo-blue
+  name: podinfo-backend-orange
   labels:
-    app: podinfo
-    color: blue
+    app: podinfo-backend
+    color: orange
 spec:
   replicas: 3
   selector:
     matchLabels:
-     app: podinfo
-     color: blue
+     app: podinfo-backend
+     color: orange
   template:
     metadata:
       labels:
-        app: podinfo
-        color: blue
+        app: podinfo-backend
+        color: orange
       annotations:
         prometheus.io/scrape: 'true'
     spec:
@@ -35,18 +35,24 @@ spec:
           httpGet:
             path: /readyz
             port: 9898
+          initialDelaySeconds: 1
+          periodSeconds: 5
+          failureThreshold: 1
         livenessProbe:
           httpGet:
             path: /healthz
             port: 9898
+          initialDelaySeconds: 1
+          periodSeconds: 10
+          failureThreshold: 2
         resources:
           requests:
             memory: "32Mi"
             cpu: "10m"
         env:
           - name: color
-            value: "blue"
+            value: "orange"
           - name: message
-            value: "Greetings from podinfo blue"
+            value: "Greetings from backend orange"
           - name: backend_url
-            value: "http://podinfo-backend:9898/backend"
+            value: "http://podinfo:9898/echo" #"https://httpbin.org/anything"

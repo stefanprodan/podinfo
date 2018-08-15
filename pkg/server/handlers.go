@@ -121,6 +121,8 @@ func copyTracingHeaders(from *http.Request, to *http.Request) {
 			to.Header.Set(headers[i], headerValue)
 		}
 	}
+
+	to.Header.Set("X-API-Version", version.VERSION)
 }
 
 func (s *Server) backend(w http.ResponseWriter, r *http.Request) {

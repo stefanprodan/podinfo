@@ -7,11 +7,21 @@ spec:
   hosts:
   - podinfo-backend
   http:
+  # new version
+  # forward 100% of the traffic to orange
+  - match:
+    - headers:
+        x-api-version:
+          regex: "^(v{0,1})0\\.6\\.([0-9]{1,3}).*"
+    route:
+     - destination:
+        host: podinfo-backend
+        subset: orange
+    timeout: 20s
+  # default route
+  # forward 100% of the traffic to grey
   - route:
     - destination:
         host: podinfo-backend
-    timeout: 30s
-    fault:
-      delay:
-        percent: 50
-        fixedDelay: 200ms
+        subset: grey
+    timeout: 20s

@@ -1,0 +1,14 @@
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: podinfo-backend
+spec:
+  host: podinfo-backend
+  subsets:
+  - name: grey
+    labels:
+      color: grey
+  - name: orange
+    labels:
+      color: orange

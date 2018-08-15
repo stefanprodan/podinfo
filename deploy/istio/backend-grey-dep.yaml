@@ -2,24 +2,27 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: podinfo-backend
+  name: podinfo-backend-grey
   labels:
     app: podinfo-backend
+    color: grey
 spec:
   replicas: 3
   selector:
     matchLabels:
      app: podinfo-backend
+     color: grey
   template:
     metadata:
       labels:
         app: podinfo-backend
+        color: grey
       annotations:
         prometheus.io/scrape: 'true'
     spec:
       containers:
       - name: podinfod
-        image: quay.io/stefanprodan/podinfo:0.6.0-beta.10
+        image: quay.io/stefanprodan/podinfo:0.6.0-rc.1
         command:
           - ./podinfo
           - -port=9898
@@ -48,8 +51,8 @@ spec:
             cpu: "10m"
         env:
           - name: color
-            value: "blue"
+            value: "grey"
           - name: message
-            value: "Greetings from backend blue"
+            value: "Greetings from backend grey"
           - name: backend_url
-            value: "https://httpbin.org/anything"
+            value: "http://podinfo:9898/echo" #"https://httpbin.org/anything"

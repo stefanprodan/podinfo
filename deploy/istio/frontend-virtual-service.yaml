@@ -43,11 +43,11 @@ spec:
      - destination:
         host: podinfo
         subset: blue
-       weight: 70
+       weight: 100
      - destination:
         host: podinfo
         subset: green
-       weight: 30
+       weight: 0
     timeout: 30s
   # Any other browser: forward 100% of the traffic to blue
   - route:
