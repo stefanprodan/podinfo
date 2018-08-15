@@ -49,6 +49,31 @@ spec:
         subset: green
        weight: 0
     timeout: 30s
+  # Route based on color header
+  - match:
+    - headers:
+        x-color:
+          exact: "blue"
+    route:
+     - destination:
+        host: podinfo
+        subset: blue
+    timeout: 30s
+    retries:
+      attempts: 3
+      perTryTimeout: 3s
+  - match:
+    - headers:
+        x-color:
+          exact: "green"
+    route:
+     - destination:
+        host: podinfo
+        subset: green
+    timeout: 30s
+    retries:
+      attempts: 3
+      perTryTimeout: 3s
   # Any other browser: forward 100% of the traffic to blue
   - route:
     - destination:

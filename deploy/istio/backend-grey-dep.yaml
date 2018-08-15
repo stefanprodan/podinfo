@@ -8,6 +8,10 @@ metadata:
     color: grey
 spec:
   replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
   selector:
     matchLabels:
      app: podinfo-backend
@@ -20,9 +24,17 @@ spec:
       annotations:
         prometheus.io/scrape: 'true'
     spec:
+      terminationGracePeriodSeconds: 30
       containers:
       - name: podinfod
-        image: quay.io/stefanprodan/podinfo:0.6.0-rc.3
+        image: quay.io/stefanprodan/podinfo:0.6.0-rc.10
+        lifecycle:
+          preStop:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - sleep 3
         command:
           - ./podinfo
           - -port=9898
@@ -35,16 +47,10 @@ spec:
           httpGet:
             path: /readyz
             port: 9898
-          initialDelaySeconds: 1
-          periodSeconds: 5
-          failureThreshold: 1
         livenessProbe:
           httpGet:
             path: /healthz
             port: 9898
-          initialDelaySeconds: 1
-          periodSeconds: 10
-          failureThreshold: 2
         resources:
           requests:
             memory: "32Mi"
