@@ -15,7 +15,7 @@ service:
   containerPort: 9898
   nodePort: 31198
 
-# Heapster or metrics-server add-on required
+# metrics-server add-on required
 hpa:
   enabled: false
   maxReplicas: 10
