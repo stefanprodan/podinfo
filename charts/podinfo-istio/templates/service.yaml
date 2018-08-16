@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "podinfo-istio.fullname" . }}
+  labels:
+    app: {{ template "podinfo-istio.fullname" . }}
+    chart: {{ template "podinfo-istio.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.containerPort }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app: {{ template "podinfo-istio.fullname" . }}

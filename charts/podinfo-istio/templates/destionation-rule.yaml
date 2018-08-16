@@ -1,0 +1,18 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: {{ template "podinfo-istio.fullname" . }}
+  labels:
+    app: {{ template "podinfo-istio.fullname" . }}
+    chart: {{ template "podinfo-istio.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  host: {{ template "podinfo-istio.fullname" . }}
+  subsets:
+  - name: blue
+    labels:
+      color: blue
+  - name: green
+    labels:
+      color: green

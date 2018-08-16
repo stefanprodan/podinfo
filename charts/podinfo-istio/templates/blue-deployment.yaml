@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "podinfo-istio.blue" . }}
+  labels:
+    app: {{ template "podinfo-istio.fullname" . }}
+    chart: {{ template "podinfo-istio.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+    color: blue
+    version: {{ .Values.blue.tag }}
+spec:
+  replicas: {{ .Values.blue.replicas }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: {{ template "podinfo-istio.fullname" . }}
+      color: blue
+      version: {{ .Values.blue.tag }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "podinfo-istio.fullname" . }}
+        color: blue
+        version: {{ .Values.blue.tag }}
+      annotations:
+        prometheus.io/scrape: 'true'
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: podinfod
+          image: "{{ .Values.blue.repository }}:{{ .Values.blue.tag }}"
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          command:
+            - ./podinfo
+            - -port={{ .Values.containerPort }}
+            - -logLevel={{ .Values.logLevel }}
+          env:
+          - name: color
+            value: blue
+          {{- if .Values.backend }}
+          - name: backendURL
+            value: {{ .Values.backend }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.containerPort }}
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 9898
+            initialDelaySeconds: 1
+            periodSeconds: 2
+            failureThreshold: 1
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 9898
+            initialDelaySeconds: 1
+            periodSeconds: 10
+            failureThreshold: 2
+          volumeMounts:
+          - name: data
+            mountPath: /data
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+      volumes:
+      - name: data
+        emptyDir: {}

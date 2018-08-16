@@ -1,0 +1,36 @@
+{{- $host := .Release.Name -}}
+{{- $timeout := .Values.timeout -}}
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: {{ template "podinfo-istio.fullname" . }}
+  labels:
+    app: {{ template "podinfo-istio.fullname" . }}
+    chart: {{ template "podinfo-istio.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  hosts:
+  - {{ .Values.host }}
+{{- if .Values.exposeHost }}
+  gateways:
+  - {{ .Values.gateway.name }}.istio-system.svc.cluster.local
+{{- end }}
+  http:
+  {{- if gt .Values.green.replicas 0.0 }}
+  {{- range .Values.green.routing }}
+  - match:
+{{ toYaml .match | indent 6 }}
+    route:
+     - destination:
+        host: {{ $host }}
+        subset: green
+    timeout: {{ $timeout }}
+  {{- end }}
+  {{- end }}
+  # default route
+  - route:
+    - destination:
+        host: {{ template "podinfo-istio.fullname" . }}
+        subset: blue
+    timeout: {{ .Values.timeout }}

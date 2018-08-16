@@ -1,0 +1,55 @@
+# Default values for podinfo-istio.
+
+
+# host can be an extarnal domain or a local one as in podinfo.test.svc.cluster.local
+host: canary.istio.weavedx.com
+# if the host is an external domain must be exposed via the Gateway
+exposeHost: true
+timeout: 30s
+
+# no more than one Gateway can be created on a cluster
+# if TLS is enabled the istio-ingressgateway-certs secret must exist in istio-system ns
+# if you have a Gateway running you can set the name to your own gateway and turn off create
+gateway:
+  name: public-gateway
+  # creates public-gateway.istio-system.svc.cluster.local
+  create: false
+  tls: true
+  httpsRedirect: true
+
+# stable release
+# by default all traffic goes to blue
+blue:
+  replicas: 2
+  repository: quay.io/stefanprodan/podinfo
+  tag: 0.6.0
+  backend:
+
+# canary release
+# can be disabled by setting replicas to 0 
+green:
+  replicas: 2
+  repository: quay.io/stefanprodan/podinfo
+  tag: 0.6.1
+  routing:
+    # target Safari
+    - match:
+      - headers:
+          user-agent:
+            regex: "^(?!.*Chrome).*Safari.*"
+    # target API clients by version
+    - match:
+      - headers:
+          x-api-version:
+            regex: "^(v{0,1})0\\.6\\.([1-9]).*"
+  backend:
+
+# blue/green common settings
+logLevel: info
+containerPort: 9898
+imagePullPolicy: IfNotPresent
+resources:
+  limits:
+  requests:
+    cpu: 1m
+    memory: 16Mi

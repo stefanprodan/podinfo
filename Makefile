@@ -105,9 +105,9 @@ dep:
 .PHONY: charts
 charts:
 	cd charts/ && helm package podinfo/
+	cd charts/ && helm package podinfo-istio/
 	cd charts/ && helm package ambassador/
 	cd charts/ && helm package grafana/
 	cd charts/ && helm package ngrok/
-	cd charts/ && helm package weave-flux/
 	mv charts/*.tgz docs/
 	helm repo index docs --url https://stefanprodan.github.io/k8s-podinfo --merge ./docs/index.yaml
