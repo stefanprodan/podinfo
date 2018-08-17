@@ -3,7 +3,7 @@ entries:
   ambassador:
   - apiVersion: v1
     appVersion: 0.29.0
-    created: 2018-08-16T15:14:32.45299943+03:00
+    created: 2018-08-17T18:44:47.405027259+03:00
     description: A Helm chart for Datawire Ambassador
     digest: a30c8cb38e696b09fda8269ad8465ce6fec6100cfc108ca85ecbc85913ca5c7f
     engine: gotpl
@@ -19,17 +19,27 @@ entries:
   grafana:
   - apiVersion: v1
     appVersion: "1.0"
-    created: 2018-08-16T15:14:32.45369699+03:00
+    created: 2018-08-17T18:44:47.405800273+03:00
     description: A Helm chart for Kubernetes
     digest: abdcadc5cddcb7c015aa5bb64e59bfa246774ad9243b3eb3c2a814abb38f2776
     name: grafana
     urls:
     - https://stefanprodan.github.io/k8s-podinfo/grafana-0.1.0.tgz
     version: 0.1.0
+  loadtest:
+  - apiVersion: v1
+    appVersion: "1.0"
+    created: 2018-08-17T18:44:47.406037468+03:00
+    description: Hey load test Helm chart for Kubernetes
+    digest: fd3c3cd1eafa9d496250356aa52de1430f3467535fc2972eba5c5c392714eb1f
+    name: loadtest
+    urls:
+    - https://stefanprodan.github.io/k8s-podinfo/loadtest-0.1.0.tgz
+    version: 0.1.0
   ngrok:
   - apiVersion: v1
     appVersion: "1.0"
-    created: 2018-08-16T15:14:32.453994154+03:00
+    created: 2018-08-17T18:44:47.406355266+03:00
     description: A Ngrok Helm chart for Kubernetes
     digest: 7bf5ed2ef63ccd5efb76bcd9a086b04816a162c51d6ab592bccf58c283acd2ea
     name: ngrok
@@ -39,9 +49,9 @@ entries:
   podinfo:
   - apiVersion: v1
     appVersion: 0.6.0
-    created: 2018-08-16T15:14:32.45935387+03:00
+    created: 2018-08-17T18:44:47.410049875+03:00
     description: Podinfo Helm chart for Kubernetes
-    digest: dab20fb79c55badd3fb923c6a204a7a7915490cb37a9eadf7ee7d91c5977fec2
+    digest: bd25a710eddb3985d3bd921a11022b5c68a04d37cf93a1a4aab17eeda35aa2f8
     engine: gotpl
     home: https://github.com/stefanprodan/k8s-podinfo
     maintainers:
@@ -55,7 +65,7 @@ entries:
     version: 0.2.2
   - apiVersion: v1
     appVersion: 0.5.1
-    created: 2018-08-16T15:14:32.458873487+03:00
+    created: 2018-08-17T18:44:47.409648714+03:00
     description: Podinfo Helm chart for Kubernetes
     digest: 631ca3e2db5553541a50b625f538e6a1f2a103c13aa8148fdd38baf2519e5235
     engine: gotpl
@@ -71,7 +81,7 @@ entries:
     version: 0.2.1
   - apiVersion: v1
     appVersion: 0.5.0
-    created: 2018-08-16T15:14:32.457991323+03:00
+    created: 2018-08-17T18:44:47.408857715+03:00
     description: Podinfo Helm chart for Kubernetes
     digest: dfe7cf44aef0d170549918b00966422a07e7611f9d0081fb34f5b5beb0641c00
     engine: gotpl
@@ -87,7 +97,7 @@ entries:
     version: 0.2.0
   - apiVersion: v1
     appVersion: 0.3.0
-    created: 2018-08-16T15:14:32.456942217+03:00
+    created: 2018-08-17T18:44:47.407706617+03:00
     description: Podinfo Helm chart for Kubernetes
     digest: 4865a2d8b269cf453935cda9661c2efb82c16411471f8c11221a6d03d9bb58b1
     engine: gotpl
@@ -104,9 +114,9 @@ entries:
   podinfo-istio:
   - apiVersion: v1
     appVersion: 0.6.0
-    created: 2018-08-16T15:14:32.459743584+03:00
+    created: 2018-08-17T18:44:47.410653895+03:00
     description: Podinfo Helm chart for Istio
-    digest: fca748e8655beee0e67a32c496bec5ae4bae2f2d8c6eb3f5132c03aa530b3221
+    digest: 79d9cbe4ba8b83ced977d895e56c1223d1fcd88a15f2df1981365c39cf6f4de7
     engine: gotpl
     home: https://github.com/stefanprodan/k8s-podinfo
     maintainers:
@@ -118,4 +128,4 @@ entries:
     urls:
     - https://stefanprodan.github.io/k8s-podinfo/podinfo-istio-0.1.0.tgz
     version: 0.1.0
-generated: 2018-08-16T15:14:32.452369998+03:00
+generated: 2018-08-17T18:44:47.404359545+03:00

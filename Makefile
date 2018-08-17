@@ -106,6 +106,7 @@ dep:
 charts:
 	cd charts/ && helm package podinfo/
 	cd charts/ && helm package podinfo-istio/
+	cd charts/ && helm package loadtest/
 	cd charts/ && helm package ambassador/
 	cd charts/ && helm package grafana/
 	cd charts/ && helm package ngrok/

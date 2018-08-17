@@ -1,0 +1,1 @@
+{{ template "loadtest.fullname" . }} has been deployed successfully!
