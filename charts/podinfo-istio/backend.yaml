@@ -1,0 +1,21 @@
+# Default values for backend demo.
+
+# expose the blue/green deployments inside the cluster
+host: backend
+
+# stable release
+blue:
+  replicas: 2
+  tag: "0.6.0"
+  backend: http://store:9898/api/echo
+
+# canary release
+green:
+  replicas: 2
+  tag: "0.6.1"
+  routing:
+    # target green callers
+    - match:
+      - sourceLabels:
+          color: green
+  backend: http://store:9898/api/echo

@@ -13,6 +13,8 @@ spec:
   - name: blue
     labels:
       color: blue
+  {{- if gt .Values.green.replicas 0.0 }}
   - name: green
     labels:
       color: green
+  {{- end }}

@@ -1,3 +1,4 @@
+{{- if gt .Values.green.replicas 0.0 -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -19,7 +20,6 @@ spec:
     matchLabels:
       app: {{ template "podinfo-istio.fullname" . }}
       color: green
-      version: {{ .Values.green.tag }}
   template:
     metadata:
       labels:
@@ -41,9 +41,13 @@ spec:
           env:
           - name: color
             value: green
-          {{- if .Values.backend }}
+          {{- if .Values.green.backend }}
           - name: backendURL
-            value: {{ .Values.backend }}
+            value: {{ .Values.green.backend }}
+          {{- end }}
+          {{- if .Values.green.message }}
+          - name: message
+            value: {{ .Values.green.message }}
           {{- end }}
           ports:
             - name: http
@@ -71,3 +75,4 @@ spec:
       volumes:
       - name: data
         emptyDir: {}
+{{- end }}

@@ -1,0 +1,39 @@
+# Default values for frontend demo.
+
+# external domain
+host:
+exposeHost: true
+
+# no more than one Gateway can be created on a cluster
+# if TLS is enabled the istio-ingressgateway-certs secret must exist in istio-system ns
+# if you have a Gateway running you can set the name to your own gateway and turn off create
+gateway:
+  name: public-gateway
+  create: true
+  tls: true
+  httpsRedirect: true
+
+# stable release
+blue:
+  replicas: 2
+  tag: "0.6.0"
+  message: "Greetings from the blue frontend"
+  backend: http://backend:9898/api/echo
+
+# canary release
+green:
+  replicas: 2
+  tag: "0.6.1"
+  routing:
+    # target Safari
+    - match:
+      - headers:
+          user-agent:
+            regex: "^(?!.*Chrome).*Safari.*"
+    # target API clients by version
+    - match:
+      - headers:
+          x-api-version:
+            regex: "^(v{0,1})0\\.6\\.([1-9]).*"
+  message: "Greetings from the green frontend"
+  backend: http://backend:9898/api/echo

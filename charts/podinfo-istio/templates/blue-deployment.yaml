@@ -19,7 +19,6 @@ spec:
     matchLabels:
       app: {{ template "podinfo-istio.fullname" . }}
       color: blue
-      version: {{ .Values.blue.tag }}
   template:
     metadata:
       labels:
@@ -41,9 +40,13 @@ spec:
           env:
           - name: color
             value: blue
-          {{- if .Values.backend }}
+          {{- if .Values.blue.backend }}
           - name: backendURL
-            value: {{ .Values.backend }}
+            value: {{ .Values.blue.backend }}
+          {{- end }}
+          {{- if .Values.blue.message }}
+          - name: message
+            value: {{ .Values.blue.message }}
           {{- end }}
           ports:
             - name: http
