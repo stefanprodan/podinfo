@@ -91,7 +91,7 @@ func (s *Server) apiEcho(w http.ResponseWriter, r *http.Request) {
 		// call backend
 		resp, err := http.DefaultClient.Do(backendReq.WithContext(ctx))
 		if err != nil {
-			log.Error().Msgf("%v backend call failed", r.URL.Path)
+			log.Error().Err(err).Msgf("backend call to %s failed", backendURL)
 			jsonError(w, "backend call failed", http.StatusInternalServerError)
 			return
 		}
