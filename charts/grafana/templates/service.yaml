@@ -15,5 +15,5 @@ spec:
       protocol: TCP
       name: http
   selector:
-    app: {{ template "grafana.name" . }}
+    app: {{ template "grafana.fullname" . }}
     release: {{ .Release.Name }}

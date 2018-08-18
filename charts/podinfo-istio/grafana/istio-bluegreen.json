@@ -2,7 +2,7 @@
   "annotations": {
     "list": [
       {
-        "$$hashKey": "object:75",
+        "$$hashKey": "object:1587",
         "builtIn": 1,
         "datasource": "-- Grafana --",
         "enable": true,
@@ -17,11 +17,11 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": 7,
-  "iteration": 1534515147043,
+  "iteration": 1534587617141,
   "links": [],
   "panels": [
     {
-      "content": "<div class=\"dashboard-header text-center\">\n<span>SERVICE: $workload.$namespace</span>\n</div>",
+      "content": "<div class=\"dashboard-header text-center\">\n<span>RED: $workload.$namespace</span>\n</div>",
       "gridPos": {
         "h": 3,
         "w": 24,
@@ -179,6 +179,7 @@
       "tableColumn": "",
       "targets": [
         {
+          "$$hashKey": "object:2857",
           "expr": "sum(irate(istio_requests_total{reporter=\"destination\",destination_workload_namespace=~\"$namespace\",destination_workload=~\"$workload-blue\",response_code!~\"5.*\"}[30s])) / sum(irate(istio_requests_total{reporter=\"destination\",destination_workload_namespace=~\"$namespace\",destination_workload=~\"$workload-blue\"}[30s]))",
           "format": "time_series",
           "intervalFactor": 1,
@@ -343,6 +344,7 @@
       "tableColumn": "",
       "targets": [
         {
+          "$$hashKey": "object:2810",
           "expr": "sum(irate(istio_requests_total{reporter=\"destination\",destination_workload_namespace=~\"$namespace\",destination_workload=~\"$workload-green\",response_code!~\"5.*\"}[30s])) / sum(irate(istio_requests_total{reporter=\"destination\",destination_workload_namespace=~\"$namespace\",destination_workload=~\"$workload-green\"}[30s]))",
           "format": "time_series",
           "intervalFactor": 1,
@@ -566,12 +568,597 @@
       ]
     },
     {
-      "content": "<div class=\"dashboard-header text-center\">\n<span>INBOUND/OUTBOUND</span>\n</div>",
+      "content": "<div class=\"dashboard-header text-center\">\n<span>USE: $workload.$namespace</span>\n</div>",
       "gridPos": {
         "h": 3,
         "w": 24,
         "x": 0,
         "y": 11
+      },
+      "id": 101,
+      "links": [],
+      "mode": "html",
+      "title": "",
+      "transparent": true,
+      "type": "text"
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "Prometheus",
+      "fill": 1,
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 0,
+        "y": 14
+      },
+      "id": 100,
+      "legend": {
+        "alignAsTable": false,
+        "avg": false,
+        "current": false,
+        "hideEmpty": false,
+        "hideZero": false,
+        "max": false,
+        "min": false,
+        "rightSide": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "percentage": false,
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": true,
+      "steppedLine": false,
+      "targets": [
+        {
+          "$$hashKey": "object:1685",
+          "expr": "sum(rate(container_cpu_usage_seconds_total{cpu=\"total\",namespace=\"$namespace\",pod_name=~\"$workload-blue.*\", container_name!~\"POD|istio-proxy\"}[1m])) by (pod_name)",
+          "format": "time_series",
+          "hide": false,
+          "intervalFactor": 1,
+          "legendFormat": "{{ pod_name }}",
+          "refId": "B"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "Blue: CPU Usage by Pod",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:1845",
+          "format": "s",
+          "label": "CPU seconds / second",
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:1846",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
+        }
+      ]
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "Prometheus",
+      "fill": 1,
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 12,
+        "y": 14
+      },
+      "id": 102,
+      "legend": {
+        "alignAsTable": false,
+        "avg": false,
+        "current": false,
+        "hideEmpty": false,
+        "hideZero": false,
+        "max": false,
+        "min": false,
+        "rightSide": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "percentage": false,
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": true,
+      "steppedLine": false,
+      "targets": [
+        {
+          "$$hashKey": "object:1685",
+          "expr": "sum(rate(container_cpu_usage_seconds_total{cpu=\"total\",namespace=\"$namespace\",pod_name=~\"$workload-green.*\", container_name!~\"POD|istio-proxy\"}[1m])) by (pod_name)",
+          "format": "time_series",
+          "hide": false,
+          "intervalFactor": 1,
+          "legendFormat": "{{ pod_name }}",
+          "refId": "B"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "Green: CPU Usage by Pod",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:1845",
+          "format": "s",
+          "label": "CPU seconds / second",
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:1846",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
+        }
+      ]
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "Prometheus",
+      "fill": 1,
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 0,
+        "y": 20
+      },
+      "id": 103,
+      "legend": {
+        "alignAsTable": false,
+        "avg": false,
+        "current": false,
+        "hideEmpty": false,
+        "hideZero": false,
+        "max": false,
+        "min": false,
+        "rightSide": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "percentage": false,
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": true,
+      "steppedLine": false,
+      "targets": [
+        {
+          "$$hashKey": "object:1685",
+          "expr": "sum(container_memory_working_set_bytes{namespace=\"$namespace\",pod_name=~\"$workload-blue.*\", container_name!~\"POD|istio-proxy\"}) by (pod_name)",
+          "format": "time_series",
+          "hide": false,
+          "interval": "",
+          "intervalFactor": 1,
+          "legendFormat": "{{ pod_name }}",
+          "refId": "B"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "Blue: Memory Usage by Pod",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:1845",
+          "decimals": null,
+          "format": "bytes",
+          "label": "",
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:1846",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
+        }
+      ]
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "Prometheus",
+      "fill": 1,
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 12,
+        "y": 20
+      },
+      "id": 104,
+      "legend": {
+        "alignAsTable": false,
+        "avg": false,
+        "current": false,
+        "hideEmpty": false,
+        "hideZero": false,
+        "max": false,
+        "min": false,
+        "rightSide": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "percentage": false,
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": true,
+      "steppedLine": false,
+      "targets": [
+        {
+          "$$hashKey": "object:1685",
+          "expr": "sum(container_memory_working_set_bytes{namespace=\"$namespace\",pod_name=~\"$workload-green.*\", container_name!~\"POD|istio-proxy\"}) by (pod_name)",
+          "format": "time_series",
+          "hide": false,
+          "interval": "",
+          "intervalFactor": 1,
+          "legendFormat": "{{ pod_name }}",
+          "refId": "B"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "Green: Memory Usage by Pod",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:1845",
+          "decimals": null,
+          "format": "bytes",
+          "label": "",
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:1846",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
+        }
+      ]
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "Prometheus",
+      "fill": 1,
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 0,
+        "y": 26
+      },
+      "id": 105,
+      "legend": {
+        "alignAsTable": false,
+        "avg": false,
+        "current": false,
+        "hideEmpty": false,
+        "hideZero": false,
+        "max": false,
+        "min": false,
+        "rightSide": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "percentage": false,
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [
+        {
+          "$$hashKey": "object:3641",
+          "alias": "received",
+          "color": "#f9d9f9"
+        },
+        {
+          "$$hashKey": "object:3649",
+          "alias": "transmited",
+          "color": "#f29191"
+        }
+      ],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "$$hashKey": "object:2598",
+          "expr": "sum(rate (container_network_receive_bytes_total{namespace=\"$namespace\",pod_name=~\"$workload-blue.*\"}[1m])) ",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "received",
+          "refId": "A"
+        },
+        {
+          "$$hashKey": "object:3245",
+          "expr": "-sum (rate (container_network_transmit_bytes_total{namespace=\"$namespace\",pod_name=~\"$workload-blue.*\"}[1m]))",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "transmited",
+          "refId": "B"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "Blue: Network I/O",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:1845",
+          "decimals": null,
+          "format": "Bps",
+          "label": "",
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:1846",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
+        }
+      ]
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "Prometheus",
+      "fill": 1,
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 12,
+        "y": 26
+      },
+      "id": 106,
+      "legend": {
+        "alignAsTable": false,
+        "avg": false,
+        "current": false,
+        "hideEmpty": false,
+        "hideZero": false,
+        "max": false,
+        "min": false,
+        "rightSide": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "percentage": false,
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [
+        {
+          "$$hashKey": "object:3641",
+          "alias": "received",
+          "color": "#f9d9f9"
+        },
+        {
+          "$$hashKey": "object:3649",
+          "alias": "transmited",
+          "color": "#f29191"
+        }
+      ],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "$$hashKey": "object:2598",
+          "expr": "sum(rate (container_network_receive_bytes_total{namespace=\"$namespace\",pod_name=~\"$workload-green.*\"}[1m])) ",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "received",
+          "refId": "A"
+        },
+        {
+          "$$hashKey": "object:3245",
+          "expr": "-sum (rate (container_network_transmit_bytes_total{namespace=\"$namespace\",pod_name=~\"$workload-green.*\"}[1m]))",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "transmited",
+          "refId": "B"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "Green: Network I/O",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:1845",
+          "decimals": null,
+          "format": "Bps",
+          "label": "",
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:1846",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
+        }
+      ]
+    },
+    {
+      "content": "<div class=\"dashboard-header text-center\">\n<span>IN/OUTBOUND: $workload.$namespace</span>\n</div>",
+      "gridPos": {
+        "h": 3,
+        "w": 24,
+        "x": 0,
+        "y": 32
       },
       "id": 45,
       "links": [],
@@ -591,7 +1178,7 @@
         "h": 6,
         "w": 12,
         "x": 0,
-        "y": 14
+        "y": 35
       },
       "id": 25,
       "legend": {
@@ -618,6 +1205,7 @@
       "steppedLine": false,
       "targets": [
         {
+          "$$hashKey": "object:1953",
           "expr": "round(sum(irate(istio_requests_total{connection_security_policy=\"mutual_tls\", destination_workload_namespace=~\"$namespace\", destination_workload=~\"$workload-blue\", reporter=\"destination\"}[30s])) by (source_workload, source_workload_namespace, response_code), 0.001)",
           "format": "time_series",
           "hide": false,
@@ -627,6 +1215,7 @@
           "step": 2
         },
         {
+          "$$hashKey": "object:1954",
           "expr": "round(sum(irate(istio_requests_total{connection_security_policy!=\"mutual_tls\", destination_workload_namespace=~\"$namespace\", destination_workload=~\"$workload-blue\", reporter=\"destination\"}[30s])) by (source_workload, source_workload_namespace, response_code), 0.001)",
           "format": "time_series",
           "hide": false,
@@ -657,6 +1246,7 @@
       },
       "yaxes": [
         {
+          "$$hashKey": "object:1999",
           "format": "ops",
           "label": null,
           "logBase": 1,
@@ -665,6 +1255,7 @@
           "show": true
         },
         {
+          "$$hashKey": "object:2000",
           "format": "short",
           "label": null,
           "logBase": 1,
@@ -685,7 +1276,7 @@
         "h": 6,
         "w": 12,
         "x": 12,
-        "y": 14
+        "y": 35
       },
       "id": 92,
       "legend": {
@@ -779,7 +1370,7 @@
         "h": 6,
         "w": 12,
         "x": 0,
-        "y": 20
+        "y": 41
       },
       "id": 70,
       "legend": {
@@ -872,7 +1463,7 @@
         "h": 6,
         "w": 12,
         "x": 12,
-        "y": 20
+        "y": 41
       },
       "id": 94,
       "legend": {
@@ -1010,7 +1601,7 @@
     ]
   },
   "time": {
-    "from": "now-5m",
+    "from": "now-30m",
     "to": "now"
   },
   "timepicker": {
@@ -1041,5 +1632,5 @@
   "timezone": "",
   "title": "Istio Blue/Green",
   "uid": "RdykD7tiz",
-  "version": 3
+  "version": 2
 }

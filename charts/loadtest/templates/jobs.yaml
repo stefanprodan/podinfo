@@ -26,6 +26,6 @@ spec:
             args:
             - /bin/sh
             - -c
-            - "hey -z 55s {{ $test.cmd }} {{ $test.url }}"
+            - "hey -z 58s {{ $test.cmd }} {{ $test.url }}"
           restartPolicy: OnFailure
 {{- end -}}

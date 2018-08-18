@@ -71,6 +71,10 @@ helm upgrade store --install ./charts/podinfo-istio \
   -f ./charts/podinfo-istio/store.yaml 
 ```
 
+Start load test:
 
-
+```console
+helm upgrade --install loadtest ./charts/loadtest \
+  --namespace=loadtesting
+```
 
