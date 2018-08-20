@@ -1,82 +1,130 @@
 package main
 
 import (
-	"flag"
+	"fmt"
 	"io/ioutil"
-	stdlog "log"
 	"os"
+	"strings"
 	"time"
 
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"github.com/stefanprodan/k8s-podinfo/pkg/server"
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
+	"github.com/stefanprodan/k8s-podinfo/pkg/api"
 	"github.com/stefanprodan/k8s-podinfo/pkg/signals"
 	"github.com/stefanprodan/k8s-podinfo/pkg/version"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
-
-var (
-	port                string
-	debug               bool
-	logLevel            string
-	stressCPU           int
-	stressMemory        int
-	stressMemoryPayload []byte
-)
-
-func init() {
-	flag.StringVar(&port, "port", "9898", "Port to listen on.")
-	flag.BoolVar(&debug, "debug", false, "sets log level to debug")
-	flag.StringVar(&logLevel, "logLevel", "debug", "sets log level as debug, info, warn, error, flat or panic ")
-	flag.IntVar(&stressCPU, "stressCPU", 0, "Number of CPU cores with 100% load")
-	flag.IntVar(&stressMemory, "stressMemory", 0, "MB of data to load into memory")
-}
 
 func main() {
-	flag.Parse()
-	setLogging()
+	// flags definition
+	fs := pflag.NewFlagSet("default", pflag.ContinueOnError)
+	fs.Int("port", 9898, "port")
+	fs.String("backend-url", "", "backend service URL")
+	fs.Duration("http-client-timeout", 2*time.Minute, "client timeout duration")
+	fs.Duration("http-server-timeout", 30*time.Second, "server read and write timeout duration")
+	fs.Duration("http-server-shutdown-timeout", 5*time.Second, "server graceful shutdown timeout duration")
+	fs.String("data-path", "/data", "data local path")
+	fs.String("config-path", "", "config local path")
+	fs.String("ui-path", "./ui", "UI local path")
+	fs.String("ui-color", "blue", "UI color")
+	fs.String("ui-message", fmt.Sprintf("greetings from podinfo v%v", version.VERSION), "UI message")
+	fs.Int("stress-cpu", 0, "Number of CPU cores with 100 load")
+	fs.Int("stress-memory", 0, "MB of data to load into memory")
+	versionFlag := fs.Bool("version", false, "get version number")
 
-	log.Info().Msgf("Starting podinfo version %s commit %s", version.VERSION, version.GITCOMMIT)
-	log.Debug().Msgf("Starting HTTP server on port %v", port)
+	// parse flags
+	err := fs.Parse(os.Args[1:])
+	switch {
+	case err == pflag.ErrHelp:
+		os.Exit(0)
+	case err != nil:
+		fmt.Fprintf(os.Stderr, "Error: %s\n\n", err.Error())
+		fs.PrintDefaults()
+		os.Exit(2)
+	case *versionFlag:
+		fmt.Println(version.VERSION)
+		os.Exit(0)
+	}
 
+	// bind flags and environment variables
+	viper.BindPFlags(fs)
+	viper.RegisterAlias("backendUrl", "backend-url")
+	hostname, _ := os.Hostname()
+	viper.Set("hostname", hostname)
+	viper.Set("version", version.VERSION)
+	viper.Set("revision", version.REVISION)
+	viper.SetEnvPrefix("PI")
+	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
+	viper.AutomaticEnv()
+
+	// configure logging
+	zapEncoderConfig := zapcore.EncoderConfig{
+		TimeKey:        "ts",
+		LevelKey:       "level",
+		NameKey:        "logger",
+		CallerKey:      "caller",
+		MessageKey:     "msg",
+		StacktraceKey:  "stacktrace",
+		LineEnding:     zapcore.DefaultLineEnding,
+		EncodeLevel:    zapcore.LowercaseLevelEncoder,
+		EncodeTime:     zapcore.ISO8601TimeEncoder,
+		EncodeDuration: zapcore.SecondsDurationEncoder,
+		EncodeCaller:   zapcore.ShortCallerEncoder,
+	}
+	zapConfig := zap.Config{
+		Level:       zap.NewAtomicLevelAt(zapcore.InfoLevel),
+		Development: false,
+		Sampling: &zap.SamplingConfig{
+			Initial:    100,
+			Thereafter: 100,
+		},
+		Encoding:         "json",
+		EncoderConfig:    zapEncoderConfig,
+		OutputPaths:      []string{"stderr"},
+		ErrorOutputPaths: []string{"stderr"},
+	}
+	logger, _ := zapConfig.Build()
+	defer logger.Sync()
+
+	// log version and port
+	logger.Info("Starting podinfo",
+		zap.String("version", viper.GetString("version")),
+		zap.String("revision", viper.GetString("revision")),
+		zap.String("port", viper.GetString("port")),
+	)
+
+	// start stress test
+	beginStressTest(viper.GetInt("stress-cpu"), viper.GetInt("stress-memory"), logger)
+
+	// configure API
+	srvCfg := &api.Config{
+		Port:                      viper.GetString("port"),
+		Hostname:                  viper.GetString("hostname"),
+		HttpServerShutdownTimeout: viper.GetDuration("http-server-shutdown-timeout"),
+		HttpServerTimeout:         viper.GetDuration("http-server-timeout"),
+		BackendURL:                viper.GetString("backend-url"),
+		ConfigPath:                viper.GetString("config-path"),
+		DataPath:                  viper.GetString("data-path"),
+		HttpClientTimeout:         viper.GetDuration("http-client-timeout"),
+		UIColor:                   viper.GetString("ui-color"),
+		UIPath:                    viper.GetString("ui-path"),
+		UIMessage:                 viper.GetString("ui-message"),
+	}
+
+	// start HTTP server
+	srv, _ := api.NewServer(srvCfg, logger)
 	stopCh := signals.SetupSignalHandler()
-	beginStressTest(stressCPU, stressMemory)
-	server.ListenAndServe(port, 5*time.Second, stopCh)
+	srv.ListenAndServe(stopCh)
 }
 
-func setLogging() {
-	// set global log level
-	switch logLevel {
-	case "debug":
-		zerolog.SetGlobalLevel(zerolog.DebugLevel)
-	case "info":
-		zerolog.SetGlobalLevel(zerolog.InfoLevel)
-	case "warn":
-		zerolog.SetGlobalLevel(zerolog.WarnLevel)
-	case "error":
-		zerolog.SetGlobalLevel(zerolog.ErrorLevel)
-	case "fatal":
-		zerolog.SetGlobalLevel(zerolog.FatalLevel)
-	case "panic":
-		zerolog.SetGlobalLevel(zerolog.PanicLevel)
-	default:
-		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+var stressMemoryPayload []byte
 
-	}
-
-	// keep for backwards compatibility
-	if debug {
-		zerolog.SetGlobalLevel(zerolog.DebugLevel)
-	}
-
-	// set zerolog as standard logger
-	stdlog.SetFlags(0)
-	stdlog.SetOutput(log.Logger)
-}
-
-func beginStressTest(cpus int, mem int) {
+func beginStressTest(cpus int, mem int, logger *zap.Logger) {
 	done := make(chan int)
 	if cpus > 0 {
-		log.Info().Msgf("Starting CPU stress, %v core(s)", cpus)
+		logger.Info("starting CPU stress", zap.Int("cores", cpus))
 		for i := 0; i < cpus; i++ {
 			go func() {
 				for {
@@ -96,19 +144,19 @@ func beginStressTest(cpus int, mem int) {
 		f, err := os.Create(path)
 
 		if err != nil {
-			log.Error().Err(err).Msgf("Memory stress failed")
+			log.Error().Err(err).Msgf("memory stress failed")
 		}
 
 		if err := f.Truncate(1000000 * int64(mem)); err != nil {
-			log.Error().Err(err).Msgf("Memory stress failed")
+			logger.Error("memory stress failed", zap.Error(err))
 		}
 
 		stressMemoryPayload, err = ioutil.ReadFile(path)
 		f.Close()
 		os.Remove(path)
 		if err != nil {
-			log.Error().Err(err).Msgf("Memory stress failed")
+			logger.Error("memory stress failed", zap.Error(err))
 		}
-		log.Info().Msgf("Starting memory stress, size %v", len(stressMemoryPayload))
+		logger.Info("starting CPU stress", zap.Int("memory", len(stressMemoryPayload)))
 	}
 }
