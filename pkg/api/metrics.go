@@ -1,4 +1,4 @@
-package server
+package api
 
 import (
 	"bufio"
@@ -13,12 +13,12 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-type Instrument struct {
+type PrometheusMiddleware struct {
 	Histogram *prometheus.HistogramVec
 	Counter   *prometheus.CounterVec
 }
 
-func NewInstrument() *Instrument {
+func NewPrometheusMiddleware() *PrometheusMiddleware {
 	// used for monitoring and alerting (RED method)
 	histogram := prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Subsystem: "http",
@@ -39,13 +39,13 @@ func NewInstrument() *Instrument {
 	prometheus.MustRegister(histogram)
 	prometheus.MustRegister(counter)
 
-	return &Instrument{
+	return &PrometheusMiddleware{
 		Histogram: histogram,
 		Counter:   counter,
 	}
 }
 
-func (i Instrument) Wrap(next http.Handler) http.Handler {
+func (i *PrometheusMiddleware) Handler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		begin := time.Now()
 		interceptor := &interceptor{ResponseWriter: w, statusCode: http.StatusOK}
