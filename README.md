@@ -12,28 +12,27 @@ Specifications:
 * Watches for secrets and configmaps changes and updates the in-memory cache
 * Prometheus instrumentation (RED metrics)
 * Dependency management with golang/dep
-* Structured logging with zerolog
-* Error handling with pkg/errors
+* Structured logging with zap
+* Tracing with Istio and Jaeger
 * Helm chart
 
 Web API:
 
-* `GET /` prints runtime information, environment variables, labels and annotations
+* `GET /` prints runtime information
 * `GET /version` prints podinfo version and git commit hash 
-* `GET /metrics` http requests duration and Go runtime metrics
+* `GET /metrics` return HTTP requests duration and Go runtime metrics
 * `GET /healthz` used by Kubernetes liveness probe
 * `GET /readyz` used by Kubernetes readiness probe
 * `POST /readyz/enable` signals the Kubernetes LB that this instance is ready to receive traffic
 * `POST /readyz/disable` signals the Kubernetes LB to stop sending requests to this instance
-* `GET /error` returns code 500 and logs the error
+* `GET /status/{code}` returns the status code
 * `GET /panic` crashes the process with exit code 255
-* `POST /echo` echos the posted content, logs the SHA1 hash of the content
-* `GET /echoheaders` prints the request HTTP headers
-* `POST /job` long running job, json body: `{"wait":2}` 
-* `GET /configs` prints the configmaps and/or secrets mounted in the `config` volume
+* `POST /echo` forwards the call to the backend service and echos the posted content 
+* `GET /headers` returns a JSON with the request HTTP headers
+* `GET /delay/{seconds}` waits for the specified period
+* `GET /configs` returns a JSON with configmaps and/or secrets mounted in the `config` volume
 * `POST /write` writes the posted content to disk at /data/hash and returns the SHA1 hash of the content
-* `POST /read` receives a SHA1 hash and returns the content of the file /data/hash if exists
-* `POST /backend` forwards the call to the backend service on `http://backend-podinfo:9898/echo`
+* `GET /read/{hash}` returns the content of the file /data/hash if exists
 
 ### Guides
 
