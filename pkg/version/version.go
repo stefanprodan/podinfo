@@ -1,4 +1,4 @@
 package version
 
-var VERSION = "0.6.1"
-var GITCOMMIT = "unknown"
+var VERSION = "1.0.0-alpha.1"
+var REVISION = "unknown"

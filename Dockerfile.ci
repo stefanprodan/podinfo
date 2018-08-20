@@ -11,7 +11,7 @@ RUN go test $(go list ./... | grep -v integration | grep -v /vendor/ | grep -v /
 RUN gofmt -l -d $(find . -type f -name '*.go' -not -path "./vendor/*") && \
   GIT_COMMIT=$(git rev-list -1 HEAD) && \
   CGO_ENABLED=0 GOOS=linux go build -ldflags "-s -w \
-  -X github.com/stefanprodan/k8s-podinfo/pkg/version.GITCOMMIT=${GIT_COMMIT}" \
+  -X github.com/stefanprodan/k8s-podinfo/pkg/version.REVISION=${GIT_COMMIT}" \
   -a -installsuffix cgo -o podinfo ./cmd/podinfo
 
 FROM alpine:3.7

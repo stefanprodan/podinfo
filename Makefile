@@ -20,7 +20,7 @@ build:
 	@rm -rf build && mkdir build
 	@echo Building: linux/$(LINUX_ARCH)  $(VERSION) ;\
 	for arch in $(LINUX_ARCH); do \
-	    mkdir -p build/linux/$$arch && CGO_ENABLED=0 GOOS=linux GOARCH=$$arch go build -ldflags="-s -w -X $(GITREPO)/pkg/version.GITCOMMIT=$(GITCOMMIT)" -o build/linux/$$arch/$(NAME) ./cmd/$(NAME) ;\
+	    mkdir -p build/linux/$$arch && CGO_ENABLED=0 GOOS=linux GOARCH=$$arch go build -ldflags="-s -w -X $(GITREPO)/pkg/version.REVISION=$(GITCOMMIT)" -o build/linux/$$arch/$(NAME) ./cmd/$(NAME) ;\
 	    cp -r ui/ build/linux/$$arch/ui;\
 	done
 
