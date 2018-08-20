@@ -76,6 +76,8 @@ func (s *Server) registerHandlers() {
 func (s *Server) registerMiddlewares() {
 	prom := NewPrometheusMiddleware()
 	s.router.Use(prom.Handler)
+	zapLog := NewLoggingMiddleware(s.logger)
+	s.router.Use(zapLog.Handler)
 	s.router.Use(versionMiddleware)
 }
 

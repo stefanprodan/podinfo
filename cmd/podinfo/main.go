@@ -21,6 +21,7 @@ func main() {
 	// flags definition
 	fs := pflag.NewFlagSet("default", pflag.ContinueOnError)
 	fs.Int("port", 9898, "port")
+	fs.String("level", "info", "log level debug, info, warn, error, flat or panic")
 	fs.String("backend-url", "", "backend service URL")
 	fs.Duration("http-client-timeout", 2*time.Minute, "client timeout duration")
 	fs.Duration("http-server-timeout", 30*time.Second, "server read and write timeout duration")
@@ -60,33 +61,10 @@ func main() {
 	viper.AutomaticEnv()
 
 	// configure logging
-	zapEncoderConfig := zapcore.EncoderConfig{
-		TimeKey:        "ts",
-		LevelKey:       "level",
-		NameKey:        "logger",
-		CallerKey:      "caller",
-		MessageKey:     "msg",
-		StacktraceKey:  "stacktrace",
-		LineEnding:     zapcore.DefaultLineEnding,
-		EncodeLevel:    zapcore.LowercaseLevelEncoder,
-		EncodeTime:     zapcore.ISO8601TimeEncoder,
-		EncodeDuration: zapcore.SecondsDurationEncoder,
-		EncodeCaller:   zapcore.ShortCallerEncoder,
-	}
-	zapConfig := zap.Config{
-		Level:       zap.NewAtomicLevelAt(zapcore.InfoLevel),
-		Development: false,
-		Sampling: &zap.SamplingConfig{
-			Initial:    100,
-			Thereafter: 100,
-		},
-		Encoding:         "json",
-		EncoderConfig:    zapEncoderConfig,
-		OutputPaths:      []string{"stderr"},
-		ErrorOutputPaths: []string{"stderr"},
-	}
-	logger, _ := zapConfig.Build()
+	logger, _ := initZap(viper.GetString("level"))
 	defer logger.Sync()
+	stdLog := zap.RedirectStdLog(logger)
+	defer stdLog()
 
 	// log version and port
 	logger.Info("Starting podinfo",
@@ -117,6 +95,53 @@ func main() {
 	srv, _ := api.NewServer(srvCfg, logger)
 	stopCh := signals.SetupSignalHandler()
 	srv.ListenAndServe(stopCh)
+}
+
+func initZap(logLevel string) (*zap.Logger, error) {
+	level := zap.NewAtomicLevelAt(zapcore.InfoLevel)
+	switch logLevel {
+	case "debug":
+		level = zap.NewAtomicLevelAt(zapcore.DebugLevel)
+	case "info":
+		level = zap.NewAtomicLevelAt(zapcore.InfoLevel)
+	case "warn":
+		level = zap.NewAtomicLevelAt(zapcore.WarnLevel)
+	case "error":
+		level = zap.NewAtomicLevelAt(zapcore.ErrorLevel)
+	case "fatal":
+		level = zap.NewAtomicLevelAt(zapcore.FatalLevel)
+	case "panic":
+		level = zap.NewAtomicLevelAt(zapcore.PanicLevel)
+	}
+
+	zapEncoderConfig := zapcore.EncoderConfig{
+		TimeKey:        "ts",
+		LevelKey:       "level",
+		NameKey:        "logger",
+		CallerKey:      "caller",
+		MessageKey:     "msg",
+		StacktraceKey:  "stacktrace",
+		LineEnding:     zapcore.DefaultLineEnding,
+		EncodeLevel:    zapcore.LowercaseLevelEncoder,
+		EncodeTime:     zapcore.ISO8601TimeEncoder,
+		EncodeDuration: zapcore.SecondsDurationEncoder,
+		EncodeCaller:   zapcore.ShortCallerEncoder,
+	}
+
+	zapConfig := zap.Config{
+		Level:       level,
+		Development: false,
+		Sampling: &zap.SamplingConfig{
+			Initial:    100,
+			Thereafter: 100,
+		},
+		Encoding:         "json",
+		EncoderConfig:    zapEncoderConfig,
+		OutputPaths:      []string{"stderr"},
+		ErrorOutputPaths: []string{"stderr"},
+	}
+
+	return zapConfig.Build()
 }
 
 var stressMemoryPayload []byte
