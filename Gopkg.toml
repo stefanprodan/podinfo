@@ -1,23 +1,26 @@
-
-[[constraint]]
-  name = "github.com/pkg/errors"
-  version = "0.8.0"
-
 [[constraint]]
   name = "github.com/prometheus/client_golang"
   version = "0.8.0"
 
 [[constraint]]
-  name = "github.com/rs/zerolog"
-  version = "1.8.0"
+  name = "github.com/gorilla/mux"
+  version = "v1.6.2"
 
 [[constraint]]
-  name = "gopkg.in/yaml.v2"
-  version = "2.1.1"
+  name = "go.uber.org/zap"
+  version = "v1.9.1"
 
 [[override]]
   name = "github.com/fsnotify/fsnotify"
   version = "1.2.9"
+
+[[constraint]]
+  name = "github.com/spf13/pflag"
+  version = "v1.0.2"
+
+[[constraint]]
+  name = "github.com/spf13/viper"
+  version = "v1.1.0"
 
 [prune]
   go-tests = true
