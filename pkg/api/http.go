@@ -18,6 +18,8 @@ func versionMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// TODO: use Istio tracing package
+// https://github.com/istio/istio/blob/master/pkg/tracing/config.go
 func copyTracingHeaders(from *http.Request, to *http.Request) {
 	headers := []string{
 		"x-request-id",

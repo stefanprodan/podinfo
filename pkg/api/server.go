@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	_ "net/http/pprof"
+	"os"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -22,17 +23,17 @@ var (
 )
 
 type Config struct {
-	HttpClientTimeout         time.Duration
-	HttpServerTimeout         time.Duration
-	HttpServerShutdownTimeout time.Duration
-	BackendURL                string
-	UIMessage                 string
-	UIColor                   string
-	UIPath                    string
-	DataPath                  string
-	ConfigPath                string
-	Port                      string
-	Hostname                  string
+	HttpClientTimeout         time.Duration `mapstructure:"http-client-timeout"`
+	HttpServerTimeout         time.Duration `mapstructure:"http-server-timeout"`
+	HttpServerShutdownTimeout time.Duration `mapstructure:"http-server-shutdown-timeout"`
+	BackendURL                string        `mapstructure:"backend-url"`
+	UIMessage                 string        `mapstructure:"ui-message"`
+	UIColor                   string        `mapstructure:"ui-color"`
+	UIPath                    string        `mapstructure:"ui-path"`
+	DataPath                  string        `mapstructure:"data-path"`
+	ConfigPath                string        `mapstructure:"config-path"`
+	Port                      string        `mapstructure:"port"`
+	Hostname                  string        `mapstructure:"hostname"`
 }
 
 type Server struct {
@@ -76,8 +77,8 @@ func (s *Server) registerHandlers() {
 func (s *Server) registerMiddlewares() {
 	prom := NewPrometheusMiddleware()
 	s.router.Use(prom.Handler)
-	zapLog := NewLoggingMiddleware(s.logger)
-	s.router.Use(zapLog.Handler)
+	httpLogger := NewLoggingMiddleware(s.logger)
+	s.router.Use(httpLogger.Handler)
 	s.router.Use(versionMiddleware)
 }
 
@@ -97,7 +98,7 @@ func (s *Server) ListenAndServe(stopCh <-chan struct{}) {
 	//s.printRoutes()
 
 	// load configs in memory and start watching for changes in the config dir
-	if len(s.config.ConfigPath) > 0 {
+	if stat, err := os.Stat(s.config.ConfigPath); err == nil && stat.IsDir() {
 		var err error
 		watcher, err = fscache.NewWatch(s.config.ConfigPath)
 		if err != nil {

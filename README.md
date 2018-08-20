@@ -14,6 +14,7 @@ Specifications:
 * Dependency management with golang/dep
 * Structured logging with zap
 * Tracing with Istio and Jaeger
+* 12-factor app with viper
 * Helm chart
 
 Web API:

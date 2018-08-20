@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"github.com/stefanprodan/k8s-podinfo/pkg/api"
@@ -27,7 +27,8 @@ func main() {
 	fs.Duration("http-server-timeout", 30*time.Second, "server read and write timeout duration")
 	fs.Duration("http-server-shutdown-timeout", 5*time.Second, "server graceful shutdown timeout duration")
 	fs.String("data-path", "/data", "data local path")
-	fs.String("config-path", "", "config local path")
+	fs.String("config-path", "", "config dir path")
+	fs.String("config", "config.yaml", "config file name")
 	fs.String("ui-path", "./ui", "UI local path")
 	fs.String("ui-color", "blue", "UI color")
 	fs.String("ui-message", fmt.Sprintf("greetings from podinfo v%v", version.VERSION), "UI message")
@@ -60,11 +61,29 @@ func main() {
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	viper.AutomaticEnv()
 
+	// load config from file
+	if _, err := os.Stat(filepath.Join(viper.GetString("config-path"), viper.GetString("config"))); err == nil {
+		viper.SetConfigName(strings.Split(viper.GetString("config"), ".")[0])
+		viper.AddConfigPath(viper.GetString("config-path"))
+		if err := viper.ReadInConfig(); err != nil {
+			fmt.Printf("Error reading config file, %v\n", err)
+		}
+	}
+
 	// configure logging
 	logger, _ := initZap(viper.GetString("level"))
 	defer logger.Sync()
 	stdLog := zap.RedirectStdLog(logger)
 	defer stdLog()
+
+	// start stress tests if any
+	beginStressTest(viper.GetInt("stress-cpu"), viper.GetInt("stress-memory"), logger)
+
+	// load HTTP server config
+	var srvCfg api.Config
+	if err := viper.Unmarshal(&srvCfg); err != nil {
+		logger.Panic("config unmarshal failed", zap.Error(err))
+	}
 
 	// log version and port
 	logger.Info("Starting podinfo",
@@ -73,26 +92,8 @@ func main() {
 		zap.String("port", viper.GetString("port")),
 	)
 
-	// start stress test
-	beginStressTest(viper.GetInt("stress-cpu"), viper.GetInt("stress-memory"), logger)
-
-	// configure API
-	srvCfg := &api.Config{
-		Port:                      viper.GetString("port"),
-		Hostname:                  viper.GetString("hostname"),
-		HttpServerShutdownTimeout: viper.GetDuration("http-server-shutdown-timeout"),
-		HttpServerTimeout:         viper.GetDuration("http-server-timeout"),
-		BackendURL:                viper.GetString("backend-url"),
-		ConfigPath:                viper.GetString("config-path"),
-		DataPath:                  viper.GetString("data-path"),
-		HttpClientTimeout:         viper.GetDuration("http-client-timeout"),
-		UIColor:                   viper.GetString("ui-color"),
-		UIPath:                    viper.GetString("ui-path"),
-		UIMessage:                 viper.GetString("ui-message"),
-	}
-
 	// start HTTP server
-	srv, _ := api.NewServer(srvCfg, logger)
+	srv, _ := api.NewServer(&srvCfg, logger)
 	stopCh := signals.SetupSignalHandler()
 	srv.ListenAndServe(stopCh)
 }
@@ -169,7 +170,7 @@ func beginStressTest(cpus int, mem int, logger *zap.Logger) {
 		f, err := os.Create(path)
 
 		if err != nil {
-			log.Error().Err(err).Msgf("memory stress failed")
+			logger.Error("memory stress failed", zap.Error(err))
 		}
 
 		if err := f.Truncate(1000000 * int64(mem)); err != nil {
