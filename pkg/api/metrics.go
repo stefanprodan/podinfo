@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -45,19 +46,34 @@ func NewPrometheusMiddleware() *PrometheusMiddleware {
 	}
 }
 
-func (i *PrometheusMiddleware) Handler(next http.Handler) http.Handler {
+func (p *PrometheusMiddleware) Handler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		begin := time.Now()
 		interceptor := &interceptor{ResponseWriter: w, statusCode: http.StatusOK}
-		path := urlToLabel(r.URL.Path)
+		path := p.getRouteName(r)
 		next.ServeHTTP(interceptor, r)
 		var (
 			status = strconv.Itoa(interceptor.statusCode)
 			took   = time.Since(begin)
 		)
-		i.Histogram.WithLabelValues(r.Method, path, status).Observe(took.Seconds())
-		i.Counter.WithLabelValues(status).Inc()
+		p.Histogram.WithLabelValues(r.Method, path, status).Observe(took.Seconds())
+		p.Counter.WithLabelValues(status).Inc()
 	})
+}
+
+// converts gorilla mux routes from '/api/delay/{wait}' to 'api_delay_wait'
+func (p *PrometheusMiddleware) getRouteName(r *http.Request) string {
+	if mux.CurrentRoute(r) != nil {
+		if name := mux.CurrentRoute(r).GetName(); len(name) > 0 {
+			return urlToLabel(name)
+		}
+		if path, err := mux.CurrentRoute(r).GetPathTemplate(); err == nil {
+			if len(path) > 0 {
+				return urlToLabel(path)
+			}
+		}
+	}
+	return urlToLabel(r.RequestURI)
 }
 
 var invalidChars = regexp.MustCompile(`[^a-zA-Z0-9]+`)
