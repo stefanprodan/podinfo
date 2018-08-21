@@ -3,9 +3,8 @@ package api
 import (
 	"bytes"
 	"encoding/json"
-	"net/http"
-
 	"math/rand"
+	"net/http"
 	"time"
 
 	"github.com/stefanprodan/k8s-podinfo/pkg/version"

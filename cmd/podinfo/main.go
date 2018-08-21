@@ -59,7 +59,7 @@ func main() {
 	viper.Set("hostname", hostname)
 	viper.Set("version", version.VERSION)
 	viper.Set("revision", version.REVISION)
-	viper.SetEnvPrefix("PI")
+	viper.SetEnvPrefix("PODINFO")
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	viper.AutomaticEnv()
 
