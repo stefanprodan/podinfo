@@ -5,6 +5,7 @@ import (
 	"context"
 	"io/ioutil"
 	"net/http"
+
 	"github.com/stefanprodan/k8s-podinfo/pkg/version"
 	"go.uber.org/zap"
 )
@@ -16,6 +17,7 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 		s.ErrorResponse(w, r, "invalid request body", http.StatusBadRequest)
 		return
 	}
+	defer r.Body.Close()
 
 	if len(s.config.BackendURL) > 0 {
 		backendReq, err := http.NewRequest("POST", s.config.BackendURL, bytes.NewReader(body))
@@ -75,5 +77,3 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write(body)
 	}
 }
-
-

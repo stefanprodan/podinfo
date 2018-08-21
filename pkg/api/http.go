@@ -5,9 +5,36 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"math/rand"
+	"time"
+
 	"github.com/stefanprodan/k8s-podinfo/pkg/version"
 	"go.uber.org/zap"
 )
+
+func randomDelayMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		min := 0
+		max := 5
+		rand.Seed(time.Now().Unix())
+		delay := rand.Intn(max-min) + min
+		time.Sleep(time.Duration(delay) * time.Second)
+		next.ServeHTTP(w, r)
+	})
+}
+
+func randomErrorMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		rand.Seed(time.Now().Unix())
+		if rand.Int31n(3) == 0 {
+
+			errors := []int{http.StatusInternalServerError, http.StatusBadRequest, http.StatusConflict}
+			w.WriteHeader(errors[rand.Intn(len(errors))])
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
 
 func versionMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

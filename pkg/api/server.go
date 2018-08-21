@@ -34,6 +34,8 @@ type Config struct {
 	ConfigPath                string        `mapstructure:"config-path"`
 	Port                      string        `mapstructure:"port"`
 	Hostname                  string        `mapstructure:"hostname"`
+	RandomDelay               bool          `mapstructure:"random-delay"`
+	RandomError               bool          `mapstructure:"random-error"`
 }
 
 type Server struct {
@@ -80,6 +82,12 @@ func (s *Server) registerMiddlewares() {
 	httpLogger := NewLoggingMiddleware(s.logger)
 	s.router.Use(httpLogger.Handler)
 	s.router.Use(versionMiddleware)
+	if s.config.RandomDelay {
+		s.router.Use(randomDelayMiddleware)
+	}
+	if s.config.RandomError {
+		s.router.Use(randomErrorMiddleware)
+	}
 }
 
 func (s *Server) ListenAndServe(stopCh <-chan struct{}) {

@@ -32,6 +32,8 @@ func main() {
 	fs.String("ui-path", "./ui", "UI local path")
 	fs.String("ui-color", "blue", "UI color")
 	fs.String("ui-message", fmt.Sprintf("greetings from podinfo v%v", version.VERSION), "UI message")
+	fs.Bool("random-delay", false, "between 0 and 5 seconds random delay")
+	fs.Bool("random-error", false, "1/3 chances of a random response error")
 	fs.Int("stress-cpu", 0, "Number of CPU cores with 100 load")
 	fs.Int("stress-memory", 0, "MB of data to load into memory")
 	versionFlag := fs.Bool("version", false, "get version number")
