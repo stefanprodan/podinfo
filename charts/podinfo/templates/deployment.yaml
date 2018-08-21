@@ -38,13 +38,13 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command:
             - ./podinfo
-            - -port={{ .Values.service.containerPort }}
-            - -logLevel={{ .Values.logLevel }}
+            - --port={{ .Values.service.containerPort }}
+            - --level={{ .Values.logLevel }}
           env:
-          - name: color
+          - name: PODINFO_COLOR
             value: {{ .Values.color }}
           {{- if .Values.backend }}
-          - name: backendURL
+          - name: PODINFO_BACKEND_URL
             value: {{ .Values.backend }}
           {{- end }}
           ports:
