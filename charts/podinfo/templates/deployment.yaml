@@ -40,9 +40,15 @@ spec:
             - ./podinfo
             - --port={{ .Values.service.containerPort }}
             - --level={{ .Values.logLevel }}
+            - --random-delay={{ .Values.faults.delay }}
+            - --random-error={{ .Values.faults.error }}
           env:
-          - name: PODINFO_COLOR
+          - name: PODINFO_UI_COLOR
             value: {{ .Values.color }}
+          {{- if .Values.message }}
+          - name: PODINFO_UI_MESSAGE
+            value: {{ .Values.message }}
+          {{- end }}
           {{- if .Values.backend }}
           - name: PODINFO_BACKEND_URL
             value: {{ .Values.backend }}

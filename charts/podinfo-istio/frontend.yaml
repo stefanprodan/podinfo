@@ -9,21 +9,21 @@ exposeHost: true
 # if you have a Gateway running you can set the name to your own gateway and turn off create
 gateway:
   name: public-gateway
-  create: true
+  create: false
   tls: true
   httpsRedirect: true
 
 # stable release
 blue:
   replicas: 2
-  tag: "0.6.0"
-  message: "Greetings from the blue frontend"
+  tag: "1.0.0"
+  message: "Greetings human! Gabi is THE BEST!!!!"
   backend: http://backend:9898/api/echo
 
 # canary release
 green:
   replicas: 2
-  tag: "0.6.1"
+  tag: "1.0.0"
   routing:
     # target Safari
     - match:

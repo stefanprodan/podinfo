@@ -27,22 +27,27 @@ gateway:
 blue:
   replicas: 2
   repository: quay.io/stefanprodan/podinfo
-  tag: "0.6.0"
+  tag: "1.0.0"
   # green must have at at least one replica to set weight under 100
   weight: 100
   message:
   backend:
-
+  faults:
+    delay: false
+    error: false
 
 # canary release
 # disabled with 0 replicas
 green:
   replicas: 0
   repository: quay.io/stefanprodan/podinfo
-  tag: "0.6.1"
+  tag: "1.0.0"
   message:
   backend:
   routing:
+  faults:
+    delay: false
+    error: false
 
 # blue/green common settings
 logLevel: info
