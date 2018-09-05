@@ -1,0 +1,55 @@
+apiVersion: config.istio.io/v1alpha2
+kind: denier
+metadata:
+  name: denyhandler
+  namespace: openfaas
+spec:
+  status:
+    code: 7
+    message: Not allowed
+---
+apiVersion: config.istio.io/v1alpha2
+kind: checknothing
+metadata:
+  name: denyrequest
+  namespace: openfaas
+spec:
+---
+apiVersion: config.istio.io/v1alpha2
+kind: rule
+metadata:
+  name: denyopenfaasfn
+  namespace: openfaas
+spec:
+  match: destination.namespace == "openfaas" && source.namespace == "openfaas-fn" && source.labels["role"] != "openfaas-system"
+  actions:
+  - handler: denyhandler.denier
+    instances: [ denyrequest.checknothing ]
+---
+apiVersion: config.istio.io/v1alpha2
+kind: denier
+metadata:
+  name: denyhandler
+  namespace: openfaas-fn
+spec:
+  status:
+    code: 7
+    message: Not allowed
+---
+apiVersion: config.istio.io/v1alpha2
+kind: checknothing
+metadata:
+  name: denyrequest
+  namespace: openfaas-fn
+spec:
+---
+apiVersion: config.istio.io/v1alpha2
+kind: rule
+metadata:
+  name: denyopenfaasfn
+  namespace: openfaas-fn
+spec:
+  match: destination.namespace == "openfaas-fn" && source.namespace != "openfaas" && source.labels["role"] != "openfaas-system"
+  actions:
+  - handler: denyhandler.denier
+    instances: [ denyrequest.checknothing ]

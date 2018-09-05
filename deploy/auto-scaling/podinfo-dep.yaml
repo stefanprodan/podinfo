@@ -9,75 +9,41 @@ spec:
     metadata:
       labels:
         app: podinfo
+        #role: openfaas-system
       annotations:
         prometheus.io/scrape: 'true'
     spec:
       containers:
       - name: podinfod
-        image: stefanprodan/podinfo:0.0.9
-        imagePullPolicy: Always
+        image: quay.io/stefanprodan/podinfo:1.0.1
         command:
           - ./podinfo
-          - -port=9898
-          - -logtostderr=true
-          - -v=2
-        volumeMounts:
-          - name: metadata
-            mountPath: /etc/podinfod/metadata
-            readOnly: true
-          - name: resources
-            mountPath: /etc/podinfod/resources
-            readOnly: true
+          - --port=9898
+          - --level=debug
         ports:
-        - containerPort: 9898
+        - name: http
+          containerPort: 9898
           protocol: TCP
-        readinessProbe:
-          httpGet:
-            path: /readyz
-            port: 9898
-          initialDelaySeconds: 1
-          periodSeconds: 2
-          failureThreshold: 1
         livenessProbe:
-          httpGet:
-            path: /healthz
-            port: 9898
-          initialDelaySeconds: 1
-          periodSeconds: 3
-          failureThreshold: 2
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - wget --quiet --tries=1 --spider http://localhost:9898/healthz || exit 1
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - wget --quiet --tries=1 --spider http://localhost:9898/readyz || exit 1
         resources:
           requests:
             memory: "32Mi"
             cpu: "10m"
-          limits:
-            memory: "256Mi"
-            cpu: "100m"
-      volumes:
-        - name: metadata
-          downwardAPI:
-            items:
-              - path: "labels"
-                fieldRef:
-                  fieldPath: metadata.labels
-              - path: "annotations"
-                fieldRef:
-                  fieldPath: metadata.annotations
-        - name: resources
-          downwardAPI:
-            items:
-              - path: "cpu_limit"
-                resourceFieldRef:
-                  containerName: podinfod
-                  resource: limits.cpu
-              - path: "cpu_request"
-                resourceFieldRef:
-                  containerName: podinfod
-                  resource: requests.cpu
-              - path: "mem_limit"
-                resourceFieldRef:
-                  containerName: podinfod
-                  resource: limits.memory
-              - path: "mem_request"
-                resourceFieldRef:
-                  containerName: podinfod
-                  resource: requests.memory
+        env:
+          - name: color
+            value: "blue"
+          - name: message
+            value: "Greetings from podinfo blue"
+          - name: backendURL
+            value: "http://podinfo-backend:9898/backend"
