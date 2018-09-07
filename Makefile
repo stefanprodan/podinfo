@@ -95,7 +95,7 @@ gcr-build:
 
 .PHONY: test
 test:
-	cd pkg/server ; go test -v -race ./...
+	go test -v -race ./...
 
 .PHONY: dep
 dep:

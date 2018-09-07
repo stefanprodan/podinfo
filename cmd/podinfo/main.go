@@ -36,7 +36,8 @@ func main() {
 	fs.Bool("random-error", false, "1/3 chances of a random response error")
 	fs.Int("stress-cpu", 0, "Number of CPU cores with 100 load")
 	fs.Int("stress-memory", 0, "MB of data to load into memory")
-	versionFlag := fs.Bool("version", false, "get version number")
+
+	versionFlag := fs.BoolP("version", "v", false, "get version number")
 
 	// parse flags
 	err := fs.Parse(os.Args[1:])
