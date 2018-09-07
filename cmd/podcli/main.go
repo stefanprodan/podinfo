@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
-	"log"
 )
 
 var rootCmd = &cobra.Command{
@@ -18,7 +18,6 @@ podinfo command line utilities`,
 }
 
 var (
-	configFile string
 	logger *zap.Logger
 )
 
@@ -31,7 +30,6 @@ func main() {
 	}
 	defer logger.Sync()
 
-	rootCmd.PersistentFlags().StringVarP(&configFile, "config", "f", "", "path to config file")
 	rootCmd.SetArgs(os.Args[1:])
 	if err := rootCmd.Execute(); err != nil {
 		e := err.Error()
