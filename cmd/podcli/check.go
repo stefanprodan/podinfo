@@ -3,15 +3,17 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"fmt"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
-	"net"
 )
 
 var (
@@ -29,17 +31,24 @@ var checkCmd = &cobra.Command{
 }
 
 var checkUrlCmd = &cobra.Command{
-	Use:     `http [URL]`,
-	Short:   "HTTP/S health check",
-	Example: `  check http https://httpbin.org/anything --method=POST --retry=2 --delay=2s --timeout=1s --body='{"test"=1}'`,
+	Use:     `http [address]`,
+	Short:   "HTTP(S) health check",
+	Example: `  check http https://httpbin.org/anything --method=POST --retry=2 --delay=2s --timeout=3s --body='{"test"=1}'`,
 	RunE:    runCheck,
 }
 
 var checkTcpCmd = &cobra.Command{
 	Use:     `tcp [address]`,
-	Short:   "HTTP/S health check",
-	Example: `  check http https://httpbin.org/anything --retry=2 --delay=2s --timeout=1s`,
+	Short:   "TCP health check",
+	Example: `  check tcp httpbin.org:443 --retry=1 --delay=2s --timeout=2s`,
 	RunE:    runCheckTCP,
+}
+
+var checkCertCmd = &cobra.Command{
+	Use:     `cert [address]`,
+	Short:   "SSL/TLS certificate validity check",
+	Example: `  check cert httpbin.org`,
+	RunE:    runCheckCert,
 }
 
 func init() {
@@ -55,6 +64,8 @@ func init() {
 	checkTcpCmd.Flags().DurationVar(&timeout, "timeout", 5*time.Second, "timeout")
 	checkCmd.AddCommand(checkTcpCmd)
 
+	checkCmd.AddCommand(checkCertCmd)
+
 	rootCmd.AddCommand(checkCmd)
 }
 
@@ -66,9 +77,9 @@ func runCheck(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("address is required! example: check http https://httpbin.org")
 	}
 
-	url := args[0]
-	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
-		url = fmt.Sprintf("http://%s", url)
+	address := args[0]
+	if !strings.HasPrefix(address, "http://") && !strings.HasPrefix(address, "https://") {
+		address = fmt.Sprintf("http://%s", address)
 	}
 
 	for n := 0; n <= retryCount; n++ {
@@ -76,10 +87,10 @@ func runCheck(cmd *cobra.Command, args []string) error {
 			time.Sleep(retryDelay)
 		}
 
-		req, err := http.NewRequest(method, url, bytes.NewBuffer([]byte(body)))
+		req, err := http.NewRequest(method, address, bytes.NewBuffer([]byte(body)))
 		if err != nil {
 			logger.Info("check failed",
-				zap.String("address", url),
+				zap.String("address", address),
 				zap.Error(err))
 			os.Exit(1)
 		}
@@ -89,7 +100,7 @@ func runCheck(cmd *cobra.Command, args []string) error {
 		cancel()
 		if err != nil {
 			logger.Info("check failed",
-				zap.String("address", url),
+				zap.String("address", address),
 				zap.Error(err))
 			continue
 		}
@@ -100,13 +111,13 @@ func runCheck(cmd *cobra.Command, args []string) error {
 
 		if resp.StatusCode >= 200 && resp.StatusCode < 400 {
 			logger.Info("check succeed",
-				zap.String("address", url),
+				zap.String("address", address),
 				zap.Int("status code", resp.StatusCode),
 				zap.String("response size", fmtContentLength(resp.ContentLength)))
 			os.Exit(0)
 		} else {
 			logger.Info("check failed",
-				zap.String("address", url),
+				zap.String("address", address),
 				zap.Int("status code", resp.StatusCode))
 			continue
 		}
@@ -123,29 +134,100 @@ func runCheckTCP(cmd *cobra.Command, args []string) error {
 	if len(args) < 1 {
 		return fmt.Errorf("address is required! example: check tcp httpbin.org:80")
 	}
-	host := args[0]
+	address := args[0]
 
 	for n := 0; n <= retryCount; n++ {
 		if n != 1 {
 			time.Sleep(retryDelay)
 		}
 
-		conn, err := net.DialTimeout("tcp", host, timeout)
+		conn, err := net.DialTimeout("tcp", address, timeout)
 
 		if err != nil {
 			logger.Info("check failed",
-				zap.String("address", host),
+				zap.String("address", address),
 				zap.Error(err))
 			continue
 		}
 
 		conn.Close()
-		logger.Info("check succeed", zap.String("address", host))
+		logger.Info("check succeed", zap.String("address", address))
 		os.Exit(0)
 
 	}
 
 	os.Exit(1)
+	return nil
+}
+
+func runCheckCert(cmd *cobra.Command, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("address is required! example: check cert httpbin.org")
+	}
+	host := args[0]
+	if !strings.HasPrefix(host, "https://") {
+		host = "https://" + host
+	}
+
+	u, err := url.Parse(host)
+	if err != nil {
+		logger.Info("check failed",
+			zap.String("address", host),
+			zap.Error(err))
+		os.Exit(1)
+	}
+
+	address := u.Hostname() + ":443"
+	ipConn, err := net.DialTimeout("tcp", address, 5*time.Second)
+	if err != nil {
+		logger.Info("check failed",
+			zap.String("address", address),
+			zap.Error(err))
+		os.Exit(1)
+
+	}
+
+	defer ipConn.Close()
+	conn := tls.Client(ipConn, &tls.Config{
+		InsecureSkipVerify: true,
+		ServerName:         u.Hostname(),
+	})
+	if err = conn.Handshake(); err != nil {
+		logger.Info("check failed",
+			zap.String("address", address),
+			zap.Error(err))
+		os.Exit(1)
+	}
+
+	defer conn.Close()
+	addr := conn.RemoteAddr()
+	_, _, err = net.SplitHostPort(addr.String())
+	if err != nil {
+		logger.Info("check failed",
+			zap.String("address", address),
+			zap.Error(err))
+		os.Exit(1)
+	}
+
+	cert := conn.ConnectionState().PeerCertificates[0]
+
+	timeNow := time.Now()
+	if timeNow.After(cert.NotAfter) {
+		logger.Info("check failed",
+			zap.String("address", address),
+			zap.String("issuer", cert.Issuer.CommonName),
+			zap.String("subject", cert.Subject.CommonName),
+			zap.Time("expired", cert.NotAfter))
+		os.Exit(1)
+	}
+
+	logger.Info("check succeed",
+		zap.String("address", address),
+		zap.String("issuer", cert.Issuer.CommonName),
+		zap.String("subject", cert.Subject.CommonName),
+		zap.Time("notAfter", cert.NotAfter),
+		zap.Time("notBefore", cert.NotBefore))
+
 	return nil
 }
 
