@@ -55,20 +55,18 @@ spec:
             - name: http
               containerPort: {{ .Values.containerPort }}
               protocol: TCP
-          readinessProbe:
-            httpGet:
-              path: /readyz
-              port: 9898
-            initialDelaySeconds: 1
-            periodSeconds: 2
-            failureThreshold: 1
           livenessProbe:
-            httpGet:
-              path: /healthz
-              port: 9898
-            initialDelaySeconds: 1
-            periodSeconds: 10
-            failureThreshold: 2
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - wget --quiet --tries=1 --spider http://localhost:{{ .Values.containerPort }}/healthz || exit 1
+          readinessProbe:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - wget --quiet --tries=1 --spider http://localhost:{{ .Values.containerPort }}/readyz || exit 1
           volumeMounts:
           - name: data
             mountPath: /data
