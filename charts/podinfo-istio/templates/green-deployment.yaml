@@ -58,15 +58,17 @@ spec:
           livenessProbe:
             exec:
               command:
-              - /bin/sh
-              - -c
-              - wget --quiet --tries=1 --spider http://localhost:{{ .Values.containerPort }}/healthz || exit 1
+              - podcli
+              - check
+              - http
+              - http://localhost:{{ .Values.service.containerPort }}/healthz
           readinessProbe:
             exec:
               command:
-              - /bin/sh
-              - -c
-              - wget --quiet --tries=1 --spider http://localhost:{{ .Values.containerPort }}/readyz || exit 1
+              - podcli
+              - check
+              - http
+              - http://localhost:{{ .Values.service.containerPort }}/readyz
           volumeMounts:
           - name: data
             mountPath: /data

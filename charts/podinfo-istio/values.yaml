@@ -1,6 +1,6 @@
 # Default values for podinfo-istio.
 
-# host can be an extarnal domain or a local one
+# host can be an external domain or a local one
 host: podinfo
 # if the host is an external domain must be exposed via the Gateway
 exposeHost: false
@@ -27,7 +27,7 @@ gateway:
 blue:
   replicas: 2
   repository: quay.io/stefanprodan/podinfo
-  tag: "1.0.0"
+  tag: "1.1.0"
   # green must have at at least one replica to set weight under 100
   weight: 100
   message:
@@ -41,7 +41,7 @@ blue:
 green:
   replicas: 0
   repository: quay.io/stefanprodan/podinfo
-  tag: "1.0.0"
+  tag: "1.1.0"
   message:
   backend:
   routing:

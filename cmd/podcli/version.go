@@ -7,13 +7,13 @@ import (
 	"github.com/stefanprodan/k8s-podinfo/pkg/version"
 )
 
-func init()  {
+func init() {
 	rootCmd.AddCommand(versionCmd)
 }
 
 var versionCmd = &cobra.Command{
-	Use:     `version`,
-	Short:   "Prints podcli version",
+	Use:   `version`,
+	Short: "Prints podcli version",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		fmt.Println(version.VERSION)
 		return nil

@@ -6,13 +6,13 @@ host: backend
 # stable release
 blue:
   replicas: 2
-  tag: "1.0.0"
+  tag: "1.1.0"
   backend: http://store:9898/api/echo
 
 # canary release
 green:
   replicas: 2
-  tag: "1.0.0"
+  tag: "1.1.0"
   routing:
     # target green callers
     - match:
