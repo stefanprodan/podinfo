@@ -361,7 +361,7 @@ kubectl -n openfaas create secret generic basic-auth \
 Install OpenFaaS with Helm:
 
 ```bash
-helm upgrade --install openfaas openfaas \
+helm upgrade --install openfaas ./chart/openfaas \
 --namespace openfaas \
 --set functionNamespace=openfaas-fn \
 --set operator.create=true \
@@ -369,8 +369,7 @@ helm upgrade --install openfaas openfaas \
 --set basic_auth=true \
 --set exposeServices=false \
 --set operator.createCRD=true \
---set operator.image=stefanprodan/openfaas-operator:istio3 \
---set gateway.image=stefanprodan/gateway:istio3
+--set gateway.image=stefanprodan/gateway:istio5
 ```
 
 Wait for OpenFaaS Gateway to come online:
