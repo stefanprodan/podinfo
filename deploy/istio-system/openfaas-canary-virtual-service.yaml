@@ -1,0 +1,19 @@
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: env
+  namespace: openfaas-fn
+spec:
+  hosts:
+  - env
+  http:
+  - route:
+    - destination:
+        host: env
+      weight: 90
+    - destination:
+        host: env-canary
+      weight: 10
+    timeout: 30s
+
