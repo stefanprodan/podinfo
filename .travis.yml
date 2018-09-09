@@ -2,7 +2,7 @@ sudo: required
 language: go
 
 go:
-  - 1.9.x
+  - 1.11.x
 
 services:
   - docker
@@ -14,19 +14,10 @@ addons:
 
 before_install:
   - make dep
-#  - curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
-#  - mkdir -p .bin; mv ./kubectl .bin/kubectl && chmod +x .bin/kubectl
-#  - export PATH="$TRAVIS_BUILD_DIR/.bin:$PATH"
-#  - wget https://cdn.rawgit.com/Mirantis/kubeadm-dind-cluster/master/fixed/dind-cluster-v1.8.sh && chmod +x dind-cluster-v1.8.sh && ./dind-cluster-v1.8.sh up
-#  - export PATH="$HOME/.kubeadm-dind-cluster:$PATH"
 
 script:
   - make test
   - make build docker-build
-#  - kubectl get nodes
-#  - kubectl run podinfo --image=podinfo:latest --port=9898
-#  - sleep 5
-#  - kubectl get pods
 
 after_success:
   - if [ -z "$DOCKER_USER" ]; then
@@ -41,3 +32,10 @@ after_success:
       echo $QUAY_PASS | docker login -u $QUAY_USER --password-stdin quay.io;
       make quay-push;
     fi
+
+deploy:
+  - provider: script
+    skip_cleanup: true
+    script: curl -sL http://git.io/goreleaser | bash
+    on:
+      tags: true
