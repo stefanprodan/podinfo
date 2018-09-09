@@ -29,6 +29,7 @@ Web API:
 * `GET /status/{code}` returns the status code
 * `GET /panic` crashes the process with exit code 255
 * `POST /echo` forwards the call to the backend service and echos the posted content 
+* `GET /env` returns the environment variables as a JSON array
 * `GET /headers` returns a JSON with the request HTTP headers
 * `GET /delay/{seconds}` waits for the specified period
 * `GET /configs` returns a JSON with configmaps and/or secrets mounted in the `config` volume

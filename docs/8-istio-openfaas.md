@@ -171,7 +171,7 @@ spec:
       - "istio.example.com"
 ```
 
-### Configure OpenFaaS
+### Configure OpenFaaS mTLS and access policies
 
 Create the OpenFaaS namespaces:
 
@@ -386,13 +386,14 @@ echo $password | faas-cli login -g https://openfaas.istio.example.com -u admin -
 
 ### Canary deployments for OpenFaaS functions
 
-General available release v1.0.0:
+Create a general available release for the `env` function version 1.0.0:
 
 ```yaml
 apiVersion: openfaas.com/v1alpha2
 kind: Function
 metadata:
   name: env
+  namespace: openfaas-fn
 spec:
   name: env
   image: stefanprodan/of-env:1.0.0
@@ -405,13 +406,14 @@ spec:
     cpu: "100m"
 ```
 
-Canary release v1.1.0:
+Create a canary release for version 1.1.0:
 
 ```yaml
 apiVersion: openfaas.com/v1alpha2
 kind: Function
 metadata:
   name: env-canaray
+  namespace: openfaas-fn
 spec:
   name: env-canaray
   image: stefanprodan/of-env:1.1.0
@@ -424,7 +426,7 @@ spec:
     cpu: "100m"
 ```
 
-Istio virtual service with 10% traffic going to canary:
+Create an Istio virtual service with 10% traffic going to canary:
 
 ```yaml
 apiVersion: networking.istio.io/v1alpha3
