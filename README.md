@@ -32,6 +32,8 @@ Web API:
 * `GET /env` returns the environment variables as a JSON array
 * `GET /headers` returns a JSON with the request HTTP headers
 * `GET /delay/{seconds}` waits for the specified period
+* `POST /token` issues a JWT token valid for one minute `JWT=$(curl -sd 'anon' podinfo:9898/token | jq -r .token)`
+* `GET /token/validate` validates the JWT token `curl -H "Authorization: Bearer ${JWT}" podinfo:9898/token/validate`
 * `GET /configs` returns a JSON with configmaps and/or secrets mounted in the `config` volume
 * `POST /write` writes the posted content to disk at /data/hash and returns the SHA1 hash of the content
 * `GET /read/{hash}` returns the content of the file /data/hash if exists

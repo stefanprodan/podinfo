@@ -57,6 +57,7 @@ func main() {
 	viper.BindPFlags(fs)
 	viper.RegisterAlias("backendUrl", "backend-url")
 	hostname, _ := os.Hostname()
+	viper.SetDefault("jwt-secret", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9")
 	viper.Set("hostname", hostname)
 	viper.Set("version", version.VERSION)
 	viper.Set("revision", version.REVISION)

@@ -36,6 +36,7 @@ type Config struct {
 	Hostname                  string        `mapstructure:"hostname"`
 	RandomDelay               bool          `mapstructure:"random-delay"`
 	RandomError               bool          `mapstructure:"random-error"`
+	JWTSecret                 string        `mapstructure:"jwt-secret"`
 }
 
 type Server struct {
@@ -73,6 +74,8 @@ func (s *Server) registerHandlers() {
 	s.router.HandleFunc("/store", s.storeWriteHandler).Methods("POST")
 	s.router.HandleFunc("/store/{hash}", s.storeReadHandler).Methods("GET").Name("store")
 	s.router.HandleFunc("/configs", s.configReadHandler).Methods("GET")
+	s.router.HandleFunc("/token", s.tokenGenerateHandler).Methods("POST")
+	s.router.HandleFunc("/token/validate", s.tokenValidateHandler).Methods("GET")
 	s.router.HandleFunc("/api/info", s.infoHandler).Methods("GET")
 	s.router.HandleFunc("/api/echo", s.echoHandler).Methods("POST")
 }

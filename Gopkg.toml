@@ -26,6 +26,10 @@
   name = "github.com/spf13/cobra"
   version = "v0.0.3"
 
+[[constraint]]
+  name = "github.com/dgrijalva/jwt-go"
+  version = "v3.2.0"
+
 [prune]
   go-tests = true
   unused-packages = true
