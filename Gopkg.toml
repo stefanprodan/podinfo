@@ -7,6 +7,10 @@
   version = "v1.6.2"
 
 [[constraint]]
+  name = "github.com/gorilla/websocket"
+  version = "v1.4.0"
+
+[[constraint]]
   name = "go.uber.org/zap"
   version = "v1.9.1"
 
