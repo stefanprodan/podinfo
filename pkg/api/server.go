@@ -78,6 +78,7 @@ func (s *Server) registerHandlers() {
 	s.router.HandleFunc("/token/validate", s.tokenValidateHandler).Methods("GET")
 	s.router.HandleFunc("/api/info", s.infoHandler).Methods("GET")
 	s.router.HandleFunc("/api/echo", s.echoHandler).Methods("POST")
+	s.router.HandleFunc("/ws/echo", s.echoWsHandler)
 }
 
 func (s *Server) registerMiddlewares() {
