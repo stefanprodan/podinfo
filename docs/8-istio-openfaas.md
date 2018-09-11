@@ -368,8 +368,7 @@ helm upgrade --install openfaas ./chart/openfaas \
 --set securityContext=true \
 --set basic_auth=true \
 --set exposeServices=false \
---set operator.createCRD=true \
---set gateway.image=stefanprodan/gateway:istio5
+--set operator.createCRD=true
 ```
 
 Wait for OpenFaaS Gateway to come online:
