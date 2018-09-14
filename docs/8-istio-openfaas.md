@@ -436,6 +436,9 @@ echo $password | faas-cli login -g https://openfaas.istio.example.com -u admin -
 
 ### Canary deployments for OpenFaaS functions
 
+![openfaas-canary](https://github.com/stefanprodan/k8s-podinfo/blob/master/docs/screens/openfaas-istio-canary.png)
+
+
 Create a general available release for the `env` function version 1.0.0:
 
 ```yaml
