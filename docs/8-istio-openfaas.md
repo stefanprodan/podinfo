@@ -1,5 +1,15 @@
 # OpenFaaS + Istio 
 
+This is a guide on how to set up OpenFaaS on Google Kubernetes Engine (GKE) with Istio service mesh.
+
+At the end of this guide you will be running OpenFaaS with the following characteristics:
+
+* secure OpenFaaS ingress with Let’s Encrypt TLS and authentication
+* encrypted communication between OpenFaaS core services and functions with Istio mutual TLS
+* isolated functions with Istio Mixer rules
+* Jaeger tracing and Prometheus monitoring for function calls
+* canary deployments for OpenFaaS functions 
+
 ![openfaas-istio](https://github.com/stefanprodan/k8s-podinfo/blob/master/docs/screens/openfaas-istio-diagram.png)
 
 ### Install Istio
@@ -131,7 +141,7 @@ kubectl create secret generic cert-manager-credentials \
 --namespace=istio-system
 ```
 
-Create a letsencrypt issuer for CloudDNS (replace email@example.com with a valid email address):
+Create a letsencrypt issuer for CloudDNS (replace `email@example.com` with a valid email address):
 
 ```yaml
 apiVersion: certmanager.k8s.io/v1alpha1
@@ -198,7 +208,7 @@ kubectl -n istio-system logs deployment/certmanager
 Certificate issued successfully
 ```
 
-### Configure OpenFaaS mTLS and access policies
+### Configure OpenFaaS Gateway to receive external traffic
 
 Create the OpenFaaS namespaces with Istio sidecar injection enabled:
 
@@ -231,6 +241,13 @@ Save the above resource as of-virtual-service.yaml and then apply it:
 ```bash
 kubectl apply -f ./of-virtual-service.yaml
 ```
+
+### Configure OpenFaaS mTLS and access policies
+
+An OpenFaaS instance is composed out of two namespaces: one for the core services and one for functions. 
+Kubernetes namespaces alone offer only a logical separation between workloads.
+In order to secure the communication between core services and functions we need to enable mutual TLS on both namespaces.
+To prohibit functions from calling each other or from reaching the OpenFaaS core services we need to create Istio Mixer rules.
 
 Enable mTLS on `openfaas` namespace:
 
