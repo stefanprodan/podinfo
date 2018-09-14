@@ -141,7 +141,7 @@ kubectl create secret generic cert-manager-credentials \
 --namespace=istio-system
 ```
 
-Create a letsencrypt issuer for CloudDNS (replace `email@example.com` with a valid email address):
+Create a letsencrypt issuer for CloudDNS (replace `email@example.com` with a valid email address and `my-gcp-project` with your project ID):
 
 ```yaml
 apiVersion: certmanager.k8s.io/v1alpha1
@@ -553,7 +553,13 @@ HOSTNAME=env-59bf48fb9d-cjsjw
 HOSTNAME=env-canary-5dffdf4458-4vnn2
 ```
 
-Tracing the general available release with Jaeger:
+Access Jaeger dashboard using port forwarding:
+
+```bash
+kubectl -n istio-system port-forward deployment/istio-tracing 16686:16686 
+```
+
+Tracing the general available release:
 
 ![ga-trace](https://github.com/stefanprodan/k8s-podinfo/blob/master/docs/screens/openfaas-istio-ga-trace.png)
 
@@ -561,7 +567,13 @@ Tracing the canary release:
 
 ![canary-trace](https://github.com/stefanprodan/k8s-podinfo/blob/master/docs/screens/openfaas-istio-canary-trace.png)
 
-Monitor ga vs canary success rate and latency with Prometheus and Grafana:
+Access Grafana using port forwarding:
+
+```bash
+kubectl -n istio-system port-forward deployment/grafana 3000:3000 
+```
+
+Monitor ga vs canary success rate and latency:
 
 ![canary-prom](https://github.com/stefanprodan/k8s-podinfo/blob/master/docs/screens/openfaas-istio-canary-prom.png)
 
