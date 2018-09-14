@@ -1,5 +1,7 @@
 # OpenFaaS + Istio 
 
+![openfaas-istio](https://github.com/stefanprodan/k8s-podinfo/blob/master/docs/screens/openfaas-istio-diagram.png)
+
 ### Install Istio
 
 Download latest release:
@@ -42,17 +44,17 @@ certmanager:
   enabled: true
 ```
 
-Save the above file as `istio-of.yaml` and install Istio with Helm:
+Save the above file as `of-istio.yaml` and install Istio with Helm:
 
 ```bash
 helm upgrade --install istio ./install/kubernetes/helm/istio \
 --namespace=istio-system \
--f ./istio-of.yaml
+-f ./of-istio.yaml
 ``` 
 
 ### Configure Istio Gateway with LE certs
 
-Istio Gateway:
+Create a Istio Gateway in istio-system namespace with HTTPS redirect:
 
 ```yaml
 apiVersion: networking.istio.io/v1alpha3
@@ -84,13 +86,19 @@ spec:
       serverCertificate: /etc/istio/ingressgateway-certs/tls.crt
 ```
 
+Save the above resource as istio-gateway.yaml and then apply it:
+
+```bash
+kubectl apply -f ./istio-gateway.yaml
+```
+
 Find the gateway public IP:
 
 ```bash
 IP=$(kubectl -n istio-system describe svc/istio-ingressgateway | grep 'Ingress' | awk '{print $NF}')
 ```
 
-Create a zone in GCP Cloud DNS with the following records:
+Create a zone in GCP Cloud DNS with the following records (replace `example.com` with your domain):
 
 ```bash
 istio.example.com. A $IP
@@ -123,7 +131,7 @@ kubectl create secret generic cert-manager-credentials \
 --namespace=istio-system
 ```
 
-LE issuer for GCP Cloud DNS:
+Create a letsencrypt issuer for CloudDNS (replace email@example.com with a valid email address):
 
 ```yaml
 apiVersion: certmanager.k8s.io/v1alpha1
@@ -147,7 +155,13 @@ spec:
           project: my-gcp-project
 ```
 
-Wildcard cert:
+Save the above resource as letsencrypt-issuer.yaml and then apply it:
+
+```bash
+kubectl apply -f ./letsencrypt-issuer.yaml
+```
+
+Create a wildcard certificate (replace `example.com` with your domain):
 
 ```yaml
 apiVersion: certmanager.k8s.io/v1alpha1
@@ -171,27 +185,28 @@ spec:
       - "istio.example.com"
 ```
 
-### Configure OpenFaaS mTLS and access policies
+Save the above resource as of-cert.yaml and then apply it:
 
-Create the OpenFaaS namespaces:
-
-```yaml
-apiVersion: v1
-kind: Namespace
-metadata:
-  labels:
-    istio-injection: enabled
-  name: openfaas
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  labels:
-    istio-injection: enabled
-  name: openfaas-fn
+```bash
+kubectl apply -f ./of-cert.yaml
 ```
 
-Create an Istio virtual service for OpenFaaS Gateway:
+In a couple of seconds cert-manager should fetch a wildcard certificate from letsencrypt.org:
+
+```bash
+kubectl -n istio-system logs deployment/certmanager
+Certificate issued successfully
+```
+
+### Configure OpenFaaS mTLS and access policies
+
+Create the OpenFaaS namespaces with Istio sidecar injection enabled:
+
+```bash
+kubectl apply -f https://raw.githubusercontent.com/openfaas/faas-netes/master/namespaces.yml
+```
+
+Create an Istio virtual service for OpenFaaS Gateway (replace `example.com` with your domain):
 
 ```yaml
 apiVersion: networking.istio.io/v1alpha3
@@ -209,6 +224,12 @@ spec:
     - destination:
         host: gateway
     timeout: 30s
+```
+
+Save the above resource as of-virtual-service.yaml and then apply it:
+
+```bash
+kubectl apply -f ./of-virtual-service.yaml
 ```
 
 Enable mTLS on `openfaas` namespace:
@@ -235,6 +256,12 @@ spec:
       mode: ISTIO_MUTUAL
 ```
 
+Save the above resource as of-mtls.yaml and then apply it:
+
+```bash
+kubectl apply -f ./of-mtls.yaml
+```
+
 Allow plaintext traffic to OpenFaaS Gateway:
 
 ```yaml
@@ -249,6 +276,12 @@ spec:
   peers:
   - mtls:
       mode: PERMISSIVE
+```
+
+Save the above resource as of-gateway-mtls.yaml and then apply it:
+
+```bash
+kubectl apply -f ./of-gateway-mtls.yaml
 ```
 
 Enable mTLS on `openfaas-fn` namespace:
@@ -273,6 +306,12 @@ spec:
   trafficPolicy:
     tls:
       mode: ISTIO_MUTUAL
+```
+
+Save the above resource as of-functions-mtls.yaml and then apply it:
+
+```bash
+kubectl apply -f ./of-functions-mtls.yaml
 ```
 
 Deny access to OpenFaaS core services from the `openfaas-fn` namespace except for system functions:
@@ -307,6 +346,12 @@ spec:
     instances: [ denyrequest.checknothing ]
 ```
 
+Save the above resources as of-rules.yaml and then apply it:
+
+```bash
+kubectl apply -f ./of-rules.yaml
+```
+
 Deny access to functions except for OpenFaaS core services:
 
 ```yaml
@@ -337,6 +382,12 @@ spec:
   actions:
   - handler: denyhandler.denier
     instances: [ denyrequest.checknothing ]
+```
+
+Save the above resources as of-functions-rules.yaml and then apply it:
+
+```bash
+kubectl apply -f ./of-functions-rules.yaml
 ```
 
 ### Install OpenFaaS
@@ -374,7 +425,7 @@ helm upgrade --install openfaas ./chart/openfaas \
 Wait for OpenFaaS Gateway to come online:
 
 ```bash
-watch curl -v http://openfaas.istio.example.com/heathz 
+watch curl -v https://openfaas.istio.example.com/heathz 
 ```
 
 Save your credentials in faas-cli store:
@@ -405,16 +456,22 @@ spec:
     cpu: "100m"
 ```
 
+Save the above resources as env-ga.yaml and then apply it:
+
+```bash
+kubectl apply -f ./env-ga.yaml
+```
+
 Create a canary release for version 1.1.0:
 
 ```yaml
 apiVersion: openfaas.com/v1alpha2
 kind: Function
 metadata:
-  name: env-canaray
+  name: env-canary
   namespace: openfaas-fn
 spec:
-  name: env-canaray
+  name: env-canary
   image: stefanprodan/of-env:1.1.0
   resources:
     requests:
@@ -423,6 +480,12 @@ spec:
   limits:
     memory: "64Mi"
     cpu: "100m"
+```
+
+Save the above resources as env-canary.yaml and then apply it:
+
+```bash
+kubectl apply -f ./env-canaray.yaml
 ```
 
 Create an Istio virtual service with 10% traffic going to canary:
@@ -445,6 +508,12 @@ spec:
         host: env-canary
       weight: 10
     timeout: 30s
+```
+
+Save the above resources as env-virtual-service.yaml and then apply it:
+
+```bash
+kubectl apply -f ./env-virtual-service.yaml
 ```
 
 Test traffic routing (one in ten calls should hit the canary release):
