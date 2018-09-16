@@ -12,9 +12,121 @@ At the end of this guide you will be running OpenFaaS with the following charact
 
 ![openfaas-istio](https://github.com/stefanprodan/k8s-podinfo/blob/master/docs/screens/openfaas-istio-diagram.png)
 
+### GKE cluster setup
+
+You will be creating a cluster on Google’s Kubernetes Engine (GKE), 
+if you don’t have an account you can sign up [here](https://cloud.google.com/free/) for free credit.
+
+Create a cluster with three nodes using the latest Kubernetes version:
+
+```bash
+k8s_version=$(gcloud container get-server-config --format=json \
+| jq -r '.validNodeVersions[0]')
+
+gcloud container clusters create openfaas \
+    --cluster-version=${k8s_version} \
+    --zone=europe-west3-a \
+    --num-nodes=3 \
+    --machine-type=n1-highcpu-4 \
+    --preemptible \
+    --no-enable-cloud-logging \
+    --disk-size=30 \
+    --enable-autorepair \
+    --scopes=gke-default,compute-rw,storage-rw
+```
+
+The above command will create a default node pool consisting of n1-highcpu-4 (vCPU: 4, RAM 3.60GB, DISK: 30GB) preemptible VMs.
+Preemptible VMs are up to 80% cheaper than regular instances and are terminated and replaced after a maximum of 24 hours.
+
+Create a static IP address named `istio-gateway-ip` in the same region as your GKE cluster:
+
+```bash
+gcloud compute addresses create istio-gateway-ip --region europe-west3-a
+```
+
+Find the static IP address:
+
+```bash
+gcloud compute addresses describe istio-gateway-ip --region europe-west3-a
+```
+
+Create a managed zone in Cloud DNS:
+
+```bash
+gcloud dns managed-zones create \
+--dns-name="example.com." \
+--description="OpenFaaS zone" "openfaas"
+```
+
+Look up your zone's Cloud DNS name servers:
+
+```bash
+gcloud dns managed-zones describe openfaas
+```
+
+Update your registrar's name server records with the records returned by the above command. 
+
+Create the following DNS records (replace `example.com` with your domain and set your Istio Gateway IP):
+
+```bash
+DOMAIN="example.com"
+GATEWAYIP="35.198.98.90"
+
+gcloud dns record-sets transaction start --zone=openfaas
+
+gcloud dns record-sets transaction add --zone=openfaas \
+--name="istio.${DOMAIN}" --ttl=300 --type=A ${GATEWAYIP}
+
+gcloud dns record-sets transaction add --zone=openfaas \
+--name="*.istio.${DOMAIN}" --ttl=300 --type=A ${GATEWAYIP}
+
+gcloud dns record-sets transaction execute --zone openfaas
+```
+
+Find the GKE IP ranges:
+
+```bash
+gcloud container clusters describe openfaas --zone=europe-west3-a | grep -e clusterIpv4Cidr -e servicesIpv4Cidr
+```
+
 ### Install Istio
 
-Download latest release:
+You will be using Helm to install Istio but first set up credentials for kubectl:
+
+```bash
+gcloud container clusters get-credentials openfaas -z=europe-west3-a
+```
+
+Create a cluster admin role binding:
+
+```bash
+kubectl create clusterrolebinding "cluster-admin-$(whoami)" \
+    --clusterrole=cluster-admin \
+    --user="$(gcloud config get-value core/account)"
+```
+
+Install Helm CLI with Homebrew:
+
+```bash
+brew install kubernetes-helm
+```
+
+Create a service account and a cluster role binding for Tiller:
+
+```bash
+kubectl -n kube-system create sa tiller
+kubectl create clusterrolebinding tiller-cluster-rule \
+    --clusterrole=cluster-admin \
+    --serviceaccount=kube-system:tiller 
+```
+
+Deploy Tiller in the kube-system namespace:
+
+```bash
+helm init --skip-refresh --upgrade --service-account tiller
+```
+
+Download the latest Istio release:
 
 ```bash
 curl -L https://git.io/getLatestIstio | sh -
@@ -26,10 +138,8 @@ Configure Istio with Prometheus, Jaeger and cert-manager:
 global:
   nodePort: false
   proxy:
+    # replace with your GKE IP ranges to allow unrestricted egress traffic
     includeIPRanges: "10.28.0.0/14,10.7.240.0/20"
-
-ingress:
-  enabled: false
 
 sidecarInjectorWebhook:
   enabled: true
@@ -37,6 +147,13 @@ sidecarInjectorWebhook:
 
 gateways:
   enabled: true
+  istio-ingressgateway:
+    replicaCount: 2
+    autoscaleMin: 2
+    autoscaleMax: 3
+    # replace with your istio-gateway-ip value
+    loadBalancerIP: "35.198.98.90"
+    type: LoadBalancer
 
 grafana:
   enabled: true
@@ -102,19 +219,6 @@ Save the above resource as istio-gateway.yaml and then apply it:
 
 ```bash
 kubectl apply -f ./istio-gateway.yaml
-```
-
-Find the gateway public IP:
-
-```bash
-IP=$(kubectl -n istio-system describe svc/istio-ingressgateway | grep 'Ingress' | awk '{print $NF}')
-```
-
-Create a zone in GCP Cloud DNS with the following records (replace `example.com` with your domain):
-
-```bash
-istio.example.com. A $IP
-*.istio.example.com. A $IP
 ```
 
 Create a service account with Cloud DNS admin role (replace `my-gcp-project` with your project ID):
