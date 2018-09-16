@@ -64,7 +64,7 @@ helm upgrade --install istio ./install/kubernetes/helm/istio \
 
 ### Configure Istio Gateway with LE certs
 
-![openfaas-canary](https://github.com/stefanprodan/k8s-podinfo/blob/master/docs/screens/istio-cert-manager.png)
+![istio-letsencrypt](https://github.com/stefanprodan/k8s-podinfo/blob/master/docs/diagrams/istio-cert-manager-gcp.png)
 
 Create a Istio Gateway in istio-system namespace with HTTPS redirect:
 
