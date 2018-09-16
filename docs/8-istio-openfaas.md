@@ -66,6 +66,12 @@ gcloud dns managed-zones describe openfaas
 
 Update your registrar's name server records with the records returned by the above command. 
 
+Wait for the name servers to change (replace `example.com` with your domain):
+
+```bash
+wait dig +short NS example.com
+```
+
 Create the following DNS records (replace `example.com` with your domain and set your Istio Gateway IP):
 
 ```bash
@@ -84,6 +90,12 @@ gcloud dns record-sets transaction add --zone=openfaas \
 --name="*.${DOMAIN}" --ttl=300 --type=A ${GATEWAYIP}
 
 gcloud dns record-sets transaction execute --zone openfaas
+```
+
+Verify that the wildcard DNS is working (replace `example.com` with your domain):
+
+```bash
+watch host test.example.com
 ```
 
 Find the GKE IP ranges:
