@@ -24,18 +24,18 @@ k8s_version=$(gcloud container get-server-config --format=json \
 | jq -r '.validNodeVersions[0]')
 
 gcloud container clusters create openfaas \
-    --cluster-version=${k8s_version} \
-    --zone=europe-west3-a \
-    --num-nodes=3 \
-    --machine-type=n1-highcpu-4 \
-    --preemptible \
-    --no-enable-cloud-logging \
-    --disk-size=30 \
-    --enable-autorepair \
-    --scopes=gke-default,compute-rw,storage-rw
+--cluster-version=${k8s_version} \
+--zone=europe-west3-a \
+--num-nodes=3 \
+--machine-type=n1-highcpu-4 \
+--preemptible \
+--no-enable-cloud-logging \
+--disk-size=30 \
+--enable-autorepair \
+--scopes=gke-default,compute-rw,storage-rw
 ```
 
-The above command will create a default node pool consisting of n1-highcpu-4 (vCPU: 4, RAM 3.60GB, DISK: 30GB) preemptible VMs.
+The above command will create a default node pool consisting of `n1-highcpu-4` (vCPU: 4, RAM 3.60GB, DISK: 30GB) preemptible VMs.
 Preemptible VMs are up to 80% cheaper than regular instances and are terminated and replaced after a maximum of 24 hours.
 
 Create a static IP address named `istio-gateway-ip` in the same region as your GKE cluster:
@@ -58,7 +58,7 @@ gcloud dns managed-zones create \
 --description="OpenFaaS zone" "openfaas"
 ```
 
-Look up your zone's Cloud DNS name servers:
+Look up your zone's name servers:
 
 ```bash
 gcloud dns managed-zones describe openfaas
@@ -75,6 +75,12 @@ GATEWAYIP="35.198.98.90"
 gcloud dns record-sets transaction start --zone=openfaas
 
 gcloud dns record-sets transaction add --zone=openfaas \
+--name="${DOMAIN}" --ttl=300 --type=A ${GATEWAYIP}
+
+gcloud dns record-sets transaction add --zone=openfaas \
+--name="www.${DOMAIN}" --ttl=300 --type=CNAME ${DOMAIN}
+
+gcloud dns record-sets transaction add --zone=openfaas \
 --name="istio.${DOMAIN}" --ttl=300 --type=A ${GATEWAYIP}
 
 gcloud dns record-sets transaction add --zone=openfaas \
@@ -86,12 +92,17 @@ gcloud dns record-sets transaction execute --zone openfaas
 Find the GKE IP ranges:
 
 ```bash
-gcloud container clusters describe openfaas --zone=europe-west3-a | grep -e clusterIpv4Cidr -e servicesIpv4Cidr
+gcloud container clusters describe openfaas --zone=europe-west3-a \
+| grep -e clusterIpv4Cidr -e servicesIpv4Cidr
 ```
+
+You'll be using the IP ranges to allow unrestricted egress traffic for services running inside the service mesh. 
 
 ### Install Istio
 
-You will be using Helm to install Istio but first set up credentials for kubectl:
+You will be using Helm to install Istio.
+
+First set up credentials for `kubectl`:
 
 ```bash
 gcloud container clusters get-credentials openfaas -z=europe-west3-a
@@ -101,8 +112,8 @@ Create a cluster admin role binding:
 
 ```bash
 kubectl create clusterrolebinding "cluster-admin-$(whoami)" \
-    --clusterrole=cluster-admin \
-    --user="$(gcloud config get-value core/account)"
+--clusterrole=cluster-admin \
+--user="$(gcloud config get-value core/account)"
 ```
 
 Install Helm CLI with Homebrew:
@@ -115,12 +126,13 @@ Create a service account and a cluster role binding for Tiller:
 
 ```bash
 kubectl -n kube-system create sa tiller
+
 kubectl create clusterrolebinding tiller-cluster-rule \
-    --clusterrole=cluster-admin \
-    --serviceaccount=kube-system:tiller 
+--clusterrole=cluster-admin \
+--serviceaccount=kube-system:tiller 
 ```
 
-Deploy Tiller in the kube-system namespace:
+Deploy Tiller in the `kube-system` namespace:
 
 ```bash
 helm init --skip-refresh --upgrade --service-account tiller
@@ -138,7 +150,7 @@ Configure Istio with Prometheus, Jaeger and cert-manager:
 global:
   nodePort: false
   proxy:
-    # replace with your GKE IP ranges to allow unrestricted egress traffic
+    # replace with your GKE IP ranges
     includeIPRanges: "10.28.0.0/14,10.7.240.0/20"
 
 sidecarInjectorWebhook:
@@ -151,7 +163,7 @@ gateways:
     replicaCount: 2
     autoscaleMin: 2
     autoscaleMax: 3
-    # replace with your istio-gateway-ip value
+    # replace with your Istio Gateway IP
     loadBalancerIP: "35.198.98.90"
     type: LoadBalancer
 
@@ -682,4 +694,3 @@ kubectl -n istio-system port-forward deployment/grafana 3000:3000
 Monitor ga vs canary success rate and latency:
 
 ![canary-prom](https://github.com/stefanprodan/k8s-podinfo/blob/master/docs/screens/openfaas-istio-canary-prom.png)
-
