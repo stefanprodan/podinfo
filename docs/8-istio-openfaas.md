@@ -50,7 +50,7 @@ Find the static IP address:
 gcloud compute addresses describe istio-gateway-ip --region europe-west3-a
 ```
 
-Create a managed zone in Cloud DNS:
+Create a managed zone named `openfaas` in Cloud DNS (replace `example.com` with your domain):
 
 ```bash
 gcloud dns managed-zones create \
@@ -81,10 +81,7 @@ gcloud dns record-sets transaction add --zone=openfaas \
 --name="www.${DOMAIN}" --ttl=300 --type=CNAME ${DOMAIN}
 
 gcloud dns record-sets transaction add --zone=openfaas \
---name="istio.${DOMAIN}" --ttl=300 --type=A ${GATEWAYIP}
-
-gcloud dns record-sets transaction add --zone=openfaas \
---name="*.istio.${DOMAIN}" --ttl=300 --type=A ${GATEWAYIP}
+--name="*.${DOMAIN}" --ttl=300 --type=A ${GATEWAYIP}
 
 gcloud dns record-sets transaction execute --zone openfaas
 ```
@@ -301,7 +298,7 @@ spec:
   secretname: istio-ingressgateway-certs
   issuerRef:
     name: letsencrypt-prod
-  commonName: "*.istio.example.com"
+  commonName: "*.example.com"
   dnsNames:
   - istio.example.com
   acme:
@@ -309,8 +306,8 @@ spec:
     - dns01:
         provider: cloud-dns
       domains:
-      - "*.istio.example.com"
-      - "istio.example.com"
+      - "*.example.com"
+      - "example.com"
 ```
 
 Save the above resource as of-cert.yaml and then apply it:
@@ -344,7 +341,7 @@ metadata:
   namespace: openfaas
 spec:
   hosts:
-  - "openfaas.istio.example.com"
+  - "openfaas.example.com"
   gateways:
   - public-gateway.istio-system.svc.cluster.local
   http:
@@ -560,13 +557,13 @@ helm upgrade --install openfaas ./chart/openfaas \
 Wait for OpenFaaS Gateway to come online:
 
 ```bash
-watch curl -v https://openfaas.istio.example.com/heathz 
+watch curl -v https://openfaas.example.com/heathz 
 ```
 
 Save your credentials in faas-cli store:
 
 ```bash
-echo $password | faas-cli login -g https://openfaas.istio.example.com -u admin --password-stdin
+echo $password | faas-cli login -g https://openfaas.example.com -u admin --password-stdin
 ```
 
 ### Canary deployments for OpenFaaS functions
@@ -657,7 +654,7 @@ kubectl apply -f ./env-virtual-service.yaml
 Test traffic routing (one in ten calls should hit the canary release):
 
 ```bash
- while true; do sleep 1; curl -sS https://openfaas.istio.example.com/function/env | grep HOSTNAME; done 
+ while true; do sleep 1; curl -sS https://openfaas.example.com/function/env | grep HOSTNAME; done 
  
 HOSTNAME=env-59bf48fb9d-cjsjw
 HOSTNAME=env-59bf48fb9d-cjsjw
