@@ -17,6 +17,19 @@ At the end of this guide you will be running OpenFaaS with the following charact
 You will be creating a cluster on Google’s Kubernetes Engine (GKE), 
 if you don’t have an account you can sign up [here](https://cloud.google.com/free/) for free credit.
 
+Login into GCP, create a project and enable billing for it. 
+You should also enable the GKE service and Cloud DNS, 
+from the left-hand menu navigate to `Compute -> Kubernetes Engine` and `Networking -> Network Services -> Cloud DNS`.
+
+Install the [gcloud](https://cloud.google.com/sdk/) command line utility and configure your project with `gcloud init`.
+
+Set default compute region and zone:
+
+```bash
+gcloud config set compute/region europe-west3
+gcloud config set compute/zone europe-west3-a
+```
+
 Create a cluster with three nodes using the latest Kubernetes version:
 
 ```bash
@@ -38,17 +51,29 @@ gcloud container clusters create openfaas \
 The above command will create a default node pool consisting of `n1-highcpu-4` (vCPU: 4, RAM 3.60GB, DISK: 30GB) preemptible VMs.
 Preemptible VMs are up to 80% cheaper than regular instances and are terminated and replaced after a maximum of 24 hours.
 
-Create a static IP address named `istio-gateway-ip` in the same region as your GKE cluster:
+Set up credentials for `kubectl`:
 
 ```bash
-gcloud compute addresses create istio-gateway-ip --region europe-west3-a
+gcloud container clusters get-credentials openfaas -z=europe-west3-a
 ```
 
-Find the static IP address:
+Create a cluster admin role binding:
 
 ```bash
-gcloud compute addresses describe istio-gateway-ip --region europe-west3-a
+kubectl create clusterrolebinding "cluster-admin-$(whoami)" \
+--clusterrole=cluster-admin \
+--user="$(gcloud config get-value core/account)"
 ```
+
+Validate your setup with:
+
+```bash
+kubectl get nodes -o wide
+```
+
+### Cloud DNS setup
+
+You will need an internet domain and access to the registrar to change the name servers to GCP Cloud DNS.
 
 Create a managed zone named `openfaas` in Cloud DNS (replace `example.com` with your domain):
 
@@ -70,6 +95,18 @@ Wait for the name servers to change (replace `example.com` with your domain):
 
 ```bash
 wait dig +short NS example.com
+```
+
+Create a static IP address named `istio-gateway-ip` in the same region as your GKE cluster:
+
+```bash
+gcloud compute addresses create istio-gateway-ip --region europe-west3-a
+```
+
+Find the static IP address:
+
+```bash
+gcloud compute addresses describe istio-gateway-ip --region europe-west3-a
 ```
 
 Create the following DNS records (replace `example.com` with your domain and set your Istio Gateway IP):
@@ -109,48 +146,28 @@ You'll be using the IP ranges to allow unrestricted egress traffic for services 
 
 ### Install Istio
 
-You will be using Helm to install Istio.
-
-First set up credentials for `kubectl`:
-
-```bash
-gcloud container clusters get-credentials openfaas -z=europe-west3-a
-```
-
-Create a cluster admin role binding:
-
-```bash
-kubectl create clusterrolebinding "cluster-admin-$(whoami)" \
---clusterrole=cluster-admin \
---user="$(gcloud config get-value core/account)"
-```
-
-Install Helm CLI with Homebrew:
+You will be using Helm to install Istio. Install Helm CLI with Homebrew:
 
 ```bash
 brew install kubernetes-helm
 ```
 
+Download the latest Istio release:
+                                         
+```bash
+curl -L https://git.io/getLatestIstio | sh -
+```
+
 Create a service account and a cluster role binding for Tiller:
 
 ```bash
-kubectl -n kube-system create sa tiller
-
-kubectl create clusterrolebinding tiller-cluster-rule \
---clusterrole=cluster-admin \
---serviceaccount=kube-system:tiller 
+kubectl apply -f ./install/kubernetes/helm/helm-service-account.yaml
 ```
 
 Deploy Tiller in the `kube-system` namespace:
 
 ```bash
-helm init --skip-refresh --upgrade --service-account tiller
-```
-
-Download the latest Istio release:
-
-```bash
-curl -L https://git.io/getLatestIstio | sh -
+helm init --service-account tiller
 ```
 
 Configure Istio with Prometheus, Jaeger and cert-manager:
@@ -200,7 +217,7 @@ helm upgrade --install istio ./install/kubernetes/helm/istio \
 -f ./of-istio.yaml
 ``` 
 
-### Configure Istio Gateway with LE certs
+### Configure Istio Gateway with Let's Encrypt wildcard certificate
 
 ![istio-letsencrypt](https://github.com/stefanprodan/k8s-podinfo/blob/master/docs/diagrams/istio-cert-manager-gcp.png)
 
@@ -331,7 +348,7 @@ kubectl apply -f ./of-cert.yaml
 In a couple of seconds cert-manager should fetch a wildcard certificate from letsencrypt.org:
 
 ```bash
-kubectl -n istio-system logs deployment/certmanager
+kubectl -n istio-system logs deployment/certmanager -f
 Certificate issued successfully
 ```
 
