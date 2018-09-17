@@ -352,6 +352,16 @@ kubectl -n istio-system logs deployment/certmanager -f
 Certificate issued successfully
 ```
 
+Recreate Istio ingress gateway pods:
+
+```bash
+kubectl -n istio-system delete pods -l istio=ingressgateway
+```
+
+Note that Istio gateway doesn't reload the certificates from the TLS secret on cert-manager renewal. 
+Since the GKE cluster is made out of preemptible VMs the gateway pods will be replaced once every 24h, if your not using 
+preemptible nodes then you need to manually kill the gateway pods every two months before the certificate expires.
+
 ### Configure OpenFaaS Gateway to receive external traffic
 
 Create the OpenFaaS namespaces with Istio sidecar injection enabled:
