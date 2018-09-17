@@ -195,6 +195,11 @@ gateways:
 
 grafana:
   enabled: true
+  security:
+    enabled: true
+    adminUser: admin
+    # change the password
+    adminPassword: admin
 
 prometheus:
   enabled: true
@@ -215,7 +220,13 @@ Save the above file as `of-istio.yaml` and install Istio with Helm:
 helm upgrade --install istio ./install/kubernetes/helm/istio \
 --namespace=istio-system \
 -f ./of-istio.yaml
-``` 
+```
+
+Verify that Istio workloads are running:
+
+```bash
+kubectl -n istio-system get pods
+```
 
 ### Configure Istio Gateway with Let's Encrypt wildcard certificate
 
@@ -362,38 +373,45 @@ Note that Istio gateway doesn't reload the certificates from the TLS secret on c
 Since the GKE cluster is made out of preemptible VMs the gateway pods will be replaced once every 24h, if your not using 
 preemptible nodes then you need to manually kill the gateway pods every two months before the certificate expires.
 
-### Configure OpenFaaS Gateway to receive external traffic
+### Expose Grafana outside the cluster
 
-Create the OpenFaaS namespaces with Istio sidecar injection enabled:
-
-```bash
-kubectl apply -f https://raw.githubusercontent.com/openfaas/faas-netes/master/namespaces.yml
-```
-
-Create an Istio virtual service for OpenFaaS Gateway (replace `example.com` with your domain):
+In order to expose services via the Istio Gateway you have to create a Virtual Service attached to Istio Gateway:
 
 ```yaml
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
-  name: gateway
-  namespace: openfaas
+  name: grafana
+  namespace: istio-system
 spec:
   hosts:
-  - "openfaas.example.com"
+  - "grafana.example.com"
   gateways:
   - public-gateway.istio-system.svc.cluster.local
   http:
   - route:
     - destination:
-        host: gateway
+        host: grafana
     timeout: 30s
 ```
 
-Save the above resource as of-virtual-service.yaml and then apply it:
+Save the above resource as grafana-virtual-service.yaml and then apply it:
 
 ```bash
-kubectl apply -f ./of-virtual-service.yaml
+kubectl apply -f ./grafana-virtual-service.yaml
+```
+
+Navigate to `http://grafana.example.com` in your browser and you should be redirected to the HTTPS version.
+
+Check that HTTP2 is enabled:
+
+```bash
+curl -I --http2 https://grafana.example.com
+
+HTTP/2 200 
+content-type: text/html; charset=UTF-8
+x-envoy-upstream-service-time: 3
+server: envoy
 ```
 
 ### Configure OpenFaaS mTLS and access policies
@@ -402,6 +420,12 @@ An OpenFaaS instance is composed out of two namespaces: one for the core service
 Kubernetes namespaces alone offer only a logical separation between workloads.
 In order to secure the communication between core services and functions we need to enable mutual TLS on both namespaces.
 To prohibit functions from calling each other or from reaching the OpenFaaS core services we need to create Istio Mixer rules.
+
+Create the OpenFaaS namespaces with Istio sidecar injection enabled:
+
+```bash
+kubectl apply -f https://raw.githubusercontent.com/openfaas/faas-netes/master/namespaces.yml
+```
 
 Enable mTLS on `openfaas` namespace:
 
@@ -593,6 +617,34 @@ helm upgrade --install openfaas ./chart/openfaas \
 --set operator.createCRD=true
 ```
 
+### Configure OpenFaaS Gateway to receive external traffic
+
+Create an Istio virtual service for OpenFaaS Gateway (replace `example.com` with your domain):
+
+```yaml
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: gateway
+  namespace: openfaas
+spec:
+  hosts:
+  - "openfaas.example.com"
+  gateways:
+  - public-gateway.istio-system.svc.cluster.local
+  http:
+  - route:
+    - destination:
+        host: gateway
+    timeout: 30s
+```
+
+Save the above resource as of-virtual-service.yaml and then apply it:
+
+```bash
+kubectl apply -f ./of-virtual-service.yaml
+```
+
 Wait for OpenFaaS Gateway to come online:
 
 ```bash
@@ -721,12 +773,6 @@ Tracing the canary release:
 
 ![canary-trace](https://github.com/stefanprodan/k8s-podinfo/blob/master/docs/screens/openfaas-istio-canary-trace.png)
 
-Access Grafana using port forwarding:
-
-```bash
-kubectl -n istio-system port-forward deployment/grafana 3000:3000 
-```
-
-Monitor ga vs canary success rate and latency:
+Monitor ga vs canary success rate and latency with Grafana:
 
 ![canary-prom](https://github.com/stefanprodan/k8s-podinfo/blob/master/docs/screens/openfaas-istio-canary-prom.png)
