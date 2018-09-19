@@ -61,14 +61,14 @@ spec:
               - podcli
               - check
               - http
-              - localhost:{{ .Values.service.containerPort }}/healthz
+              - localhost:{{ .Values.containerPort }}/healthz
           readinessProbe:
             exec:
               command:
               - podcli
               - check
               - http
-              - localhost:{{ .Values.service.containerPort }}/readyz
+              - localhost:{{ .Values.containerPort }}/readyz
           volumeMounts:
           - name: data
             mountPath: /data
