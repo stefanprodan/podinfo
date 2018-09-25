@@ -10,6 +10,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/spf13/viper"
+
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/stefanprodan/k8s-podinfo/pkg/fscache"
@@ -143,10 +145,11 @@ func (s *Server) ListenAndServe(stopCh <-chan struct{}) {
 
 	s.logger.Info("Shutting down HTTP server", zap.Duration("timeout", s.config.HttpServerShutdownTimeout))
 
-	// wait for Kubernetes readiness probe
-	// to remove this instance from the load balancer
-	// the readiness check interval must lower than the timeout
-	//time.Sleep(s.config.HttpServerShutdownTimeout)
+	// wait for Kubernetes readiness probe to remove this instance from the load balancer
+	// the readiness check interval must be lower than the timeout
+	if viper.GetString("level") != "debug" {
+		time.Sleep(3 * time.Second)
+	}
 
 	// attempt graceful shutdown
 	if err := srv.Shutdown(ctx); err != nil {

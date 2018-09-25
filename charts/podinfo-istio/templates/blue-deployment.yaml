@@ -68,6 +68,7 @@ spec:
               - check
               - http
               - localhost:{{ .Values.containerPort }}/readyz
+            periodSeconds: 3
           volumeMounts:
           - name: data
             mountPath: /data
