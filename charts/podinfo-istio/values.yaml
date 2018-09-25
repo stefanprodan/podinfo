@@ -27,7 +27,7 @@ gateway:
 blue:
   replicas: 2
   repository: quay.io/stefanprodan/podinfo
-  tag: "1.2.0"
+  tag: "1.2.1"
   # green must have at at least one replica to set weight under 100
   weight: 100
   message:
@@ -41,7 +41,7 @@ blue:
 green:
   replicas: 0
   repository: quay.io/stefanprodan/podinfo
-  tag: "1.2.0"
+  tag: "1.2.1"
   message:
   backend:
   routing:
