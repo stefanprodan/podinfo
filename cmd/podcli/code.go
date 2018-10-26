@@ -86,7 +86,7 @@ func runCodeInit(cmd *cobra.Command, args []string) error {
 		os.Exit(1)
 	}
 
-	dirs := []string{"pkg", "cmd", "ui", "vendor", "charts/podinfo", ".github"}
+	dirs := []string{"pkg", "cmd", "ui", "vendor", ".github"}
 	for _, dir := range dirs {
 
 		err = os.MkdirAll(path.Join(codeProjectPath, dir), os.ModePerm)
