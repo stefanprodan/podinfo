@@ -21,11 +21,11 @@ Clone your private repository (preferable in your `$GOPATH`) and initialize podi
 git clone https://github.com/stefanprodan/demo-app
 cd demo-app
 
-podcli code init demo-app --git-user=stefanprodan --version=v1.3.0
+podcli code init demo-app --git-user=stefanprodan --version=v1.3.1
 ```
 
 The above command does the following:
-* downloads podinfo source code v1.3.0 from GitHub 
+* downloads podinfo source code v1.3.1 from GitHub 
 * replaces golang import with your git username and project name
 * commits and pushes the code to GitHub
 
