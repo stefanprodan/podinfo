@@ -3,13 +3,25 @@ workflow "Publish container" {
   resolves = ["Docker tag and push"]
 }
 
-action "Test and build" {
+action "Lint" {
+  uses = "./.github/actions/golang"
+  args = "fmt"
+}
+
+action "Test" {
+  needs = ["Lint"]
+  uses = "./.github/actions/golang"
+  args = "test"
+}
+
+action "Build" {
+  needs = ["Test"]
   uses = "actions/docker/cli@master"
   args = "build -t app -f Dockerfile.ci ."
 }
 
 action "Docker login" {
-  needs = ["Test and build"]
+  needs = ["Build"]
   uses = "actions/docker/login@master"
   secrets = ["DOCKER_USERNAME", "DOCKER_PASSWORD"]
 }
