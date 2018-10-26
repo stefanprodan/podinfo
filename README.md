@@ -48,3 +48,4 @@ Web API:
 * [Expose Kubernetes services over HTTPS with Ngrok](docs/6-ngrok.md)
 * [A/B Testing with Ambassador API Gateway](docs/5-canary.md)
 * [Canary Deployments with Istio](docs/7-istio.md)
+* [GitHub Actions CI demo](docs/8-gh-actions.md)
