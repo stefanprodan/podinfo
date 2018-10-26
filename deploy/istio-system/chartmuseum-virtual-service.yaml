@@ -1,0 +1,32 @@
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: grafana
+  namespace: adm
+spec:
+  hosts:
+  - "helm.iowa.weavedx.com"
+  gateways:
+  - public-gateway.istio-system.svc.cluster.local
+  http:
+  - route:
+    - destination:
+        host: chartmuseum-chartmuseum
+    timeout: 30s
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: kubeapps
+  namespace: adm
+spec:
+  hosts:
+  - "kubeapps.iowa.weavedx.com"
+  gateways:
+  - public-gateway.istio-system.svc.cluster.local
+  http:
+  - route:
+    - destination:
+        host: kubeapps
+    timeout: 30s
