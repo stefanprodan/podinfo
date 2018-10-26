@@ -8,21 +8,14 @@ action "Is branch" {
   args = "ref refs/heads/*"
 }
 
-action "Test branch" {
+action "Test and build branch" {
   needs = ["Is branch"]
-  uses = "docker://golang:1.10"
-  runs = "sh -c"
-  args = ["cp -a vendor/. /usr/local/go/src; go test -v ./..."]
-}
-
-action "Build branch" {
-  needs = ["Test branch"]
   uses = "actions/docker/cli@master"
   args = "build -t app -f Dockerfile.ci ."
 }
 
 action "Tag branch" {
-  needs = ["Build branch"]
+  needs = ["Test and build branch"]
   uses = "actions/docker/cli@master"
   args = "tag app ${DOCKER_IMAGE}:$(echo ${GITHUB_REF} | rev | cut -d/ -f1 | rev)-$(echo ${GITHUB_SHA} | head -c7)"
   secrets = ["DOCKER_IMAGE"]
