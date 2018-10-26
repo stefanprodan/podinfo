@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"regexp"
@@ -45,6 +46,7 @@ func init() {
 }
 
 func runCodeInit(cmd *cobra.Command, args []string) error {
+
 	if len(codeGitUser) < 0 {
 		return fmt.Errorf("--git-user is required")
 	}
@@ -122,8 +124,23 @@ func runCodeInit(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	fmt.Printf("Done %s\n", codeProjectPath)
+	err = gitPush()
+	if err != nil {
+		log.Fatalf("git push error: %s", err)
+		os.Exit(1)
+	}
 
+	fmt.Println("Initialization finished")
+	return nil
+}
+
+func gitPush() error {
+	cmd := exec.Command("sh", "-c", "git add . && git commit -m \"init\" && git push")
+	output , err := cmd.Output()
+	if err != nil {
+		return err
+	}
+	fmt.Println(string(output))
 	return nil
 }
 
