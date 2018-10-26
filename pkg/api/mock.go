@@ -3,8 +3,8 @@ package api
 import (
 	"time"
 
-	"go.uber.org/zap"
 	"github.com/gorilla/mux"
+	"go.uber.org/zap"
 )
 
 func NewMockServer() *Server {

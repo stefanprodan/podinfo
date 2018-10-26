@@ -3,8 +3,8 @@ package api
 import (
 	"net/http"
 	"net/http/httptest"
-	"testing"
 	"regexp"
+	"testing"
 )
 
 func TestDelayHandler(t *testing.T) {

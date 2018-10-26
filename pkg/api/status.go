@@ -16,5 +16,5 @@ func (s *Server) statusHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.JSONResponseCode(w, r,  map[string]int{"status": code}, code)
+	s.JSONResponseCode(w, r, map[string]int{"status": code}, code)
 }

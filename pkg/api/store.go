@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"path"
 
-	"go.uber.org/zap"
 	"github.com/gorilla/mux"
+	"go.uber.org/zap"
 )
 
 func (s *Server) storeWriteHandler(w http.ResponseWriter, r *http.Request) {
@@ -26,7 +26,7 @@ func (s *Server) storeWriteHandler(w http.ResponseWriter, r *http.Request) {
 		s.ErrorResponse(w, r, "writing file failed", http.StatusInternalServerError)
 		return
 	}
-	s.JSONResponseCode(w, r,  map[string]string{"hash": hash}, http.StatusAccepted)
+	s.JSONResponseCode(w, r, map[string]string{"hash": hash}, http.StatusAccepted)
 }
 
 func (s *Server) storeReadHandler(w http.ResponseWriter, r *http.Request) {

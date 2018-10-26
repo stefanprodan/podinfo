@@ -136,7 +136,7 @@ func runCodeInit(cmd *cobra.Command, args []string) error {
 
 func gitPush() error {
 	cmd := exec.Command("sh", "-c", "git add . && git commit -m \"init\" && git push")
-	output , err := cmd.Output()
+	output, err := cmd.Output()
 	if err != nil {
 		return err
 	}
@@ -168,7 +168,7 @@ func replaceImports(projectPath string, pkgFrom string, pkgTo string) error {
 			matches := regexImport.FindAllString(content, -1)
 			isExists := false
 
-		isReplacable:
+		isReplaceable:
 			for _, each := range matches {
 				for _, eachLine := range strings.Split(each, "\n") {
 					matchesInline := regexImportedPackage.FindAllString(eachLine, -1)
@@ -179,7 +179,7 @@ func replaceImports(projectPath string, pkgFrom string, pkgTo string) error {
 					for _, eachSubline := range matchesInline {
 						if strings.Contains(eachSubline, pkgFrom) {
 							isExists = true
-							break isReplacable
+							break isReplaceable
 						}
 					}
 				}
@@ -203,10 +203,6 @@ func replaceImports(projectPath string, pkgFrom string, pkgTo string) error {
 	if err != nil {
 		fmt.Println("ERROR", err.Error())
 	}
-
-	//for _, path := range found {
-	//	fmt.Printf("found in %s\n", path)
-	//}
 
 	if len(found) == 0 {
 		fmt.Println("Nothing replaced")

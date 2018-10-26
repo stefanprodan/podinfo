@@ -3,8 +3,8 @@ package api
 import (
 	"net/http"
 	"net/http/httptest"
-	"testing"
 	"strings"
+	"testing"
 )
 
 func TestEchoHandler(t *testing.T) {

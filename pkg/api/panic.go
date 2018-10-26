@@ -2,7 +2,6 @@ package api
 
 import (
 	"net/http"
-
 )
 
 func (s *Server) panicHandler(w http.ResponseWriter, r *http.Request) {
