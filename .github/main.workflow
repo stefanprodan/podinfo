@@ -1,6 +1,6 @@
 workflow "Publish container" {
   on = "push"
-  resolves = ["Docker tag and push"]
+  resolves = ["Push"]
 }
 
 action "Lint" {
@@ -16,18 +16,20 @@ action "Test" {
 
 action "Build" {
   needs = ["Test"]
-  uses = "actions/docker/cli@master"
-  args = "build -t app -f Dockerfile.ci ."
+  uses = "./.github/actions/docker"
+  secrets = ["DOCKER_IMAGE"]
+  args = ["build", "Dockerfile.gh"]
 }
 
-action "Docker login" {
+action "Login" {
   needs = ["Build"]
   uses = "actions/docker/login@master"
   secrets = ["DOCKER_USERNAME", "DOCKER_PASSWORD"]
 }
 
-action "Docker tag and push" {
-  needs = ["Docker login"]
+action "Push" {
+  needs = ["Login"]
   uses = "./.github/actions/docker"
   secrets = ["DOCKER_IMAGE"]
+  args = "push"
 }

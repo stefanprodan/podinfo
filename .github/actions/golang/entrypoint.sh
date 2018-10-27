@@ -10,7 +10,7 @@ APP_DIR="/go/src/github.com/${GITHUB_REPOSITORY}/"
 mkdir -p ${APP_DIR} && cp -r ./ ${APP_DIR} && cd ${APP_DIR}
 
 if [[ "$1" == "fmt" ]]; then
-    echo "Running gofmt"
+    echo "Running go fmt"
     files=$(gofmt -l $(find . -type f -name '*.go' -not -path "./vendor/*") 2>&1)
     if [ "$files" ]; then
       echo "These files did not pass the gofmt check:"
@@ -21,6 +21,6 @@ fi
 
 if [[ "$1" == "test" ]]; then
     echo "Running go test"
-    go test $(go list ./... | grep -v /vendor/) -cover
+    go test $(go list ./... | grep -v /vendor/) -race -coverprofile=coverage.txt -covermode=atomic
+    cat coverage.txt
 fi
-

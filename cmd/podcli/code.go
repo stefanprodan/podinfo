@@ -102,9 +102,8 @@ func runCodeInit(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	files := []string{"Gopkg.toml", "Gopkg.lock", "Dockerfile.ci"}
+	files := []string{"Gopkg.toml", "Gopkg.lock"}
 	for _, file := range files {
-
 		if err := copyFile(path.Join(tmpPath, versionName, file), path.Join(codeProjectPath, file)); err != nil {
 			log.Fatalf("Error: %s", err)
 			os.Exit(1)
@@ -117,6 +116,42 @@ func runCodeInit(cmd *cobra.Command, args []string) error {
 		}
 
 		newContent := strings.Replace(string(fileContent), pkgFrom, pkgTo, -1)
+		err = ioutil.WriteFile(path.Join(codeProjectPath, file), []byte(newContent), os.ModePerm)
+		if err != nil {
+			log.Fatalf("Error: %s", err)
+			os.Exit(1)
+		}
+	}
+
+	projFrom := "stefanprodan/k8s-podinfo"
+	projTo := fmt.Sprintf("%s/%s", codeGitUser, codeProjectName)
+
+	makeFiles := []string{"Makefile.gh", "Dockerfile.gh"}
+	for _, file := range makeFiles {
+		fileContent, err := ioutil.ReadFile(path.Join(tmpPath, versionName, file))
+		if err != nil {
+			log.Fatalf("Error: %s", err)
+			os.Exit(1)
+		}
+
+		destFile := strings.Replace(file, ".gh", "", -1)
+		newContent := strings.Replace(string(fileContent), projFrom, projTo, -1)
+		err = ioutil.WriteFile(path.Join(codeProjectPath, destFile), []byte(newContent), os.ModePerm)
+		if err != nil {
+			log.Fatalf("Error: %s", err)
+			os.Exit(1)
+		}
+	}
+
+	workflows := []string{".github/main.workflow"}
+	for _, file := range workflows {
+		fileContent, err := ioutil.ReadFile(path.Join(codeProjectPath, file))
+		if err != nil {
+			log.Fatalf("Error: %s", err)
+			os.Exit(1)
+		}
+
+		newContent := strings.Replace(string(fileContent), "Dockerfile.gh", "Dockerfile", -1)
 		err = ioutil.WriteFile(path.Join(codeProjectPath, file), []byte(newContent), os.ModePerm)
 		if err != nil {
 			log.Fatalf("Error: %s", err)

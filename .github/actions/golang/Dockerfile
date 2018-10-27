@@ -1,11 +1,11 @@
 FROM golang:1.10
 
 LABEL "name"="golang tools action"
-LABEL "maintainer"="Stefan Prodan <support@gweave.works>"
+LABEL "maintainer"="Stefan Prodan <support@weave.works>"
 LABEL "version"="1.0.0"
 
 LABEL "com.github.actions.icon"="code"
-LABEL "com.github.actions.color"="gray-dark"
+LABEL "com.github.actions.color"="green-dark"
 LABEL "com.github.actions.name"="Go Tools"
 LABEL "com.github.actions.description"="This is an Action to run go and dep commands."
 
