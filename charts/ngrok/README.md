@@ -41,6 +41,7 @@ Parameter | Description | Default
 `service.type` | type of service | `ClusterIP`
 `token` | Ngrok auth token | `none`
 `expose.service` | Service address to be exposed as in `service-name:port` | `none`
+`subdomain` | Ngrok subdomain | `none`
 
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`. For example,
 

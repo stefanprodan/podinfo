@@ -23,3 +23,5 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+subdomain:
