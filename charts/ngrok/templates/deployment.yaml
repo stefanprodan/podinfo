@@ -28,7 +28,9 @@ spec:
           command:
             - ./ngrok
             - http
-            {{ if .Values.subdomain }}- --subdomain={{ .Values.subdomain }}{{ end }}
+            {{- if .Values.subdomain }}
+            - --subdomain={{ .Values.subdomain }}
+            {{- end }}
             - {{ .Values.expose.service }}
           volumeMounts:
           - name: config
