@@ -170,7 +170,8 @@ func runCodeInit(cmd *cobra.Command, args []string) error {
 }
 
 func gitPush() error {
-	cmd := exec.Command("sh", "-c", "git add . && git commit -m \"init\" && git push")
+	cmdPush := fmt.Sprintf("git add . && git commit -m \"sync %s\" && git push", codeVersion)
+	cmd := exec.Command("sh", "-c", cmdPush)
 	output, err := cmd.Output()
 	if err != nil {
 		return err
