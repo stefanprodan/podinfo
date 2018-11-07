@@ -9,10 +9,10 @@ Create a private repository named `demo-app` on GitHub and navigate to Settings/
 Install podinfo CLI:
 
 ```bash
-go get -u github.com/stefanprodan/k8s-podinfo/cmd/podcli
+brew install weaveworks/tap/podcli
 ```
 
-If you don't have golang installed go to the 
+For linux or Windows go to the 
 [release page](https://github.com/stefanprodan/k8s-podinfo/releases), download the latest podcli release and add it to your path.
 
 Clone your private repository (preferable in your `$GOPATH`) and initialize podinfo.
