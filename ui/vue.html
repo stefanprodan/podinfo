@@ -39,7 +39,7 @@
                 <span slot="badge">${ pings }</span>
                 <v-icon left dark>touch_app</v-icon>
               </v-badge>
-              Ping 
+              Ping
             </v-btn>
           </v-layout>
         </v-parallax>
@@ -158,6 +158,9 @@
                     }
                 }
                 self.info = data
+                self.info.color = parseInt(data.version.split('.').reverse()[0], 10) === 0
+                  ? 'blue'
+                  : 'green'
                 document.title = data.hostname
             }
             xhr.onerror = function() {
