@@ -64,6 +64,8 @@ spec:
               - check
               - http
               - localhost:{{ .Values.service.containerPort }}/healthz
+            initialDelaySeconds: 5
+            timeoutSeconds: 5
           readinessProbe:
             exec:
               command:
@@ -71,7 +73,8 @@ spec:
               - check
               - http
               - localhost:{{ .Values.service.containerPort }}/readyz
-            periodSeconds: 3
+            initialDelaySeconds: 5
+            timeoutSeconds: 5
           volumeMounts:
           - name: data
             mountPath: /data
