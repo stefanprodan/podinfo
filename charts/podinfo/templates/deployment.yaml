@@ -1,4 +1,4 @@
-apiVersion: apps/v1beta2
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ template "podinfo.fullname" . }}
@@ -7,8 +7,6 @@ metadata:
     chart: {{ template "podinfo.chart" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
-    color: {{ .Values.color }}
-    version: {{ .Values.image.tag }}
 spec:
   replicas: {{ .Values.replicaCount }}
   strategy:
@@ -18,15 +16,11 @@ spec:
   selector:
     matchLabels:
       app: {{ template "podinfo.name" . }}
-      color: {{ .Values.color }}
-      version: {{ .Values.image.tag }}
       release: {{ .Release.Name }}
   template:
     metadata:
       labels:
         app: {{ template "podinfo.name" . }}
-        color: {{ .Values.color }}
-        version: {{ .Values.image.tag }}
         release: {{ .Release.Name }}
       annotations:
         prometheus.io/scrape: 'true'
