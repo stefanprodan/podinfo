@@ -38,3 +38,40 @@ If you create a GitHub release a Docker image with the format `${DOCKER_IMAGE}:$
 
 ![github-actions-ci](https://github.com/stefanprodan/k8s-podinfo/blob/master/docs/screens/github-actions-ci.png)
 
+# TravisCI and Quay 
+
+Make a public repository named `podinfo` on Quay and add a robot user with write access to it.
+
+Create a public repository named `podinfo` on GitHub. 
+
+In TravisCI create a job for your GitHub repository and in Settings/Environment Variables add the following keys:
+
+* `QUAY_REPOSITORY` <YOUR-QUAY-USERNAME>/podinfo
+* `QUAY_USER` <YOUR-QUAY-ROBOT-USERNAME>
+* `QUAY_PASS` <YOUR-QUAY-ROBOT-PASSWORD>
+
+Install podinfo CLI:
+
+```bash
+brew install weaveworks/tap/podcli
+```
+
+On your computer clone your git repository and initialize it with:
+
+```bash
+git clone https://github.com/<YOUR-GITHUB-USERNAME>/podinfo
+cd podinfo
+
+podcli code init podinfo --git-user=<YOUR-GITHUB-USERNAME> --version=master
+```
+
+The above command does the following:
+* downloads podinfo source code from GitHub 
+* replaces golang imports with your git username and project name
+* creates a `Dockerfile.ci` and `.travis.yml` customized for your Quay account
+* commits and pushes the code to GitHub
+
+When the code init command finishes, TravisCI will test, build and push a Docker image 
+`${DOCKER_IMAGE}:${GIT-BRANCH}-${GIT-SHORT-SHA}` to your Quay repository.
+
+If you create a GitHub release a Docker image with the format `${DOCKER_IMAGE}:${GIT-TAG}` will be published to Quay.
