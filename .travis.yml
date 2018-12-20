@@ -15,7 +15,10 @@ addons:
 before_install:
   - make dep
   - go get sigs.k8s.io/kind
+  - curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
   - kind create cluster
+  - export KUBECONFIG="$(kind get kubeconfig-path --name="1")"
+  - ./kubectl cluster-info
 
 script:
   - make test
