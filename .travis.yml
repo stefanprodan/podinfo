@@ -20,14 +20,15 @@ before_install:
   - kind create cluster
   - export KUBECONFIG="$(kind get kubeconfig-path --name="1")"
   - ./kubectl cluster-info
+  - docker build -t podinfo:test -f Dockerfile.ci .
+  - ./kubectl run podinfo --image=podinfo:test --port=9898 --image-pull-policy=Never -- ./podinfo --port=9898
+  - sleep 5
+  - ./kubectl describe deployment podinfo
+  - ./kubectl describe po
 
 script:
   - make test
   - make build docker-build
-  - docker build -t podinfo:test -f Dockerfile.ci .
-  - ./kubectl run podinfo --image=podinfo:test -- ./podinfo --port=9898
-  - sleep 5
-  - ./kubectl describe deployment podinfo
 
 after_success:
   - if [ -z "$DOCKER_USER" ]; then
