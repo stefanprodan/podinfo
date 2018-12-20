@@ -14,17 +14,17 @@ addons:
 
 before_install:
   - make dep
-  - go get sigs.k8s.io/kind
-  - curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
-  - chmod +x ./kubectl
-  - kind create cluster
-  - export KUBECONFIG="$(kind get kubeconfig-path --name="1")"
-  - ./kubectl cluster-info
-  - docker build -t podinfo:test -f Dockerfile.ci .
-  - ./kubectl run podinfo --image=podinfo:test --port=9898 --image-pull-policy=Never -- ./podinfo --port=9898
-  - sleep 5
-  - ./kubectl describe deployment podinfo
-  - ./kubectl describe po
+#  - go get sigs.k8s.io/kind
+#  - curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
+#  - chmod +x ./kubectl
+#  - kind create cluster
+#  - export KUBECONFIG="$(kind get kubeconfig-path --name="1")"
+#  - ./kubectl cluster-info
+#  - docker build -t podinfo:test -f Dockerfile.ci .
+#  - ./kubectl run podinfo --image=podinfo:test --port=9898 --image-pull-policy=Never -- ./podinfo --port=9898
+#  - sleep 5
+#  - ./kubectl describe deployment podinfo
+#  - ./kubectl describe po
 
 script:
   - make test
