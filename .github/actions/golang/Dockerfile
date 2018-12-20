@@ -1,8 +1,8 @@
-FROM golang:1.10
+FROM golang:1.11
 
 LABEL "name"="golang tools action"
 LABEL "maintainer"="Stefan Prodan <support@weave.works>"
-LABEL "version"="1.0.0"
+LABEL "version"="1.11.0"
 
 LABEL "com.github.actions.icon"="code"
 LABEL "com.github.actions.color"="green-dark"
