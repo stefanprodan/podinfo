@@ -1,4 +1,4 @@
-# GitHub Actions
+# GitHub Actions and Docker Hub
 
 Create a private repository named `demo-app` on GitHub and navigate to Settings/Secrets and add the following secrets:
 
@@ -21,11 +21,11 @@ Clone your private repository (preferable in your `$GOPATH`) and initialize podi
 git clone https://github.com/stefanprodan/demo-app
 cd demo-app
 
-podcli code init demo-app --git-user=stefanprodan --version=v1.3.1
+podcli code init demo-app --git-user=stefanprodan --version=master
 ```
 
 The above command does the following:
-* downloads podinfo source code v1.3.1 from GitHub 
+* downloads podinfo source code from GitHub 
 * replaces golang imports with your git username and project name
 * creates a Dockerfile and Makefile customized for GitHub actions
 * creates the main workflow for GitHub actions
@@ -46,9 +46,9 @@ Create a public repository named `podinfo` on GitHub.
 
 In TravisCI create a job for your GitHub repository and in Settings/Environment Variables add the following keys:
 
-* `QUAY_REPOSITORY` <YOUR-QUAY-USERNAME>/podinfo
-* `QUAY_USER` <YOUR-QUAY-ROBOT-USERNAME>
-* `QUAY_PASS` <YOUR-QUAY-ROBOT-PASSWORD>
+* `QUAY_REPOSITORY` = `<YOUR-QUAY-USERNAME>/podinfo`
+* `QUAY_USER` = `<YOUR-QUAY-ROBOT-USERNAME>`
+* `QUAY_PASS` = `<YOUR-QUAY-ROBOT-PASSWORD>`
 
 Install podinfo CLI:
 
@@ -74,4 +74,6 @@ The above command does the following:
 When the code init command finishes, TravisCI will test, build and push a Docker image 
 `${DOCKER_IMAGE}:${GIT-BRANCH}-${GIT-SHORT-SHA}` to your Quay repository.
 
-If you create a GitHub release a Docker image with the format `${DOCKER_IMAGE}:${GIT-TAG}` will be published to Quay.
+In order to make a semantic version release, edit `./pgk/version/version/go` and set the version to `1.5.0`.
+Push your changes to git and create a GitHub release. 
+TravisCI will build a Docker image with the format `${DOCKER_IMAGE}:${GIT-TAG}` and will push it to Quay.
