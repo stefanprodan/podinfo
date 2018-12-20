@@ -2,12 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
-	"os"
-	"path/filepath"
-	"strings"
-	"time"
-
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"github.com/stefanprodan/k8s-podinfo/pkg/api"
@@ -15,6 +9,11 @@ import (
 	"github.com/stefanprodan/k8s-podinfo/pkg/version"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
 )
 
 func main() {

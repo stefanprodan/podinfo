@@ -9,7 +9,7 @@ import (
 
 func NewMockServer() *Server {
 	config := &Config{
-		Port: "9898",
+		Port:                      "9898",
 		HttpServerShutdownTimeout: 5 * time.Second,
 		HttpServerTimeout:         30 * time.Second,
 		BackendURL:                "",

@@ -2,12 +2,11 @@ package main
 
 import (
 	"fmt"
+	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 	"log"
 	"os"
 	"strings"
-
-	"github.com/spf13/cobra"
-	"go.uber.org/zap"
 )
 
 var rootCmd = &cobra.Command{
