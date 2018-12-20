@@ -159,6 +159,39 @@ func runCodeInit(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	dockerFiles := []string{"Dockerfile.ci"}
+	for _, file := range dockerFiles {
+		fileContent, err := ioutil.ReadFile(path.Join(tmpPath, versionName, file))
+		if err != nil {
+			log.Fatalf("Error: %s", err)
+			os.Exit(1)
+		}
+
+		newContent := strings.Replace(string(fileContent), projFrom, projTo, -1)
+		err = ioutil.WriteFile(path.Join(codeProjectPath, file), []byte(newContent), os.ModePerm)
+		if err != nil {
+			log.Fatalf("Error: %s", err)
+			os.Exit(1)
+		}
+	}
+
+	travisFiles := []string{"travis.lite.yml"}
+	for _, file := range travisFiles {
+		fileContent, err := ioutil.ReadFile(path.Join(tmpPath, versionName, file))
+		if err != nil {
+			log.Fatalf("Error: %s", err)
+			os.Exit(1)
+		}
+
+		destFile := strings.Replace(file, "travis.lite.yml", ".travis.yml", -1)
+		newContent := strings.Replace(string(fileContent), projFrom, projTo, -1)
+		err = ioutil.WriteFile(path.Join(codeProjectPath, destFile), []byte(newContent), os.ModePerm)
+		if err != nil {
+			log.Fatalf("Error: %s", err)
+			os.Exit(1)
+		}
+	}
+
 	err = gitPush()
 	if err != nil {
 		log.Fatalf("git push error: %s", err)
