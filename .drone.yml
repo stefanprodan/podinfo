@@ -1,5 +1,75 @@
 ---
 kind: pipeline
+name: linux-amd64
+
+platform:
+  os: linux
+  arch: amd64
+
+steps:
+  - name: build
+    image: plugins/docker:linux-amd64
+    settings:
+      dry_run: true
+      dockerfile: Dockerfile.ci
+      repo: stefanprodan/podinfo
+      tag: linux-amd64
+    when:
+      event:
+        - push
+        - pull_request
+
+  - name: push-commit
+    image: plugins/docker:linux-amd64
+    settings:
+      dockerfile: Dockerfile.arm
+      repo: stefanprodan/podinfo
+      tag: "amd64-${DRONE_COMMIT_SHA:0:8}"
+      username:
+        from_secret: DOCKER_USERNAME
+      password:
+        from_secret: DOCKER_PASSWORD
+    when:
+      branch:
+        - master
+
+---
+kind: pipeline
+name: linux-arm64
+
+platform:
+  os: linux
+  arch: arm64
+
+steps:
+  - name: build
+    image: plugins/docker:linux-arm64
+    settings:
+      dry_run: true
+      dockerfile: Dockerfile.arm
+      repo: stefanprodan/podinfo
+      tag: linux-arm64
+    when:
+      event:
+        - push
+        - pull_request
+
+  - name: push-commit
+    image: plugins/docker:linux-arm64
+    settings:
+      dockerfile: Dockerfile.arm
+      repo: stefanprodan/podinfo
+      tag: "arm64-${DRONE_COMMIT_SHA:0:8}"
+      username:
+        from_secret: DOCKER_USERNAME
+      password:
+        from_secret: DOCKER_PASSWORD
+    when:
+      branch:
+        - master
+
+---
+kind: pipeline
 name: linux-arm
 
 platform:
@@ -12,19 +82,19 @@ steps:
   settings:
     dry_run: true
     dockerfile: Dockerfile.arm
-    repo: stefanprodan/podinfo-arm
+    repo: stefanprodan/podinfo
     tag: linux-arm
   when:
     event:
     - push
     - pull_request
 
-- name: push
+- name: push-commit
   image: plugins/docker:linux-arm
   settings:
     dockerfile: Dockerfile.arm
-    repo: stefanprodan/podinfo-arm
-    tag: "${DRONE_COMMIT_SHA:0:8}"
+    repo: stefanprodan/podinfo
+    tag: "arm-${DRONE_COMMIT_SHA:0:8}"
     username:
       from_secret: DOCKER_USERNAME
     password:
