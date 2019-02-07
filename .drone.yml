@@ -7,18 +7,28 @@ platform:
   arch: arm
 
 steps:
-- name: dryrun
-  pull: always
+- name: build
+  image: plugins/docker:linux-arm
+  settings:
+    dry_run: true
+    dockerfile: Dockerfile.arm
+    repo: stefanprodan/podinfo-arm
+    tag: linux-arm
+  when:
+    event:
+    - push
+    - pull_request
+
+- name: push
   image: plugins/docker:linux-arm
   settings:
     dockerfile: Dockerfile.arm
-    #dry_run: true
     repo: stefanprodan/podinfo-arm
-    auto_tag: true
+    tag: "${DRONE_COMMIT_SHA:0:8}"
     username:
       from_secret: DOCKER_USERNAME
     password:
       from_secret: DOCKER_PASSWORD
   when:
     branch:
-      - master
+    - master
