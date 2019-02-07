@@ -2,13 +2,17 @@
 kind: pipeline
 name: linux-arm
 
+platform:
+  os: linux
+  arch: arm
+
 steps:
 - name: dryrun
   pull: always
   image: plugins/docker:linux-arm
   settings:
     dockerfile: Dockerfile.arm
-    dry_run: true
+    #dry_run: true
     repo: stefanprodan/podinfo-arm
     auto_tag: true
     username:
