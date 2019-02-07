@@ -2,10 +2,6 @@
 kind: pipeline
 name: linux-arm
 
-platform:
-  os: linux
-  arch: arm
-
 steps:
 - name: dryrun
   pull: always
@@ -14,12 +10,11 @@ steps:
     dockerfile: Dockerfile.arm
     dry_run: true
     repo: stefanprodan/podinfo-arm
-    tags: linux-arm
+    auto_tag: true
     username:
       from_secret: DOCKER_USERNAME
     password:
       from_secret: DOCKER_PASSWORD
   when:
-    event:
-      - push
-      - pull_request
+    branch:
+      - master
