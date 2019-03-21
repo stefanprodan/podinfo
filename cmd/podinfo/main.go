@@ -12,6 +12,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -82,6 +83,12 @@ func main() {
 	// start stress tests if any
 	beginStressTest(viper.GetInt("stress-cpu"), viper.GetInt("stress-memory"), logger)
 
+	// validate port
+	if _, err := strconv.Atoi(viper.GetString("port")); err != nil {
+		port, _ := fs.GetInt("port")
+		viper.Set("port", strconv.Itoa(port))
+	}
+
 	// load HTTP server config
 	var srvCfg api.Config
 	if err := viper.Unmarshal(&srvCfg); err != nil {
@@ -92,7 +99,7 @@ func main() {
 	logger.Info("Starting podinfo",
 		zap.String("version", viper.GetString("version")),
 		zap.String("revision", viper.GetString("revision")),
-		zap.String("port", viper.GetString("port")),
+		zap.String("port", srvCfg.Port),
 	)
 
 	// start HTTP server
