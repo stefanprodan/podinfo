@@ -147,7 +147,7 @@
         getInfo: function() {
             var xhr = new XMLHttpRequest()
             var self = this
-            xhr.open('GET', "/api/info")
+            xhr.open('GET', "api/info")
             xhr.onload = function () {
                 data = JSON.parse(xhr.responseText)
                 // reload page when the version changes
@@ -170,7 +170,7 @@
         },
         postBackend: function() {
             var self = this
-            fetch("/api/echo", {
+            fetch("api/echo", {
                 method: 'post',
                 headers: {
                 "Content-type": "application/json; charset=UTF-8",
