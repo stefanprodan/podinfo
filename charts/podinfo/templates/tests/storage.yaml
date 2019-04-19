@@ -11,8 +11,8 @@ metadata:
     "helm.sh/hook": test-success
 spec:
   containers:
-    - name: curl
-      image: radial/busyboxplus:curl
+    - name: tools
+      image: giantswarm/tiny-tools
       command: ["/bin/sh", "/scripts/ping.sh"]
       env:
       - name: PODINFO_SVC
@@ -38,4 +38,4 @@ metadata:
 data:
   ping.sh: |
     #!/bin/sh
-    curl -sSd "$(curl -sSd 'test' ${PODINFO_SVC}/write)" ${PODINFO_SVC}/read|grep test
+    curl -sS ${PODINFO_SVC}/store/$(curl -sSd 'test' ${PODINFO_SVC}/store | jq -r .hash) |grep test
