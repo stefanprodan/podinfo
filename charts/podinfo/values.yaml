@@ -1,6 +1,6 @@
 # Default values for podinfo.
 
-replicaCount: 2
+replicaCount: 1
 logLevel: info
 color: blue
 backend: #http://backend-podinfo:9898/echo
@@ -12,7 +12,7 @@ faults:
 
 image:
   repository: quay.io/stefanprodan/podinfo
-  tag: 1.4.1
+  tag: 1.5.0
   pullPolicy: IfNotPresent
 
 service:
