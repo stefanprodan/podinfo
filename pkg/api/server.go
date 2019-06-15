@@ -33,6 +33,7 @@ type Config struct {
 	DataPath                  string        `mapstructure:"data-path"`
 	ConfigPath                string        `mapstructure:"config-path"`
 	Port                      string        `mapstructure:"port"`
+	PortMetrics               int           `mapstructure:"port-metrics"`
 	Hostname                  string        `mapstructure:"hostname"`
 	RandomDelay               bool          `mapstructure:"random-delay"`
 	RandomError               bool          `mapstructure:"random-error"`
@@ -96,6 +97,7 @@ func (s *Server) registerMiddlewares() {
 }
 
 func (s *Server) ListenAndServe(stopCh <-chan struct{}) {
+	go s.startMetricsServer()
 
 	s.registerHandlers()
 	s.registerMiddlewares()
@@ -154,6 +156,24 @@ func (s *Server) ListenAndServe(stopCh <-chan struct{}) {
 		s.logger.Warn("HTTP server graceful shutdown failed", zap.Error(err))
 	} else {
 		s.logger.Info("HTTP server stopped")
+	}
+}
+
+func (s *Server) startMetricsServer() {
+	if s.config.PortMetrics > 0 {
+		mux := http.DefaultServeMux
+		mux.Handle("/metrics", promhttp.Handler())
+		mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("OK"))
+		})
+
+		srv := &http.Server{
+			Addr:    fmt.Sprintf(":%v", s.config.PortMetrics),
+			Handler: mux,
+		}
+
+		srv.ListenAndServe()
 	}
 }
 

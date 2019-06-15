@@ -21,6 +21,7 @@ func main() {
 	// flags definition
 	fs := pflag.NewFlagSet("default", pflag.ContinueOnError)
 	fs.Int("port", 9898, "port")
+	fs.Int("port-metrics", 0, "metrics port")
 	fs.String("level", "info", "log level debug, info, warn, error, flat or panic")
 	fs.String("backend-url", "", "backend service URL")
 	fs.Duration("http-client-timeout", 2*time.Minute, "client timeout duration")
