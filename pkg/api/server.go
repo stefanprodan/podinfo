@@ -3,17 +3,18 @@ package api
 import (
 	"context"
 	"fmt"
-	"github.com/gorilla/mux"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/spf13/viper"
-	"github.com/stefanprodan/k8s-podinfo/pkg/fscache"
-	"go.uber.org/zap"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
 	"strings"
 	"sync/atomic"
 	"time"
+
+	"github.com/gorilla/mux"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/spf13/viper"
+	"github.com/stefanprodan/k8s-podinfo/pkg/fscache"
+	"go.uber.org/zap"
 )
 
 var (
@@ -80,6 +81,8 @@ func (s *Server) registerHandlers() {
 	s.router.HandleFunc("/api/info", s.infoHandler).Methods("GET")
 	s.router.HandleFunc("/api/echo", s.echoHandler).Methods("POST")
 	s.router.HandleFunc("/ws/echo", s.echoWsHandler)
+	s.router.HandleFunc("/chunked", s.chunkedHandler)
+	s.router.HandleFunc("/chunked/{wait:[0-9]+}", s.chunkedHandler)
 }
 
 func (s *Server) registerMiddlewares() {
