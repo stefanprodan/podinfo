@@ -38,6 +38,7 @@ Web API:
 * `POST /store` writes the posted content to disk at /data/hash and returns the SHA1 hash of the content
 * `GET /store/{hash}` returns the content of the file /data/hash if exists
 * `GET /ws/echo` echos content via websockets `podcli ws ws://localhost:9898/ws/echo`
+* `GET /chunked/{seconds}` uses `transfer-encoding` type `chunked` to give a partial response and then waits for the specified period
 
 ### Guides
 
