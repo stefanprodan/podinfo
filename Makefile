@@ -2,6 +2,7 @@
 #
 # The release version is controlled from pkg/version
 
+TAG?=latest
 NAME:=podinfo
 DOCKER_REPOSITORY:=stefanprodan
 DOCKER_IMAGE_NAME:=$(DOCKER_REPOSITORY)/$(NAME)
@@ -29,3 +30,13 @@ push-container:
 	docker push $(DOCKER_IMAGE_NAME):$(VERSION)
 	docker tag $(DOCKER_IMAGE_NAME):$(VERSION) quay.io/$(DOCKER_IMAGE_NAME):$(VERSION)
 	docker push quay.io/$(DOCKER_IMAGE_NAME):$(VERSION)
+
+version-set:
+	@next="$(TAG)" && \
+	current="$(VERSION)" && \
+	sed -i '' "s/$$current/$$next/g" pkg/version/version.go && \
+	sed -i '' "s/tag: $$current/tag: $$next/g" charts/podinfo/values.yaml && \
+	sed -i '' "s/appVersion: $$current/appVersion: $$next/g" charts/podinfo/Chart.yaml && \
+	sed -i '' "s/version: $$current/version: $$next/g" charts/podinfo/Chart.yaml && \
+	sed -i '' "s/podinfo:$$current/podinfo:$$next/g" kustomize/deployment.yaml && \
+	echo "Version $$next set in code, deployment, chart and kustomize"
