@@ -1,9 +1,0 @@
-docs
-deploy
-charts
-cloudbuild.yaml
-skaffold.yaml
-.gitignore
-.travis.yml
-LICENSE
-README.md 
