@@ -27,11 +27,11 @@ build-container:
 	docker build -t $(DOCKER_IMAGE_NAME):$(VERSION) .
 
 test-container:
+	@docker rm -f podinfo || true
 	@docker run -dp 9898:9898 --name=podinfo $(DOCKER_IMAGE_NAME):$(VERSION)
 	@docker ps
-	@TOKEN=$$(curl -sd 'test' localhost:9898/token) && \
-	JWT=$$(echo $$TOKEN | jq -r .token) && \
-	curl -H "Authorization: Bearer $${JWT}" localhost:9898/token/validate | grep test
+	@TOKEN=$$(curl -sd 'test' localhost:9898/token | jq -r .token) && \
+	curl -sH "Authorization: Bearer $${TOKEN}" localhost:9898/token/validate | grep test
 
 push-container:
 	docker push $(DOCKER_IMAGE_NAME):$(VERSION)

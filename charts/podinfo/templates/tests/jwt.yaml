@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: {{ template "podinfo.fullname" . }}-storage-test-{{ randAlphaNum 5 | lower }}
+  name: {{ template "podinfo.fullname" . }}-jwt-test-{{ randAlphaNum 5 | lower }}
   labels:
     heritage: {{ .Release.Service }}
     release: {{ .Release.Name }}
@@ -13,7 +13,7 @@ spec:
   containers:
     - name: tools
       image: giantswarm/tiny-tools
-      command: ["/bin/sh", "/scripts/ping.sh"]
+      command: ["/bin/sh", "/scripts/test.sh"]
       env:
       - name: PODINFO_SVC
         value: {{ template "podinfo.fullname" . }}:{{ .Values.service.externalPort }}
@@ -36,6 +36,8 @@ metadata:
     chart: {{ .Chart.Name }}-{{ .Chart.Version }}
     app: {{ template "podinfo.name" . }}
 data:
-  ping.sh: |
+  test.sh: |
     #!/bin/sh
-    curl -sS ${PODINFO_SVC}/store/$(curl -sSd 'test' ${PODINFO_SVC}/store | jq -r .hash) |grep test
+    echo "testing ${PODINFO_SVC}/token"
+    TOKEN=$(curl -sd 'test' ${PODINFO_SVC}/token | jq -r .token) && \
+    curl -H "Authorization: Bearer ${TOKEN}" ${PODINFO_SVC}/token/validate | grep test

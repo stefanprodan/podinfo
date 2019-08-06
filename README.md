@@ -1,6 +1,6 @@
 # podinfo
 
-[![Build Status](https://travis-ci.org/stefanprodan/podinfo.svg?branch=master)](https://travis-ci.org/stefanprodan/podinfo)
+[![CircleCI](https://circleci.com/gh/stefanprodan/podinfo.svg?style=svg)](https://circleci.com/gh/stefanprodan/podinfo)
 [![Docker Pulls](https://img.shields.io/docker/pulls/stefanprodan/podinfo)](https://hub.docker.com/r/stefanprodan/podinfo)
 
 Podinfo is a tiny web application made with Go 
@@ -57,8 +57,11 @@ helm repo add sp https://stefanprodan.github.io/podinfo
 
 helm upgrade --install --wait frontend \
 --namespace test \
+--set replicaCount=2 \
 --set backend=http://backend-podinfo:9898/echo \
 sp/podinfo
+
+helm test frontend --cleanup
 
 helm upgrade --install --wait backend \
 --namespace test \
