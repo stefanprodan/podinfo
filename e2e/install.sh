@@ -5,9 +5,6 @@ set -o errexit
 REPO_ROOT=$(git rev-parse --show-toplevel)
 export KUBECONFIG="$(kind get kubeconfig-path --name="kind")"
 
-echo ">>> Building container"
-docker build -t test/podinfo:latest .
-
 echo '>>> Loading image in Kind'
 kind load docker-image test/podinfo:latest
 

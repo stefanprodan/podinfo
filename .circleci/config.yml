@@ -4,11 +4,20 @@ jobs:
     machine: true
     steps:
       - checkout
-      - run: e2e/bootstrap.sh
-      - run: e2e/install.sh
-      - run: e2e/test.sh
+      - run:
+          name: Build podinfo container
+          command: e2e/build.sh
+      - run:
+          name: Start Kubernetes Kind cluster
+          command: e2e/bootstrap.sh
+      - run:
+          name: Install podinfo with Helm
+          command: e2e/install.sh
+      - run:
+          name: Run Helm tests
+          command: e2e/test.sh
 
-  build-container:
+  push-container:
     docker:
       - image: circleci/golang:1.12
     working_directory: ~/build
@@ -78,17 +87,16 @@ workflows:
   version: 2
   build-test:
     jobs:
-      - build-container
       - e2e-kubernetes
   release:
     jobs:
-      - build-container:
+      - push-binary:
           filters:
             branches:
               ignore: /.*/
             tags:
               ignore: /^chart.*/
-      - push-binary:
+      - push-container:
           filters:
             branches:
               ignore: /.*/
@@ -96,7 +104,7 @@ workflows:
               ignore: /^chart.*/
       - push-helm-charts:
           requires:
-            - build-container
+            - push-container
           filters:
             branches:
               ignore: /.*/
