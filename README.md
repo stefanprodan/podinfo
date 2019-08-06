@@ -1,6 +1,6 @@
 # podinfo
 
-[![Build Status](https://travis-ci.org/stefanprodan/podinfo.svg?branch=master)](https://travis-ci.org/stefanprodan/podinfo)
+[![CircleCI](https://circleci.com/gh/stefanprodan/podinfo.svg?style=svg)](https://circleci.com/gh/stefanprodan/podinfo)
 [![Docker Pulls](https://img.shields.io/docker/pulls/stefanprodan/podinfo)](https://hub.docker.com/r/stefanprodan/podinfo)
 
 Podinfo is a tiny web application made with Go 
@@ -16,7 +16,8 @@ Specifications:
 * Structured logging with zap 
 * 12-factor app with viper
 * Fault injection (random errors and latency)
-* Helm chart
+* Helm and Kustomize installers
+* End-to-End testing with Kubernetes Kind and Helm
 
 Web API:
 
@@ -41,6 +42,10 @@ Web API:
 * `GET /ws/echo` echos content via websockets `podcli ws ws://localhost:9898/ws/echo`
 * `GET /chunked/{seconds}` uses `transfer-encoding` type `chunked` to give a partial response and then waits for the specified period
 
+Web UI:
+
+![podinfo-ui](https://raw.githubusercontent.com/stefanprodan/podinfo/gh-pages/screens/podinfo-ui.png)
+
 ### Guides
 
 * [Automated canary deployments with Flagger and Istio](https://medium.com/google-cloud/automated-canary-deployments-with-flagger-and-istio-ac747827f9d1)
@@ -57,8 +62,11 @@ helm repo add sp https://stefanprodan.github.io/podinfo
 
 helm upgrade --install --wait frontend \
 --namespace test \
+--set replicaCount=2 \
 --set backend=http://backend-podinfo:9898/echo \
 sp/podinfo
+
+helm test frontend --cleanup
 
 helm upgrade --install --wait backend \
 --namespace test \

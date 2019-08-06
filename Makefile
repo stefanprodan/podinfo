@@ -6,18 +6,18 @@ TAG?=latest
 NAME:=podinfo
 DOCKER_REPOSITORY:=stefanprodan
 DOCKER_IMAGE_NAME:=$(DOCKER_REPOSITORY)/$(NAME)
-GITCOMMIT:=$(shell git describe --dirty --always)
+GIT_COMMIT:=$(shell git describe --dirty --always)
 VERSION:=$(shell grep 'VERSION' pkg/version/version.go | awk '{ print $$4 }' | tr -d '"')
 
 run:
-	GO111MODULE=on go run cmd/podinfo/*
+	GO111MODULE=on go run -ldflags "-s -w -X github.com/stefanprodan/podinfo/pkg/version.REVISION=$(GIT_COMMIT)" cmd/podinfo/* --level=debug
 
 test:
 	GO111MODULE=on go test -v -race ./...
 
 build:
-	GO111MODULE=on GIT_COMMIT=$$(git rev-list -1 HEAD) && GO111MODULE=on CGO_ENABLED=0 go build  -ldflags "-s -w -X github.com/stefanprodan/podinfo/pkg/version.REVISION=$${GIT_COMMIT}" -a -o ./bin/podinfo ./cmd/podinfo/*
-	GO111MODULE=on GIT_COMMIT=$$(git rev-list -1 HEAD) && GO111MODULE=on CGO_ENABLED=0 go build  -ldflags "-s -w -X github.com/stefanprodan/podinfo/pkg/version.REVISION=$${GIT_COMMIT}" -a -o ./bin/podcli ./cmd/podcli/*
+	GO111MODULE=on GIT_COMMIT=$$(git rev-list -1 HEAD) && GO111MODULE=on CGO_ENABLED=0 go build  -ldflags "-s -w -X github.com/stefanprodan/podinfo/pkg/version.REVISION=$(GIT_COMMIT)" -a -o ./bin/podinfo ./cmd/podinfo/*
+	GO111MODULE=on GIT_COMMIT=$$(git rev-list -1 HEAD) && GO111MODULE=on CGO_ENABLED=0 go build  -ldflags "-s -w -X github.com/stefanprodan/podinfo/pkg/version.REVISION=$(GIT_COMMIT)" -a -o ./bin/podcli ./cmd/podcli/*
 
 build-charts:
 	helm lint charts/*
@@ -25,6 +25,13 @@ build-charts:
 
 build-container:
 	docker build -t $(DOCKER_IMAGE_NAME):$(VERSION) .
+
+test-container:
+	@docker rm -f podinfo || true
+	@docker run -dp 9898:9898 --name=podinfo $(DOCKER_IMAGE_NAME):$(VERSION)
+	@docker ps
+	@TOKEN=$$(curl -sd 'test' localhost:9898/token | jq -r .token) && \
+	curl -sH "Authorization: Bearer $${TOKEN}" localhost:9898/token/validate | grep test
 
 push-container:
 	docker push $(DOCKER_IMAGE_NAME):$(VERSION)

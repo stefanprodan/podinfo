@@ -96,9 +96,9 @@
     },
     methods: {
         getInfo: function() {
-            var xhr = new XMLHttpRequest()
-            var self = this
-            xhr.open('GET', "api/info")
+          const xhr = new XMLHttpRequest();
+          let self = this;
+          xhr.open('GET', "api/info")
             xhr.onload = function () {
                 data = JSON.parse(xhr.responseText)
                 if (self.info.version) {
@@ -107,22 +107,18 @@
                     }
                 }
                 self.info = data
-                self.info.color = parseInt(data.version.split('.').reverse()[0], 10) === 0
-                  ? 'blue'
-                  : 'green'
+                self.info.color = 'cyan'
                 document.title = data.hostname
-
-                if ((self.calls % 2) === 0) {
-                  self.tlColor1 = parseInt(data.version.split('.').reverse()[0], 10) === 0
-                          ? 'blue'
-                          : 'green'
-                  self.tlColor2 = 'grey'
-                  self.tlName1 = data.version
-                } else {
-                self.tlColor1 = 'grey'
-                self.tlColor2 = parseInt(data.version.split('.').reverse()[0], 10) === 0
+                let verColor = (parseInt(data.version.split('.').reverse()[0], 10)  % 2 === 0)
                         ? 'blue'
                         : 'green'
+                if ((self.calls % 2) === 0) {
+                  self.tlColor2 += ' lighten-2'
+                  self.tlColor1 = verColor
+                  self.tlName1 = data.version
+                } else {
+                  self.tlColor1 += ' lighten-2'
+                self.tlColor2 = verColor
                 self.tlName2 = data.version
               }
               self.calls++
