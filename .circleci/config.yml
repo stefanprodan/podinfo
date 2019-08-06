@@ -9,7 +9,6 @@ jobs:
       - setup_remote_docker:
           docker_layer_caching: true
       - run: make build-container
-      - run: make test-container
       - run: |
           if [ -z "$CIRCLE_TAG" ]; then
             echo "Not a release, skipping container push";
