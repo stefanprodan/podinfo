@@ -1,8 +1,0 @@
-apiVersion: v1
-data:
-  basic_auth_password: ODM4NzIwYTUxMjgxNDlkMzJmMTIxYTViMWQ4N2FjMzUwNzAxZThmZQ==
-  basic_auth_test: YWRtaW4=
-kind: Secret
-metadata:
-  name: basic-auth
-type: Opaque
