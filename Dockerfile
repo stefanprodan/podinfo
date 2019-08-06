@@ -1,22 +1,22 @@
 FROM golang:1.12 as builder
 
-RUN mkdir -p /go/src/github.com/stefanprodan/k8s-podinfo/
+RUN mkdir -p /podinfo/
 
-WORKDIR /go/src/github.com/stefanprodan/k8s-podinfo
+WORKDIR /podinfo
 
 COPY . .
 
-RUN go test $(go list ./... | grep -v integration | grep -v /vendor/ | grep -v /template/) -cover
+RUN GOPROXY=https://proxy.golang.org go mod download
 
 RUN GIT_COMMIT=$(git rev-list -1 HEAD) && \
     CGO_ENABLED=0 GOOS=linux go build -ldflags "-s -w \
-    -X github.com/stefanprodan/k8s-podinfo/pkg/version.REVISION=${GIT_COMMIT}" \
-    -a -installsuffix cgo -o podinfo ./cmd/podinfo
+    -X github.com/stefanprodan/podinfo/pkg/version.REVISION=${GIT_COMMIT}" \
+    -a -o bin/podinfo cmd/podinfo/*
 
 RUN GIT_COMMIT=$(git rev-list -1 HEAD) && \
     CGO_ENABLED=0 GOOS=linux go build -ldflags "-s -w \
-    -X github.com/stefanprodan/k8s-podinfo/pkg/version.REVISION=${GIT_COMMIT}" \
-    -a -installsuffix cgo -o podcli ./cmd/podcli
+    -X github.com/stefanprodan/podinfo/pkg/version.REVISION=${GIT_COMMIT}" \
+    -a -o bin/podcli cmd/podcli/*
 
 FROM alpine:3.10
 
@@ -27,8 +27,8 @@ RUN addgroup -S app \
 
 WORKDIR /home/app
 
-COPY --from=builder /go/src/github.com/stefanprodan/k8s-podinfo/podinfo .
-COPY --from=builder /go/src/github.com/stefanprodan/k8s-podinfo/podcli /usr/local/bin/podcli
+COPY --from=builder /podinfo/bin/podinfo .
+COPY --from=builder /podinfo/bin/podcli /usr/local/bin/podcli
 COPY ./ui ./ui
 RUN chown -R app:app ./
 
