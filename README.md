@@ -42,6 +42,10 @@ Web API:
 * `GET /ws/echo` echos content via websockets `podcli ws ws://localhost:9898/ws/echo`
 * `GET /chunked/{seconds}` uses `transfer-encoding` type `chunked` to give a partial response and then waits for the specified period
 
+Web UI:
+
+![podinfo-ui](https://raw.githubusercontent.com/stefanprodan/podinfo/gh-pages/screens/podinfo-ui.png)
+
 ### Guides
 
 * [Automated canary deployments with Flagger and Istio](https://medium.com/google-cloud/automated-canary-deployments-with-flagger-and-istio-ac747827f9d1)
