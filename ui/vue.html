@@ -3,11 +3,11 @@
 <head>
   <title>{{.Title}}</title>
   <meta charset="utf-8">
-  <!-- <meta http-equiv="refresh" content="5"> -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <link rel="shortcut icon" type="image/png" href="https://kubernetes.io/images/favicon.png">
-  <link href='https://fonts.googleapis.com/css?family=Roboto:300,400,500,700|Material+Icons' rel="stylesheet">
-  <link href="https://unpkg.com/vuetify/dist/vuetify.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Material+Icons" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
   <style>
 	[v-cloak] {
   		display: none;
@@ -19,7 +19,7 @@
    <v-app dark>
     <v-content>
       <section>
-        <v-parallax src="#" height="600" :class="info.color">
+        <v-parallax id="parallax-hero" src="#" :class="info.color">
           <v-layout
             column
             align-center
@@ -41,6 +41,14 @@
               </v-badge>
               Ping
             </v-btn>
+
+            <template>
+              <v-timeline>
+                <v-timeline-item :color="tlColor1"><h3>${ tlName1 }</h3></v-timeline-item>
+                <v-timeline-item :color="tlColor2"><h3 slot="opposite">${ tlName2 }</h3></v-timeline-item>
+              </v-timeline>
+            </template>
+
           </v-layout>
         </v-parallax>
       </section>
@@ -49,7 +57,7 @@
           <v-flex xs12>
             <div class="white--text ml-3">
               Powered
-              by <a class="white--text" href="https://github.com/stefanprodan/k8s-podinfo" target="_blank">podinfo</a>
+              by <a class="white--text" href="https://github.com/stefanprodan/podinfo" target="_blank">podinfo</a>
               version ${ info.version } revision ${ info.revision }
             </div>
           </v-flex>
@@ -71,8 +79,16 @@
         info: {},
         timer: '',
         color: '',
-        pings: 0
+        pings: 0,
+        calls: 0,
+        tlName1: '',
+        tlColor1: 'grey',
+        tlName2: '',
+        tlColor2: 'grey',
     }
+    },
+    mounted: function() {
+       document.getElementById('parallax-hero').style.height = '100vh'
     },
     created: function() {
         this.getInfo();
@@ -85,11 +101,9 @@
             xhr.open('GET', "api/info")
             xhr.onload = function () {
                 data = JSON.parse(xhr.responseText)
-                // reload page when the version changes
                 if (self.info.version) {
                     if (self.info.version != data.version) {
                         console.log("New version", data.version)
-                        //window.location.reload()
                     }
                 }
                 self.info = data
@@ -97,6 +111,21 @@
                   ? 'blue'
                   : 'green'
                 document.title = data.hostname
+
+                if ((self.calls % 2) === 0) {
+                  self.tlColor1 = parseInt(data.version.split('.').reverse()[0], 10) === 0
+                          ? 'blue'
+                          : 'green'
+                  self.tlColor2 = 'grey'
+                  self.tlName1 = data.version
+                } else {
+                self.tlColor1 = 'grey'
+                self.tlColor2 = parseInt(data.version.split('.').reverse()[0], 10) === 0
+                        ? 'blue'
+                        : 'green'
+                self.tlName2 = data.version
+              }
+              self.calls++
             }
             xhr.onerror = function() {
                 console.log(xhr.responseText || 'Network request failed')
