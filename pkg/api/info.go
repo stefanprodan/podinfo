@@ -6,7 +6,7 @@ import (
 	"runtime"
 	"strconv"
 
-	"github.com/stefanprodan/k8s-podinfo/pkg/version"
+	"github.com/stefanprodan/podinfo/pkg/version"
 )
 
 func (s *Server) infoHandler(w http.ResponseWriter, r *http.Request) {

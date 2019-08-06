@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/stefanprodan/k8s-podinfo/pkg/version"
+	"github.com/stefanprodan/podinfo/pkg/version"
 	"go.uber.org/zap"
 )
 
