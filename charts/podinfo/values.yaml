@@ -12,7 +12,7 @@ faults:
 
 image:
   repository: quay.io/stefanprodan/podinfo
-  tag: 1.7.1
+  tag: 2.0.0-beta.1
   pullPolicy: IfNotPresent
 
 service:

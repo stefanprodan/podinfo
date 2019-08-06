@@ -1,38 +1,51 @@
-version: 2
+version: 2.1
 jobs:
-
-  build:
+  push-helm-charts:
     docker:
-      - image: errordeveloper/skaffold:66cc263ef18f107adce245b8fc622a8ea46385f2
+      - image: circleci/golang:1.12
     steps:
       - checkout
-      - setup_remote_docker: {docker_layer_caching: true}
       - run:
-          name: Run unit tests and build the image with Skaffold
-          command: skaffold build --profile=test
-
-  deploy:
-    docker:
-      - image: errordeveloper/skaffold:66cc263ef18f107adce245b8fc622a8ea46385f2
-    steps:
-      - checkout
-      - setup_remote_docker: {docker_layer_caching: true}
+          name: Install kubectl
+          command: sudo curl -L https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl && sudo chmod +x /usr/local/bin/kubectl
       - run:
-          name: Build and push the image to the registry with Skaffold
+          name: Install helm
+          command: sudo curl -L https://storage.googleapis.com/kubernetes-helm/helm-v2.14.2-linux-amd64.tar.gz | tar xz && sudo mv linux-amd64/helm /bin/helm && sudo rm -rf linux-amd64
+      - run:
+          name: Initialize helm
+          command:  helm init --client-only --kubeconfig=$HOME/.kube/kubeconfig
+      - run:
+          name: Lint charts
           command: |
-            if [[ -z "${CIRCLE_PULL_REQUEST}" ]] && [[ "${CIRCLE_PROJECT_USERNAME}" = "stefanprodan" ]] ; then
-              echo $REGISTRY_PASSWORD | docker login --username $REGISTRY_USERNAME --password-stdin
-              skaffold build --profile=production
+            helm lint ./charts/*
+      - run:
+          name: Package charts
+          command: |
+            mkdir $HOME/charts
+            helm package ./charts/* --destination $HOME/charts
+      - run:
+          name: Publish charts
+          command: |
+            if echo "${CIRCLE_TAG}" | grep -Eq "[0-9]+(\.[0-9]+)*(-[a-z]+)?$"; then
+              REPOSITORY="https://stefanprodan:${GITHUB_TOKEN}@github.com/stefanprodan/podinfo.git"
+              git config user.email stefanprodan@users.noreply.github.com
+              git config user.name stefanprodan
+              git remote set-url origin ${REPOSITORY}
+              git checkout gh-pages
+              mv -f $HOME/charts/*.tgz .
+              helm repo index . --url https://stefanprodan.github.io/podinfo
+              git add .
+              git commit -m "Publish Helm charts v${CIRCLE_TAG}"
+              git push origin gh-pages
             else
-              echo "Do not push image"
+              echo "Not a release! Skip charts publish"
             fi
 
-workflows:
-  version: 2
-  main:
+  release:
     jobs:
-      - build
-      - deploy:
-          requires: [build]
+      - push-helm-charts:
           filters:
-            branches: {only: [master]}
+            branches:
+              ignore: /.*/
+            tags:
+              ignore: /^chart.*/

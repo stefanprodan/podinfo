@@ -1,12 +1,10 @@
-# k8s-podinfo
+# podinfo
 
 Podinfo is a tiny web application made with Go 
 that showcases best practices of running microservices in Kubernetes.
 
 Specifications:
 
-* Release automation (Make/TravisCI/CircleCI/Quay.io/Google Cloud Container Builder/Skaffold/Weave Flux)
-* Multi-platform Docker image (amd64/arm/arm64/ppc64le/s390x)
 * Health checks (readiness and liveness)
 * Graceful shutdown on interrupt signals
 * File watcher for secrets and configmaps
@@ -42,11 +40,31 @@ Web API:
 
 ### Guides
 
-* [Deploy and upgrade with Helm](docs/1-deploy.md)
-* [Horizontal Pod Auto-scaling](docs/2-autoscaling.md)
-* [Monitoring and alerting with Prometheus](docs/3-monitoring.md)
-* [StatefulSets with local persistent volumes](docs/4-statefulsets.md)
-* [Expose Kubernetes services over HTTPS with Ngrok](docs/6-ngrok.md)
-* [A/B Testing with Ambassador API Gateway](docs/5-canary.md)
-* [Canary Deployments with Istio](docs/7-istio.md)
-* [GitHub Actions CI demo](docs/8-gh-actions.md)
+* [Automated canary deployments with Flagger and Istio](https://medium.com/google-cloud/automated-canary-deployments-with-flagger-and-istio-ac747827f9d1)
+* [Kubernetes autoscaling with Istio metrics](https://medium.com/google-cloud/kubernetes-autoscaling-with-istio-metrics-76442253a45a)
+* [Managing Helm releases the GitOps way](https://medium.com/google-cloud/managing-helm-releases-the-gitops-way-207a6ac6ff0e)
+* [Expose Kubernetes services over HTTPS with Ngrok](https://stefanprodan.com/2018/expose-kubernetes-services-over-http-with-ngrok/)
+
+### Install
+
+Helm:
+
+```bash
+helm repo add sp https://stefanprodan.github.io/podinfo
+
+helm upgrade --install --wait frontend \
+--namespace test \
+--set backend=http://backend-podinfo:9898/echo \
+sp/podinfo
+
+helm upgrade --install --wait backend \
+--namespace test \
+--set hpa.enabled=true \
+sp/podinfo
+```
+
+Kustomize:
+
+```bash
+kubectl apply -k github.com/stefanprodan/podinfo//kustomize
+```

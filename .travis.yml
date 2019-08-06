@@ -2,7 +2,7 @@ sudo: required
 language: go
 
 go:
-  - 1.11.x
+  - 1.12.x
 
 services:
   - docker
@@ -12,36 +12,16 @@ addons:
     packages:
       - docker-ce
 
-before_install:
-  - make dep
-#  - go get sigs.k8s.io/kind
-#  - curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
-#  - chmod +x ./kubectl
-#  - kind create cluster
-#  - export KUBECONFIG="$(kind get kubeconfig-path --name="1")"
-#  - ./kubectl cluster-info
-#  - docker build -t podinfo:test -f Dockerfile.ci .
-#  - ./kubectl run podinfo --image=podinfo:test --port=9898 --image-pull-policy=Never -- ./podinfo --port=9898
-#  - sleep 5
-#  - ./kubectl describe deployment podinfo
-#  - ./kubectl describe po
-
 script:
-  - make test
-  - make build docker-build
+  - make build-container
 
 after_success:
-  - if [ -z "$DOCKER_USER" ]; then
-      echo "PR build, skipping Docker Hub push";
+  - if [ -z "$TRAVIS_TAG" ]; then
+      echo "Not a release, skipping container push";
     else
       echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin;
-      make docker-push;
-    fi
-  - if [ -z "$QUAY_USER" ]; then
-      echo "PR build, skipping Quay push";
-    else
       echo $QUAY_PASS | docker login -u $QUAY_USER --password-stdin quay.io;
-      make quay-push;
+      make push-container;
     fi
 
 deploy:

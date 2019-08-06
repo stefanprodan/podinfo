@@ -19,3 +19,4 @@ release/
 build/
 gcloud/
 dist/
+bin/

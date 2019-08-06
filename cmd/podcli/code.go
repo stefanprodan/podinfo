@@ -65,7 +65,7 @@ func runCodeInit(cmd *cobra.Command, args []string) error {
 	tmpPath := "/tmp/k8s-podinfo"
 	versionName := fmt.Sprintf("k8s-podinfo-%s", codeVersion)
 
-	downloadURL := fmt.Sprintf("https://github.com/stefanprodan/k8s-podinfo/archive/%s.zip", codeVersion)
+	downloadURL := fmt.Sprintf("https://github.com/stefanprodan/podinfo/archive/%s.zip", codeVersion)
 	client := &getter.Client{
 		Src:  downloadURL,
 		Dst:  tmpPath,
@@ -80,7 +80,7 @@ func runCodeInit(cmd *cobra.Command, args []string) error {
 		os.Exit(1)
 	}
 
-	pkgFrom := "github.com/stefanprodan/k8s-podinfo"
+	pkgFrom := "github.com/stefanprodan/podinfo"
 	pkgTo := fmt.Sprintf("github.com/%s/%s", codeGitUser, codeProjectName)
 
 	if err := replaceImports(tmpPath, pkgFrom, pkgTo); err != nil {
@@ -123,7 +123,7 @@ func runCodeInit(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	projFrom := "stefanprodan/k8s-podinfo"
+	projFrom := "stefanprodan/podinfo"
 	projTo := fmt.Sprintf("%s/%s", codeGitUser, codeProjectName)
 
 	makeFiles := []string{"Makefile.gh", "Dockerfile.gh"}
