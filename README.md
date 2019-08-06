@@ -1,4 +1,4 @@
-# k8s-podinfo
+# podinfo
 
 Podinfo is a tiny web application made with Go 
 that showcases best practices of running microservices in Kubernetes.
@@ -38,13 +38,14 @@ Web API:
 * `GET /ws/echo` echos content via websockets `podcli ws ws://localhost:9898/ws/echo`
 * `GET /chunked/{seconds}` uses `transfer-encoding` type `chunked` to give a partial response and then waits for the specified period
 
+### Guides
+
+* [Automated canary deployments with Flagger and Istio](https://medium.com/google-cloud/automated-canary-deployments-with-flagger-and-istio-ac747827f9d1)
+* [Kubernetes autoscaling with Istio metrics](https://medium.com/google-cloud/kubernetes-autoscaling-with-istio-metrics-76442253a45a)
+* [Managing Helm releases the GitOps way](https://medium.com/google-cloud/managing-helm-releases-the-gitops-way-207a6ac6ff0e)
+* [Expose Kubernetes services over HTTPS with Ngrok](https://stefanprodan.com/2018/expose-kubernetes-services-over-http-with-ngrok/)
+
 ### Install
-
-Kustomize:
-
-```bash
-kubectl apply -k github.com/stefanprodan/podinfo//kustomize
-```
 
 Helm:
 
@@ -60,4 +61,10 @@ helm upgrade --install --wait backend \
 --namespace test \
 --set hpa.enabled=true \
 sp/podinfo
+```
+
+Kustomize:
+
+```bash
+kubectl apply -k github.com/stefanprodan/podinfo//kustomize
 ```
