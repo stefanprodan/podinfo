@@ -40,3 +40,7 @@ version-set:
 	sed -i '' "s/version: $$current/version: $$next/g" charts/podinfo/Chart.yaml && \
 	sed -i '' "s/podinfo:$$current/podinfo:$$next/g" kustomize/deployment.yaml && \
 	echo "Version $$next set in code, deployment, chart and kustomize"
+
+release:
+	git tag $(VERSION)
+	git push origin $(VERSION)

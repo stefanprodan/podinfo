@@ -40,7 +40,8 @@ jobs:
             else
               echo "Not a release! Skip charts publish"
             fi
-
+workflows:
+  version: 2
   release:
     jobs:
       - push-helm-charts:
