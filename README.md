@@ -16,7 +16,8 @@ Specifications:
 * Structured logging with zap 
 * 12-factor app with viper
 * Fault injection (random errors and latency)
-* Helm chart
+* Helm and Kustomize installers
+* End-to-End testing with Kubernetes Kind and Helm
 
 Web API:
 

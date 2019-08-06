@@ -1,5 +1,13 @@
 version: 2.1
 jobs:
+  e2e-kubernetes:
+    machine: true
+    steps:
+      - checkout
+      - run: e2e/bootstrap.sh
+      - run: e2e/install.sh
+      - run: e2e/test.sh
+
   build-container:
     docker:
       - image: circleci/golang:1.12
@@ -71,6 +79,7 @@ workflows:
   build-test:
     jobs:
       - build-container
+      - e2e-kubernetes
   release:
     jobs:
       - build-container:
