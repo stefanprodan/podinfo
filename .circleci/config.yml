@@ -1,5 +1,31 @@
 version: 2.1
 jobs:
+  build-container:
+    docker:
+      - image: circleci/golang:1.12
+    working_directory: ~/build
+    steps:
+      - checkout
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - run: make build-container
+      - run: make test-container
+      - run: |
+          if [ -z "$CIRCLE_TAG" ]; then
+            echo "Not a release, skipping container push";
+          else
+            echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin;
+            echo $QUAY_PASS | docker login -u $QUAY_USER --password-stdin quay.io;
+            make push-container;
+          fi
+
+  push-binary:
+    docker:
+      - image: circleci/golang:1.12
+    steps:
+      - checkout
+      - run: curl -sL https://git.io/goreleaser | bash
+
   push-helm-charts:
     docker:
       - image: circleci/golang:1.12
@@ -40,11 +66,29 @@ jobs:
             else
               echo "Not a release! Skip charts publish"
             fi
+
 workflows:
   version: 2
+  build-test:
+    jobs:
+      - build-container
   release:
     jobs:
+      - build-container:
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              ignore: /^chart.*/
+      - push-binary:
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              ignore: /^chart.*/
       - push-helm-charts:
+          requires:
+            - build-container
           filters:
             branches:
               ignore: /.*/
