@@ -5,8 +5,6 @@ that showcases best practices of running microservices in Kubernetes.
 
 Specifications:
 
-* Release automation (Make/TravisCI/CircleCI/Quay.io/Google Cloud Container Builder/Skaffold/Weave Flux)
-* Multi-platform Docker image (amd64/arm/arm64/ppc64le/s390x)
 * Health checks (readiness and liveness)
 * Graceful shutdown on interrupt signals
 * File watcher for secrets and configmaps
@@ -40,13 +38,26 @@ Web API:
 * `GET /ws/echo` echos content via websockets `podcli ws ws://localhost:9898/ws/echo`
 * `GET /chunked/{seconds}` uses `transfer-encoding` type `chunked` to give a partial response and then waits for the specified period
 
-### Guides
+### Install
 
-* [Deploy and upgrade with Helm](docs/1-deploy.md)
-* [Horizontal Pod Auto-scaling](docs/2-autoscaling.md)
-* [Monitoring and alerting with Prometheus](docs/3-monitoring.md)
-* [StatefulSets with local persistent volumes](docs/4-statefulsets.md)
-* [Expose Kubernetes services over HTTPS with Ngrok](docs/6-ngrok.md)
-* [A/B Testing with Ambassador API Gateway](docs/5-canary.md)
-* [Canary Deployments with Istio](docs/7-istio.md)
-* [GitHub Actions CI demo](docs/8-gh-actions.md)
+Kustomize:
+
+```bash
+kubectl apply -k github.com/stefanprodan/podinfo//kustomize
+```
+
+Helm:
+
+```bash
+helm repo add sp https://stefanprodan.github.io/podinfo
+
+helm upgrade --install --wait frontend \
+--namespace test \
+--set backend=http://backend-podinfo:9898/echo \
+sp/podinfo
+
+helm upgrade --install --wait backend \
+--namespace test \
+--set hpa.enabled=true \
+sp/podinfo
+```
