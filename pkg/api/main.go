@@ -12,6 +12,7 @@ package api
 
 // @host localhost:9898
 // @BasePath /
+// @schemes http https
 
 type ArrayResponse []string
 type MapResponse map[string]string
