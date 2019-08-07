@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"github.com/swaggo/swag"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -13,7 +14,9 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/viper"
+	_ "github.com/stefanprodan/podinfo/pkg/api/docs"
 	"github.com/stefanprodan/podinfo/pkg/fscache"
+	"github.com/swaggo/http-swagger"
 	"go.uber.org/zap"
 )
 
@@ -83,6 +86,19 @@ func (s *Server) registerHandlers() {
 	s.router.HandleFunc("/ws/echo", s.echoWsHandler)
 	s.router.HandleFunc("/chunked", s.chunkedHandler)
 	s.router.HandleFunc("/chunked/{wait:[0-9]+}", s.chunkedHandler)
+	s.router.PathPrefix("/swagger/").Handler(httpSwagger.Handler(
+		httpSwagger.URL("/swagger/doc.json"),
+	))
+	s.router.PathPrefix("/swagger/").Handler(httpSwagger.Handler(
+		httpSwagger.URL("/swagger/doc.json"),
+	))
+	s.router.HandleFunc("/swagger.json", func(w http.ResponseWriter, r *http.Request) {
+		doc, err := swag.ReadDoc()
+		if err != nil {
+			s.logger.Error("swagger error", zap.Error(err), zap.String("path", "/swagger.json"))
+		}
+		w.Write([]byte(doc))
+	})
 }
 
 func (s *Server) registerMiddlewares() {

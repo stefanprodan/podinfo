@@ -51,3 +51,7 @@ version-set:
 release:
 	git tag $(VERSION)
 	git push origin $(VERSION)
+
+swagger:
+	GO111MODULE=on go get github.com/swaggo/swag/cmd/swag
+	cd pkg/api && $$(go env GOPATH)/bin/swag init

@@ -9,6 +9,14 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// Chunked godoc
+// @Summary Chunked transfer encoding
+// @Description uses transfer-encoding type chunked to give a partial response and then waits for the specified period
+// @Tags HTTP API
+// @Accept json
+// @Produce json
+// @Router /chunked/{seconds} [get]
+// @Success 200 {object} api.MapResponse
 func (s *Server) chunkedHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 

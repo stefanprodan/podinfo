@@ -6,6 +6,13 @@ import (
 	"path"
 )
 
+// Index godoc
+// @Summary Index
+// @Description renders podinfo UI
+// @Tags HTTP API
+// @Produce html
+// @Router / [get]
+// @Success 200 {string} string "OK"
 func (s *Server) indexHandler(w http.ResponseWriter, r *http.Request) {
 	tmpl, err := template.New("vue.html").ParseFiles(path.Join(s.config.UIPath, "vue.html"))
 	if err != nil {

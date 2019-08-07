@@ -11,6 +11,14 @@ import (
 
 var wsCon = websocket.Upgrader{}
 
+// EchoWS godoc
+// @Summary Echo over websockets
+// @Description echos content via websockets
+// @Tags HTTP API
+// @Accept json
+// @Produce json
+// @Router /ws/echo [post]
+// @Success 202 {object} api.MapResponse
 // Test: go run ./cmd/podcli/* ws localhost:9898/ws/echo
 func (s *Server) echoWsHandler(w http.ResponseWriter, r *http.Request) {
 	c, err := wsCon.Upgrade(w, r, nil)
