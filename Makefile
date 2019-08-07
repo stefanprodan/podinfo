@@ -58,4 +58,4 @@ release:
 
 swagger:
 	GO111MODULE=on go get github.com/swaggo/swag/cmd/swag
-	cd pkg/api && $$(go env GOPATH)/bin/swag init
+	cd pkg/api && $$(go env GOPATH)/bin/swag init -g server.go
