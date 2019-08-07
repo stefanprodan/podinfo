@@ -1,0 +1,362 @@
+basePath: /
+definitions:
+  api.ArrayResponse:
+    items: {}
+    type: array
+  api.MapResponse:
+    additionalProperties: {}
+    type: object
+  api.RuntimeResponse:
+    properties:
+      color:
+        type: string
+      goarch:
+        type: string
+      goos:
+        type: string
+      hostname:
+        type: string
+      message:
+        type: string
+      num_cpu:
+        type: string
+      num_goroutine:
+        type: string
+      revision:
+        type: string
+      runtime:
+        type: string
+      version:
+        type: string
+    type: object
+  api.TokenResponse:
+    properties:
+      expires_at:
+        type: string
+      token:
+        type: string
+    type: object
+  api.TokenValidationResponse:
+    properties:
+      expires_at:
+        type: string
+      token_name:
+        type: string
+    type: object
+host: localhost:9898
+info:
+  contact:
+    name: Source Code
+    url: https://github.com/stefanprodan/podinfo
+  description: Go microservice template for Kubernetes.
+  license:
+    name: MIT License
+    url: https://github.com/stefanprodan/podinfo/blob/master/LICENSE
+  title: Podinfo API
+  version: "2.0"
+paths:
+  /:
+    get:
+      description: renders podinfo UI
+      produces:
+      - text/html
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: Index
+      tags:
+      - HTTP API
+  /api/echo:
+    post:
+      consumes:
+      - application/json
+      description: forwards the call to the backend service and echos the posted content
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/api.MapResponse'
+            type: object
+      summary: Echo
+      tags:
+      - HTTP API
+  /api/info:
+    get:
+      consumes:
+      - application/json
+      description: returns the runtime information
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.RuntimeResponse'
+            type: object
+      summary: Runtime information
+      tags:
+      - HTTP API
+  /chunked/{seconds}:
+    get:
+      consumes:
+      - application/json
+      description: uses transfer-encoding type chunked to give a partial response
+        and then waits for the specified period
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.MapResponse'
+            type: object
+      summary: Chunked transfer encoding
+      tags:
+      - HTTP API
+  /delay/{seconds}:
+    get:
+      consumes:
+      - application/json
+      description: waits for the specified period
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.MapResponse'
+            type: object
+      summary: Delay
+      tags:
+      - HTTP API
+  /env:
+    get:
+      consumes:
+      - application/json
+      description: returns the environment variables as a JSON array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.ArrayResponse'
+            type: object
+      summary: Environment
+      tags:
+      - HTTP API
+  /headers:
+    get:
+      consumes:
+      - application/json
+      description: returns a JSON array with the request HTTP headers
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.ArrayResponse'
+            type: object
+      summary: Headers
+      tags:
+      - HTTP API
+  /healthz:
+    get:
+      consumes:
+      - application/json
+      description: used by Kubernetes liveness probe
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: Liveness check
+      tags:
+      - Kubernetes
+  /metrics:
+    get:
+      description: returns HTTP requests duration and Go runtime metrics
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: Prometheus metrics
+      tags:
+      - Kubernetes
+  /panic:
+    get:
+      description: crashes the process with exit code 255
+      summary: Panic
+      tags:
+      - HTTP API
+  /readyz:
+    get:
+      consumes:
+      - application/json
+      description: used by Kubernetes readiness probe
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: Readiness check
+      tags:
+      - Kubernetes
+  /readyz/disable:
+    post:
+      consumes:
+      - application/json
+      description: signals the Kubernetes LB to stop sending requests to this instance
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: OK
+          schema:
+            type: string
+      summary: Disable ready state
+      tags:
+      - Kubernetes
+  /readyz/enable:
+    post:
+      consumes:
+      - application/json
+      description: signals the Kubernetes LB that this instance is ready to receive
+        traffic
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: OK
+          schema:
+            type: string
+      summary: Enable ready state
+      tags:
+      - Kubernetes
+  /status/{code}:
+    get:
+      consumes:
+      - application/json
+      description: sets the response status code to the specified code
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.MapResponse'
+            type: object
+      summary: Status code
+      tags:
+      - HTTP API
+  /store:
+    post:
+      consumes:
+      - application/json
+      description: writes the posted content to disk at /data/hash and returns the
+        SHA1 hash of the content
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.MapResponse'
+            type: object
+      summary: Upload file
+      tags:
+      - HTTP API
+  /store/{hash}:
+    get:
+      consumes:
+      - application/json
+      description: returns the content of the file /data/hash if exists
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: file
+          schema:
+            type: string
+      summary: Download file
+      tags:
+      - HTTP API
+  /token:
+    post:
+      consumes:
+      - application/json
+      description: issues a JWT token valid for one minute
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.TokenResponse'
+            type: object
+      summary: Generate JWT token
+      tags:
+      - HTTP API
+  /token/validate:
+    post:
+      consumes:
+      - application/json
+      description: validates the JWT token
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.TokenValidationResponse'
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+      summary: Validate JWT token
+      tags:
+      - HTTP API
+  /version:
+    get:
+      description: returns podinfo version and git commit hash
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.MapResponse'
+            type: object
+      summary: Version
+      tags:
+      - HTTP API
+  /ws/echo:
+    post:
+      consumes:
+      - application/json
+      description: echos content via websockets
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/api.MapResponse'
+            type: object
+      summary: Echo over websockets
+      tags:
+      - HTTP API
+swagger: "2.0"

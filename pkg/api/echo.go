@@ -10,6 +10,14 @@ import (
 	"go.uber.org/zap"
 )
 
+// Echo godoc
+// @Summary Echo
+// @Description forwards the call to the backend service and echos the posted content
+// @Tags HTTP API
+// @Accept json
+// @Produce json
+// @Router /api/echo [post]
+// @Success 202 {object} api.MapResponse
 func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {

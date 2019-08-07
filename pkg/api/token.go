@@ -17,6 +17,14 @@ type jwtCustomClaims struct {
 	jwt.StandardClaims
 }
 
+// Token godoc
+// @Summary Generate JWT token
+// @Description issues a JWT token valid for one minute
+// @Tags HTTP API
+// @Accept json
+// @Produce json
+// @Router /token [post]
+// @Success 200 {object} api.TokenResponse
 func (s *Server) tokenGenerateHandler(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -46,10 +54,7 @@ func (s *Server) tokenGenerateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var result = struct {
-		Token     string    `json:"token"`
-		ExpiresAt time.Time `json:"expires_at"`
-	}{
+	var result = TokenResponse{
 		Token:     t,
 		ExpiresAt: time.Unix(claims.StandardClaims.ExpiresAt, 0),
 	}
@@ -57,6 +62,15 @@ func (s *Server) tokenGenerateHandler(w http.ResponseWriter, r *http.Request) {
 	s.JSONResponse(w, r, result)
 }
 
+// TokenValidate godoc
+// @Summary Validate JWT token
+// @Description validates the JWT token
+// @Tags HTTP API
+// @Accept json
+// @Produce json
+// @Router /token/validate [post]
+// @Success 200 {object} api.TokenValidationResponse
+// @Failure 401 {string} string "Unauthorized"
 // Get: JWT=$(curl -s -d 'test' localhost:9898/token | jq -r .token)
 // Post: curl -H "Authorization: Bearer ${JWT}" localhost:9898/token/validate
 func (s *Server) tokenValidateHandler(w http.ResponseWriter, r *http.Request) {
@@ -87,10 +101,7 @@ func (s *Server) tokenValidateHandler(w http.ResponseWriter, r *http.Request) {
 		if claims.StandardClaims.Issuer != "podinfo" {
 			s.ErrorResponse(w, r, "invalid issuer", http.StatusUnauthorized)
 		} else {
-			var result = struct {
-				TokenName string    `json:"token_name"`
-				ExpiresAt time.Time `json:"expires_at"`
-			}{
+			var result = TokenValidationResponse{
 				TokenName: claims.Name,
 				ExpiresAt: time.Unix(claims.StandardClaims.ExpiresAt, 0),
 			}
@@ -99,4 +110,14 @@ func (s *Server) tokenValidateHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		s.ErrorResponse(w, r, "Invalid authorization token", http.StatusUnauthorized)
 	}
+}
+
+type TokenResponse struct {
+	Token     string    `json:"token"`
+	ExpiresAt time.Time `json:"expires_at"`
+}
+
+type TokenValidationResponse struct {
+	TokenName string    `json:"token_name"`
+	ExpiresAt time.Time `json:"expires_at"`
 }

@@ -11,6 +11,14 @@ import (
 	"go.uber.org/zap"
 )
 
+// Store godoc
+// @Summary Upload file
+// @Description writes the posted content to disk at /data/hash and returns the SHA1 hash of the content
+// @Tags HTTP API
+// @Accept json
+// @Produce json
+// @Router /store [post]
+// @Success 200 {object} api.MapResponse
 func (s *Server) storeWriteHandler(w http.ResponseWriter, r *http.Request) {
 
 	body, err := ioutil.ReadAll(r.Body)
@@ -29,6 +37,14 @@ func (s *Server) storeWriteHandler(w http.ResponseWriter, r *http.Request) {
 	s.JSONResponseCode(w, r, map[string]string{"hash": hash}, http.StatusAccepted)
 }
 
+// Store godoc
+// @Summary Download file
+// @Description returns the content of the file /data/hash if exists
+// @Tags HTTP API
+// @Accept json
+// @Produce plain
+// @Router /store/{hash} [get]
+// @Success 200 {string} string "file"
 func (s *Server) storeReadHandler(w http.ResponseWriter, r *http.Request) {
 	hash := mux.Vars(r)["hash"]
 	content, err := ioutil.ReadFile(path.Join(s.config.DataPath, hash))

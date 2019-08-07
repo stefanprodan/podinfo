@@ -7,6 +7,14 @@ import (
 	"strconv"
 )
 
+// Status godoc
+// @Summary Status code
+// @Description sets the response status code to the specified code
+// @Tags HTTP API
+// @Accept json
+// @Produce json
+// @Router /status/{code} [get]
+// @Success 200 {object} api.MapResponse
 func (s *Server) statusHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
