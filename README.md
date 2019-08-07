@@ -16,6 +16,7 @@ Specifications:
 * Structured logging with zap 
 * 12-factor app with viper
 * Fault injection (random errors and latency)
+* Swagger docs
 * Helm and Kustomize installers
 * End-to-End testing with Kubernetes Kind and Helm
 
@@ -41,10 +42,13 @@ Web API:
 * `GET /store/{hash}` returns the content of the file /data/hash if exists
 * `GET /ws/echo` echos content via websockets `podcli ws ws://localhost:9898/ws/echo`
 * `GET /chunked/{seconds}` uses `transfer-encoding` type `chunked` to give a partial response and then waits for the specified period
+* `GET /swagger.json` returns the API Swagger docs, used for Linkerd service profiling and Gloo routes discovery
 
 Web UI:
 
 ![podinfo-ui](https://raw.githubusercontent.com/stefanprodan/podinfo/gh-pages/screens/podinfo-ui.png)
+
+To access the Swagger UI open `<podinfo-host>/swagger/index.html` in a browser.
 
 ### Guides
 
