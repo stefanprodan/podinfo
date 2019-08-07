@@ -2,12 +2,16 @@ package api
 
 // @title Podinfo API
 // @version 2.0
+// @description Go microservice template for Kubernetes.
 
-// @contact.name API Support
+// @contact.name Source Code
 // @contact.url https://github.com/stefanprodan/podinfo
 
-// @license.name Apache 2.0
-// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
+// @license.name MIT License
+// @license.url https://github.com/stefanprodan/podinfo/blob/master/LICENSE
+
+// @host localhost:9898
+// @BasePath /
 
 type ArrayResponse []string
 type MapResponse map[string]string

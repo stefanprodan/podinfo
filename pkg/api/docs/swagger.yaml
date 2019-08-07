@@ -1,4 +1,4 @@
-basePath: '{{.BasePath}}'
+basePath: /
 definitions:
   api.ArrayResponse:
     items: {}
@@ -43,15 +43,15 @@ definitions:
       token_name:
         type: string
     type: object
-host: '{{.Host}}'
+host: localhost:9898
 info:
   contact:
-    name: API Support
+    name: Source Code
     url: https://github.com/stefanprodan/podinfo
-  description: '{{.Description}}'
+  description: Go microservice template for Kubernetes.
   license:
-    name: Apache 2.0
-    url: http://www.apache.org/licenses/LICENSE-2.0.html
+    name: MIT License
+    url: https://github.com/stefanprodan/podinfo/blob/master/LICENSE
   title: Podinfo API
   version: "2.0"
 paths:
