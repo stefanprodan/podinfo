@@ -83,3 +83,9 @@ Kustomize:
 ```bash
 kubectl apply -k github.com/stefanprodan/podinfo//kustomize
 ```
+
+Docker:
+
+```bash
+docker run -dp 9898:9898 stefanprodan/podinfo
+```
