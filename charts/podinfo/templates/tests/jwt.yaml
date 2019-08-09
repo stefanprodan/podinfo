@@ -24,12 +24,12 @@ spec:
   volumes:
   - name: scripts
     configMap:
-      name: {{ template "podinfo.fullname" . }}-storage-cfg
+      name: {{ template "podinfo.fullname" . }}-test-cfg
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ template "podinfo.fullname" . }}-storage-cfg
+  name: {{ template "podinfo.fullname" . }}-test-cfg
   labels:
     heritage: {{ .Release.Service }}
     release: {{ .Release.Name }}
