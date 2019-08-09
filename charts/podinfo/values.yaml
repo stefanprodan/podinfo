@@ -11,7 +11,7 @@ faults:
   error: false
 
 image:
-  repository: quay.io/stefanprodan/podinfo
+  repository: stefanprodan/podinfo
   tag: 2.1.0
   pullPolicy: IfNotPresent
 

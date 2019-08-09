@@ -2,4 +2,3 @@ resources:
   - hpa.yaml
   - deployment.yaml
   - service.yaml
-
