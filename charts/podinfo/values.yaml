@@ -12,7 +12,7 @@ faults:
 
 image:
   repository: stefanprodan/podinfo
-  tag: 2.1.2
+  tag: 2.1.3
   pullPolicy: IfNotPresent
 
 service:
@@ -32,6 +32,13 @@ hpa:
   memory:
   # average http requests per second per pod (k8s-prometheus-adapter)
   requests:
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  enabled: false
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name:
 
 ingress:
   enabled: false
