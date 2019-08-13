@@ -57,6 +57,7 @@ Parameter | Description | Default
 `resources.requests/memory` | pod memory request | `16Mi`
 `resources.limits/cpu` | pod CPU limit | None
 `resources.limits/memory` | pod memory limit | None
+`service.enabled` | create Kubernetes service (should be disabled when using Flagger) | `true`
 `service.externalPort` | external port for the service | `9898`
 `service.internalPort` | internal port for the service | `9898`
 `service.nodePort` | node port for the service | `31198`

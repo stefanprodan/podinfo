@@ -1,3 +1,4 @@
+{{- if .Values.hpa.enabled -}}
 apiVersion: v1
 kind: Service
 metadata:
@@ -20,3 +21,4 @@ spec:
   selector:
     app: {{ template "podinfo.name" . }}
     release: {{ .Release.Name }}
+{{- end }}
