@@ -26,6 +26,9 @@ spec:
         prometheus.io/scrape: 'true'
     spec:
       terminationGracePeriodSeconds: 30
+      {{- if .Values.serviceAccount.create }}
+      serviceAccountName: {{ template "podinfo.serviceAccountName" . }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"

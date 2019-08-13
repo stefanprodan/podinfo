@@ -33,6 +33,13 @@ hpa:
   # average http requests per second per pod (k8s-prometheus-adapter)
   requests:
 
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: false
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name:
+
 ingress:
   enabled: false
   annotations: {}

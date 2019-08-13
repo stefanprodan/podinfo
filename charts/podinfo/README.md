@@ -63,6 +63,8 @@ Parameter | Description | Default
 `service.nodePort` | node port for the service | `31198`
 `service.type` | type of service | `ClusterIP`
 `tolerations` | list of node taints to tolerate | `[]`
+`serviceAccount.create` | specifies whether a service account should be created | `false`
+`serviceAccount.name` | the name of the service account to use, if not set and create is true, a name is generated using the fullname template | None
 
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`. For example,
 
