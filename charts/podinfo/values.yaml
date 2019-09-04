@@ -2,7 +2,6 @@
 
 replicaCount: 1
 logLevel: info
-color: blue
 backend: #http://backend-podinfo:9898/echo
 message: #UI greetings
 
@@ -18,8 +17,11 @@ image:
 service:
   enabled: true
   type: ClusterIP
+  metricsPort: 9797
+  httpPort: 9898
   externalPort: 9898
-  containerPort: 9898
+  grpcPort: 9999
+  grpcService: podinfo
   nodePort: 31198
 
 # metrics-server add-on required

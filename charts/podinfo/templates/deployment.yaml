@@ -8,7 +8,9 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
+  {{- if and (not .Values.hpa.enabled) (gt .Values.replicaCount 1.0) }}
   replicas: {{ .Values.replicaCount }}
+  {{- end }}
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -23,10 +25,11 @@ spec:
         app: {{ template "podinfo.name" . }}
         release: {{ .Release.Name }}
       annotations:
-        prometheus.io/scrape: 'true'
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "{{ .Values.service.httpPort }}"
     spec:
       terminationGracePeriodSeconds: 30
-      {{- if .Values.serviceAccount.create }}
+      {{- if .Values.serviceAccount.enabled }}
       serviceAccountName: {{ template "podinfo.serviceAccountName" . }}
       {{- end }}
       containers:
@@ -35,13 +38,20 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command:
             - ./podinfo
-            - --port={{ .Values.service.containerPort }}
+            - --port={{ .Values.service.httpPort | default 9898 }}
+            {{- if .Values.service.metricsPort }}
+            - --port-metrics={{ .Values.service.metricsPort }}
+            {{- end }}
+            {{- if .Values.service.grpcPort }}
+            - --grpc-port={{ .Values.service.grpcPort }}
+            {{- end }}
+            {{- if .Values.service.grpcService }}
+            - --grpc-service-name={{ .Values.service.grpcService }}
+            {{- end }}
             - --level={{ .Values.logLevel }}
             - --random-delay={{ .Values.faults.delay }}
             - --random-error={{ .Values.faults.error }}
           env:
-          - name: PODINFO_UI_COLOR
-            value: {{ .Values.color }}
           {{- if .Values.message }}
           - name: PODINFO_UI_MESSAGE
             value: {{ .Values.message }}
@@ -52,15 +62,25 @@ spec:
           {{- end }}
           ports:
             - name: http
-              containerPort: {{ .Values.service.containerPort }}
+              containerPort: {{ .Values.service.httpPort | default 9898 }}
               protocol: TCP
+            {{- if .Values.service.metricsPort }}
+            - name: http-metrics
+              containerPort: {{ .Values.service.metricsPort }}
+              protocol: TCP
+            {{- end }}
+            {{- if .Values.service.grpcPort }}
+            - name: grpc
+              containerPort: {{ .Values.service.grpcPort }}
+              protocol: TCP
+            {{- end }}
           livenessProbe:
             exec:
               command:
               - podcli
               - check
               - http
-              - localhost:{{ .Values.service.containerPort }}/healthz
+              - localhost:{{ .Values.service.httpPort | default 9898 }}/healthz
             initialDelaySeconds: 1
             timeoutSeconds: 5
           readinessProbe:
@@ -69,7 +89,7 @@ spec:
               - podcli
               - check
               - http
-              - localhost:{{ .Values.service.containerPort }}/readyz
+              - localhost:{{ .Values.service.httpPort | default 9898 }}/readyz
             initialDelaySeconds: 1
             timeoutSeconds: 5
           volumeMounts:
