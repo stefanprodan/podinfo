@@ -16,7 +16,7 @@ type Server struct {
 }
 
 type Config struct {
-	Port        string `mapstructure:"grpc-port"`
+	Port        int    `mapstructure:"grpc-port"`
 	ServiceName string `mapstructure:"grpc-service-name"`
 }
 
@@ -30,9 +30,9 @@ func NewServer(config *Config, logger *zap.Logger) (*Server, error) {
 }
 
 func (s *Server) ListenAndServe() {
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%s", s.config.Port))
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%v", s.config.Port))
 	if err != nil {
-		s.logger.Fatal("failed to listen", zap.String("port", s.config.Port))
+		s.logger.Fatal("failed to listen", zap.Int("port", s.config.Port))
 	}
 
 	srv := grpc.NewServer()

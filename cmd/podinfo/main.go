@@ -2,26 +2,31 @@ package main
 
 import (
 	"fmt"
-	"github.com/spf13/pflag"
-	"github.com/spf13/viper"
-	"github.com/stefanprodan/podinfo/pkg/api"
-	"github.com/stefanprodan/podinfo/pkg/signals"
-	"github.com/stefanprodan/podinfo/pkg/version"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+
+	"github.com/stefanprodan/podinfo/pkg/api"
+	"github.com/stefanprodan/podinfo/pkg/grpc"
+	"github.com/stefanprodan/podinfo/pkg/signals"
+	"github.com/stefanprodan/podinfo/pkg/version"
 )
 
 func main() {
 	// flags definition
 	fs := pflag.NewFlagSet("default", pflag.ContinueOnError)
-	fs.Int("port", 9898, "port")
+	fs.Int("port", 9898, "HTTP port")
 	fs.Int("port-metrics", 0, "metrics port")
+	fs.Int("grpc-port", 0, "gRPC port")
+	fs.String("grpc-service-name", "podinfo", "gPRC service name")
 	fs.String("level", "info", "log level debug, info, warn, error, flat or panic")
 	fs.String("backend-url", "", "backend service URL")
 	fs.Duration("http-client-timeout", 2*time.Minute, "client timeout duration")
@@ -88,6 +93,18 @@ func main() {
 	if _, err := strconv.Atoi(viper.GetString("port")); err != nil {
 		port, _ := fs.GetInt("port")
 		viper.Set("port", strconv.Itoa(port))
+	}
+
+	// load gRPC server config
+	var grpcCfg grpc.Config
+	if err := viper.Unmarshal(&grpcCfg); err != nil {
+		logger.Panic("config unmarshal failed", zap.Error(err))
+	}
+
+	// start gRPC server
+	if grpcCfg.Port > 0 {
+		grpcSrv, _ := grpc.NewServer(&grpcCfg, logger)
+		go grpcSrv.ListenAndServe()
 	}
 
 	// load HTTP server config
