@@ -3,7 +3,7 @@
 set -o errexit
 
 REPO_ROOT=$(git rev-parse --show-toplevel)
-KIND_VERSION=v0.4.0
+KIND_VERSION=v0.5.1
 
 if [[ "$1" ]]; then
   KIND_VERSION=$1

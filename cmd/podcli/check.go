@@ -14,14 +14,19 @@ import (
 
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/health/grpc_health_v1"
+	"google.golang.org/grpc/status"
 )
 
 var (
-	retryCount int
-	retryDelay time.Duration
-	method     string
-	body       string
-	timeout    time.Duration
+	retryCount      int
+	retryDelay      time.Duration
+	method          string
+	body            string
+	timeout         time.Duration
+	grpcServiceName string
 )
 
 var checkCmd = &cobra.Command{
@@ -51,6 +56,13 @@ var checkCertCmd = &cobra.Command{
 	RunE:    runCheckCert,
 }
 
+var checkgRPCCmd = &cobra.Command{
+	Use:     `grpc [address]`,
+	Short:   "gRPC health check",
+	Example: `  check grpc localhost:8080 --service=podinfo --retry=1 --delay=2s --timeout=2s`,
+	RunE:    runCheckgPRC,
+}
+
 func init() {
 	checkUrlCmd.Flags().StringVar(&method, "method", "GET", "HTTP method")
 	checkUrlCmd.Flags().StringVar(&body, "body", "", "HTTP POST/PUT content")
@@ -63,6 +75,12 @@ func init() {
 	checkTcpCmd.Flags().DurationVar(&retryDelay, "delay", 1*time.Second, "wait duration between retries")
 	checkTcpCmd.Flags().DurationVar(&timeout, "timeout", 5*time.Second, "timeout")
 	checkCmd.AddCommand(checkTcpCmd)
+
+	checkgRPCCmd.Flags().IntVar(&retryCount, "retry", 0, "times to retry the TCP check")
+	checkgRPCCmd.Flags().DurationVar(&retryDelay, "delay", 1*time.Second, "wait duration between retries")
+	checkgRPCCmd.Flags().DurationVar(&timeout, "timeout", 5*time.Second, "timeout")
+	checkgRPCCmd.Flags().StringVar(&grpcServiceName, "service", "", "gRPC service name")
+	checkCmd.AddCommand(checkgRPCCmd)
 
 	checkCmd.AddCommand(checkCertCmd)
 
@@ -242,4 +260,54 @@ func fmtContentLength(b int64) string {
 		exp++
 	}
 	return fmt.Sprintf("%.1f %cB", float64(b)/float64(div), "kMGTPE"[exp])
+}
+
+func runCheckgPRC(cmd *cobra.Command, args []string) error {
+	if retryCount < 0 {
+		return fmt.Errorf("--retry is required")
+	}
+	if len(args) < 1 {
+		return fmt.Errorf("address is required! example: check grpc localhost:8080")
+	}
+	address := args[0]
+
+	for n := 0; n <= retryCount; n++ {
+		if n != 1 {
+			time.Sleep(retryDelay)
+		}
+
+		conn, err := grpc.Dial(address, grpc.WithInsecure())
+		if err != nil {
+			logger.Info("check failed",
+				zap.String("address", address),
+				zap.Error(err))
+			continue
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		resp, err := grpc_health_v1.NewHealthClient(conn).Check(ctx, &grpc_health_v1.HealthCheckRequest{
+			Service: grpcServiceName,
+		})
+		cancel()
+
+		if err != nil {
+			if stat, ok := status.FromError(err); ok && stat.Code() == codes.Unimplemented {
+				logger.Info("gPRC health protocol not implemented")
+				os.Exit(1)
+			} else {
+				logger.Info("check failed",
+					zap.String("address", address),
+					zap.Error(err))
+			}
+			continue
+		}
+
+		conn.Close()
+		logger.Info("check succeed",
+			zap.String("status", resp.GetStatus().String()))
+		os.Exit(0)
+
+	}
+
+	os.Exit(1)
+	return nil
 }
