@@ -21,11 +21,12 @@ import (
 )
 
 var (
-	retryCount int
-	retryDelay time.Duration
-	method     string
-	body       string
-	timeout    time.Duration
+	retryCount      int
+	retryDelay      time.Duration
+	method          string
+	body            string
+	timeout         time.Duration
+	grpcServiceName string
 )
 
 var checkCmd = &cobra.Command{
@@ -58,7 +59,7 @@ var checkCertCmd = &cobra.Command{
 var checkgRPCCmd = &cobra.Command{
 	Use:     `grpc [address]`,
 	Short:   "gRPC health check",
-	Example: `  check grpc localhost:8080 --retry=1 --delay=2s --timeout=2s`,
+	Example: `  check grpc localhost:8080 --service=podinfo --retry=1 --delay=2s --timeout=2s`,
 	RunE:    runCheckgPRC,
 }
 
@@ -78,6 +79,7 @@ func init() {
 	checkgRPCCmd.Flags().IntVar(&retryCount, "retry", 0, "times to retry the TCP check")
 	checkgRPCCmd.Flags().DurationVar(&retryDelay, "delay", 1*time.Second, "wait duration between retries")
 	checkgRPCCmd.Flags().DurationVar(&timeout, "timeout", 5*time.Second, "timeout")
+	checkgRPCCmd.Flags().StringVar(&grpcServiceName, "service", "", "gRPC service name")
 	checkCmd.AddCommand(checkgRPCCmd)
 
 	checkCmd.AddCommand(checkCertCmd)
@@ -283,7 +285,7 @@ func runCheckgPRC(cmd *cobra.Command, args []string) error {
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		resp, err := grpc_health_v1.NewHealthClient(conn).Check(ctx, &grpc_health_v1.HealthCheckRequest{
-			Service: "podinfo",
+			Service: grpcServiceName,
 		})
 		cancel()
 
