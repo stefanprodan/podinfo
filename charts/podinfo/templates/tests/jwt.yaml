@@ -13,31 +13,14 @@ spec:
   containers:
     - name: tools
       image: giantswarm/tiny-tools
-      command: ["/bin/sh", "/scripts/test.sh"]
+      command:
+        - sh
+        - -c
+        - |
+          TOKEN=$(curl -sd 'test' ${PODINFO_SVC}/token | jq -r .token) &&
+          curl -H "Authorization: Bearer ${TOKEN}" ${PODINFO_SVC}/token/validate | grep test
       env:
       - name: PODINFO_SVC
         value: {{ template "podinfo.fullname" . }}:{{ .Values.service.externalPort }}
-      volumeMounts:
-      - name: scripts
-        mountPath: /scripts
   restartPolicy: Never
-  volumes:
-  - name: scripts
-    configMap:
-      name: {{ template "podinfo.fullname" . }}-test-cfg
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: {{ template "podinfo.fullname" . }}-test-cfg
-  labels:
-    heritage: {{ .Release.Service }}
-    release: {{ .Release.Name }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
-    app: {{ template "podinfo.name" . }}
-data:
-  test.sh: |
-    #!/bin/sh
-    echo "testing ${PODINFO_SVC}/token"
-    TOKEN=$(curl -sd 'test' ${PODINFO_SVC}/token | jq -r .token) && \
-    curl -H "Authorization: Bearer ${TOKEN}" ${PODINFO_SVC}/token/validate | grep test
+
