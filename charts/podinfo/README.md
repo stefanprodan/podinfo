@@ -32,7 +32,6 @@ The following tables lists the configurable parameters of the podinfo chart and 
 Parameter | Description | Default
 --- | --- | ---
 `affinity` | node/pod affinities | None
-`color` | UI color | blue
 `backend` | echo backend URL | None
 `faults.delay` | random HTTP response delays between 0 and 5 seconds | `false`
 `faults.error` | 1/3 chances of a random HTTP response error | `false`
@@ -45,7 +44,7 @@ Parameter | Description | Default
 `ingress.tls` | ingress TLS configuration | None:
 `image.pullPolicy` | image pull policy | `IfNotPresent`
 `image.repository` | image repository | `stefanprodan/podinfo`
-`image.tag` | image tag | `0.0.1`
+`image.tag` | image tag | `<VERSION>`
 `ingress.enabled` | enables ingress | `false`
 `ingress.annotations` | ingress annotations | None
 `ingress.hosts` | ingress accepted hostnames | None
