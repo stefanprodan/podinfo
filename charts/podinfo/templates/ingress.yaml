@@ -36,4 +36,12 @@ spec:
               serviceName: {{ $fullName }}
               servicePort: http
   {{- end }}
+  {{- if not .Values.ingress.hosts }}
+    - http:
+        paths:
+          - path: {{ $ingressPath }}
+            backend:
+              serviceName: {{ $fullName }}
+              servicePort: http
+  {{- end }}
 {{- end }}
