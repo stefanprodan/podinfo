@@ -11,7 +11,7 @@ metadata:
     "helm.sh/hook": test-success
 spec:
   containers:
-    - name: grpc_health_probe
+    - name: grpc-health-probe
       image: stefanprodan/grpc_health_probe:v0.3.0
       command: ['grpc_health_probe']
       args:  ['-addr={{ template "podinfo.fullname" . }}:{{ .Values.service.grpcPort }}']
