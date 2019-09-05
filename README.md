@@ -44,6 +44,10 @@ Web API:
 * `GET /chunked/{seconds}` uses `transfer-encoding` type `chunked` to give a partial response and then waits for the specified period
 * `GET /swagger.json` returns the API Swagger docs, used for Linkerd service profiling and Gloo routes discovery
 
+gRPC API:
+
+* `/grpc.health.v1.Health/Check` health checking
+
 Web UI:
 
 ![podinfo-ui](https://raw.githubusercontent.com/stefanprodan/podinfo/gh-pages/screens/podinfo-ui.png)

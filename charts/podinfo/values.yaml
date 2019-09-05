@@ -11,7 +11,7 @@ faults:
 
 image:
   repository: stefanprodan/podinfo
-  tag: 2.1.3
+  tag: 3.0.0
   pullPolicy: IfNotPresent
 
 service:

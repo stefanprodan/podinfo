@@ -58,9 +58,12 @@ Parameter | Description | Default
 `resources.limits/cpu` | pod CPU limit | None
 `resources.limits/memory` | pod memory limit | None
 `service.enabled` | create Kubernetes service (should be disabled when using Flagger) | `true`
-`service.externalPort` | external port for the service | `9898`
-`service.internalPort` | internal port for the service | `9898`
-`service.nodePort` | node port for the service | `31198`
+`service.metricsPort` | Prometheus metrics endpoint port | `9797`
+`service.externalPort` | ClusterIP HTTP port | `9898`
+`service.httpPort` | container HTTP port | `9898`
+`service.nodePort` | NodePort for the HTTP endpoint | `31198`
+`service.grpcPort` | ClusterIP gPRC port | `9999`
+`service.grpcService` | gPRC service name | `podinfo`
 `service.type` | type of service | `ClusterIP`
 `tolerations` | list of node taints to tolerate | `[]`
 `serviceAccount.enabled` | specifies whether a service account should be created | `false`
