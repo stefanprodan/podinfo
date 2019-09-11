@@ -40,8 +40,6 @@ Parameter | Description | Default
 `hpa.memory` | target memory usage per pod | None
 `hpa.requests` | target requests per second per pod | None
 `hpa.maxReplicas` | maximum pod replicas | `10`
-`ingress.hosts` | ingress accepted hostnames | None
-`ingress.tls` | ingress TLS configuration | None:
 `image.pullPolicy` | image pull policy | `IfNotPresent`
 `image.repository` | image repository | `stefanprodan/podinfo`
 `image.tag` | image tag | `<VERSION>`
