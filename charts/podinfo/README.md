@@ -8,7 +8,7 @@ that showcases best practices of running microservices in Kubernetes.
 To install the chart with the release name `my-release`:
 
 ```console
-$ helm repo add sp https://stefanprodan.github.io/k8s-podinfo
+$ helm repo add sp https://stefanprodan.github.io/podinfo
 $ helm upgrade my-release --install sp/podinfo 
 ```
 
