@@ -28,7 +28,7 @@ func main() {
 	fs.Int("grpc-port", 0, "gRPC port")
 	fs.String("grpc-service-name", "podinfo", "gPRC service name")
 	fs.String("level", "info", "log level debug, info, warn, error, flat or panic")
-	fs.String("backend-url", "", "backend service URL")
+	fs.StringSlice("backend-url", []string{}, "backend service URL")
 	fs.Duration("http-client-timeout", 2*time.Minute, "client timeout duration")
 	fs.Duration("http-server-timeout", 30*time.Second, "server read and write timeout duration")
 	fs.Duration("http-server-shutdown-timeout", 5*time.Second, "server graceful shutdown timeout duration")

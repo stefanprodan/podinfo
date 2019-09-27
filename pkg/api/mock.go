@@ -12,7 +12,7 @@ func NewMockServer() *Server {
 		Port:                      "9898",
 		HttpServerShutdownTimeout: 5 * time.Second,
 		HttpServerTimeout:         30 * time.Second,
-		BackendURL:                "",
+		BackendURL:                []string{},
 		ConfigPath:                "/config",
 		DataPath:                  "/data",
 		HttpClientTimeout:         30 * time.Second,

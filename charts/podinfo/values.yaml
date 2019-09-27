@@ -3,6 +3,7 @@
 replicaCount: 1
 logLevel: info
 backend: #http://backend-podinfo:9898/echo
+backends: []
 message: #UI greetings
 
 faults:
@@ -11,7 +12,7 @@ faults:
 
 image:
   repository: stefanprodan/podinfo
-  tag: 3.0.0
+  tag: 3.1.0
   pullPolicy: IfNotPresent
 
 service:

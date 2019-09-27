@@ -48,6 +48,9 @@ spec:
             {{- if .Values.service.grpcService }}
             - --grpc-service-name={{ .Values.service.grpcService }}
             {{- end }}
+            {{- range .Values.backends }}
+            - --backend-url={{ . }}
+            {{- end }}
             - --level={{ .Values.logLevel }}
             - --random-delay={{ .Values.faults.delay }}
             - --random-error={{ .Values.faults.error }}
