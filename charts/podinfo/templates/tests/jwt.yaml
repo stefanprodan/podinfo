@@ -9,6 +9,9 @@ metadata:
     app: {{ template "podinfo.name" . }}
   annotations:
     "helm.sh/hook": test-success
+    sidecar.istio.io/inject: "false"
+    linkerd.io/inject: disabled
+    appmesh.k8s.aws/sidecarInjectorWebhook: disabled
 spec:
   containers:
     - name: tools

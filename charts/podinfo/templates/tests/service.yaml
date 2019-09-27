@@ -9,10 +9,20 @@ metadata:
     app: {{ template "podinfo.name" . }}
   annotations:
     "helm.sh/hook": test-success
+    sidecar.istio.io/inject: "false"
+    linkerd.io/inject: disabled
+    appmesh.k8s.aws/sidecarInjectorWebhook: disabled
 spec:
   containers:
     - name: curl
-      image: radial/busyboxplus:curl
-      command: ['curl']
-      args:  ['{{ template "podinfo.fullname" . }}:{{ .Values.service.externalPort }}']
+      image: giantswarm/tiny-tools
+      command:
+        - sh
+        - -c
+        - |
+          TOKEN=$(curl -sd 'test' ${PODINFO_SVC}/token | jq -r .token) &&
+          curl -H "Authorization: Bearer ${TOKEN}" ${PODINFO_SVC}/token/validate | grep test
+      env:
+        - name: PODINFO_SVC
+          value: {{ template "podinfo.fullname" . }}:{{ .Values.service.externalPort }}
   restartPolicy: Never
