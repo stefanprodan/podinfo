@@ -1,4 +1,4 @@
-FROM golang:1.12 as builder
+FROM golang:1.13 as builder
 
 RUN mkdir -p /podinfo/
 
@@ -6,7 +6,7 @@ WORKDIR /podinfo
 
 COPY . .
 
-RUN GOPROXY=https://proxy.golang.org go mod download
+RUN go mod download
 
 RUN go test -v -race ./...
 
