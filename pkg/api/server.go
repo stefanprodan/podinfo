@@ -40,11 +40,16 @@ var (
 	watcher *fscache.Watcher
 )
 
+type FluxConfig struct {
+	GitUrl    string `mapstructure:"git-url"`
+	GitBranch string `mapstructure:"git-branch"`
+}
+
 type Config struct {
 	HttpClientTimeout         time.Duration `mapstructure:"http-client-timeout"`
 	HttpServerTimeout         time.Duration `mapstructure:"http-server-timeout"`
 	HttpServerShutdownTimeout time.Duration `mapstructure:"http-server-shutdown-timeout"`
-	BackendURL                string        `mapstructure:"backend-url"`
+	BackendURL                []string      `mapstructure:"backend-url"`
 	UIMessage                 string        `mapstructure:"ui-message"`
 	UIColor                   string        `mapstructure:"ui-color"`
 	UIPath                    string        `mapstructure:"ui-path"`

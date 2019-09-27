@@ -3,6 +3,7 @@
 replicaCount: 1
 logLevel: info
 backend: #http://backend-podinfo:9898/echo
+backends: []
 message: #UI greetings
 
 faults:
