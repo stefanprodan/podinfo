@@ -4,7 +4,11 @@ replicaCount: 1
 logLevel: info
 backend: #http://backend-podinfo:9898/echo
 backends: []
-message: #UI greetings
+
+ui:
+  color: "cyan"
+  message: ""
+  logo: ""
 
 faults:
   delay: false
@@ -12,7 +16,7 @@ faults:
 
 image:
   repository: stefanprodan/podinfo
-  tag: 3.1.1
+  tag: 3.1.2
   pullPolicy: IfNotPresent
 
 service:

@@ -22,6 +22,7 @@ func (s *Server) infoHandler(w http.ResponseWriter, r *http.Request) {
 		Hostname:     s.config.Hostname,
 		Version:      version.VERSION,
 		Revision:     version.REVISION,
+		Logo:         s.config.UILogo,
 		Color:        s.config.UIColor,
 		Message:      s.config.UIMessage,
 		GOOS:         runtime.GOOS,
@@ -39,6 +40,7 @@ type RuntimeResponse struct {
 	Version      string `json:"version"`
 	Revision     string `json:"revision"`
 	Color        string `json:"color"`
+	Logo         string `json:"logo"`
 	Message      string `json:"message"`
 	GOOS         string `json:"goos"`
 	GOARCH       string `json:"goarch"`

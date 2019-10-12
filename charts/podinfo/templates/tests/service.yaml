@@ -20,9 +20,8 @@ spec:
         - sh
         - -c
         - |
-          TOKEN=$(curl -sd 'test' ${PODINFO_SVC}/token | jq -r .token) &&
-          curl -H "Authorization: Bearer ${TOKEN}" ${PODINFO_SVC}/token/validate | grep test
+          curl -s ${PODINFO_SVC}/api/info | grep version
       env:
         - name: PODINFO_SVC
-          value: {{ template "podinfo.fullname" . }}:{{ .Values.service.externalPort }}
+          value: {{ template "podinfo.fullname" . }}.{{ .Release.Namespace }}:{{ .Values.service.externalPort }}
   restartPolicy: Never
