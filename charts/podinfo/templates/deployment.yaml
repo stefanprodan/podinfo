@@ -55,9 +55,17 @@ spec:
             - --random-delay={{ .Values.faults.delay }}
             - --random-error={{ .Values.faults.error }}
           env:
-          {{- if .Values.message }}
+          {{- if .Values.ui.message }}
           - name: PODINFO_UI_MESSAGE
-            value: {{ .Values.message }}
+            value: {{ .Values.ui.message }}
+          {{- end }}
+          {{- if .Values.ui.logo }}
+          - name: PODINFO_UI_LOGO
+            value: {{ .Values.ui.logo }}
+          {{- end }}
+          {{- if .Values.ui.color }}
+          - name: PODINFO_UI_COLOR
+            value: {{ .Values.ui.color }}
           {{- end }}
           {{- if .Values.backend }}
           - name: PODINFO_BACKEND_URL
