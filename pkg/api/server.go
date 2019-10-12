@@ -50,6 +50,7 @@ type Config struct {
 	HttpServerTimeout         time.Duration `mapstructure:"http-server-timeout"`
 	HttpServerShutdownTimeout time.Duration `mapstructure:"http-server-shutdown-timeout"`
 	BackendURL                []string      `mapstructure:"backend-url"`
+	UILogo                    string        `mapstructure:"ui-logo"`
 	UIMessage                 string        `mapstructure:"ui-message"`
 	UIColor                   string        `mapstructure:"ui-color"`
 	UIPath                    string        `mapstructure:"ui-path"`

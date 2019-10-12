@@ -26,7 +26,7 @@
             justify-center
             class="white--text"
           >
-            <img src="https://d33wubrfki0l68.cloudfront.net/33a12d8be0bc50be4738443101616e968c7afb8f/cba76/images/scalable.png" alt="kubernetes" height="200">
+            <img :src="info.logo" alt="kubernetes" height="200">
             <h1 class="white--text mb-2 display-1 text-xs-center">${ info.message }</h1>
             <div class="subheading mb-3 text-xs-center">Served by <b>${ info.hostname }</b></div>
             <v-btn
@@ -108,7 +108,8 @@
                     }
                 }
                 self.info = data
-                self.info.color = 'cyan'
+                self.info.color = data.color
+                self.info.logo = data.logo
                 document.title = data.hostname
                 let verColor = (parseInt(data.version.split('.').reverse()[0], 10)  % 2 === 0)
                         ? 'blue'

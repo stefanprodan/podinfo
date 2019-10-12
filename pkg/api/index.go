@@ -23,8 +23,10 @@ func (s *Server) indexHandler(w http.ResponseWriter, r *http.Request) {
 
 	data := struct {
 		Title string
+		Logo  string
 	}{
 		Title: s.config.Hostname,
+		Logo:  s.config.UILogo,
 	}
 
 	if err := tmpl.Execute(w, data); err != nil {
