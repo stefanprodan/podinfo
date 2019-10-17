@@ -66,6 +66,7 @@ Parameter | Description | Default
 `tolerations` | list of node taints to tolerate | `[]`
 `serviceAccount.enabled` | specifies whether a service account should be created | `false`
 `serviceAccount.name` | the name of the service account to use, if not set and create is true, a name is generated using the fullname template | None
+`linkerd.profile.enabled` | create Linkerd service profile | `false`
 
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`. For example,
 
