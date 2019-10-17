@@ -1,6 +1,7 @@
 # podinfo
 
 [![CircleCI](https://circleci.com/gh/stefanprodan/podinfo.svg?style=svg)](https://circleci.com/gh/stefanprodan/podinfo)
+[![Go Report Card](https://goreportcard.com/badge/github.com/stefanprodan/podinfo)](https://goreportcard.com/report/github.com/stefanprodan/podinfo)
 [![Docker Pulls](https://img.shields.io/docker/pulls/stefanprodan/podinfo)](https://hub.docker.com/r/stefanprodan/podinfo)
 
 Podinfo is a tiny web application made with Go 
