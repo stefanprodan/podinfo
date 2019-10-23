@@ -1,0 +1,17 @@
+on: [push, pull_request]
+name: kustomize
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: kubeval
+        uses: stefanprodan/kube-tools@v1
+        with:
+          command: |
+            kustomize build ./kustomize | kubeval --strict
+      - name: conftest
+        uses: stefanprodan/kube-tools@v1
+        with:
+          command: |
+            kustomize build ./kustomize | conftest test -p .github/policy -
