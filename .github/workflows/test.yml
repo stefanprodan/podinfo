@@ -1,5 +1,5 @@
 on: [push, pull_request]
-name: kustomize
+name: test
 jobs:
   validate:
     runs-on: ubuntu-latest
