@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 	"github.com/swaggo/swag"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
+
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -59,6 +62,7 @@ type Config struct {
 	Port                      string        `mapstructure:"port"`
 	PortMetrics               int           `mapstructure:"port-metrics"`
 	Hostname                  string        `mapstructure:"hostname"`
+	H2C                       bool          `mapstructure:"h2c"`
 	RandomDelay               bool          `mapstructure:"random-delay"`
 	RandomError               bool          `mapstructure:"random-error"`
 	JWTSecret                 string        `mapstructure:"jwt-secret"`
@@ -141,12 +145,19 @@ func (s *Server) ListenAndServe(stopCh <-chan struct{}) {
 	s.registerHandlers()
 	s.registerMiddlewares()
 
+	var handler http.Handler
+	if s.config.H2C {
+		handler = h2c.NewHandler(s.router, &http2.Server{})
+	} else {
+		handler = s.router
+	}
+
 	srv := &http.Server{
 		Addr:         ":" + s.config.Port,
 		WriteTimeout: s.config.HttpServerTimeout,
 		ReadTimeout:  s.config.HttpServerTimeout,
 		IdleTimeout:  2 * s.config.HttpServerTimeout,
-		Handler:      s.router,
+		Handler:      handler,
 	}
 
 	//s.printRoutes()
