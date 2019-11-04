@@ -54,6 +54,9 @@ spec:
             - --level={{ .Values.logLevel }}
             - --random-delay={{ .Values.faults.delay }}
             - --random-error={{ .Values.faults.error }}
+            {{- if .Values.h2c.enabled }}
+            - --h2c
+            {{- end }}
           env:
           {{- if .Values.ui.message }}
           - name: PODINFO_UI_MESSAGE
