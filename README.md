@@ -69,20 +69,20 @@ To access the Swagger UI open `<podinfo-host>/swagger/index.html` in a browser.
 Helm:
 
 ```bash
-helm repo add sp https://stefanprodan.github.io/podinfo
+helm repo add podinfo https://stefanprodan.github.io/podinfo
 
 helm upgrade --install --wait frontend \
 --namespace test \
 --set replicaCount=2 \
 --set backend=http://backend-podinfo:9898/echo \
-sp/podinfo
+podinfo/podinfo
 
 helm test frontend --cleanup
 
 helm upgrade --install --wait backend \
 --namespace test \
 --set hpa.enabled=true \
-sp/podinfo
+podinfo/podinfo
 ```
 
 Kustomize:
