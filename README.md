@@ -53,7 +53,7 @@ gRPC API:
 
 Web UI:
 
-![podinfo-ui](https://raw.githubusercontent.com/stefanprodan/podinfo/gh-pages/screens/podinfo-ui.png)
+![podinfo-ui](https://raw.githubusercontent.com/stefanprodan/podinfo/gh-pages/screens/podinfo-ui-v3.png)
 
 To access the Swagger UI open `<podinfo-host>/swagger/index.html` in a browser.
 

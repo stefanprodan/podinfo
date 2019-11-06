@@ -12,7 +12,7 @@ VERSION:=$(shell grep 'VERSION' pkg/version/version.go | awk '{ print $$4 }' | t
 run:
 	GO111MODULE=on go run -ldflags "-s -w -X github.com/stefanprodan/podinfo/pkg/version.REVISION=$(GIT_COMMIT)" cmd/podinfo/* \
 	--level=debug --grpc-port=9999 --backend-url=https://httpbin.org/status/401 --backend-url=https://httpbin.org/status/500 \
-	--ui-logo=https://media.giphy.com/media/l0ExbNdlJFGRphMR2/giphy.gif
+	--ui-logo=https://raw.githubusercontent.com/stefanprodan/podinfo/gh-pages/cuddle_clap.gif --ui-color=#34577c
 
 test:
 	GO111MODULE=on go test -v -race ./...

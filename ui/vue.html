@@ -10,8 +10,11 @@
   <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
   <style>
 	[v-cloak] {
-  		display: none;
-	}
+    display: none;
+  }
+  .v-application .v-parallax {
+    height: 100vh !important;
+  }
   </style>
 </head>
 <body>
@@ -19,14 +22,14 @@
    <v-app dark>
     <v-content>
       <section>
-        <v-parallax id="parallax-hero" src="https://upload.wikimedia.org/wikipedia/commons/c/ca/1x1.png" :class="info.color">
+        <v-parallax id="parallax-hero" :style="cuddleStyle" src="https://upload.wikimedia.org/wikipedia/commons/c/ca/1x1.png">
           <v-layout
             column
             align-center
             justify-center
             class="white--text"
           >
-            <img :src="info.logo" alt="kubernetes" height="200">
+            <img :src="info.logo" height="350">
             <h1 class="white--text mb-2 display-1 text-xs-center">${ info.message }</h1>
             <div class="subheading mb-3 text-xs-center">Served by <b>${ info.hostname }</b></div>
             <v-btn
@@ -86,10 +89,10 @@
         tlColor1: 'grey',
         tlName2: '',
         tlColor2: 'grey',
+        cuddleStyle: {
+            backgroundColor: '#34577c'
+        },
     }
-    },
-    mounted: function() {
-       document.getElementById('parallax-hero').style.height = '100vh'
     },
     created: function() {
         this.getInfo();
@@ -109,6 +112,9 @@
                 }
                 self.info = data
                 self.info.color = data.color
+                self.cuddleStyle = {
+                    backgroundColor: data.color
+                }
                 self.info.logo = data.logo
                 document.title = data.hostname
                 let verColor = (parseInt(data.version.split('.').reverse()[0], 10)  % 2 === 0)
