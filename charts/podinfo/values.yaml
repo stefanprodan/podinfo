@@ -6,7 +6,7 @@ backend: #http://backend-podinfo:9898/echo
 backends: []
 
 ui:
-  color: "cyan"
+  color: "#34577c"
   message: ""
   logo: ""
 
@@ -19,7 +19,7 @@ h2c:
 
 image:
   repository: stefanprodan/podinfo
-  tag: 3.1.4
+  tag: 3.1.5
   pullPolicy: IfNotPresent
 
 service:
