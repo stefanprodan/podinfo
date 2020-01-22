@@ -7,11 +7,11 @@ The e2e testing infrastructure is powered by CircleCI and [Kubernetes Kind](http
 * download go modules
 * run unit tests
 * build container
-* install kubectl, helm and Kubernetes Kind CLIs
+* install kubectl, Helm v3 and Kubernetes Kind CLIs
 * create local Kubernetes cluster with kind
-* deploy Tiller on the local cluster
 * load podinfo image onto the local cluster
 * deploy podinfo with Helm
+* set the podinfo image to the locally built one
 * run Helm tests
 
 ```yaml

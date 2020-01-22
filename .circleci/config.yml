@@ -11,7 +11,7 @@ jobs:
           name: Start Kubernetes Kind cluster
           command: e2e/bootstrap.sh
       - run:
-          name: Install podinfo with Helm
+          name: Install podinfo with Helm v3
           command: e2e/install.sh
       - run:
           name: Run Helm tests
