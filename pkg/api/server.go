@@ -65,6 +65,8 @@ type Config struct {
 	H2C                       bool          `mapstructure:"h2c"`
 	RandomDelay               bool          `mapstructure:"random-delay"`
 	RandomError               bool          `mapstructure:"random-error"`
+	Unhealthy                 bool          `mapstructure:"unhealthy"`
+	Unready                   bool          `mapstructure:"unready"`
 	JWTSecret                 string        `mapstructure:"jwt-secret"`
 }
 
@@ -181,8 +183,12 @@ func (s *Server) ListenAndServe(stopCh <-chan struct{}) {
 	}()
 
 	// signal Kubernetes the server is ready to receive traffic
-	atomic.StoreInt32(&healthy, 1)
-	atomic.StoreInt32(&ready, 1)
+	if !s.config.Unhealthy {
+		atomic.StoreInt32(&healthy, 1)
+	}
+	if !s.config.Unready {
+		atomic.StoreInt32(&ready, 1)
+	}
 
 	// wait for SIGTERM or SIGINT
 	<-stopCh

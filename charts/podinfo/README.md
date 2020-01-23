@@ -36,6 +36,8 @@ Parameter | Description | Default
 `backends` | echo backend URL array | None
 `faults.delay` | random HTTP response delays between 0 and 5 seconds | `false`
 `faults.error` | 1/3 chances of a random HTTP response error | `false`
+`faults.unhealthy` | when set, the healthy state is never reached | `false`
+`faults.unready` | when set, the ready state is never reached | `false`
 `hpa.enabled` | enables HPA | `false`
 `hpa.cpu` | target CPU usage per pod | None
 `hpa.memory` | target memory usage per pod | None

@@ -13,6 +13,8 @@ ui:
 faults:
   delay: false
   error: false
+  unhealthy: false
+  unready: false
 
 h2c:
   enabled: false
