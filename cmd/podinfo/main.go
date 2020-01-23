@@ -42,6 +42,8 @@ func main() {
 	fs.Bool("h2c", false, "Allow upgrading to H2C")
 	fs.Bool("random-delay", false, "between 0 and 5 seconds random delay")
 	fs.Bool("random-error", false, "1/3 chances of a random response error")
+	fs.Bool("unhealthy", false, "when set, healthy state is never reached")
+	fs.Bool("unready", false, "when set, ready state is never reached")
 	fs.Int("stress-cpu", 0, "Number of CPU cores with 100 load")
 	fs.Int("stress-memory", 0, "MB of data to load into memory")
 
