@@ -3,16 +3,16 @@ entries:
   ngrok:
   - apiVersion: v1
     appVersion: "1.0"
-    created: "2020-01-21T11:40:35.424940369Z"
+    created: "2020-01-24T09:30:17.959041341Z"
     description: A Ngrok Helm chart for Kubernetes
-    digest: a46c789dcc589c01f6144feb280d31f7cb0d44c31ebd0a091d9ace444925d7d3
+    digest: fac3475a94941b60721984312f028c3b71b7b4d1cd8f10b067dd73b8a69e3c38
     name: ngrok
     urls:
     - https://stefanprodan.github.io/podinfo/ngrok-0.2.0.tgz
     version: 0.2.0
   - apiVersion: v1
     appVersion: "1.0"
-    created: "2020-01-21T11:40:35.424692363Z"
+    created: "2020-01-24T09:30:17.9586543Z"
     description: A Ngrok Helm chart for Kubernetes
     digest: 5678de7c8aac246df507f40b3f4f8fd6d06f4447e636398819a232dd26e1fc41
     name: ngrok
@@ -21,8 +21,24 @@ entries:
     version: 0.1.0
   podinfo:
   - apiVersion: v1
+    appVersion: 3.2.0
+    created: "2020-01-24T09:30:17.976774127Z"
+    description: Podinfo Helm chart for Kubernetes
+    digest: 3b4dbc711e479f5c1b8ef4f4ec2c30dfc4e4cc263301833a54f5dd89cf231565
+    engine: gotpl
+    home: https://github.com/stefanprodan/podinfo
+    maintainers:
+    - email: stefanprodan@users.noreply.github.com
+      name: stefanprodan
+    name: podinfo
+    sources:
+    - https://github.com/stefanprodan/podinfo
+    urls:
+    - https://stefanprodan.github.io/podinfo/podinfo-3.2.0.tgz
+    version: 3.2.0
+  - apiVersion: v1
     appVersion: 3.1.5
-    created: "2020-01-21T11:40:35.440826411Z"
+    created: "2020-01-24T09:30:17.976213894Z"
     description: Podinfo Helm chart for Kubernetes
     digest: 42bd03aa9de646c9e16c7c63ebe9dee2c0c4c48d8f5892335c1b1b789594ca5d
     engine: gotpl
@@ -38,7 +54,7 @@ entries:
     version: 3.1.5
   - apiVersion: v1
     appVersion: 3.1.4
-    created: "2020-01-21T11:40:35.440245111Z"
+    created: "2020-01-24T09:30:17.975590273Z"
     description: Podinfo Helm chart for Kubernetes
     digest: 5f64d43ea3b3591e35e9f2e028ef042b1907b6c6a3a4087d590647f99de1cade
     engine: gotpl
@@ -54,7 +70,7 @@ entries:
     version: 3.1.4
   - apiVersion: v1
     appVersion: 3.1.3
-    created: "2020-01-21T11:40:35.439638626Z"
+    created: "2020-01-24T09:30:17.974343099Z"
     description: Podinfo Helm chart for Kubernetes
     digest: 83745955829f35fcbaedd873a38b5dcce2b8d9e9dd47ef3752f39fed6afba679
     engine: gotpl
@@ -70,7 +86,7 @@ entries:
     version: 3.1.3
   - apiVersion: v1
     appVersion: 3.1.2
-    created: "2020-01-21T11:40:35.438199014Z"
+    created: "2020-01-24T09:30:17.973719094Z"
     description: Podinfo Helm chart for Kubernetes
     digest: 443d15912d373943a901c5cff713011f0ca409529e05101bb8e70dbcae94d7fc
     engine: gotpl
@@ -86,7 +102,7 @@ entries:
     version: 3.1.2
   - apiVersion: v1
     appVersion: 3.1.1
-    created: "2020-01-21T11:40:35.437572471Z"
+    created: "2020-01-24T09:30:17.973049193Z"
     description: Podinfo Helm chart for Kubernetes
     digest: 66ee0f13cf43f2682beafb193a3271b2cb87fca20e1cb39359e308bb06153b51
     engine: gotpl
@@ -102,7 +118,7 @@ entries:
     version: 3.1.1
   - apiVersion: v1
     appVersion: 3.1.0
-    created: "2020-01-21T11:40:35.43694239Z"
+    created: "2020-01-24T09:30:17.972466478Z"
     description: Podinfo Helm chart for Kubernetes
     digest: 5416cc64a7a4e996b43d4be2b78ec7b37ba9f275fdc838d15156f81e7d6a7542
     engine: gotpl
@@ -118,7 +134,7 @@ entries:
     version: 3.1.0
   - apiVersion: v1
     appVersion: 3.0.0
-    created: "2020-01-21T11:40:35.436290726Z"
+    created: "2020-01-24T09:30:17.972020886Z"
     description: Podinfo Helm chart for Kubernetes
     digest: c058182afefeb1e5a0c99f78ac2fb8bd21bec3d5677fd81adee139d4f2b122af
     engine: gotpl
@@ -134,7 +150,7 @@ entries:
     version: 3.0.0
   - apiVersion: v1
     appVersion: 2.1.3
-    created: "2020-01-21T11:40:35.435698154Z"
+    created: "2020-01-24T09:30:17.971490009Z"
     description: Podinfo Helm chart for Kubernetes
     digest: cbec34947cc2f36dee8adcdd12ee62ca6a8a36699fc6e56f6220385ad5bd421a
     engine: gotpl
@@ -150,7 +166,7 @@ entries:
     version: 2.1.3
   - apiVersion: v1
     appVersion: 2.1.2
-    created: "2020-01-21T11:40:35.435239453Z"
+    created: "2020-01-24T09:30:17.970889368Z"
     description: Podinfo Helm chart for Kubernetes
     digest: ad4c6f8d7ab6f4a88ab6dd0b5e6f767096e41169231172740f35b727d5d74e93
     engine: gotpl
@@ -166,7 +182,7 @@ entries:
     version: 2.1.2
   - apiVersion: v1
     appVersion: 2.1.1
-    created: "2020-01-21T11:40:35.434697416Z"
+    created: "2020-01-24T09:30:17.97033505Z"
     description: Podinfo Helm chart for Kubernetes
     digest: b231cf42b46d47bfcb1155073693684fb5217896c163909ac30eda285774432f
     engine: gotpl
@@ -182,7 +198,7 @@ entries:
     version: 2.1.1
   - apiVersion: v1
     appVersion: 2.1.0
-    created: "2020-01-21T11:40:35.434134747Z"
+    created: "2020-01-24T09:30:17.969806141Z"
     description: Podinfo Helm chart for Kubernetes
     digest: f0769de6eabdc012b326087b64c768d65d3fff61af6ce368fd2ae672b453669a
     engine: gotpl
@@ -198,7 +214,7 @@ entries:
     version: 2.1.0
   - apiVersion: v1
     appVersion: 2.0.2
-    created: "2020-01-21T11:40:35.433602966Z"
+    created: "2020-01-24T09:30:17.969314008Z"
     description: Podinfo Helm chart for Kubernetes
     digest: ec0c4836ab17b73bfbeb3471c9ddc2cd9956bf869fc610cd794b0e4da35f5b4a
     engine: gotpl
@@ -214,7 +230,7 @@ entries:
     version: 2.0.2
   - apiVersion: v1
     appVersion: 2.0.1
-    created: "2020-01-21T11:40:35.433021718Z"
+    created: "2020-01-24T09:30:17.968796721Z"
     description: Podinfo Helm chart for Kubernetes
     digest: a696cc2f554d6362043c907fb9be55d8835b036f4a3618a9ff869eecc77bea34
     engine: gotpl
@@ -230,7 +246,7 @@ entries:
     version: 2.0.1
   - apiVersion: v1
     appVersion: 2.0.0
-    created: "2020-01-21T11:40:35.432518315Z"
+    created: "2020-01-24T09:30:17.96831287Z"
     description: Podinfo Helm chart for Kubernetes
     digest: 61c8816e242ac67264e53eef13a4654ab20b5f65f04bfa2bb045a5ff907bd7dc
     engine: gotpl
@@ -246,7 +262,7 @@ entries:
     version: 2.0.0
   - apiVersion: v1
     appVersion: 1.6.1
-    created: "2020-01-21T11:40:35.432070568Z"
+    created: "2020-01-24T09:30:17.967826361Z"
     description: Podinfo Helm chart for Kubernetes
     digest: 4427173ee540f1f222030d8f4b38fbd812cd5bad3d2f55ec862e2db5f966cdbc
     engine: gotpl
@@ -262,7 +278,7 @@ entries:
     version: 1.6.0
   - apiVersion: v1
     appVersion: 1.5.0
-    created: "2020-01-21T11:40:35.431530445Z"
+    created: "2020-01-24T09:30:17.967342488Z"
     description: Podinfo Helm chart for Kubernetes
     digest: 88207baab1922f6ba64d0f5b67650562a948bd0236c290e2bdad4b3ac2005be3
     engine: gotpl
@@ -278,7 +294,7 @@ entries:
     version: 1.5.0
   - apiVersion: v1
     appVersion: 1.4.1
-    created: "2020-01-21T11:40:35.430998244Z"
+    created: "2020-01-24T09:30:17.966822564Z"
     description: Podinfo Helm chart for Kubernetes
     digest: 0a1a25b12a2882e2641094b235f57dee6d95f9175823936be1dce73b75e808c3
     engine: gotpl
@@ -294,7 +310,7 @@ entries:
     version: 1.4.2
   - apiVersion: v1
     appVersion: 1.4.1
-    created: "2020-01-21T11:40:35.430520458Z"
+    created: "2020-01-24T09:30:17.966303535Z"
     description: Podinfo Helm chart for Kubernetes
     digest: 91ea71d56bf74135b3115a723f345a12022d5910abf21a8ee8d77d74385bc127
     engine: gotpl
@@ -310,7 +326,7 @@ entries:
     version: 1.4.1
   - apiVersion: v1
     appVersion: 1.4.0
-    created: "2020-01-21T11:40:35.430028559Z"
+    created: "2020-01-24T09:30:17.965797838Z"
     description: Podinfo Helm chart for Kubernetes
     digest: d30a844229125217f85d5c52ceb48c980f47027a5a1f9ee5c41bac44b9d18088
     engine: gotpl
@@ -326,7 +342,7 @@ entries:
     version: 1.4.0
   - apiVersion: v1
     appVersion: 1.3.1
-    created: "2020-01-21T11:40:35.429491206Z"
+    created: "2020-01-24T09:30:17.964867472Z"
     description: Podinfo Helm chart for Kubernetes
     digest: 9116966f2b1300655be11669789842a3d01e326fe1feb205198df3ba22bac3a5
     engine: gotpl
@@ -342,7 +358,7 @@ entries:
     version: 1.3.1
   - apiVersion: v1
     appVersion: 1.3.0
-    created: "2020-01-21T11:40:35.429046831Z"
+    created: "2020-01-24T09:30:17.964337184Z"
     description: Podinfo Helm chart for Kubernetes
     digest: 7111b868a11014ab56da11b7edbea9ce0d1a483500969252f66c9ae1943bac67
     engine: gotpl
@@ -358,7 +374,7 @@ entries:
     version: 1.3.0
   - apiVersion: v1
     appVersion: 1.2.1
-    created: "2020-01-21T11:40:35.428599656Z"
+    created: "2020-01-24T09:30:17.963832104Z"
     description: Podinfo Helm chart for Kubernetes
     digest: c750c1d4a7606a06cd89ae4433431c7e3ecf2ccc9a0e5f6baa26095397bd72da
     engine: gotpl
@@ -374,7 +390,7 @@ entries:
     version: 1.2.1
   - apiVersion: v1
     appVersion: 1.2.0
-    created: "2020-01-21T11:40:35.427575612Z"
+    created: "2020-01-24T09:30:17.96307745Z"
     description: Podinfo Helm chart for Kubernetes
     digest: 24460e15e6da77106eb5212cd683dc2c1d4404b927be6b9f0c89433ba865722e
     engine: gotpl
@@ -390,7 +406,7 @@ entries:
     version: 1.2.0
   - apiVersion: v1
     appVersion: 1.1.0
-    created: "2020-01-21T11:40:35.427188777Z"
+    created: "2020-01-24T09:30:17.961789628Z"
     description: Podinfo Helm chart for Kubernetes
     digest: 973d60c629d7ae476776098ad6b654d78d91f91b3faa8bc016b94c73c42be094
     engine: gotpl
@@ -406,7 +422,7 @@ entries:
     version: 1.1.0
   - apiVersion: v1
     appVersion: 1.0.0
-    created: "2020-01-21T11:40:35.426842502Z"
+    created: "2020-01-24T09:30:17.961224106Z"
     description: Podinfo Helm chart for Kubernetes
     digest: 82068727ba5b552341b14a980e954e27a8517f0ef76aab314c160b0f075e6de4
     engine: gotpl
@@ -422,7 +438,7 @@ entries:
     version: 1.0.0
   - apiVersion: v1
     appVersion: 0.6.0
-    created: "2020-01-21T11:40:35.426494341Z"
+    created: "2020-01-24T09:30:17.960671386Z"
     description: Podinfo Helm chart for Kubernetes
     digest: bd25a710eddb3985d3bd921a11022b5c68a04d37cf93a1a4aab17eeda35aa2f8
     engine: gotpl
@@ -438,7 +454,7 @@ entries:
     version: 0.2.2
   - apiVersion: v1
     appVersion: 0.5.1
-    created: "2020-01-21T11:40:35.426071027Z"
+    created: "2020-01-24T09:30:17.960161557Z"
     description: Podinfo Helm chart for Kubernetes
     digest: 631ca3e2db5553541a50b625f538e6a1f2a103c13aa8148fdd38baf2519e5235
     engine: gotpl
@@ -454,7 +470,7 @@ entries:
     version: 0.2.1
   - apiVersion: v1
     appVersion: 0.5.0
-    created: "2020-01-21T11:40:35.425709607Z"
+    created: "2020-01-24T09:30:17.95979824Z"
     description: Podinfo Helm chart for Kubernetes
     digest: dfe7cf44aef0d170549918b00966422a07e7611f9d0081fb34f5b5beb0641c00
     engine: gotpl
@@ -470,7 +486,7 @@ entries:
     version: 0.2.0
   - apiVersion: v1
     appVersion: 0.3.0
-    created: "2020-01-21T11:40:35.425342711Z"
+    created: "2020-01-24T09:30:17.95943522Z"
     description: Podinfo Helm chart for Kubernetes
     digest: 4865a2d8b269cf453935cda9661c2efb82c16411471f8c11221a6d03d9bb58b1
     engine: gotpl
@@ -484,4 +500,4 @@ entries:
     urls:
     - https://stefanprodan.github.io/podinfo/podinfo-0.1.0.tgz
     version: 0.1.0
-generated: "2020-01-21T11:40:35.424249285Z"
+generated: "2020-01-24T09:30:17.958051928Z"
