@@ -80,7 +80,8 @@ helm upgrade --install --wait frontend \
 --set backend=http://backend-podinfo:9898/echo \
 podinfo/podinfo
 
-helm test frontend --cleanup
+# Test pods have hook-delete-policy: hook-succeeded
+helm test frontend
 
 helm upgrade --install --wait backend \
 --namespace test \
