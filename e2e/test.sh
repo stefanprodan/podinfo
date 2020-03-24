@@ -4,9 +4,9 @@ set -o errexit
 
 function finish {
   echo '>>> Test logs'
-  kubectl logs -l app=podinfo
+  kubectl logs -l app=podinfo || true
 }
-trap finish EXIT
+trap "finish" EXIT SIGINT
 
 echo '>>> Start integration tests'
 helm test podinfo
