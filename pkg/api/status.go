@@ -3,8 +3,9 @@ package api
 import (
 	"net/http"
 
-	"github.com/gorilla/mux"
 	"strconv"
+
+	"github.com/gorilla/mux"
 )
 
 // Status godoc

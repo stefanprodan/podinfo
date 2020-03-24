@@ -3,9 +3,10 @@ package api
 import (
 	"net/http"
 
-	"github.com/gorilla/mux"
 	"strconv"
 	"time"
+
+	"github.com/gorilla/mux"
 )
 
 // Delay godoc
