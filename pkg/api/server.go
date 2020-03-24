@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"fmt"
+
 	"github.com/swaggo/swag"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
@@ -19,7 +20,7 @@ import (
 	"github.com/spf13/viper"
 	_ "github.com/stefanprodan/podinfo/pkg/api/docs"
 	"github.com/stefanprodan/podinfo/pkg/fscache"
-	"github.com/swaggo/http-swagger"
+	httpSwagger "github.com/swaggo/http-swagger"
 	"go.uber.org/zap"
 )
 
