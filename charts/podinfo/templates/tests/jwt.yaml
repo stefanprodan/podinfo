@@ -16,7 +16,7 @@ metadata:
 spec:
   containers:
     - name: tools
-      image: curlimages/curl:7.69.0
+      image: giantswarm/tiny-tools
       command:
         - sh
         - -c
