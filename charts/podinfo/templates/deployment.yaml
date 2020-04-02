@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: {{ template "podinfo.fullname" . }}
   labels:
-    app: {{ template "podinfo.name" . }}
+    app: {{ template "podinfo.fullname" . }}
     chart: {{ template "podinfo.chart" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
@@ -17,13 +17,11 @@ spec:
       maxUnavailable: 1
   selector:
     matchLabels:
-      app: {{ template "podinfo.name" . }}
-      release: {{ .Release.Name }}
+      app: {{ template "podinfo.fullname" . }}
   template:
     metadata:
       labels:
-        app: {{ template "podinfo.name" . }}
-        release: {{ .Release.Name }}
+        app: {{ template "podinfo.fullname" . }}
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: "{{ .Values.service.httpPort }}"

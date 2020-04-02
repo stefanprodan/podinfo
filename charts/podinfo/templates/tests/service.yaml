@@ -16,7 +16,7 @@ metadata:
 spec:
   containers:
     - name: curl
-      image: giantswarm/tiny-tools
+      image: curlimages/curl:7.69.0
       command:
         - sh
         - -c
@@ -24,5 +24,5 @@ spec:
           curl -s ${PODINFO_SVC}/api/info | grep version
       env:
         - name: PODINFO_SVC
-          value: {{ template "podinfo.fullname" . }}.{{ .Release.Namespace }}:{{ .Values.service.externalPort }}
+          value: "{{ template "podinfo.fullname" . }}.{{ .Release.Namespace }}:{{ .Values.service.externalPort }}"
   restartPolicy: Never
