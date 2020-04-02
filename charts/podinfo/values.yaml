@@ -21,7 +21,7 @@ h2c:
 
 image:
   repository: stefanprodan/podinfo
-  tag: 3.2.1
+  tag: 3.2.2
   pullPolicy: IfNotPresent
 
 service:
