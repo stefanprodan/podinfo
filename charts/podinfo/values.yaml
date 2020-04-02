@@ -56,6 +56,10 @@ linkerd:
   profile:
     enabled: false
 
+serviceMonitor:
+  enabled: false
+  interval: 15s
+
 ingress:
   enabled: false
   annotations: {}

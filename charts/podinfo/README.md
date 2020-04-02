@@ -69,12 +69,14 @@ Parameter | Description | Default
 `serviceAccount.enabled` | specifies whether a service account should be created | `false`
 `serviceAccount.name` | the name of the service account to use, if not set and create is true, a name is generated using the fullname template | None
 `linkerd.profile.enabled` | create Linkerd service profile | `false`
+`serviceMonitor.enabled` | specifies whether a Prometheus Operator service monitor should be created | `false`
+`serviceMonitor.interval` | Prometheus scraping interval | `15s`
 
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`. For example,
 
 ```console
 $ helm install stable/podinfo --name my-release \
-  --set=image.tag=0.0.2,service.type=NodePort
+  --set=serviceMonitor.enabled=true,serviceMonitor.interval=5s
 ```
 
 Alternatively, a YAML file that specifies the values for the above parameters can be provided while installing the chart. For example,

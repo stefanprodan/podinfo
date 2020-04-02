@@ -16,7 +16,7 @@ metadata:
 spec:
   containers:
     - name: tools
-      image: giantswarm/tiny-tools
+      image: curlimages/curl:7.69.0
       command:
         - sh
         - -c
@@ -25,6 +25,5 @@ spec:
           curl -sH "Authorization: Bearer ${TOKEN}" ${PODINFO_SVC}/token/validate | grep test
       env:
       - name: PODINFO_SVC
-        value: {{ template "podinfo.fullname" . }}.{{ .Release.Namespace }}:{{ .Values.service.externalPort }}
+        value: "{{ template "podinfo.fullname" . }}.{{ .Release.Namespace }}:{{ .Values.service.externalPort }}"
   restartPolicy: Never
-
