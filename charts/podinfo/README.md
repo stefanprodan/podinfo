@@ -91,5 +91,3 @@ $ helm install stable/podinfo --name my-release -f values.yaml
 ```
 
 > **Tip**: You can use the default [values.yaml](values.yaml)
-```
-
