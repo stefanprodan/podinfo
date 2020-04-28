@@ -21,10 +21,9 @@ spec:
       labels:
         app: frontend
     spec:
-      serviceAccountName: webapp
       containers:
       - name: frontend
-        image: stefanprodan/podinfo:3.2.2
+        image: stefanprodan/podinfo:3.2.3
         imagePullPolicy: IfNotPresent
         ports:
         - name: http
