@@ -64,7 +64,7 @@ spec:
           env:
           {{- if .Values.ui.message }}
           - name: PODINFO_UI_MESSAGE
-            value: {{ .Values.ui.message }}
+            value: {{ quote .Values.ui.message }}
           {{- end }}
           {{- if .Values.ui.logo }}
           - name: PODINFO_UI_LOGO
