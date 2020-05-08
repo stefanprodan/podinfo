@@ -1,65 +1,53 @@
 version: v4.0
 navigator:
-  name: Javier Matias
-  email: jmatias@thoughtworks.com
+    name: Javier Matias
+    email: jmatias@thoughtworks.com
 repo:
-  companyName: Trilogy
-  productName: podinfo
-  repoUrl: https://github.com/trilogy-group/podinfo
-  repoType: Deployable service
-  githubTokenSecretId:
-  branch: master
+    companyName: Trilogy
+    productName: podinfo
+    repoUrl: https://github.com/trilogy-group/podinfo
+    repoType: Deployable service
+    githubTokenSecretId: ""
+    branch: master
+buildDeps: []
 build:
-  techStack: Go
-  os: Ubuntu 18.04
-  image:
-  toolchainVersion: Go 1.14
-  tool: Go
-  preBuildCommand:
-  buildCommand: go build -v  ./...
-buildenvVars:
-- key:
-  kind: secret
-  value:
-- key:
-  kind: config
-  value:
+    techStack: Go
+    os: Ubuntu 18.04
+    image: ""
+    toolchainVersion: Go 1.14
+    tool: Go
+    buildCommand: go build -v  ./...
 test:
-  utFramework: testing
-  preTestCommand: echo noop
-  testCommand: echo noop
+    utFramework: testing
+    preTestCommand: echo noop
+    testCommand: echo noop
 package:
-  packageTool: go
-  packageCommand: echo noop
-  artifactDir: bin
-  artifactUploadCommand:
-
+    packageTool: go
+    packageCommand: echo noop
+    artifactDir: bin
+    artifactUploadCommand: ""
 deploy:
-  serviceName: podinfo
-  deploymentCheck: curl http://localhost:8000
-  stickySessions: false
-  canUseLb: true
-  stablePersistence: false
-  fixedNetworkIdentifier: false
-ports:
-- name: podinfo
-  number: 9898
-  protocol: HTTP
-  public: true
-  path: /
+    serviceName: podinfo
+    deploymentCheck: curl http://localhost:8000
+    stickySessions: "false"
+    canUseLb: "true"
+    stablePersistence: "false"
+    fixedNetworkIdentifier: "false"
 run:
-  dockerized: true
-  os:
-  image:
-  runtimeEnv:
-  installCommand:
-  installDir: ./install
-  runCommand:
-  userName: root
+    dockerized: true
+    os: ""
+    installDir: ./install
+    userName: root
+ports:
+  - name: podinfo
+    number: "9898"
+    protocol: HTTP
+    public: true
+    path: /
 envs:
-- name: qa
-  default: true
-  vars:
-- name: dev
-  default: false
-  vars:
+  - name: qa
+    default: true
+    vars: null
+  - name: dev
+    default: false
+    vars: null
