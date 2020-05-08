@@ -9,7 +9,6 @@ Podinfo is a tiny web application made with Go that showcases best practices of 
 
 Specifications:
 
-
 * Health checks (readiness and liveness)
 * Graceful shutdown on interrupt signals
 * File watcher for secrets and configmaps
