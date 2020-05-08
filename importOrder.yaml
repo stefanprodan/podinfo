@@ -35,7 +35,7 @@ package:
   artifactUploadCommand:
 
 deploy:
-  serviceName: myservicename
+  serviceName: podinfo
   deploymentCheck: curl http://localhost:8000
   stickySessions: false
   canUseLb: true
