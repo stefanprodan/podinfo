@@ -4,7 +4,7 @@ navigator:
     email: jmatias@thoughtworks.com
 repo:
     companyName: Trilogy
-    productName: Trilogy
+    productName: podinfo
     repoUrl: https://github.com/trilogy-group/podinfo
     repoType: Deployable service
     githubTokenSecretId: ""
