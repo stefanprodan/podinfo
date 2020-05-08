@@ -10,7 +10,6 @@ repo:
     githubTokenSecretId: ""
     branch: master
 buildDeps: []
-buildEnvVars: null
 build:
     techStack: Go
     os: Ubuntu 18.04
@@ -27,7 +26,6 @@ package:
     packageCommand: echo noop
     artifactDir: bin
     artifactUploadCommand: ""
-deployDeps: []
 deploy:
     serviceName: podinfo
     deploymentCheck: curl http://localhost:8000
@@ -46,7 +44,6 @@ ports:
     protocol: HTTP
     public: true
     path: /
-storage: null
 envs:
   - name: qa
     default: true
