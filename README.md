@@ -8,7 +8,7 @@
 Podinfo is a tiny web application made with Go that showcases best practices of running microservices in Kubernetes.  
 
 
-Specifications:  
+Specifications:    
 
 * Health checks (readiness and liveness)   
 * Graceful shutdown on interrupt signals
