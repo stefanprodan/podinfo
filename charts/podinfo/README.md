@@ -42,6 +42,8 @@ Parameter | Default | Description
 `faults.error` | `false` | 1/3 chances of a random HTTP response error
 `faults.unhealthy` | `false` | When set, the healthy state is never reached
 `faults.unready` | `false` | When set, the ready state is never reached
+`faults.testFail` | `false` | When set, a helm test is included which always fails
+`faults.testTimeout` | `false` | When set, a helm test is included which always times out
 `h2c.enabled` | `false` | Allow upgrading to h2c
 `image.repository` | `stefanprodan/podinfo` | Image repository
 `image.tag` | `<VERSION>` | Image tag
