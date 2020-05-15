@@ -33,6 +33,12 @@ build-charts:
 build-container:
 	docker build -t $(DOCKER_IMAGE_NAME):$(VERSION) .
 
+build-base:
+	docker build -f Dockerfile.base -t $(DOCKER_REPOSITORY)/podinfo-base:latest .
+
+push-base: build-base
+	docker push $(DOCKER_REPOSITORY)/podinfo-base:latest
+
 test-container:
 	@docker rm -f podinfo || true
 	@docker run -dp 9898:9898 --name=podinfo $(DOCKER_IMAGE_NAME):$(VERSION)

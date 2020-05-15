@@ -33,6 +33,7 @@ jobs:
             echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin;
             echo $QUAY_PASS | docker login -u $QUAY_USER --password-stdin quay.io;
             make push-container;
+            make push-base;
           fi
 
   push-binary:
