@@ -4,6 +4,7 @@ namespace: production
 resources:
   - ../../bases/backend
   - ../../bases/frontend
+  - ../../bases/cache
   - namespace.yaml
 transformers:
   - labels.yaml

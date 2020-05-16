@@ -49,6 +49,9 @@ spec:
             {{- range .Values.backends }}
             - --backend-url={{ . }}
             {{- end }}
+            {{- if .Values.cache }}
+            - --cache-server={{ .Values.cache }}
+            {{- end }}
             - --level={{ .Values.logLevel }}
             - --random-delay={{ .Values.faults.delay }}
             - --random-error={{ .Values.faults.error }}

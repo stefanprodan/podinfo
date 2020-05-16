@@ -42,6 +42,7 @@ spec:
         - --grpc-port=9999
         - --grpc-service-name=backend
         - --level=info
+        - --cache-server=cache:6379
         env:
         - name: PODINFO_UI_COLOR
           value: "#34577c"

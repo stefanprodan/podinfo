@@ -3,11 +3,6 @@ package api
 import (
 	"context"
 	"fmt"
-
-	"github.com/swaggo/swag"
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
-
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -15,13 +10,17 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/gomodule/redigo/redis"
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/viper"
 	_ "github.com/stefanprodan/podinfo/pkg/api/docs"
 	"github.com/stefanprodan/podinfo/pkg/fscache"
 	httpSwagger "github.com/swaggo/http-swagger"
+	"github.com/swaggo/swag"
 	"go.uber.org/zap"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 )
 
 // @title Podinfo API
@@ -69,12 +68,14 @@ type Config struct {
 	Unhealthy                 bool          `mapstructure:"unhealthy"`
 	Unready                   bool          `mapstructure:"unready"`
 	JWTSecret                 string        `mapstructure:"jwt-secret"`
+	CacheServer               string        `mapstructure:"cache-server"`
 }
 
 type Server struct {
 	router *mux.Router
 	logger *zap.Logger
 	config *Config
+	pool   *redis.Pool
 }
 
 func NewServer(config *Config, logger *zap.Logger) (*Server, error) {
@@ -103,8 +104,10 @@ func (s *Server) registerHandlers() {
 	s.router.HandleFunc("/readyz/disable", s.disableReadyHandler).Methods("POST")
 	s.router.HandleFunc("/panic", s.panicHandler).Methods("GET")
 	s.router.HandleFunc("/status/{code:[0-9]+}", s.statusHandler).Methods("GET", "POST", "PUT").Name("status")
-	s.router.HandleFunc("/store", s.storeWriteHandler).Methods("POST")
+	s.router.HandleFunc("/store", s.storeWriteHandler).Methods("POST", "PUT")
 	s.router.HandleFunc("/store/{hash}", s.storeReadHandler).Methods("GET").Name("store")
+	s.router.HandleFunc("/cache", s.cacheWriteHandler).Methods("POST", "PUT")
+	s.router.HandleFunc("/cache/{hash}", s.cacheReadHandler).Methods("GET").Name("cache")
 	s.router.HandleFunc("/configs", s.configReadHandler).Methods("GET")
 	s.router.HandleFunc("/token", s.tokenGenerateHandler).Methods("POST")
 	s.router.HandleFunc("/token/validate", s.tokenValidateHandler).Methods("GET")
@@ -176,6 +179,27 @@ func (s *Server) ListenAndServe(stopCh <-chan struct{}) {
 		}
 	}
 
+	// start redis connection pool
+	s.startCachePool()
+	if s.pool != nil {
+		ticker := time.NewTicker(30 * time.Second)
+		go func() {
+			for {
+				select {
+				case <-stopCh:
+					return
+				case <-ticker.C:
+					conn := s.pool.Get()
+					_, err := redis.String(conn.Do("PING"))
+					if err != nil {
+						s.logger.Warn("cache server is offline", zap.Error(err), zap.String("server", s.config.CacheServer))
+					}
+					_ = conn.Close()
+				}
+			}
+		}()
+	}
+
 	// run server in background
 	go func() {
 		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
@@ -199,6 +223,11 @@ func (s *Server) ListenAndServe(stopCh <-chan struct{}) {
 	// all calls to /healthz and /readyz will fail from now on
 	atomic.StoreInt32(&healthy, 0)
 	atomic.StoreInt32(&ready, 0)
+
+	// close cache pool
+	if s.pool != nil {
+		_ = s.pool.Close()
+	}
 
 	s.logger.Info("Shutting down HTTP server", zap.Duration("timeout", s.config.HttpServerShutdownTimeout))
 

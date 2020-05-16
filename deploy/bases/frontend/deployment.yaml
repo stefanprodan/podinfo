@@ -41,6 +41,7 @@ spec:
         - --port-metrics=9797
         - --level=info
         - --backend-url=http://backend:9898/echo
+        - --cache-server=cache:6379
         env:
         - name: PODINFO_UI_COLOR
           value: "#34577c"

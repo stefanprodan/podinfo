@@ -46,6 +46,7 @@ func main() {
 	fs.Bool("unready", false, "when set, ready state is never reached")
 	fs.Int("stress-cpu", 0, "number of CPU cores with 100 load")
 	fs.Int("stress-memory", 0, "MB of data to load into memory")
+	fs.String("cache-server", "", "Redis address in the format <host>:<port>")
 
 	versionFlag := fs.BoolP("version", "v", false, "get version number")
 
