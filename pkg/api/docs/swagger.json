@@ -1,4 +1,8 @@
 {
+    "schemes": [
+        "http",
+        "https"
+    ],
     "swagger": "2.0",
     "info": {
         "description": "Go microservice template for Kubernetes.",
@@ -53,7 +57,6 @@
                     "202": {
                         "description": "Accepted",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/api.MapResponse"
                         }
                     }
@@ -77,8 +80,53 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/api.RuntimeResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/cache": {
+            "post": {
+                "description": "writes the posted content in cache and returns the SHA1 hash of the content",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "HTTP API"
+                ],
+                "summary": "Save payload in cache",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.MapResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/cache/{hash}": {
+            "get": {
+                "description": "returns the content from cache if key exists",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "HTTP API"
+                ],
+                "summary": "Get payload from cache",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 }
@@ -101,7 +149,6 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/api.MapResponse"
                         }
                     }
@@ -125,7 +172,6 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/api.MapResponse"
                         }
                     }
@@ -149,7 +195,6 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/api.ArrayResponse"
                         }
                     }
@@ -173,7 +218,6 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/api.ArrayResponse"
                         }
                     }
@@ -318,7 +362,6 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/api.MapResponse"
                         }
                     }
@@ -342,7 +385,6 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/api.MapResponse"
                         }
                     }
@@ -389,7 +431,6 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/api.TokenResponse"
                         }
                     }
@@ -413,7 +454,6 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/api.TokenValidationResponse"
                         }
                     },
@@ -440,7 +480,6 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/api.MapResponse"
                         }
                     }
@@ -464,7 +503,6 @@
                     "202": {
                         "description": "Accepted",
                         "schema": {
-                            "type": "object",
                             "$ref": "#/definitions/api.MapResponse"
                         }
                     }
@@ -475,11 +513,15 @@
     "definitions": {
         "api.ArrayResponse": {
             "type": "array",
-            "items": {}
+            "items": {
+                "type": "string"
+            }
         },
         "api.MapResponse": {
             "type": "object",
-            "additionalProperties": {}
+            "additionalProperties": {
+                "type": "string"
+            }
         },
         "api.RuntimeResponse": {
             "type": "object",
@@ -494,6 +536,9 @@
                     "type": "string"
                 },
                 "hostname": {
+                    "type": "string"
+                },
+                "logo": {
                     "type": "string"
                 },
                 "message": {

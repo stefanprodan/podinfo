@@ -35,6 +35,7 @@ Parameter | Default | Description
 `logLevel` | `info` | Log level: `debug`, `info`, `warn`, `error`, `flat` or `panic`
 `backend` | `None` | Echo backend URL
 `backends` | `[]` | Array of echo backend URLs
+`cache` | `None` | Redis address in the format `<host>:<port>`
 `ui.color` | `#34577c` |  UI color
 `ui.message` | `None` |  UI greetings message
 `ui.logo` | `None` |  UI logo
