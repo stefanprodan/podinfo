@@ -63,6 +63,14 @@ spec:
       name: GET /status/{code}
     - condition:
         method: POST
+        pathRegex: /cache
+      name: POST /cache
+    - condition:
+        method: GET
+        pathRegex: /cache/[^/]*
+      name: GET /cache/{hash}
+    - condition:
+        method: POST
         pathRegex: /store
       name: POST /store
     - condition:
