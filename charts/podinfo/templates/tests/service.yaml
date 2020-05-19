@@ -1,5 +1,5 @@
-apiVersion: batch/v1
-kind: Job
+apiVersion: v1
+kind: Pod
 metadata:
   name: {{ template "podinfo.fullname" . }}-service-test-{{ randAlphaNum 5 | lower }}
   labels:
@@ -14,17 +14,15 @@ metadata:
     linkerd.io/inject: disabled
     appmesh.k8s.aws/sidecarInjectorWebhook: disabled
 spec:
-  template:
-    spec:
-      containers:
-        - name: curl
-          image: curlimages/curl:7.69.0
-          command:
-            - sh
-            - -c
-            - |
-              curl -s ${PODINFO_SVC}/api/info | grep version
-          env:
-            - name: PODINFO_SVC
-              value: "{{ template "podinfo.fullname" . }}.{{ .Release.Namespace }}:{{ .Values.service.externalPort }}"
-      restartPolicy: Never
+  containers:
+    - name: curl
+      image: curlimages/curl:7.69.0
+      command:
+        - sh
+        - -c
+        - |
+          curl -s ${PODINFO_SVC}/api/info | grep version
+      env:
+        - name: PODINFO_SVC
+          value: "{{ template "podinfo.fullname" . }}.{{ .Release.Namespace }}:{{ .Values.service.externalPort }}"
+  restartPolicy: Never
