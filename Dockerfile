@@ -1,4 +1,4 @@
-FROM --platform=${TARGETPLATFORM:-linux/amd64} golang:1.14-alpine as builder
+FROM golang:1.14-alpine as builder
 
 ARG REVISION
 
@@ -18,7 +18,7 @@ RUN CGO_ENABLED=0 go build -ldflags "-s -w \
     -X github.com/stefanprodan/podinfo/pkg/version.REVISION=${REVISION}" \
     -a -o bin/podcli cmd/podcli/*
 
-FROM --platform=${TARGETPLATFORM:-linux/amd64} alpine:3.11
+FROM alpine:3.11
 
 RUN addgroup -S app \
     && adduser -S -g app app \

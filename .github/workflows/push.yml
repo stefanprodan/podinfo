@@ -1,20 +1,21 @@
-name: build
+name: multi-arch-build
 
 on:
   push:
-    branches: '*'
+    tags: '*'
 
 jobs:
-  build:
+  build-push:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: crazy-max/ghaction-docker-buildx@v1
-      - name: build
+      - name: buildx
         run: |
           echo "${{ secrets.DOCKER_PASSWORD }}" | docker login --username "${{ secrets.DOCKER_USERNAME }}" --password-stdin
           docker buildx build --platform "linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64" \
             --output "type=image,push=true" \
-            --build-arg "REVISION=${GITHUB_SHA::8}" \
-            --tag "docker.io/stefanprodan/podinfo:multiarch" \
+            --build-arg "REVISION=${GITHUB_SHA}" \
+            --tag "docker.io/stefanprodan/podinfo:${GITHUB_REF#refs/tags/}" \
+            --tag "docker.io/stefanprodan/podinfo:latest" \
             --file Dockerfile .
