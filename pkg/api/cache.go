@@ -1,45 +1,74 @@
 package api
 
 import (
-	"github.com/gomodule/redigo/redis"
-	"github.com/gorilla/mux"
-	"go.uber.org/zap"
 	"io/ioutil"
 	"net/http"
 	"time"
+
+	"github.com/gomodule/redigo/redis"
+	"github.com/gorilla/mux"
+	"go.uber.org/zap"
 )
 
 // Cache godoc
 // @Summary Save payload in cache
-// @Description writes the posted content in cache and returns the SHA1 hash of the content
+// @Description writes the posted content in cache
 // @Tags HTTP API
 // @Accept json
 // @Produce json
-// @Router /cache [post]
-// @Success 200 {object} api.MapResponse
+// @Router /cache/{key} [post]
+// @Success 202
 func (s *Server) cacheWriteHandler(w http.ResponseWriter, r *http.Request) {
 	if s.pool == nil {
 		s.ErrorResponse(w, r, "cache server is offline", http.StatusBadRequest)
 		return
 	}
 
+	key := mux.Vars(r)["key"]
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		s.ErrorResponse(w, r, "reading the request body failed", http.StatusBadRequest)
 		return
 	}
 
-	hash := hash(string(body))
-
 	conn := s.pool.Get()
 	defer conn.Close()
-	_, err = conn.Do("SET", hash, string(body))
+	_, err = conn.Do("SET", key, string(body))
 	if err != nil {
 		s.logger.Warn("cache set failed", zap.Error(err))
 		s.ErrorResponse(w, r, "cache set failed", http.StatusInternalServerError)
 		return
 	}
-	s.JSONResponseCode(w, r, map[string]string{"hash": hash}, http.StatusAccepted)
+
+	w.WriteHeader(http.StatusAccepted)
+}
+
+// Cache godoc
+// @Summary Delete payload from cache
+// @Description deletes the key and its value from cache
+// @Tags HTTP API
+// @Accept json
+// @Produce json
+// @Router /cache/{key} [delete]
+// @Success 202
+func (s *Server) cacheDeleteHandler(w http.ResponseWriter, r *http.Request) {
+	if s.pool == nil {
+		s.ErrorResponse(w, r, "cache server is offline", http.StatusBadRequest)
+		return
+	}
+
+	key := mux.Vars(r)["key"]
+
+	conn := s.pool.Get()
+	defer conn.Close()
+	_, err := conn.Do("DEL", key)
+	if err != nil {
+		s.logger.Warn("cache delete failed", zap.Error(err))
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	w.WriteHeader(http.StatusAccepted)
 }
 
 // Cache godoc
@@ -48,32 +77,35 @@ func (s *Server) cacheWriteHandler(w http.ResponseWriter, r *http.Request) {
 // @Tags HTTP API
 // @Accept json
 // @Produce json
-// @Router /cache/{hash} [get]
-// @Success 200 {string} api.MapResponse
+// @Router /cache/{key} [get]
+// @Success 200 {string} string value
 func (s *Server) cacheReadHandler(w http.ResponseWriter, r *http.Request) {
 	if s.pool == nil {
 		s.ErrorResponse(w, r, "cache server is offline", http.StatusBadRequest)
 		return
 	}
 
-	hash := mux.Vars(r)["hash"]
+	key := mux.Vars(r)["key"]
+
 	conn := s.pool.Get()
 	defer conn.Close()
 
-	ok, err := redis.Bool(conn.Do("EXISTS", hash))
+	ok, err := redis.Bool(conn.Do("EXISTS", key))
 	if err != nil || !ok {
-		s.ErrorResponse(w, r, "key not found in cache", http.StatusNotFound)
+		s.logger.Warn("cache key not found", zap.String("key", key))
+		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
-	data, err := redis.String(conn.Do("GET", hash))
+	data, err := redis.String(conn.Do("GET", key))
 	if err != nil {
 		s.logger.Warn("cache get failed", zap.Error(err))
-		s.ErrorResponse(w, r, "cache get failed", http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	s.JSONResponseCode(w, r, map[string]string{"data": data}, http.StatusAccepted)
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(data))
 }
 
 func (s *Server) startCachePool() {

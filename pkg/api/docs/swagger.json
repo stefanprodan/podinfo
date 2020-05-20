@@ -86,30 +86,7 @@
                 }
             }
         },
-        "/cache": {
-            "post": {
-                "description": "writes the posted content in cache and returns the SHA1 hash of the content",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "HTTP API"
-                ],
-                "summary": "Save payload in cache",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/api.MapResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/cache/{hash}": {
+        "/cache/{key}": {
             "get": {
                 "description": "returns the content from cache if key exists",
                 "consumes": [
@@ -129,6 +106,38 @@
                             "type": "string"
                         }
                     }
+                }
+            },
+            "post": {
+                "description": "writes the posted content in cache",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "HTTP API"
+                ],
+                "summary": "Save payload in cache",
+                "responses": {
+                    "202": {}
+                }
+            },
+            "delete": {
+                "description": "deletes the key and its value from cache",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "HTTP API"
+                ],
+                "summary": "Delete payload from cache",
+                "responses": {
+                    "202": {}
                 }
             }
         },
