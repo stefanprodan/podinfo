@@ -102,23 +102,18 @@ paths:
       summary: Runtime information
       tags:
       - HTTP API
-  /cache:
-    post:
+  /cache/{key}:
+    delete:
       consumes:
       - application/json
-      description: writes the posted content in cache and returns the SHA1 hash of
-        the content
+      description: deletes the key and its value from cache
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/api.MapResponse'
-      summary: Save payload in cache
+        "202": {}
+      summary: Delete payload from cache
       tags:
       - HTTP API
-  /cache/{hash}:
     get:
       consumes:
       - application/json
@@ -131,6 +126,17 @@ paths:
           schema:
             type: string
       summary: Get payload from cache
+      tags:
+      - HTTP API
+    post:
+      consumes:
+      - application/json
+      description: writes the posted content in cache
+      produces:
+      - application/json
+      responses:
+        "202": {}
+      summary: Save payload in cache
       tags:
       - HTTP API
   /chunked/{seconds}:
