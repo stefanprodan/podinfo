@@ -43,11 +43,6 @@ var (
 	watcher *fscache.Watcher
 )
 
-type FluxConfig struct {
-	GitUrl    string `mapstructure:"git-url"`
-	GitBranch string `mapstructure:"git-branch"`
-}
-
 type Config struct {
 	HttpClientTimeout         time.Duration `mapstructure:"http-client-timeout"`
 	HttpServerTimeout         time.Duration `mapstructure:"http-server-timeout"`
@@ -181,25 +176,8 @@ func (s *Server) ListenAndServe(stopCh <-chan struct{}) {
 	}
 
 	// start redis connection pool
-	s.startCachePool()
-	if s.pool != nil {
-		ticker := time.NewTicker(30 * time.Second)
-		go func() {
-			for {
-				select {
-				case <-stopCh:
-					return
-				case <-ticker.C:
-					conn := s.pool.Get()
-					_, err := redis.String(conn.Do("PING"))
-					if err != nil {
-						s.logger.Warn("cache server is offline", zap.Error(err), zap.String("server", s.config.CacheServer))
-					}
-					_ = conn.Close()
-				}
-			}
-		}()
-	}
+	ticker := time.NewTicker(30 * time.Second)
+	s.startCachePool(ticker, stopCh)
 
 	// run server in background
 	go func() {

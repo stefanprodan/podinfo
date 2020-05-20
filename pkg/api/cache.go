@@ -8,6 +8,8 @@ import (
 	"github.com/gomodule/redigo/redis"
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
+
+	"github.com/stefanprodan/podinfo/pkg/version"
 )
 
 // Cache godoc
@@ -108,18 +110,41 @@ func (s *Server) cacheReadHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(data))
 }
 
-func (s *Server) startCachePool() {
-	if s.config.CacheServer != "" {
-		s.pool = &redis.Pool{
-			MaxIdle:     3,
-			IdleTimeout: 240 * time.Second,
-			Dial: func() (redis.Conn, error) {
-				return redis.Dial("tcp", s.config.CacheServer)
-			},
-			TestOnBorrow: func(c redis.Conn, t time.Time) error {
-				_, err := c.Do("PING")
-				return err
-			},
-		}
+func (s *Server) startCachePool(ticker *time.Ticker, stopCh <-chan struct{}) {
+	if s.config.CacheServer == "" {
+		return
 	}
+	s.pool = &redis.Pool{
+		MaxIdle:     3,
+		IdleTimeout: 240 * time.Second,
+		Dial: func() (redis.Conn, error) {
+			return redis.Dial("tcp", s.config.CacheServer)
+		},
+		TestOnBorrow: func(c redis.Conn, t time.Time) error {
+			_, err := c.Do("PING")
+			return err
+		},
+	}
+
+	// set <hostname>=<version> with an expiry time of one minute
+	setVersion := func() {
+		conn := s.pool.Get()
+		if _, err := conn.Do("SET", s.config.Hostname, version.VERSION, "EX", 60); err != nil {
+			s.logger.Warn("cache server is offline", zap.Error(err), zap.String("server", s.config.CacheServer))
+		}
+		_ = conn.Close()
+	}
+
+	// set version on a schedule
+	go func() {
+		setVersion()
+		for {
+			select {
+			case <-stopCh:
+				return
+			case <-ticker.C:
+				setVersion()
+			}
+		}
+	}()
 }
