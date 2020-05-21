@@ -22,6 +22,7 @@ Specifications:
 * Helm and Kustomize installers
 * End-to-End testing with Kubernetes Kind and Helm
 * Kustomize testing with GitHub Actions and Open Policy Agent
+* Multi-arch container image with Docker buildx and Github Actions
 
 Web API:
 
