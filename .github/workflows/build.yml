@@ -1,11 +1,11 @@
-name: multi-arch-build
+name: build
 
 on:
   push:
     tags: '*'
 
 jobs:
-  build-push:
+  multi-arch-build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
