@@ -8,6 +8,11 @@ on:
 
 jobs:
   kind:
+    strategy:
+      matrix:
+        helm-version:
+          - 2.16.6
+          - 3.2.1
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -23,8 +28,6 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: 1.14.x
-      - name: Setup Helm
-        uses: ./.github/actions/helm
       - name: Setup Kubernetes
         uses: engineerd/setup-kind@v0.4.0
       - name: Run unit tests
@@ -40,6 +43,16 @@ jobs:
           GIT_COMMIT=$(git rev-list -1 HEAD) && \
           docker build -t test/podinfo:latest --build-arg "REVISION=${GIT_COMMIT}" .
           kind load docker-image test/podinfo:latest
+      - name: Setup Helm
+        uses: ./.github/actions/helm
+        with:
+          helm-version: ${{ matrix.helm-version }}
+      - name: Install Tiller
+        if: ${{ startsWith(matrix.helm-version, '2') }}
+        run: |
+          kubectl --namespace kube-system create sa tiller
+          kubectl create clusterrolebinding tiller-cluster-rule --clusterrole=cluster-admin --serviceaccount=kube-system:tiller
+          helm init --service-account tiller --upgrade --wait
       - name: Deploy
         run: |
           helm upgrade -i podinfo ./charts/podinfo \
