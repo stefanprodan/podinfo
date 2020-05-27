@@ -21,6 +21,13 @@ jobs:
             --tag "docker.io/stefanprodan/podinfo:${GITHUB_REF#refs/tags/}" \
             --tag "docker.io/stefanprodan/podinfo:latest" \
             --file Dockerfile .
+      - name: Publish base image
+        uses: docker/build-push-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          repository: stefanprodan/podinfo-base
+          tags: latest
       - name: Publish helm chart
         uses: ./.github/actions/helm-gh-pages
         with:

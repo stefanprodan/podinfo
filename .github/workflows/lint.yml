@@ -1,10 +1,21 @@
-on: [push, pull_request]
-name: test
+name: lint
+
+on:
+  pull_request:
+  push:
+    branches:
+      - '*'
+
 jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
+      - name: helm
+        uses: stefanprodan/kube-tools@v1
+        with:
+          command: |
+            helmv3 template ./charts/podinfo | kubeval --strict
       - name: kubeval
         uses: stefanprodan/kube-tools@v1
         with:
