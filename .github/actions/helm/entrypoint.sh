@@ -8,8 +8,6 @@ BIN_DIR="$GITHUB_WORKSPACE/bin"
 
 main() {
   mkdir -p ${BIN_DIR}
-  cp /helm-publish.sh ${BIN_DIR}/helm-publish
-
   tmpDir=$(mktemp -d)
 
   pushd $tmpDir >& /dev/null

@@ -12,10 +12,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Publish Helm charts
-        uses: ./.github/actions/helm-gh-pages
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Restore Go cache
         uses: actions/cache@v1
         with:
@@ -31,11 +27,6 @@ jobs:
         uses: ./.github/actions/helm
       - name: Setup Kubernetes
         uses: engineerd/setup-kind@v0.4.0
-      - name: Debug
-        run: |
-          which kubectl
-          ls -la $HOME
-          ls -la $GITHUB_WORKSPACE
       - name: Run unit tests
         run: make test
       - name: Check if working tree is dirty
