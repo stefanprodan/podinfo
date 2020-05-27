@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 
 set -o errexit
-set -o nounset
 set -o pipefail
 
 HELM_VERSION=3.2.1
-BIN_DIR=/home/runner/bin
+BIN_DIR="$GITHUB_WORKSPACE/bin"
 
 main() {
   mkdir -p ${BIN_DIR}
+  cp /helm-publish.sh ${BIN_DIR}/helm-publish
+
   tmpDir=$(mktemp -d)
 
   pushd $tmpDir >& /dev/null
@@ -21,3 +22,5 @@ main() {
 }
 
 main
+echo "::add-path::$BIN_DIR"
+echo "::add-path::$RUNNER_WORKSPACE/$(basename $GITHUB_REPOSITORY)/bin"
