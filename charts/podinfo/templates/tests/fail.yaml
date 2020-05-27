@@ -9,7 +9,7 @@ metadata:
     chart: {{ .Chart.Name }}-{{ .Chart.Version }}
     app: {{ template "podinfo.name" . }}
   annotations:
-    "helm.sh/hook": test
+    "helm.sh/hook": test-success
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
     sidecar.istio.io/inject: "false"
     linkerd.io/inject: disabled
