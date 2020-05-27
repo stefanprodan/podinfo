@@ -32,3 +32,15 @@ jobs:
         uses: ./.github/actions/helm-gh-pages
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: ./.github/actions/release-notes
+      - name: Generate release notes
+        run: |
+          echo 'CHANGELOG' > /tmp/release.txt
+          github-release-notes -org stefanprodan -repo podinfo -since-latest-release >> /tmp/release.txt
+      - name: Publish release
+        uses: goreleaser/goreleaser-action@v1
+        with:
+          version: latest
+          args: release --release-notes=/tmp/release.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
