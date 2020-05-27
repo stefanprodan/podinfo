@@ -1,0 +1,9 @@
+name: 'github-release-notes'
+description: 'A GitHub Action to run github-release-notes commands'
+author: 'Stefan Prodan'
+branding:
+  icon: 'command'
+  color: 'blue'
+runs:
+  using: 'docker'
+  image: 'Dockerfile'

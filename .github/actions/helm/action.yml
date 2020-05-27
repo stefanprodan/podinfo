@@ -1,0 +1,9 @@
+name: 'helm'
+description: 'A GitHub Action to run helm commands'
+author: 'Stefan Prodan'
+branding:
+  icon: 'command'
+  color: 'blue'
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
