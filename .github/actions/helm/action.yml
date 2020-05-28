@@ -4,6 +4,12 @@ author: 'Stefan Prodan'
 branding:
   icon: 'command'
   color: 'blue'
+inputs:
+  helm-version:
+    description: Helm version to use
+    required: true
 runs:
   using: 'docker'
   image: 'Dockerfile'
+  args:
+    - ${{ inputs.helm-version }}

@@ -3,7 +3,7 @@
 set -o errexit
 set -o pipefail
 
-HELM_VERSION=3.2.1
+HELM_VERSION=$1
 BIN_DIR="$GITHUB_WORKSPACE/bin"
 
 main() {
