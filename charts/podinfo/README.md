@@ -8,8 +8,9 @@ that showcases best practices of running microservices in Kubernetes.
 To install the chart with the release name `my-release`:
 
 ```console
-$ helm repo add sp https://stefanprodan.github.io/podinfo
-$ helm upgrade my-release --install sp/podinfo 
+$ helm repo add podinfo https://stefanprodan.github.io/podinfo
+
+$ helm upgrade -i my-release podinfo/podinfo 
 ```
 
 The command deploys podinfo on the Kubernetes cluster in the default namespace.
@@ -20,7 +21,7 @@ The [configuration](#configuration) section lists the parameters that can be con
 To uninstall/delete the `my-release` deployment:
 
 ```console
-$ helm delete --purge my-release
+$ helm delete my-release
 ```
 
 The command removes all the Kubernetes components associated with the chart and deletes the release.
@@ -83,14 +84,14 @@ Parameter | Default | Description
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`. For example,
 
 ```console
-$ helm install stable/podinfo --name my-release \
+$ helm install my-release podinfo/podinfo \
   --set=serviceMonitor.enabled=true,serviceMonitor.interval=5s
 ```
 
 Alternatively, a YAML file that specifies the values for the above parameters can be provided while installing the chart. For example,
 
 ```console
-$ helm install stable/podinfo --name my-release -f values.yaml
+$ helm install my-release podinfo/podinfo -f values.yaml
 ```
 
 > **Tip**: You can use the default [values.yaml](values.yaml)
