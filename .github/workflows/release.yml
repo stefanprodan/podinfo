@@ -29,7 +29,7 @@ jobs:
           repository: stefanprodan/podinfo-base
           tags: latest
       - name: Publish helm chart
-        uses: ./.github/actions/helm-gh-pages
+        uses: stefanprodan/helm-gh-pages@master
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - uses: ./.github/actions/release-notes
