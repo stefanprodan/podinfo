@@ -2,7 +2,7 @@
 
 [![e2e](https://github.com/stefanprodan/podinfo/workflows/e2e/badge.svg)](https://github.com/stefanprodan/podinfo/blob/master/.github/workflows/e2e.yml)
 [![test](https://github.com/stefanprodan/podinfo/workflows/test/badge.svg)](https://github.com/stefanprodan/podinfo/blob/master/.github/workflows/test.yml)
-[![release](https://github.com/stefanprodan/podinfo/workflows/release/badge.svg)](https://github.com/stefanprodan/podinfo/blob/master/.github/workflows/release.yml)
+[![cve-scan](https://github.com/stefanprodan/podinfo/workflows/cve-scan/badge.svg)](https://github.com/stefanprodan/podinfo/blob/master/.github/workflows/cve-scan.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/stefanprodan/podinfo)](https://goreportcard.com/report/github.com/stefanprodan/podinfo)
 [![Docker Pulls](https://img.shields.io/docker/pulls/stefanprodan/podinfo)](https://hub.docker.com/r/stefanprodan/podinfo)
 
@@ -24,6 +24,7 @@ Specifications:
 * End-to-End testing with Kubernetes Kind and Helm
 * Kustomize testing with GitHub Actions and Open Policy Agent
 * Multi-arch container image with Docker buildx and Github Actions
+* CVE scanning with trivy
 
 Web API:
 
