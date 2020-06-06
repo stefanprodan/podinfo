@@ -1,4 +1,4 @@
 package version
 
-var VERSION = "4.0.2"
+var VERSION = "4.0.3"
 var REVISION = "unknown"
