@@ -18,7 +18,7 @@ RUN CGO_ENABLED=0 go build -ldflags "-s -w \
     -X github.com/stefanprodan/podinfo/pkg/version.REVISION=${REVISION}" \
     -a -o bin/podcli cmd/podcli/*
 
-FROM alpine:3.11
+FROM alpine:3.12
 
 ARG BUILD_DATE
 ARG VERSION
@@ -38,7 +38,7 @@ LABEL maintainer="stefanprodan" \
 RUN addgroup -S app \
     && adduser -S -g app app \
     && apk --no-cache add \
-    curl openssl netcat-openbsd
+    ca-certificates curl netcat-openbsd
 
 WORKDIR /home/app
 
