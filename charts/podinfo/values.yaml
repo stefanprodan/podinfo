@@ -4,7 +4,6 @@ replicaCount: 1
 logLevel: info
 backend: #http://backend-podinfo:9898/echo
 backends: []
-cache: ""
 
 ui:
   color: "#34577c"
@@ -47,6 +46,14 @@ hpa:
   memory:
   # average http requests per second per pod (k8s-prometheus-adapter)
   requests:
+
+# Redis address in the format <host>:<port>
+cache: ""
+# Redis deployment
+redis:
+  enabled: false
+  repository: redis
+  tag: 6.0.1
 
 serviceAccount:
   # Specifies whether a service account should be created
