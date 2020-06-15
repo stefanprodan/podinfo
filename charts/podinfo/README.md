@@ -37,6 +37,7 @@ Parameter | Default | Description
 `backend` | `None` | Echo backend URL
 `backends` | `[]` | Array of echo backend URLs
 `cache` | `None` | Redis address in the format `<host>:<port>`
+`redis.enabled` | `false` | Create Redis deployment for caching purposes
 `ui.color` | `#34577c` |  UI color
 `ui.message` | `None` |  UI greetings message
 `ui.logo` | `None` |  UI logo
