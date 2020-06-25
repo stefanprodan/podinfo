@@ -104,6 +104,20 @@ func main() {
 		viper.Set("port", strconv.Itoa(port))
 	}
 
+	// validate random delay options
+	if viper.GetInt("random-delay-max") < viper.GetInt("random-delay-min") {
+		logger.Panic("`--random-delay-max` should be greater than `--random-delay-min`")
+	}
+
+	switch delayUnit := viper.GetString("random-delay-unit"); delayUnit {
+	case
+		"s",
+		"ms":
+		break
+	default:
+		logger.Panic("`random-delay-unit` accepted values are: s|ms")
+	}
+
 	// load gRPC server config
 	var grpcCfg grpc.Config
 	if err := viper.Unmarshal(&grpcCfg); err != nil {
