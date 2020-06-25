@@ -59,6 +59,9 @@ type Config struct {
 	Hostname                  string        `mapstructure:"hostname"`
 	H2C                       bool          `mapstructure:"h2c"`
 	RandomDelay               bool          `mapstructure:"random-delay"`
+	RandomDelayUnit           string        `mapstructure:"random-delay-unit"`
+	RandomDelayMin            int           `mapstructure:"random-delay-min"`
+	RandomDelayMax            int           `mapstructure:"random-delay-max"`
 	RandomError               bool          `mapstructure:"random-error"`
 	Unhealthy                 bool          `mapstructure:"unhealthy"`
 	Unready                   bool          `mapstructure:"unready"`
@@ -134,7 +137,8 @@ func (s *Server) registerMiddlewares() {
 	s.router.Use(httpLogger.Handler)
 	s.router.Use(versionMiddleware)
 	if s.config.RandomDelay {
-		s.router.Use(randomDelayMiddleware)
+		randomDelayer := NewRandomDelayMiddleware(s.config.RandomDelayMin, s.config.RandomDelayMax, s.config.RandomDelayUnit)
+		s.router.Use(randomDelayer.Handler)
 	}
 	if s.config.RandomError {
 		s.router.Use(randomErrorMiddleware)

@@ -11,17 +11,6 @@ import (
 	"go.uber.org/zap"
 )
 
-func randomDelayMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		min := 0
-		max := 5
-		rand.Seed(time.Now().Unix())
-		delay := rand.Intn(max-min) + min
-		time.Sleep(time.Duration(delay) * time.Second)
-		next.ServeHTTP(w, r)
-	})
-}
-
 func randomErrorMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		rand.Seed(time.Now().Unix())
