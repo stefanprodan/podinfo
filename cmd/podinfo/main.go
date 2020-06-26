@@ -40,7 +40,10 @@ func main() {
 	fs.String("ui-color", "#34577c", "UI color")
 	fs.String("ui-message", fmt.Sprintf("greetings from podinfo v%v", version.VERSION), "UI message")
 	fs.Bool("h2c", false, "allow upgrading to H2C")
-	fs.Bool("random-delay", false, "between 0 and 5 seconds random delay")
+	fs.Bool("random-delay", false, "between 0 and 5 seconds random delay by default")
+	fs.String("random-delay-unit", "s", "either s(seconds) or ms(milliseconds")
+	fs.Int("random-delay-min", 0, "min for random delay: 0 by default")
+	fs.Int("random-delay-max", 5, "max for random delay: 5 by default")
 	fs.Bool("random-error", false, "1/3 chances of a random response error")
 	fs.Bool("unhealthy", false, "when set, healthy state is never reached")
 	fs.Bool("unready", false, "when set, ready state is never reached")
@@ -99,6 +102,20 @@ func main() {
 	if _, err := strconv.Atoi(viper.GetString("port")); err != nil {
 		port, _ := fs.GetInt("port")
 		viper.Set("port", strconv.Itoa(port))
+	}
+
+	// validate random delay options
+	if viper.GetInt("random-delay-max") < viper.GetInt("random-delay-min") {
+		logger.Panic("`--random-delay-max` should be greater than `--random-delay-min`")
+	}
+
+	switch delayUnit := viper.GetString("random-delay-unit"); delayUnit {
+	case
+		"s",
+		"ms":
+		break
+	default:
+		logger.Panic("`random-delay-unit` accepted values are: s|ms")
 	}
 
 	// load gRPC server config
