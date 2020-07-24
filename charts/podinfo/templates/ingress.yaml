@@ -33,7 +33,7 @@ spec:
           - path: {{ $ingressPath }}
             backend:
               serviceName: {{ $fullName }}
-              servicePort: http
+              servicePort: {{ .Values.service.externalPort }}
   {{- end }}
   {{- if not .Values.ingress.hosts }}
     - http:
@@ -41,6 +41,6 @@ spec:
           - path: {{ $ingressPath }}
             backend:
               serviceName: {{ $fullName }}
-              servicePort: http
+              servicePort: {{ .Values.service.externalPort }}
   {{- end }}
 {{- end }}
