@@ -3,10 +3,7 @@ kind: Deployment
 metadata:
   name: {{ template "podinfo.fullname" . }}
   labels:
-    app: {{ template "podinfo.fullname" . }}
-    chart: {{ template "podinfo.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+    {{- include "podinfo.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.hpa.enabled }}
   replicas: {{ .Values.replicaCount }}
@@ -17,11 +14,11 @@ spec:
       maxUnavailable: 1
   selector:
     matchLabels:
-      app: {{ template "podinfo.fullname" . }}
+      {{- include "podinfo.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        app: {{ template "podinfo.fullname" . }}
+        {{- include "podinfo.selectorLabels" . | nindent 8 }}
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: "{{ .Values.service.httpPort }}"

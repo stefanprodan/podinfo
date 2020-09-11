@@ -4,10 +4,7 @@ kind: ServiceMonitor
 metadata:
   name: {{ template "podinfo.fullname" . }}
   labels:
-    app: {{ template "podinfo.name" . }}
-    chart: {{ template "podinfo.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+    {{- include "podinfo.labels" . | nindent 4 }}
 spec:
   endpoints:
     - path: /metrics
