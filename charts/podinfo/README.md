@@ -104,3 +104,14 @@ $ helm install my-release podinfo/podinfo -f values.yaml
 ```
 
 > **Tip**: You can use the default [values.yaml](values.yaml)
+
+## Upgrading the chart
+
+### To =< 5.0.0
+
+Version 5.0.0 is a major update.
+
+* The chart now follows the new Kubernetes label recommendations:
+<https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/>
+
+The simplest way to update is to do a force upgrade, which recreates the resources by doing a delete and an install.

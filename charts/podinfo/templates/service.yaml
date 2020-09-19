@@ -4,10 +4,7 @@ kind: Service
 metadata:
   name: {{ template "podinfo.fullname" . }}
   labels:
-    app: {{ template "podinfo.name" . }}
-    chart: {{ template "podinfo.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+    {{- include "podinfo.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.service.type }}
   ports:
@@ -25,5 +22,5 @@ spec:
       name: grpc
     {{- end }}
   selector:
-    app: {{ template "podinfo.fullname" . }}
+    {{- include "podinfo.selectorLabels" . | nindent 4 }}
 {{- end }}
