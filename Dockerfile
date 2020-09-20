@@ -24,16 +24,7 @@ ARG BUILD_DATE
 ARG VERSION
 ARG REVISION
 
-LABEL maintainer="stefanprodan" \
-  org.opencontainers.image.created=$BUILD_DATE \
-  org.opencontainers.image.url="https://github.com/stefanprodan/podinfo" \
-  org.opencontainers.image.source="https://github.com/stefanprodan/podinfo" \
-  org.opencontainers.image.version=$VERSION \
-  org.opencontainers.image.revision=$REVISION \
-  org.opencontainers.image.vendor="stefanprodan" \
-  org.opencontainers.image.title="podinfo" \
-  org.opencontainers.image.description="Go microservice template for Kubernetes" \
-  org.opencontainers.image.licenses="MIT"
+LABEL maintainer="stefanprodan"
 
 RUN addgroup -S app \
     && adduser -S -g app app \

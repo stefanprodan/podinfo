@@ -11,8 +11,8 @@ jobs:
     strategy:
       matrix:
         helm-version:
-          - 2.16.6
-          - 3.2.1
+          - 2.16.12
+          - 3.3.3
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
