@@ -50,7 +50,6 @@ jobs:
             docker.io/stefanprodan/podinfo:${{ steps.prep.outputs.VERSION }}
             docker.io/stefanprodan/podinfo:latest
             ghcr.io/stefanprodan/podinfo:${{ steps.prep.outputs.VERSION }}
-            ghcr.io/stefanprodan/podinfo:latest
           labels: |
             org.opencontainers.image.title=${{ github.event.repository.name }}
             org.opencontainers.image.description=${{ github.event.repository.description }}
