@@ -53,7 +53,7 @@ app.kubernetes.io/name: {{ include "podinfo.fullname" . }}
 Create the name of the service account to use
 */}}
 {{- define "podinfo.serviceAccountName" -}}
-{{- if .Values.serviceAccount.create }}
+{{- if .Values.serviceAccount.enabled }}
 {{- default (include "podinfo.fullname" .) .Values.serviceAccount.name }}
 {{- else }}
 {{- default "default" .Values.serviceAccount.name }}

@@ -22,8 +22,8 @@ h2c:
   enabled: false
 
 image:
-  repository: stefanprodan/podinfo
-  tag: 4.0.6
+  repository: ghcr.io/stefanprodan/podinfo
+  tag: 5.0.0
   pullPolicy: IfNotPresent
 
 service:
