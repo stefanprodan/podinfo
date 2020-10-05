@@ -60,6 +60,7 @@ version-set:
 	current="$(VERSION)" && \
 	sed -i '' "s/$$current/$$next/g" pkg/version/version.go && \
 	sed -i '' "s/tag: $$current/tag: $$next/g" charts/podinfo/values.yaml && \
+	sed -i '' "s/tag: $$current/tag: $$next/g" charts/podinfo/values-prod.yaml && \
 	sed -i '' "s/appVersion: $$current/appVersion: $$next/g" charts/podinfo/Chart.yaml && \
 	sed -i '' "s/version: $$current/version: $$next/g" charts/podinfo/Chart.yaml && \
 	sed -i '' "s/podinfo:$$current/podinfo:$$next/g" kustomize/deployment.yaml && \
