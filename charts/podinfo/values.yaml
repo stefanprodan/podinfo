@@ -23,7 +23,7 @@ h2c:
 
 image:
   repository: ghcr.io/stefanprodan/podinfo
-  tag: 5.0.1
+  tag: 5.0.2
   pullPolicy: IfNotPresent
 
 service:
@@ -53,7 +53,7 @@ cache: ""
 redis:
   enabled: false
   repository: redis
-  tag: 6.0.1
+  tag: 6.0.8
 
 serviceAccount:
   # Specifies whether a service account should be created
