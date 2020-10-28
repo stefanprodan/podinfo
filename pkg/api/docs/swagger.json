@@ -204,7 +204,10 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.ArrayResponse"
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
@@ -227,7 +230,10 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.ArrayResponse"
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
@@ -520,12 +526,6 @@
         }
     },
     "definitions": {
-        "api.ArrayResponse": {
-            "type": "array",
-            "items": {
-                "type": "string"
-            }
-        },
         "api.MapResponse": {
             "type": "object",
             "additionalProperties": {
