@@ -1,9 +1,5 @@
 basePath: /
 definitions:
-  api.ArrayResponse:
-    items:
-      type: string
-    type: array
   api.MapResponse:
     additionalProperties:
       type: string
@@ -181,7 +177,9 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.ArrayResponse'
+            items:
+              type: string
+            type: array
       summary: Environment
       tags:
       - HTTP API
@@ -196,7 +194,9 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.ArrayResponse'
+            items:
+              type: string
+            type: array
       summary: Headers
       tags:
       - HTTP API
