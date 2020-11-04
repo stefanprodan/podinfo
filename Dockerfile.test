@@ -1,0 +1,16 @@
+FROM maven:3-jdk-8-alpine
+
+RUN mkdir -p /usr/src/app
+WORKDIR /usr/src/app
+
+#COPY integration-tests/myproject/settings.xml /usr/share/maven/ref/
+COPY integration-tests/myproject/pom.xml /usr/src/app/pom.xml
+COPY integration-tests/myproject/pom.xml /usr/src/app/pom.xml
+
+RUN mvn verify clean --fail-never
+
+COPY integration-tests/myproject /usr/src/app
+
+RUN mvn -B -f /usr/src/app/pom.xml -s /usr/share/maven/ref/settings-docker.xml prepare-package -DskipTests
+
+
