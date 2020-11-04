@@ -44,7 +44,7 @@ jobs:
           builder: ${{ steps.buildx.outputs.name }}
           context: .
           file: ./Dockerfile
-          platforms: linux/amd64,linux/arm/v7,linux/arm64
+          platforms: linux/amd64
           tags: |
             ${{ secrets.DOCKER_REGISTRY_URL }}/liatrio/podinfo:${{ steps.prep.outputs.VERSION }}
             ${{ secrets.DOCKER_REGISTRY_URL }}/liatrio/podinfo:latest
@@ -65,10 +65,6 @@ jobs:
           platforms: linux/amd64
           file: ./Dockerfile.base
           tags: ${{ secrets.DOCKER_REGISTRY_URL }}/liatrio/podinfo-base:latest
-      - name: Publish helm chart
-        uses: stefanprodan/helm-gh-pages@master
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
       - uses: ./.github/actions/release-notes
       - name: Generate release notes
         run: |
