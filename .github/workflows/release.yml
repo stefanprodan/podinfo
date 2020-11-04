@@ -22,15 +22,10 @@ jobs:
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
-      - name: Login to GitHub Container Registry
+      - name: Login to Azure Container Registry
         uses: docker/login-action@v1
         with:
           registry: ${{ secrets.DOCKER_REGISTRY_URL }}
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-      - name: Login to Docker Hub
-        uses: docker/login-action@v1
-        with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Prepare
@@ -51,9 +46,8 @@ jobs:
           file: ./Dockerfile
           platforms: linux/amd64,linux/arm/v7,linux/arm64
           tags: |
-            docker.io/stefanprodan/podinfo:${{ steps.prep.outputs.VERSION }}
-            docker.io/stefanprodan/podinfo:latest
-            ghcr.io/stefanprodan/podinfo:${{ steps.prep.outputs.VERSION }}
+            ${{ secrets.DOCKER_REGISTRY_URL }}/liatrio/podinfo:${{ steps.prep.outputs.VERSION }}
+            ${{ secrets.DOCKER_REGISTRY_URL }}/liatrio/podinfo:latest
           labels: |
             org.opencontainers.image.title=${{ github.event.repository.name }}
             org.opencontainers.image.description=${{ github.event.repository.description }}
@@ -70,7 +64,7 @@ jobs:
           context: .
           platforms: linux/amd64
           file: ./Dockerfile.base
-          tags: docker.io/stefanprodan/podinfo-base:latest
+          tags: ${{ secrets.DOCKER_REGISTRY_URL }}/liatrio/podinfo-base:latest
       - name: Publish helm chart
         uses: stefanprodan/helm-gh-pages@master
         with:
