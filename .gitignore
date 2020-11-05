@@ -6,6 +6,7 @@
 
 # Test binary, build with `go test -c`
 *.test
+!Dockerfile.test
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
@@ -20,3 +21,5 @@ build/
 gcloud/
 dist/
 bin/
+
+**/target

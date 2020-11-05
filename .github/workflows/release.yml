@@ -65,6 +65,17 @@ jobs:
           platforms: linux/amd64
           file: ./Dockerfile.base
           tags: ${{ secrets.DOCKER_REGISTRY_URL }}/liatrio/podinfo-base:latest
+      - name: Publish test image
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          builder: ${{ steps.buildx.outputs.name }}
+          context: .
+          platforms: linux/amd64
+          file: ./Dockerfile.test
+          tags: |
+            ${{ secrets.DOCKER_REGISTRY_URL }}/liatrio/podinfo-tests:${{ steps.prep.outputs.VERSION }}
+            ${{ secrets.DOCKER_REGISTRY_URL }}/liatrio/podinfo-tests:latest
       - uses: ./.github/actions/release-notes
       - name: Generate release notes
         run: |
