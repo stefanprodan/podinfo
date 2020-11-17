@@ -6,6 +6,7 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 	"os"
+	"path"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -54,7 +55,9 @@ type Config struct {
 	UIPath                    string        `mapstructure:"ui-path"`
 	DataPath                  string        `mapstructure:"data-path"`
 	ConfigPath                string        `mapstructure:"config-path"`
+	CertPath                  string        `mapstructure:"cert-path"`
 	Port                      string        `mapstructure:"port"`
+	SecurePort                string        `mapstructure:"secure-port"`
 	PortMetrics               int           `mapstructure:"port-metrics"`
 	Hostname                  string        `mapstructure:"hostname"`
 	H2C                       bool          `mapstructure:"h2c"`
@@ -70,10 +73,11 @@ type Config struct {
 }
 
 type Server struct {
-	router *mux.Router
-	logger *zap.Logger
-	config *Config
-	pool   *redis.Pool
+	router  *mux.Router
+	logger  *zap.Logger
+	config  *Config
+	pool    *redis.Pool
+	handler http.Handler
 }
 
 func NewServer(config *Config, logger *zap.Logger) (*Server, error) {
@@ -151,19 +155,10 @@ func (s *Server) ListenAndServe(stopCh <-chan struct{}) {
 	s.registerHandlers()
 	s.registerMiddlewares()
 
-	var handler http.Handler
 	if s.config.H2C {
-		handler = h2c.NewHandler(s.router, &http2.Server{})
+		s.handler = h2c.NewHandler(s.router, &http2.Server{})
 	} else {
-		handler = s.router
-	}
-
-	srv := &http.Server{
-		Addr:         ":" + s.config.Port,
-		WriteTimeout: s.config.HttpServerTimeout,
-		ReadTimeout:  s.config.HttpServerTimeout,
-		IdleTimeout:  2 * s.config.HttpServerTimeout,
-		Handler:      handler,
+		s.handler = s.router
 	}
 
 	//s.printRoutes()
@@ -183,12 +178,11 @@ func (s *Server) ListenAndServe(stopCh <-chan struct{}) {
 	ticker := time.NewTicker(30 * time.Second)
 	s.startCachePool(ticker, stopCh)
 
-	// run server in background
-	go func() {
-		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
-			s.logger.Fatal("HTTP server crashed", zap.Error(err))
-		}
-	}()
+	// create the http server
+	srv := s.startServer()
+
+	// create the secure server
+	secureSrv := s.startSecureServer()
 
 	// signal Kubernetes the server is ready to receive traffic
 	if !s.config.Unhealthy {
@@ -212,7 +206,7 @@ func (s *Server) ListenAndServe(stopCh <-chan struct{}) {
 		_ = s.pool.Close()
 	}
 
-	s.logger.Info("Shutting down HTTP server", zap.Duration("timeout", s.config.HttpServerShutdownTimeout))
+	s.logger.Info("Shutting down HTTP/HTTPS server", zap.Duration("timeout", s.config.HttpServerShutdownTimeout))
 
 	// wait for Kubernetes readiness probe to remove this instance from the load balancer
 	// the readiness check interval must be lower than the timeout
@@ -220,12 +214,78 @@ func (s *Server) ListenAndServe(stopCh <-chan struct{}) {
 		time.Sleep(3 * time.Second)
 	}
 
-	// attempt graceful shutdown
-	if err := srv.Shutdown(ctx); err != nil {
-		s.logger.Warn("HTTP server graceful shutdown failed", zap.Error(err))
-	} else {
-		s.logger.Info("HTTP server stopped")
+	// determine if the http server was started
+	if srv != nil {
+		if err := srv.Shutdown(ctx); err != nil {
+			s.logger.Warn("HTTP server graceful shutdown failed", zap.Error(err))
+		}
 	}
+
+	// determine if the secure server was started
+	if secureSrv != nil {
+		if err := secureSrv.Shutdown(ctx); err != nil {
+			s.logger.Warn("HTTPS server graceful shutdown failed", zap.Error(err))
+		}
+	}
+}
+
+func (s *Server) startServer() *http.Server {
+
+	// determine if the port is specified
+	if s.config.Port == "0" {
+
+		// move on immediately
+		return nil
+	}
+
+	srv := &http.Server{
+		Addr:         ":" + s.config.Port,
+		WriteTimeout: s.config.HttpServerTimeout,
+		ReadTimeout:  s.config.HttpServerTimeout,
+		IdleTimeout:  2 * s.config.HttpServerTimeout,
+		Handler:      s.handler,
+	}
+
+	// start the server in the background
+	go func() {
+		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
+			s.logger.Fatal("HTTP server crashed", zap.Error(err))
+		}
+	}()
+
+	// return the server and routine
+	return srv
+}
+
+func (s *Server) startSecureServer() *http.Server {
+
+	// determine if the port is specified
+	if s.config.SecurePort == "0" {
+
+		// move on immediately
+		return nil
+	}
+
+	srv := &http.Server{
+		Addr:         ":" + s.config.SecurePort,
+		WriteTimeout: s.config.HttpServerTimeout,
+		ReadTimeout:  s.config.HttpServerTimeout,
+		IdleTimeout:  2 * s.config.HttpServerTimeout,
+		Handler:      s.handler,
+	}
+
+	cert := path.Join(s.config.CertPath, "tls.crt")
+	key := path.Join(s.config.CertPath, "tls.key")
+
+	// start the server in the background
+	go func() {
+		if err := srv.ListenAndServeTLS(cert, key); err != http.ErrServerClosed {
+			s.logger.Fatal("HTTPS server crashed", zap.Error(err))
+		}
+	}()
+
+	// return the server
+	return srv
 }
 
 func (s *Server) startMetricsServer() {
