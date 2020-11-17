@@ -1,0 +1,15 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: podinfo-frontend
+  namespace: secure
+spec:
+  dnsNames:
+    - frontend
+    - frontend.secure
+    - frontend.secure.cluster.local
+    - localhost
+  secretName: podinfo-frontend-tls
+  issuerRef:
+    name: self-signed
+    kind: ClusterIssuer
