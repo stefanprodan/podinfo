@@ -24,6 +24,7 @@ func main() {
 	// flags definition
 	fs := pflag.NewFlagSet("default", pflag.ContinueOnError)
 	fs.Int("port", 9898, "HTTP port")
+	fs.Int("secure-port", 0, "HTTPS port")
 	fs.Int("port-metrics", 0, "metrics port")
 	fs.Int("grpc-port", 0, "gRPC port")
 	fs.String("grpc-service-name", "podinfo", "gPRC service name")
@@ -34,6 +35,7 @@ func main() {
 	fs.Duration("http-server-shutdown-timeout", 5*time.Second, "server graceful shutdown timeout duration")
 	fs.String("data-path", "/data", "data local path")
 	fs.String("config-path", "", "config dir path")
+	fs.String("cert-path", "/data/cert", "certificate path for HTTPS port")
 	fs.String("config", "config.yaml", "config file name")
 	fs.String("ui-path", "./ui", "UI local path")
 	fs.String("ui-logo", "", "UI logo")
@@ -102,6 +104,12 @@ func main() {
 	if _, err := strconv.Atoi(viper.GetString("port")); err != nil {
 		port, _ := fs.GetInt("port")
 		viper.Set("port", strconv.Itoa(port))
+	}
+
+	// validate secure port
+	if _, err := strconv.Atoi(viper.GetString("secure-port")); err != nil {
+		securePort, _ := fs.GetInt("secure-port")
+		viper.Set("secure-port", strconv.Itoa(securePort))
 	}
 
 	// validate random delay options

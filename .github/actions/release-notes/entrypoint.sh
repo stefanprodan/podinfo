@@ -20,5 +20,6 @@ main() {
 }
 
 main
-echo "::add-path::$BIN_DIR"
-echo "::add-path::$RUNNER_WORKSPACE/$(basename $GITHUB_REPOSITORY)/bin"
+
+echo "$BIN_DIR" >> $GITHUB_PATH
+echo "$RUNNER_WORKSPACE/$(basename $GITHUB_REPOSITORY)/bin" >> $GITHUB_PATH
