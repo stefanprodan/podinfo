@@ -21,8 +21,7 @@ jobs:
         uses: engineerd/setup-kind@v0.5.0
       - name: Build container image
         run: |
-          GIT_COMMIT=$(git rev-list -1 HEAD) && \
-          docker build -t test/podinfo:latest --build-arg "REVISION=${GIT_COMMIT}" .
+          ./hack/build.sh
           kind load docker-image test/podinfo:latest
       - name: Setup Helm
         uses: ./.github/actions/helm
@@ -30,20 +29,11 @@ jobs:
           helm-version: ${{ matrix.helm-version }}
       - name: Install Tiller
         if: ${{ startsWith(matrix.helm-version, '2') }}
-        run: |
-          kubectl --namespace kube-system create sa tiller
-          kubectl create clusterrolebinding tiller-cluster-rule --clusterrole=cluster-admin --serviceaccount=kube-system:tiller
-          helm init --service-account tiller --upgrade --wait
+        run: ./hack/tiller.sh
       - name: Deploy
-        run: |
-          helm upgrade -i podinfo ./charts/podinfo \
-          --set image.repository=test/podinfo \
-          --set image.tag=latest \
-          --namespace=default
+        run: ./hack/deploy.sh
       - name: Run integration tests
-        run: |
-          kubectl rollout status deployment/podinfo --timeout=1m
-          helm test podinfo
+        run: ./hack/test.sh
       - name: Debug failure
         if: failure()
         run: |
