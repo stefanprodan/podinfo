@@ -107,7 +107,7 @@ spec:
               {{- end }}
             {{- if .Values.tls.enabled }}
             - name: https
-              containerPort: {{ .Values.tls.port | default 98899 }}
+              containerPort: {{ .Values.tls.port | default 9899 }}
               protocol: TCP
               {{- if .Values.tls.hostPort }}
               hostPort: {{ .Values.tls.hostPort }}
