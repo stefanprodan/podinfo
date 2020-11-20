@@ -59,3 +59,11 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+Create the name of the tls secret for secure port
+*/}}
+{{- define "podinfo.tlsSecretName" -}}
+{{- $fullname := include "podinfo.fullname" . -}}
+{{- default (printf "%s-tls" $fullname) .Values.tls.secretName }}
+{{- end }}

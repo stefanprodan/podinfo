@@ -42,7 +42,7 @@ service:
 
 # enable tls on the podinfo service
 tls:
-  enabled: false
+  enabled: true
   # the name of the secret used to mount the certificate key pair
   secretName:
   # the path where the certificate key pair will be mounted
@@ -56,7 +56,7 @@ tls:
 
 # create a certificate manager certificate
 certificate:
-  create: false
+  create: true
   # the issuer used to issue the certificate
   issuerRef:
     kind: ClusterIssuer
