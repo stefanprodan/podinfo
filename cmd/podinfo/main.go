@@ -83,12 +83,14 @@ func main() {
 	viper.AutomaticEnv()
 
 	// load config from file
-	if _, err := os.Stat(filepath.Join(viper.GetString("config-path"), viper.GetString("config"))); err == nil {
+	if _, fileErr := os.Stat(filepath.Join(viper.GetString("config-path"), viper.GetString("config"))); fileErr == nil {
 		viper.SetConfigName(strings.Split(viper.GetString("config"), ".")[0])
 		viper.AddConfigPath(viper.GetString("config-path"))
-		if err := viper.ReadInConfig(); err != nil {
-			fmt.Printf("Error reading config file, %v\n", err)
+		if readErr := viper.ReadInConfig(); readErr != nil {
+			fmt.Printf("Error reading config file, %v\n", readErr)
 		}
+	}else{
+		fmt.Printf("Error to open config file, %v\n",fileErr)
 	}
 
 	// configure logging
