@@ -23,7 +23,7 @@ h2c:
 
 image:
   repository: ghcr.io/stefanprodan/podinfo
-  tag: 5.1.0
+  tag: 5.1.1
   pullPolicy: IfNotPresent
 
 service:
