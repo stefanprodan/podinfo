@@ -21,6 +21,7 @@ spec:
         prometheus.io/port: "9797"
       labels:
         app: backend
+        debug : v1
     spec:
       serviceAccountName: webapp
       containers:
