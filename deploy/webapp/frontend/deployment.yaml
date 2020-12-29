@@ -45,7 +45,7 @@ spec:
         - --backend-url=http://backend:9898/echo
         env:
         - name: PODINFO_UI_COLOR
-          value: "#34577c"
+          value: "#fcbd00"
         livenessProbe:
           exec:
             command:
