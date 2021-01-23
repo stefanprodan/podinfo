@@ -27,7 +27,7 @@ ARG REVISION
 LABEL maintainer="stefanprodan"
 
 RUN addgroup -S app \
-    && adduser -S -g app app \
+    && adduser -S -G app app \
     && apk --no-cache add \
     ca-certificates curl netcat-openbsd
 
