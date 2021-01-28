@@ -11,8 +11,7 @@ jobs:
     strategy:
       matrix:
         helm-version:
-          - 2.16.12
-          - 3.3.4
+          - 3.5.0
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -21,19 +20,16 @@ jobs:
         uses: engineerd/setup-kind@v0.5.0
       - name: Build container image
         run: |
-          ./hack/build.sh
+          ./test/build.sh
           kind load docker-image test/podinfo:latest
       - name: Setup Helm
         uses: ./.github/actions/helm
         with:
           helm-version: ${{ matrix.helm-version }}
-      - name: Install Tiller
-        if: ${{ startsWith(matrix.helm-version, '2') }}
-        run: ./hack/tiller.sh
       - name: Deploy
-        run: ./hack/deploy.sh
+        run: ./test/deploy.sh
       - name: Run integration tests
-        run: ./hack/test.sh
+        run: ./test/test.sh
       - name: Debug failure
         if: failure()
         run: |
