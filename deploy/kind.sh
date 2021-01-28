@@ -1,5 +1,20 @@
 #! /usr/bin/env sh
 
+mkdir -p bin
+cat > ./bin/kind.yaml <<EOF
+apiVersion: kind.x-k8s.io/v1alpha4
+kind: Cluster
+nodes:
+- role: control-plane
+  extraPortMappings:
+  - containerPort: 80
+    hostPort: 80
+    protocol: TCP
+  - containerPort: 443
+    hostPort: 443
+    protocol: TCP
+EOF
+
 # create the kind cluster
 kind create cluster --config=kind.yaml
 
