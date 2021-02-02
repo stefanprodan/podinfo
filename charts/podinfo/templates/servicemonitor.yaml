@@ -12,5 +12,5 @@ spec:
       interval: {{ .Values.serviceMonitor.interval }}
   selector:
     matchLabels:
-      app: {{ template "podinfo.fullname" . }}
+      {{- include "podinfo.selectorLabels" . | nindent 6 }}
 {{- end }}
