@@ -34,8 +34,10 @@ spec:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          {{- if (or .Values.service.hostPort .Values.tls.hostPort) }}
           securityContext:
+            runAsUser: 100
+            runAsGroup: 101
+          {{- if (or .Values.service.hostPort .Values.tls.hostPort) }}
             allowPrivilegeEscalation: true
             capabilities:
               drop:
