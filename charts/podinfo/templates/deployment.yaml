@@ -67,7 +67,7 @@ spec:
             {{- if .Values.cache }}
             - --cache-server={{ .Values.cache }}
             {{- else if .Values.redis.enabled }}
-            - --cache-server={{ template "podinfo.fullname" . }}:6379
+            - --cache-server={{ template "podinfo.fullname" . }}-redis:6379
             {{- end }}
             - --level={{ .Values.logLevel }}
             - --random-delay={{ .Values.faults.delay }}
