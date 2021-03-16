@@ -13,6 +13,7 @@ spec:
   selector:
     matchLabels:
       app: podinfo
+      version: "1.0"
   template:
     metadata:
       annotations:
