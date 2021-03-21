@@ -92,6 +92,9 @@ serviceAccount:
   # If not set and create is true, a name is generated using the fullname template
   name:
 
+# set container security context
+securityContext: {}
+
 ingress:
   enabled: false
   annotations: {}
