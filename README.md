@@ -86,12 +86,11 @@ helm upgrade --install --wait frontend \
 --set backend=http://backend-podinfo:9898/echo \
 podinfo/podinfo
 
-# Test pods have hook-delete-policy: hook-succeeded
 helm test frontend
 
 helm upgrade --install --wait backend \
 --namespace test \
---set hpa.enabled=true \
+--set redis.enabled=true \
 podinfo/podinfo
 ```
 
@@ -106,3 +105,81 @@ Docker:
 ```bash
 docker run -dp 9898:9898 stefanprodan/podinfo
 ```
+
+### Continuous Delivery
+
+In order to install podinfo on a Kubernetes cluster and keep it up to date with the latest
+release in an automated manner, you can use [Flux](https://fluxcd.io).
+
+Install the Flux CLI on MacOS and Linux using Homebrew:
+
+```sh
+brew install fluxcd/tap/flux
+```
+
+Install the Flux controllers needed for Helm operations:
+
+```sh
+flux install \
+--namespace=flux-system \
+--network-policy=false \
+--components=source-controller,helm-controller
+```
+
+Add podinfo's Helm repository to your cluster and
+configure Flux to check for new chart releases every ten minutes:
+
+```sh
+flux create source helm podinfo \
+--namespace=default \
+--url=https://stefanprodan.github.io/podinfo \
+--interval=10m
+```
+
+Create a `podinfo-values.yaml` file locally:
+
+```sh
+cat > podinfo-values.yaml <<EOL
+replicaCount: 2
+resources:
+  limits:
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 64Mi
+EOL
+```
+
+Create a Helm release for deploying podinfo in the default namespace:
+
+```sh
+flux create helmrelease podinfo \
+--namespace=default \
+--source=HelmRepository/podinfo \
+--release-name=podinfo \
+--chart=podinfo \
+--chart-version=">5.0.0" \
+--values=podinfo-values.yaml
+```
+
+Based on the above definition, Flux will upgrade the release automatically
+when a new version of podinfo is released. If the upgrade fails, Flux
+can [rollback](https://toolkit.fluxcd.io/components/helm/helmreleases/#configuring-failure-remediation)
+to the previous working version.
+
+You can check what version is currently deployed with:
+
+```sh
+flux get helmreleases -n default
+```
+
+To delete podinfo's Helm repository and release from your cluster run:
+
+```sh
+flux -n default delete source helm podinfo
+flux -n default delete helmrelease podinfo
+```
+
+If you wish to manage the lifecycle of your applications in a **GitOps** manner, check out
+this [workflow example](https://github.com/fluxcd/flux2-kustomize-helm-example)
+for multi-env deployments with Flux, Kustomize and Helm.
