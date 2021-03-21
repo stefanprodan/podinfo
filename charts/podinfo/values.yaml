@@ -5,11 +5,17 @@ logLevel: info
 backend: #http://backend-podinfo:9898/echo
 backends: []
 
+image:
+  repository: ghcr.io/stefanprodan/podinfo
+  tag: 5.1.4
+  pullPolicy: IfNotPresent
+
 ui:
   color: "#34577c"
   message: ""
   logo: ""
 
+# failure conditions
 faults:
   delay: false
   error: false
@@ -18,16 +24,10 @@ faults:
   testFail: false
   testTimeout: false
 
-h2c:
-  enabled: false
-
-image:
-  repository: ghcr.io/stefanprodan/podinfo
-  tag: 5.1.4
-  pullPolicy: IfNotPresent
-
+# Kubernetes Service settings
 service:
   enabled: true
+  annotations: {}
   type: ClusterIP
   metricsPort: 9797
   httpPort: 9898
@@ -39,6 +39,10 @@ service:
   # NOTE: requires privileged container with NET_BIND_SERVICE capability -- this is useful for testing
   # in local clusters such as kind without port forwarding
   hostPort:
+
+# enable h2c protocol (non-TLS version of HTTP/2)
+h2c:
+  enabled: false
 
 # enable tls on the podinfo service
 tls:
@@ -54,7 +58,7 @@ tls:
   # in local clusters such as kind without port forwarding
   hostPort:
 
-# create a certificate manager certificate
+# create a certificate manager certificate (cert-manager required)
 certificate:
   create: false
   # the issuer used to issue the certificate
@@ -91,14 +95,6 @@ serviceAccount:
   # If not set and create is true, a name is generated using the fullname template
   name:
 
-linkerd:
-  profile:
-    enabled: false
-
-serviceMonitor:
-  enabled: false
-  interval: 15s
-
 ingress:
   enabled: false
   annotations: {}
@@ -111,6 +107,15 @@ ingress:
   #  - secretName: chart-example-tls
   #    hosts:
   #      - chart-example.local
+
+linkerd:
+  profile:
+    enabled: false
+
+# create Prometheus Operator monitor
+serviceMonitor:
+  enabled: false
+  interval: 15s
 
 resources:
   limits:
