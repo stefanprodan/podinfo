@@ -132,7 +132,9 @@ var doc = `{
                 ],
                 "summary": "Save payload in cache",
                 "responses": {
-                    "202": {}
+                    "202": {
+                        "description": ""
+                    }
                 }
             },
             "delete": {
@@ -148,7 +150,9 @@ var doc = `{
                 ],
                 "summary": "Delete payload from cache",
                 "responses": {
-                    "202": {}
+                    "202": {
+                        "description": ""
+                    }
                 }
             }
         },

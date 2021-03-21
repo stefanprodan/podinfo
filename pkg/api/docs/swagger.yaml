@@ -106,7 +106,8 @@ paths:
       produces:
       - application/json
       responses:
-        "202": {}
+        "202":
+          description: ""
       summary: Delete payload from cache
       tags:
       - HTTP API
@@ -131,7 +132,8 @@ paths:
       produces:
       - application/json
       responses:
-        "202": {}
+        "202":
+          description: ""
       summary: Save payload in cache
       tags:
       - HTTP API
