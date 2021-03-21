@@ -10,16 +10,17 @@ require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/fatih/color v1.9.0
 	github.com/fsnotify/fsnotify v1.4.9
-	github.com/gomodule/redigo v1.8.2
+	github.com/gomodule/redigo v1.8.4
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/websocket v1.4.2
+	github.com/mattn/go-isatty v0.0.12 // indirect
 	github.com/prometheus/client_golang v1.8.0
-	github.com/spf13/cobra v1.1.1
+	github.com/spf13/cobra v1.1.3
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.7.1
-	github.com/swaggo/http-swagger v0.0.0-20200308142732-58ac5e232fba
-	github.com/swaggo/swag v1.6.9
+	github.com/swaggo/http-swagger v1.0.0
+	github.com/swaggo/swag v1.7.0
 	go.uber.org/zap v1.16.0
-	golang.org/x/net v0.0.0-20201027133719-8eef5233e2a1
-	google.golang.org/grpc v1.33.1
+	golang.org/x/net v0.0.0-20201207224615-747e23833adb
+	google.golang.org/grpc v1.36.0
 )
