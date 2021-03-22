@@ -7,7 +7,7 @@ backends: []
 
 image:
   repository: ghcr.io/stefanprodan/podinfo
-  tag: 5.1.4
+  tag: 5.2.0
   pullPolicy: IfNotPresent
 
 ui:
@@ -105,7 +105,7 @@ ingress:
     # kubernetes.io/tls-acme: "true"
   path: /*
   hosts: []
-#    - podinfo.local
+  #  - podinfo.local
   tls: []
   #  - secretName: chart-example-tls
   #    hosts:
