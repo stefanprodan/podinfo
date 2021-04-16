@@ -2,6 +2,7 @@
 
 replicaCount: 1
 logLevel: info
+host: #0.0.0.0
 backend: #http://backend-podinfo:9898/echo
 backends: []
 
