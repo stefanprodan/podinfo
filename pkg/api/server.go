@@ -56,6 +56,7 @@ type Config struct {
 	DataPath                  string        `mapstructure:"data-path"`
 	ConfigPath                string        `mapstructure:"config-path"`
 	CertPath                  string        `mapstructure:"cert-path"`
+	Host                      string        `mapstructure:"host"`
 	Port                      string        `mapstructure:"port"`
 	SecurePort                string        `mapstructure:"secure-port"`
 	PortMetrics               int           `mapstructure:"port-metrics"`
@@ -239,7 +240,7 @@ func (s *Server) startServer() *http.Server {
 	}
 
 	srv := &http.Server{
-		Addr:         ":" + s.config.Port,
+		Addr:         s.config.Host + ":" + s.config.Port,
 		WriteTimeout: s.config.HttpServerTimeout,
 		ReadTimeout:  s.config.HttpServerTimeout,
 		IdleTimeout:  2 * s.config.HttpServerTimeout,
@@ -248,6 +249,7 @@ func (s *Server) startServer() *http.Server {
 
 	// start the server in the background
 	go func() {
+		s.logger.Info("Starting HTTP Server.", zap.String("addr", srv.Addr))
 		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
 			s.logger.Fatal("HTTP server crashed", zap.Error(err))
 		}
@@ -267,7 +269,7 @@ func (s *Server) startSecureServer() *http.Server {
 	}
 
 	srv := &http.Server{
-		Addr:         ":" + s.config.SecurePort,
+		Addr:         s.config.Host + ":" + s.config.SecurePort,
 		WriteTimeout: s.config.HttpServerTimeout,
 		ReadTimeout:  s.config.HttpServerTimeout,
 		IdleTimeout:  2 * s.config.HttpServerTimeout,
@@ -279,6 +281,7 @@ func (s *Server) startSecureServer() *http.Server {
 
 	// start the server in the background
 	go func() {
+		s.logger.Info("Starting HTTPS Server.", zap.String("addr", srv.Addr))
 		if err := srv.ListenAndServeTLS(cert, key); err != http.ErrServerClosed {
 			s.logger.Fatal("HTTPS server crashed", zap.Error(err))
 		}

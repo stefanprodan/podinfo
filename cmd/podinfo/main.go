@@ -23,7 +23,8 @@ import (
 func main() {
 	// flags definition
 	fs := pflag.NewFlagSet("default", pflag.ContinueOnError)
-	fs.Int("port", 9898, "HTTP port")
+	fs.String("host", "", "Host to bind service to")
+	fs.Int("port", 9898, "HTTP port to bind service to")
 	fs.Int("secure-port", 0, "HTTPS port")
 	fs.Int("port-metrics", 0, "metrics port")
 	fs.Int("grpc-port", 0, "gRPC port")
@@ -89,8 +90,8 @@ func main() {
 		if readErr := viper.ReadInConfig(); readErr != nil {
 			fmt.Printf("Error reading config file, %v\n", readErr)
 		}
-	}else{
-		fmt.Printf("Error to open config file, %v\n",fileErr)
+	} else {
+		fmt.Printf("Error to open config file, %v\n", fileErr)
 	}
 
 	// configure logging

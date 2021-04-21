@@ -49,6 +49,9 @@ spec:
           command:
             - ./podinfo
             - --port={{ .Values.service.httpPort | default 9898 }}
+            {{- if .Values.host }}
+            - --host={{ .Values.host }}
+            {{- end }}
             {{- if .Values.tls.enabled }}
             - --secure-port={{ .Values.tls.port }}
             {{- end }}
