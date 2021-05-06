@@ -116,6 +116,7 @@ linkerd:
 serviceMonitor:
   enabled: false
   interval: 15s
+  additionalLabels: {}
 
 resources:
   limits:
