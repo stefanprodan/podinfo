@@ -1,6 +1,6 @@
 # Podinfo
 
-Podinfo is a tiny web application made with Go 
+Podinfo is a tiny web application made with Go
 that showcases best practices of running microservices in Kubernetes.
 
 Podinfo is used by CNCF projects like [Flux](https://github.com/fluxcd/flux2)
@@ -14,7 +14,7 @@ To install the chart with the release name `my-release`:
 ```console
 $ helm repo add podinfo https://stefanprodan.github.io/podinfo
 
-$ helm upgrade -i my-release podinfo/podinfo 
+$ helm upgrade -i my-release podinfo/podinfo
 ```
 
 The command deploys podinfo on the Kubernetes cluster in the default namespace.
@@ -74,6 +74,7 @@ Parameter | Default | Description
 `linkerd.profile.enabled` | `false` | Create Linkerd service profile
 `serviceMonitor.enabled` | `false` | Whether a Prometheus Operator service monitor should be created
 `serviceMonitor.interval` | `15s` | Prometheus scraping interval
+`serviceMonitor.additionalLabels` | `{}` | Add additional labels to the service monitor |
 `ingress.enabled` | `false` | Enables Ingress
 `ingress.annotations` | `{}` | Ingress annotations
 `ingress.path` | `/*` | Ingress path
