@@ -33,11 +33,15 @@ jobs:
       - name: Validate Helm chart
         uses: stefanprodan/kube-tools@v1
         with:
+          kubectl: 1.19.11
+          helm: 2.17.0
+          helmv3: 3.6.0
           command: |
-            helmv3 template ./charts/podinfo | kubeval --strict
+            helmv3 template ./charts/podinfo | kubeval --strict --kubernetes-version 1.19.11 --schema-location https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master
       - name: Validate kustomization
         uses: stefanprodan/kube-tools@v1
         with:
+          kubectl: 1.19.11
           command: |
-            kustomize build ./kustomize | kubeval --strict
+            kustomize build ./kustomize | kubeval --strict --kubernetes-version 1.19.11 --schema-location https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master
             kustomize build ./kustomize | conftest test -p .github/policy -

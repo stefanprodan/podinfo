@@ -76,8 +76,8 @@ Parameter | Default | Description
 `serviceMonitor.interval` | `15s` | Prometheus scraping interval
 `serviceMonitor.additionalLabels` | `{}` | Add additional labels to the service monitor |
 `ingress.enabled` | `false` | Enables Ingress
+`ingress.className ` | `""` | Use ingressClassName
 `ingress.annotations` | `{}` | Ingress annotations
-`ingress.path` | `/*` | Ingress path
 `ingress.hosts` | `[]` | Ingress accepted hosts
 `ingress.tls` | `[]` | Ingress TLS configuration
 `resources.requests.cpu` | `1m` | Pod CPU request
