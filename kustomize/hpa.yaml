@@ -2,6 +2,7 @@ apiVersion: autoscaling/v2beta2
 kind: HorizontalPodAutoscaler
 metadata:
   name: podinfo
+  namespace: gitops-test
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
