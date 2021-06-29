@@ -3,6 +3,10 @@ apiVersion: linkerd.io/v1alpha2
 kind: ServiceProfile
 metadata:
   name: {{ template "podinfo.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local
+{{- if .Values.customAnnotations }}
+  annotations:
+{{ toYaml .Values.customAnnotations | indent 4 }}
+{{- end }}
   labels:
     {{- include "podinfo.labels" . | nindent 4 }}  
 spec:

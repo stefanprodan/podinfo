@@ -3,6 +3,10 @@ apiVersion: autoscaling/v2beta2
 kind: HorizontalPodAutoscaler
 metadata:
   name: {{ template "podinfo.fullname" . }}
+{{- if .Values.customAnnotations }}
+  annotations:
+{{ toYaml .Values.customAnnotations | indent 4 }}
+{{- end }}
   labels:
     {{- include "podinfo.labels" . | nindent 4 }}  
 spec:

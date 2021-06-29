@@ -20,6 +20,9 @@ ui:
 customLabels: {}
   # app: podinfo
 
+## Additional annotations to add to all resources
+customAnnotations: {}
+
 # failure conditions
 faults:
   delay: false

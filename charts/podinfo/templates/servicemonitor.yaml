@@ -3,6 +3,10 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: {{ template "podinfo.fullname" . }}
+{{- if .Values.customAnnotations }}
+  annotations:
+{{ toYaml .Values.customAnnotations | indent 4 }}
+{{- end }}
   labels:
     {{- include "podinfo.labels" . | nindent 4 }}
     {{- with .Values.serviceMonitor.additionalLabels }}

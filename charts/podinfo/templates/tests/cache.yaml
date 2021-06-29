@@ -3,6 +3,10 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: {{ template "podinfo.fullname" . }}-cache-test-{{ randAlphaNum 5 | lower }}
+{{- if .Values.customAnnotations }}
+  annotations:
+{{ toYaml .Values.customAnnotations | indent 4 }}
+{{- end }}
   labels:
     {{- include "podinfo.labels" . | nindent 4 }}
   annotations:
