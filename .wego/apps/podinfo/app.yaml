@@ -1,0 +1,7 @@
+apiVersion: wego.weave.works/v1alpha1
+kind: Application
+metadata:
+  name: podinfo
+spec:
+  path: ./
+  url: ssh://git@github.com/Piotr1215/podinfo.git

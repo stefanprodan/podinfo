@@ -1,0 +1,15 @@
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1beta1
+kind: Kustomization
+metadata:
+  name: podinfo
+  namespace: wego-system
+spec:
+  interval: 1m0s
+  path: ./
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: podinfo
+  validation: client
+
