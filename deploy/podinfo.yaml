@@ -21,6 +21,8 @@ spec:
       labels:
         app: podinfo
     spec:
+      imagePullSecrets:
+      - name: regcred
       containers:
       - name: podinfod
         image: __IMAGE__@__DIGEST__
