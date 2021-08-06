@@ -3,12 +3,13 @@ kind: Deployment
 metadata:
   name: podinfo
 spec:
+  replicas: 8
   minReadySeconds: 3
   revisionHistoryLimit: 5
   progressDeadlineSeconds: 60
   strategy:
     rollingUpdate:
-      maxUnavailable: 0
+      maxUnavailable: 2
     type: RollingUpdate
   selector:
     matchLabels:
