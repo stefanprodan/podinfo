@@ -2,7 +2,9 @@ package api
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
+	"net"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -14,7 +16,6 @@ import (
 	"github.com/gomodule/redigo/redis"
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/spf13/viper"
 	_ "github.com/stefanprodan/podinfo/pkg/api/docs"
 	"github.com/stefanprodan/podinfo/pkg/fscache"
 	httpSwagger "github.com/swaggo/http-swagger"
@@ -45,47 +46,70 @@ var (
 )
 
 type Config struct {
-	HttpClientTimeout         time.Duration `mapstructure:"http-client-timeout"`
-	HttpServerTimeout         time.Duration `mapstructure:"http-server-timeout"`
-	HttpServerShutdownTimeout time.Duration `mapstructure:"http-server-shutdown-timeout"`
-	BackendURL                []string      `mapstructure:"backend-url"`
-	UILogo                    string        `mapstructure:"ui-logo"`
-	UIMessage                 string        `mapstructure:"ui-message"`
-	UIColor                   string        `mapstructure:"ui-color"`
-	UIPath                    string        `mapstructure:"ui-path"`
-	DataPath                  string        `mapstructure:"data-path"`
-	ConfigPath                string        `mapstructure:"config-path"`
-	CertPath                  string        `mapstructure:"cert-path"`
-	Host                      string        `mapstructure:"host"`
-	Port                      string        `mapstructure:"port"`
-	SecurePort                string        `mapstructure:"secure-port"`
-	PortMetrics               int           `mapstructure:"port-metrics"`
-	Hostname                  string        `mapstructure:"hostname"`
-	H2C                       bool          `mapstructure:"h2c"`
-	RandomDelay               bool          `mapstructure:"random-delay"`
-	RandomDelayUnit           string        `mapstructure:"random-delay-unit"`
-	RandomDelayMin            int           `mapstructure:"random-delay-min"`
-	RandomDelayMax            int           `mapstructure:"random-delay-max"`
-	RandomError               bool          `mapstructure:"random-error"`
-	Unhealthy                 bool          `mapstructure:"unhealthy"`
-	Unready                   bool          `mapstructure:"unready"`
-	JWTSecret                 string        `mapstructure:"jwt-secret"`
-	CacheServer               string        `mapstructure:"cache-server"`
+	HttpClientTimeout               time.Duration `mapstructure:"http-client-timeout"`
+	HttpClientKeepalive             time.Duration `mapstructure:"http-client-keepalive"`
+	HttpClientTLSHandshakeTimeout   time.Duration `mapstructure:"http-client-tls-handshake-timeout"`
+	HttpClientResponseHeaderTimeout time.Duration `mapstructure:"http-client-response-header-timeout"`
+	HttpClientIdleConnTimeout       time.Duration `mapstructure:"http-client-idle-conn-timeout"`
+	HttpClientTlsInsecureSkipVerify bool          `mapstructure:"http-client-tls-insecure-skip-verify"`
+	HttpServerTimeout               time.Duration `mapstructure:"http-server-timeout"`
+	HttpServerShutdownTimeout       time.Duration `mapstructure:"http-server-shutdown-timeout"`
+	HttpServerShutdownGracePeriod   time.Duration `mapstructure:"http-server-grace-period"`
+	BackendURL                      []string      `mapstructure:"backend-url"`
+	UILogo                          string        `mapstructure:"ui-logo"`
+	UIMessage                       string        `mapstructure:"ui-message"`
+	UIColor                         string        `mapstructure:"ui-color"`
+	UIPath                          string        `mapstructure:"ui-path"`
+	DataPath                        string        `mapstructure:"data-path"`
+	ConfigPath                      string        `mapstructure:"config-path"`
+	CertPath                        string        `mapstructure:"cert-path"`
+	Host                            string        `mapstructure:"host"`
+	Port                            string        `mapstructure:"port"`
+	SecurePort                      string        `mapstructure:"secure-port"`
+	PortMetrics                     int           `mapstructure:"port-metrics"`
+	Hostname                        string        `mapstructure:"hostname"`
+	H2C                             bool          `mapstructure:"h2c"`
+	RandomDelay                     bool          `mapstructure:"random-delay"`
+	RandomDelayUnit                 string        `mapstructure:"random-delay-unit"`
+	RandomDelayMin                  int           `mapstructure:"random-delay-min"`
+	RandomDelayMax                  int           `mapstructure:"random-delay-max"`
+	RandomError                     bool          `mapstructure:"random-error"`
+	Unhealthy                       bool          `mapstructure:"unhealthy"`
+	Unready                         bool          `mapstructure:"unready"`
+	JWTSecret                       string        `mapstructure:"jwt-secret"`
+	CacheServer                     string        `mapstructure:"cache-server"`
 }
 
 type Server struct {
-	router  *mux.Router
-	logger  *zap.Logger
-	config  *Config
-	pool    *redis.Pool
-	handler http.Handler
+	router     *mux.Router
+	logger     *zap.Logger
+	config     *Config
+	pool       *redis.Pool
+	handler    http.Handler
+	httpClient *http.Client
 }
 
 func NewServer(config *Config, logger *zap.Logger) (*Server, error) {
+	httpClient := &http.Client{
+		Transport: &http.Transport{
+			Dial: (&net.Dialer{
+				Timeout:   config.HttpClientTimeout,
+				KeepAlive: config.HttpClientKeepalive,
+			}).Dial,
+			TLSHandshakeTimeout:   config.HttpClientTLSHandshakeTimeout,
+			ResponseHeaderTimeout: config.HttpClientResponseHeaderTimeout,
+			IdleConnTimeout:       config.HttpClientIdleConnTimeout,
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: config.HttpClientTlsInsecureSkipVerify,
+			},
+		},
+	}
+
 	srv := &Server{
-		router: mux.NewRouter(),
-		logger: logger,
-		config: config,
+		router:     mux.NewRouter(),
+		logger:     logger,
+		config:     config,
+		httpClient: httpClient,
 	}
 
 	return srv, nil
@@ -97,7 +121,7 @@ func (s *Server) registerHandlers() {
 	s.router.HandleFunc("/", s.indexHandler).HeadersRegexp("User-Agent", "^Mozilla.*").Methods("GET")
 	s.router.HandleFunc("/", s.infoHandler).Methods("GET")
 	s.router.HandleFunc("/version", s.versionHandler).Methods("GET")
-	s.router.HandleFunc("/echo", s.echoHandler).Methods("POST")
+	s.router.HandleFunc("/echo", s.echoHandler).Methods("GET", "POST")
 	s.router.HandleFunc("/env", s.envHandler).Methods("GET", "POST")
 	s.router.HandleFunc("/headers", s.echoHeadersHandler).Methods("GET", "POST")
 	s.router.HandleFunc("/delay/{wait:[0-9]+}", s.delayHandler).Methods("GET").Name("delay")
@@ -116,7 +140,7 @@ func (s *Server) registerHandlers() {
 	s.router.HandleFunc("/token", s.tokenGenerateHandler).Methods("POST")
 	s.router.HandleFunc("/token/validate", s.tokenValidateHandler).Methods("GET")
 	s.router.HandleFunc("/api/info", s.infoHandler).Methods("GET")
-	s.router.HandleFunc("/api/echo", s.echoHandler).Methods("POST")
+	s.router.HandleFunc("/api/echo", s.echoHandler).Methods("GET", "POST")
 	s.router.HandleFunc("/ws/echo", s.echoWsHandler)
 	s.router.HandleFunc("/chunked", s.chunkedHandler)
 	s.router.HandleFunc("/chunked/{wait:[0-9]+}", s.chunkedHandler)
@@ -195,8 +219,6 @@ func (s *Server) ListenAndServe(stopCh <-chan struct{}) {
 
 	// wait for SIGTERM or SIGINT
 	<-stopCh
-	ctx, cancel := context.WithTimeout(context.Background(), s.config.HttpServerShutdownTimeout)
-	defer cancel()
 
 	// all calls to /healthz and /readyz will fail from now on
 	atomic.StoreInt32(&healthy, 0)
@@ -211,20 +233,28 @@ func (s *Server) ListenAndServe(stopCh <-chan struct{}) {
 
 	// wait for Kubernetes readiness probe to remove this instance from the load balancer
 	// the readiness check interval must be lower than the timeout
-	if viper.GetString("level") != "debug" {
-		time.Sleep(3 * time.Second)
-	}
+
+	s.logger.Info("Sleeping for ", zap.Duration("http-server-shutdown-grace-period", s.config.HttpServerShutdownGracePeriod))
+	time.Sleep(s.config.HttpServerShutdownGracePeriod)
+
+	ctx, cancel := context.WithTimeout(context.Background(), s.config.HttpServerShutdownTimeout)
+	defer cancel()
 
 	// determine if the http server was started
 	if srv != nil {
 		if err := srv.Shutdown(ctx); err != nil {
 			s.logger.Warn("HTTP server graceful shutdown failed", zap.Error(err))
+		} else {
+			s.logger.Info("HTTP server graceful shutdown succeeded")
 		}
 	}
 
+	ctxHTTPS, cancelHTTPS := context.WithTimeout(context.Background(), s.config.HttpServerShutdownTimeout)
+	defer cancelHTTPS()
+
 	// determine if the secure server was started
 	if secureSrv != nil {
-		if err := secureSrv.Shutdown(ctx); err != nil {
+		if err := secureSrv.Shutdown(ctxHTTPS); err != nil {
 			s.logger.Warn("HTTPS server graceful shutdown failed", zap.Error(err))
 		}
 	}

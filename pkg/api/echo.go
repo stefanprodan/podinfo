@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"sync"
 
 	"github.com/stefanprodan/podinfo/pkg/version"
@@ -30,12 +31,15 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	if len(s.config.BackendURL) > 0 {
 		result := make([]string, len(s.config.BackendURL))
+		statusCode := make([]int, len(s.config.BackendURL))
 		var wg sync.WaitGroup
 		wg.Add(len(s.config.BackendURL))
 		for i, b := range s.config.BackendURL {
 			go func(index int, backend string) {
 				defer wg.Done()
-				backendReq, err := http.NewRequest("POST", backend, bytes.NewReader(body))
+				// provide a host overwrite "https://hostname.com|hostheader.com"
+				backendSplit := strings.Split(backend, "|")
+				backendReq, err := http.NewRequest(r.Method, backendSplit[0], bytes.NewReader(body))
 				if err != nil {
 					s.logger.Error("backend call failed", zap.Error(err), zap.String("url", backend))
 					return
@@ -47,18 +51,24 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 				backendReq.Header.Set("X-API-Version", version.VERSION)
 				backendReq.Header.Set("X-API-Revision", version.REVISION)
 
+				if len(backendSplit) > 1 {
+					backendReq.Host = backendSplit[1]
+				}
+
 				ctx, cancel := context.WithTimeout(backendReq.Context(), s.config.HttpClientTimeout)
 				defer cancel()
 
 				// call backend
-				resp, err := http.DefaultClient.Do(backendReq.WithContext(ctx))
+				resp, err := s.httpClient.Do(backendReq.WithContext(ctx))
 				if err != nil {
 					s.logger.Error("backend call failed", zap.Error(err), zap.String("url", backend))
 					result[index] = fmt.Sprintf("backend %v call failed %v", backend, err)
+					statusCode[index] = 418
 					return
 				}
 				defer resp.Body.Close()
 
+				statusCode[index] = resp.StatusCode
 				// copy error status from backend and exit
 				if resp.StatusCode >= 400 {
 					s.logger.Error("backend call failed", zap.Int("status", resp.StatusCode), zap.String("url", backend))
@@ -88,7 +98,14 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 		wg.Wait()
 
 		w.Header().Set("X-Color", s.config.UIColor)
-		s.JSONResponse(w, r, result)
+		finalCode := 0
+
+		for _, code := range statusCode {
+			if code > finalCode {
+				finalCode = code
+			}
+		}
+		s.JSONResponseCode(w, r, result, finalCode)
 
 	} else {
 		w.Header().Set("X-Color", s.config.UIColor)
