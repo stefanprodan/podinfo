@@ -1,17 +1,12 @@
 #! /usr/bin/env sh
 
-# add jetstack repository
-helm repo add jetstack https://charts.jetstack.io || true
-
 # install cert-manager
-helm upgrade --install cert-manager jetstack/cert-manager \
-    --set installCRDs=true \
-    --namespace default
+kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.5.3/cert-manager.yaml
 
 # wait for cert manager
-kubectl rollout status deployment/cert-manager --timeout=2m
-kubectl rollout status deployment/cert-manager-webhook --timeout=2m
-kubectl rollout status deployment/cert-manager-cainjector --timeout=2m
+kubectl -n cert-manager rollout status deployment/cert-manager --timeout=2m
+kubectl -n cert-manager rollout status deployment/cert-manager-webhook --timeout=2m
+kubectl -n cert-manager rollout status deployment/cert-manager-cainjector --timeout=2m
 
 # install self-signed certificate
 cat << 'EOF' | kubectl apply -f -
