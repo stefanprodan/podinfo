@@ -90,8 +90,6 @@ func main() {
 		if readErr := viper.ReadInConfig(); readErr != nil {
 			fmt.Printf("Error reading config file, %v\n", readErr)
 		}
-	} else {
-		fmt.Printf("Error to open config file, %v\n", fileErr)
 	}
 
 	// configure logging
