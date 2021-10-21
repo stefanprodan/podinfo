@@ -46,7 +46,7 @@ jobs:
           push: true
           builder: ${{ steps.buildx.outputs.name }}
           context: .
-          file: ./Dockerfile
+          file: ./Dockerfile.xx
           platforms: linux/amd64,linux/arm/v7,linux/arm64
           tags: |
             docker.io/stefanprodan/podinfo:${{ steps.prep.outputs.VERSION }}
@@ -77,14 +77,14 @@ jobs:
         run: |
           cd kustomize
           tar -cf config.tar * --numeric-owner --owner=0 --group=0
-          crane append -f config.tar -t ghcr.io/stefanprodan/podinfo-config:${{ steps.prep.outputs.VERSION }}
-          crane tag ghcr.io/stefanprodan/podinfo-config:${{ steps.prep.outputs.VERSION }} latest
+          crane append -f config.tar -t ghcr.io/stefanprodan/podinfo-deploy:${{ steps.prep.outputs.VERSION }}
+          crane tag ghcr.io/stefanprodan/podinfo-deploy:${{ steps.prep.outputs.VERSION }} latest
           rm config.tar
       - name: Sign config artifact
         run: |
           echo "$COSIGN_KEY" > /tmp/cosign.key
-          cosign sign -key /tmp/cosign.key ghcr.io/stefanprodan/podinfo-config:${{ steps.prep.outputs.VERSION }}
-          cosign sign -key /tmp/cosign.key ghcr.io/stefanprodan/podinfo-config:latest
+          cosign sign -key /tmp/cosign.key ghcr.io/stefanprodan/podinfo-deploy:${{ steps.prep.outputs.VERSION }}
+          cosign sign -key /tmp/cosign.key ghcr.io/stefanprodan/podinfo-deploy:latest
         env:
           COSIGN_PASSWORD: ${{secrets.COSIGN_PASSWORD}}
           COSIGN_KEY: ${{secrets.COSIGN_KEY}}

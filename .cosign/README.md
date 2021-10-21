@@ -15,7 +15,7 @@ Verify a podinfo release with cosign CLI:
 
 ```sh
 cosign verify -key https://raw.githubusercontent.com/stefanprodan/podinfo/master/cosign/cosign.pub \
-ghcr.io/stefanprodan/podinfo-config:latest
+ghcr.io/stefanprodan/podinfo-deploy:latest
 ```
 
 ## Download the artifacts with crane
