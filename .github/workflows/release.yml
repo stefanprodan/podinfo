@@ -9,6 +9,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - uses: imjasonh/setup-crane@v0.1
+      - uses: sigstore/cosign-installer@main
       - name: Setup QEMU
         uses: docker/setup-qemu-action@v1
         with:
@@ -71,6 +73,21 @@ jobs:
         uses: stefanprodan/helm-gh-pages@master
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish config artifact
+        run: |
+          cd kustomize
+          tar -cf config.tar * --numeric-owner --owner=0 --group=0
+          crane append -f config.tar -t ghcr.io/stefanprodan/podinfo-config:${{ steps.prep.outputs.VERSION }}
+          crane tag ghcr.io/stefanprodan/podinfo-config:${{ steps.prep.outputs.VERSION }} latest
+          rm config.tar
+      - name: Sign config artifact
+        run: |
+          echo "$COSIGN_KEY" > /tmp/cosign.key
+          cosign sign -key /tmp/cosign.key ghcr.io/stefanprodan/podinfo-config:${{ steps.prep.outputs.VERSION }}
+          cosign sign -key /tmp/cosign.key ghcr.io/stefanprodan/podinfo-config:latest
+        env:
+          COSIGN_PASSWORD: ${{secrets.COSIGN_PASSWORD}}
+          COSIGN_KEY: ${{secrets.COSIGN_KEY}}
       - uses: ./.github/actions/release-notes
       - name: Generate release notes
         run: |
