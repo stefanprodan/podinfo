@@ -34,6 +34,13 @@ build-charts:
 build-container:
 	docker build -t $(DOCKER_IMAGE_NAME):$(VERSION) .
 
+build-xx:
+	docker buildx build \
+	--platform=linux/amd64 \
+	-t $(DOCKER_IMAGE_NAME):$(VERSION) \
+	--load \
+	-f Dockerfile.xx .
+
 build-base:
 	docker build -f Dockerfile.base -t $(DOCKER_REPOSITORY)/podinfo-base:latest .
 
