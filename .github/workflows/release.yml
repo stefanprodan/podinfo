@@ -38,6 +38,9 @@ jobs:
           snapshot: true
           dockerfile: Dockerfile
 
+
+
+
       - name: Login to Docker Hub
         uses: elgohr/ecr-login-action@1.0.1
         with:
