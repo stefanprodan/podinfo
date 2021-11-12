@@ -18,6 +18,9 @@ import (
 // @Success 200 {object} api.RuntimeResponse
 // @Router /api/info [get]
 func (s *Server) infoHandler(w http.ResponseWriter, r *http.Request) {
+	_, span := s.tracer.Start(r.Context(), "infoHandler")
+	defer span.End()
+
 	data := RuntimeResponse{
 		Hostname:     s.config.Hostname,
 		Version:      version.VERSION,

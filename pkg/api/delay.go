@@ -52,11 +52,14 @@ func (m *RandomDelayMiddleware) Handler(next http.Handler) http.Handler {
 // @Router /delay/{seconds} [get]
 // @Success 200 {object} api.MapResponse
 func (s *Server) delayHandler(w http.ResponseWriter, r *http.Request) {
+	_, span := s.tracer.Start(r.Context(), "delayHandler")
+	defer span.End()
+
 	vars := mux.Vars(r)
 
 	delay, err := strconv.Atoi(vars["wait"])
 	if err != nil {
-		s.ErrorResponse(w, r, err.Error(), http.StatusBadRequest)
+		s.ErrorResponse(w, r, span, err.Error(), http.StatusBadRequest)
 		return
 	}
 
