@@ -18,6 +18,9 @@ import (
 // @Router /chunked/{seconds} [get]
 // @Success 200 {object} api.MapResponse
 func (s *Server) chunkedHandler(w http.ResponseWriter, r *http.Request) {
+	_, span := s.tracer.Start(r.Context(), "chunkedHandler")
+	defer span.End()
+
 	vars := mux.Vars(r)
 
 	delay, err := strconv.Atoi(vars["wait"])
@@ -27,7 +30,7 @@ func (s *Server) chunkedHandler(w http.ResponseWriter, r *http.Request) {
 
 	flusher, ok := w.(http.Flusher)
 	if !ok {
-		s.ErrorResponse(w, r, "Streaming unsupported!", http.StatusInternalServerError)
+		s.ErrorResponse(w, r, span, "Streaming unsupported!", http.StatusInternalServerError)
 		return
 	}
 

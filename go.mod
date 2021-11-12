@@ -18,7 +18,20 @@ require (
 	github.com/spf13/viper v1.8.1
 	github.com/swaggo/http-swagger v1.0.0
 	github.com/swaggo/swag v1.7.0
+	go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux v0.26.1 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace v0.26.1 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.26.1 // indirect
+	go.opentelemetry.io/contrib/propagators/aws v1.1.1 // indirect
+	go.opentelemetry.io/contrib/propagators/b3 v1.1.1 // indirect
+	go.opentelemetry.io/contrib/propagators/jaeger v1.1.1 // indirect
+	go.opentelemetry.io/contrib/propagators/ot v1.1.1 // indirect
+	go.opentelemetry.io/otel v1.1.0 // indirect
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.1.0 // indirect
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.1.0 // indirect
+	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.1.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.1.0 // indirect
+	go.opentelemetry.io/otel/trace v1.1.0 // indirect
 	go.uber.org/zap v1.19.1
 	golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4
-	google.golang.org/grpc v1.38.0
+	google.golang.org/grpc v1.41.0
 )

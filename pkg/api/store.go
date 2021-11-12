@@ -20,10 +20,12 @@ import (
 // @Router /store [post]
 // @Success 200 {object} api.MapResponse
 func (s *Server) storeWriteHandler(w http.ResponseWriter, r *http.Request) {
+	_, span := s.tracer.Start(r.Context(), "storeWriteHandler")
+	defer span.End()
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		s.ErrorResponse(w, r, "reading the request body failed", http.StatusBadRequest)
+		s.ErrorResponse(w, r, span, "reading the request body failed", http.StatusBadRequest)
 		return
 	}
 
@@ -31,7 +33,7 @@ func (s *Server) storeWriteHandler(w http.ResponseWriter, r *http.Request) {
 	err = ioutil.WriteFile(path.Join(s.config.DataPath, hash), body, 0644)
 	if err != nil {
 		s.logger.Warn("writing file failed", zap.Error(err), zap.String("file", path.Join(s.config.DataPath, hash)))
-		s.ErrorResponse(w, r, "writing file failed", http.StatusInternalServerError)
+		s.ErrorResponse(w, r, span, "writing file failed", http.StatusInternalServerError)
 		return
 	}
 	s.JSONResponseCode(w, r, map[string]string{"hash": hash}, http.StatusAccepted)
@@ -46,11 +48,14 @@ func (s *Server) storeWriteHandler(w http.ResponseWriter, r *http.Request) {
 // @Router /store/{hash} [get]
 // @Success 200 {string} string "file"
 func (s *Server) storeReadHandler(w http.ResponseWriter, r *http.Request) {
+	_, span := s.tracer.Start(r.Context(), "storeReadHandler")
+	defer span.End()
+
 	hash := mux.Vars(r)["hash"]
 	content, err := ioutil.ReadFile(path.Join(s.config.DataPath, hash))
 	if err != nil {
 		s.logger.Warn("reading file failed", zap.Error(err), zap.String("file", path.Join(s.config.DataPath, hash)))
-		s.ErrorResponse(w, r, "reading file failed", http.StatusInternalServerError)
+		s.ErrorResponse(w, r, span, "reading file failed", http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusAccepted)
