@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"regexp"
@@ -16,11 +17,13 @@ import (
 )
 
 type PrometheusMiddleware struct {
+	Config    *Config
 	Histogram *prometheus.HistogramVec
 	Counter   *prometheus.CounterVec
+	Gauge     prometheus.Gauge
 }
 
-func NewPrometheusMiddleware() *PrometheusMiddleware {
+func NewPrometheusMiddleware(s *Server) *PrometheusMiddleware {
 	// used for monitoring and alerting (RED method)
 	histogram := prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Subsystem: "http",
@@ -37,13 +40,21 @@ func NewPrometheusMiddleware() *PrometheusMiddleware {
 		},
 		[]string{"status"},
 	)
-
+	// used for monitoring and alerting (Custom metric)
+	gauge := prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "stored_files",
+			Help: "The total number of files in store.",
+		},
+	)
 	prometheus.MustRegister(histogram)
 	prometheus.MustRegister(counter)
-
+	prometheus.MustRegister(gauge)
 	return &PrometheusMiddleware{
+		Config:    s.config,
 		Histogram: histogram,
 		Counter:   counter,
+		Gauge:     gauge,
 	}
 }
 
@@ -66,6 +77,8 @@ func (p *PrometheusMiddleware) Handler(next http.Handler) http.Handler {
 		)
 		p.Histogram.WithLabelValues(r.Method, path, status).Observe(took.Seconds())
 		p.Counter.WithLabelValues(status).Inc()
+		files, _ := ioutil.ReadDir(p.Config.DataPath)
+		p.Gauge.Set(float64(len(files)))
 	})
 }
 

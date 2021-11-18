@@ -109,6 +109,7 @@ func (s *Server) registerHandlers() {
 	s.router.HandleFunc("/status/{code:[0-9]+}", s.statusHandler).Methods("GET", "POST", "PUT").Name("status")
 	s.router.HandleFunc("/store", s.storeWriteHandler).Methods("POST", "PUT")
 	s.router.HandleFunc("/store/{hash}", s.storeReadHandler).Methods("GET").Name("store")
+	s.router.HandleFunc("/store/{hash}", s.storeDeleteHandler).Methods("DELETE").Name("store")
 	s.router.HandleFunc("/cache/{key}", s.cacheWriteHandler).Methods("POST", "PUT")
 	s.router.HandleFunc("/cache/{key}", s.cacheDeleteHandler).Methods("DELETE")
 	s.router.HandleFunc("/cache/{key}", s.cacheReadHandler).Methods("GET").Name("cache")
@@ -133,7 +134,7 @@ func (s *Server) registerHandlers() {
 }
 
 func (s *Server) registerMiddlewares() {
-	prom := NewPrometheusMiddleware()
+	prom := NewPrometheusMiddleware(s)
 	s.router.Use(prom.Handler)
 	httpLogger := NewLoggingMiddleware(s.logger)
 	s.router.Use(httpLogger.Handler)

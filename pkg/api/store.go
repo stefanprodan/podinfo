@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"path"
 
 	"github.com/gorilla/mux"
@@ -35,6 +36,24 @@ func (s *Server) storeWriteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.JSONResponseCode(w, r, map[string]string{"hash": hash}, http.StatusAccepted)
+}
+
+// Store godoc
+// @Summary Delete file
+// @Description deletes the posted content to disk at /data/hash
+// @Tags HTTP API
+// @Produce json
+// @Router /store [delete]
+// @Success 200 {object} api.MapResponse
+func (s *Server) storeDeleteHandler(w http.ResponseWriter, r *http.Request) {
+	hash := mux.Vars(r)["hash"]
+	err := os.Remove(path.Join(s.config.DataPath, hash))
+	if err != nil {
+		s.logger.Warn("delete file failed", zap.Error(err), zap.String("file", path.Join(s.config.DataPath, hash)))
+		s.ErrorResponse(w, r, "delete file failed", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusAccepted)
 }
 
 // Store godoc
