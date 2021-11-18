@@ -51,6 +51,7 @@ Web API:
 * `DELETE /cache/{key}` deletes the key from Redis if exists
 * `POST /store` writes the posted content to disk at /data/hash and returns the SHA1 hash of the content
 * `GET /store/{hash}` returns the content of the file /data/hash if exists
+* `DELETE /store/{hash}` deletes the file /data/hash if exists
 * `GET /ws/echo` echos content via websockets `podcli ws ws://localhost:9898/ws/echo`
 * `GET /chunked/{seconds}` uses `transfer-encoding` type `chunked` to give a partial response and then waits for the specified period
 * `GET /swagger.json` returns the API Swagger docs, used for Linkerd service profiling and Gloo routes discovery
