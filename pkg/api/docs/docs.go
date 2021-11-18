@@ -419,6 +419,24 @@ var doc = `{
                         }
                     }
                 }
+            },
+            "delete": {
+                "description": "deletes the posted content to disk at /data/hash",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "HTTP API"
+                ],
+                "summary": "Delete file",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.MapResponse"
+                        }
+                    }
+                }
             }
         },
         "/store/{hash}": {

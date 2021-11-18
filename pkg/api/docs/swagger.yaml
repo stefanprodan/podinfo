@@ -298,6 +298,18 @@ paths:
       tags:
       - HTTP API
   /store:
+    delete:
+      description: deletes the posted content to disk at /data/hash
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.MapResponse'
+      summary: Delete file
+      tags:
+      - HTTP API
     post:
       consumes:
       - application/json
