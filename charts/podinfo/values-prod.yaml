@@ -121,6 +121,11 @@ serviceMonitor:
   interval: 15s
   additionalLabels: {}
 
+# create Prometheus Operator rule
+prometheusRule:
+  enabled: false
+  additionalLabels: {}
+
 resources:
   limits:
     memory: 256Mi
