@@ -16,8 +16,11 @@ spec:
       targetPort: http
       protocol: TCP
       name: http
-      {{- if (and (eq .Values.service.type "NodePort") (not (empty .Values.service.nodePort))) }}
+      {{- if (and (eq .Values.service.type "NodePort") .Values.service.nodePort) }}
       nodePort: {{ .Values.service.nodePort }}
+      {{- end }}
+      {{- if (and (eq .Values.service.type "LoadBalancer") .Values.service.lbNodePort) }}
+      nodePort: {{ .Values.service.lbNodePort }}
       {{- end }}
     {{- if .Values.tls.enabled }}
     - port: {{ .Values.tls.port | default 9899 }}

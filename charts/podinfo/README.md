@@ -62,6 +62,7 @@ Parameter | Default | Description
 `service.grpcPort` | `9999` | ClusterIP gPRC port
 `service.grpcService` | `podinfo` | gPRC service name
 `service.nodePort` | `31198` | NodePort for the HTTP endpoint
+`service.lbNodePort` | `None` | NodePort override for LoadBalancer service type
 `h2c.enabled` | `false` | Allow upgrading to h2c (non-TLS version of HTTP/2)
 `hpa.enabled` | `false` | Enables the Kubernetes HPA
 `hpa.maxReplicas` | `10` | Maximum amount of pods
