@@ -6,6 +6,9 @@ resources:
 - service.yaml
 secretGenerator:
 - files:
+  - token=vault_token.encrypted
+  name: vault-secret
+- files:
   - token=token.encrypted
   name: podinfo-token
 - literals:
