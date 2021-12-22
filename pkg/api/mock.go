@@ -1,8 +1,9 @@
 package api
 
 import (
-	"go.opentelemetry.io/otel/trace"
 	"time"
+
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"

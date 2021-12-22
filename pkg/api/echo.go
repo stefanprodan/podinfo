@@ -55,9 +55,6 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 
-				// forward headers
-				copyTracingHeaders(r, backendReq)
-
 				backendReq.Header.Set("X-API-Version", version.VERSION)
 				backendReq.Header.Set("X-API-Revision", version.REVISION)
 
@@ -105,24 +102,5 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Color", s.config.UIColor)
 		w.WriteHeader(http.StatusAccepted)
 		w.Write(body)
-	}
-}
-
-func copyTracingHeaders(from *http.Request, to *http.Request) {
-	headers := []string{
-		"x-request-id",
-		"x-b3-traceid",
-		"x-b3-spanid",
-		"x-b3-parentspanid",
-		"x-b3-sampled",
-		"x-b3-flags",
-		"x-ot-span-context",
-	}
-
-	for i := range headers {
-		headerValue := from.Header.Get(headers[i])
-		if len(headerValue) > 0 {
-			to.Header.Set(headers[i], headerValue)
-		}
 	}
 }

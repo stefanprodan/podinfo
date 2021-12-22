@@ -3,14 +3,14 @@ version: '2'
 services:
   podinfo_frontend:
     build: .
-    command: ./podinfo --backend-url http://podinfo_backend:9899/status/200
+    command: ./podinfo --backend-url http://podinfo_backend:9899/status/200 --otel-service-name=podinfo_frontend
     environment:
       - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://otel:4317
     ports:
       - "9898:9898"
   podinfo_backend:
     build: .
-    command: ./podinfo --port 9899
+    command: ./podinfo --port 9899 --otel-service-name=podinfo_backend
     environment:
       - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://otel:4317
     ports:
