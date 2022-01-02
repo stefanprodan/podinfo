@@ -27,7 +27,7 @@ const (
 )
 
 func (s *Server) initTracer(ctx context.Context) {
-	client := otlptracegrpc.NewClient(otlptracegrpc.WithInsecure())
+	client := otlptracegrpc.NewClient()
 	exporter, err := otlptrace.New(ctx, client)
 	if err != nil {
 		s.logger.Error("creating OTLP trace exporter", zap.Error(err))
