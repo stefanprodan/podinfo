@@ -4,14 +4,12 @@ resources:
 - hpa.yaml
 - deployment.yaml
 - service.yaml
+- secret.yaml
 secretGenerator:
-- files:
-  - token=vault_token.encrypted
-  name: vault-secret
-- files:
-  - token=token.encrypted
-  name: podinfo-token
 - literals:
-  - username=admin
+  - username=admins
   - password=1f2d1e2e67df
   name: db-user-pass
+- files:
+  - config.yaml=config.yaml.encrypted
+  name: config.yaml
