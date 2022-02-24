@@ -12,7 +12,7 @@ for end-to-end testing and workshops.
 To install the chart with the release name `my-release`:
 
 ```console
-$ helm repo add podinfo https://stefanprodan.github.io/podinfo
+$ helm repo add podinfo https://kingdonb.github.io/podinfo
 
 $ helm upgrade -i my-release podinfo/podinfo
 ```
@@ -51,7 +51,7 @@ Parameter | Default | Description
 `faults.unready` | `false` | When set, the ready state is never reached
 `faults.testFail` | `false` | When set, a helm test is included which always fails
 `faults.testTimeout` | `false` | When set, a helm test is included which always times out
-`image.repository` | `stefanprodan/podinfo` | Image repository
+`image.repository` | `kingdonb/podinfo` | Image repository
 `image.tag` | `<VERSION>` | Image tag
 `image.pullPolicy` | `IfNotPresent` | Image pull policy
 `service.enabled` | `true` | Create a Kubernetes Service, should be disabled when using [Flagger](https://flagger.app)
