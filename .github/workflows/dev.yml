@@ -7,7 +7,7 @@ on:
 
 jobs:
   release:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
 
       # Get values for cache paths to be used in later steps
