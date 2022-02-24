@@ -1,6 +1,6 @@
 ### GitHub Actions Examples
 
-Welcome from the GitHub Actions and Flux Demo config repo! ([Backlink][FIXME])
+Welcome from the GitHub Actions and Flux Demo config repo! [Backlink](https://github.com/kingdonb/github-actions-demo/) ([podinfo#readme](https://github.com/kingdonb/github-actions-demo/tree/main/apps/podinfo#readme))
 
 ##### Original Credit
 
