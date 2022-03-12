@@ -53,7 +53,7 @@ func main() {
 	fs.Int("stress-cpu", 0, "number of CPU cores with 100 load")
 	fs.Int("stress-memory", 0, "MB of data to load into memory")
 	fs.String("cache-server", "", "Redis address in the format <host>:<port>")
-	fs.String("otel-service-name", "podinfo", "service name for reporting to open telemetry address")
+	fs.String("otel-service-name", "", "service name for reporting to open telemetry address, when not set tracing is disabled")
 
 	versionFlag := fs.BoolP("version", "v", false, "get version number")
 
