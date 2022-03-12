@@ -27,6 +27,12 @@ const (
 )
 
 func (s *Server) initTracer(ctx context.Context) {
+	if viper.GetString("otel-service-name") == "" {
+		nop := trace.NewNoopTracerProvider()
+		s.tracer = nop.Tracer(viper.GetString("otel-service-name"))
+		return
+	}
+
 	client := otlptracegrpc.NewClient()
 	exporter, err := otlptrace.New(ctx, client)
 	if err != nil {
@@ -60,5 +66,5 @@ func (s *Server) initTracer(ctx context.Context) {
 }
 
 func NewOpenTelemetryMiddleware() mux.MiddlewareFunc {
-	return otelmux.Middleware("podinfo")
+	return otelmux.Middleware(viper.GetString("otel-service-name"))
 }
