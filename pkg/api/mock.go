@@ -3,6 +3,8 @@ package api
 import (
 	"time"
 
+	"go.opentelemetry.io/otel/trace"
+
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 )
@@ -28,5 +30,6 @@ func NewMockServer() *Server {
 		router: mux.NewRouter(),
 		logger: logger,
 		config: config,
+		tracer: trace.NewNoopTracerProvider().Tracer("mock"),
 	}
 }

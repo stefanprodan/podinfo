@@ -6,9 +6,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptrace"
 	"sync"
 
 	"github.com/stefanprodan/podinfo/pkg/version"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.uber.org/zap"
 )
 
@@ -21,13 +24,19 @@ import (
 // @Router /api/echo [post]
 // @Success 202 {object} api.MapResponse
 func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
+	ctx, span := s.tracer.Start(r.Context(), "echoHandler")
+	defer span.End()
+
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		s.logger.Error("reading the request body failed", zap.Error(err))
-		s.ErrorResponse(w, r, "invalid request body", http.StatusBadRequest)
+		s.ErrorResponse(w, r, span, "invalid request body", http.StatusBadRequest)
 		return
 	}
 	defer r.Body.Close()
+
+	client := http.Client{Transport: otelhttp.NewTransport(http.DefaultTransport)}
+
 	if len(s.config.BackendURL) > 0 {
 		result := make([]string, len(s.config.BackendURL))
 		var wg sync.WaitGroup
@@ -35,7 +44,12 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 		for i, b := range s.config.BackendURL {
 			go func(index int, backend string) {
 				defer wg.Done()
-				backendReq, err := http.NewRequest("POST", backend, bytes.NewReader(body))
+
+				ctx = httptrace.WithClientTrace(ctx, otelhttptrace.NewClientTrace(ctx))
+				ctx, cancel := context.WithTimeout(ctx, s.config.HttpClientTimeout)
+				defer cancel()
+
+				backendReq, err := http.NewRequestWithContext(ctx, "POST", backend, bytes.NewReader(body))
 				if err != nil {
 					s.logger.Error("backend call failed", zap.Error(err), zap.String("url", backend))
 					return
@@ -47,11 +61,8 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 				backendReq.Header.Set("X-API-Version", version.VERSION)
 				backendReq.Header.Set("X-API-Revision", version.REVISION)
 
-				ctx, cancel := context.WithTimeout(backendReq.Context(), s.config.HttpClientTimeout)
-				defer cancel()
-
 				// call backend
-				resp, err := http.DefaultClient.Do(backendReq.WithContext(ctx))
+				resp, err := client.Do(backendReq)
 				if err != nil {
 					s.logger.Error("backend call failed", zap.Error(err), zap.String("url", backend))
 					result[index] = fmt.Sprintf("backend %v call failed %v", backend, err)
@@ -94,5 +105,24 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Color", s.config.UIColor)
 		w.WriteHeader(http.StatusAccepted)
 		w.Write(body)
+	}
+}
+
+func copyTracingHeaders(from *http.Request, to *http.Request) {
+	headers := []string{
+		"x-request-id",
+		"x-b3-traceid",
+		"x-b3-spanid",
+		"x-b3-parentspanid",
+		"x-b3-sampled",
+		"x-b3-flags",
+		"x-ot-span-context",
+	}
+
+	for i := range headers {
+		headerValue := from.Header.Get(headers[i])
+		if len(headerValue) > 0 {
+			to.Header.Set(headers[i], headerValue)
+		}
 	}
 }

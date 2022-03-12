@@ -21,15 +21,18 @@ import (
 // @Router /cache/{key} [post]
 // @Success 202
 func (s *Server) cacheWriteHandler(w http.ResponseWriter, r *http.Request) {
+	_, span := s.tracer.Start(r.Context(), "cacheWriteHandler")
+	defer span.End()
+
 	if s.pool == nil {
-		s.ErrorResponse(w, r, "cache server is offline", http.StatusBadRequest)
+		s.ErrorResponse(w, r, span, "cache server is offline", http.StatusBadRequest)
 		return
 	}
 
 	key := mux.Vars(r)["key"]
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		s.ErrorResponse(w, r, "reading the request body failed", http.StatusBadRequest)
+		s.ErrorResponse(w, r, span, "reading the request body failed", http.StatusBadRequest)
 		return
 	}
 
@@ -38,7 +41,7 @@ func (s *Server) cacheWriteHandler(w http.ResponseWriter, r *http.Request) {
 	_, err = conn.Do("SET", key, string(body))
 	if err != nil {
 		s.logger.Warn("cache set failed", zap.Error(err))
-		s.ErrorResponse(w, r, "cache set failed", http.StatusInternalServerError)
+		s.ErrorResponse(w, r, span, "cache set failed", http.StatusInternalServerError)
 		return
 	}
 
@@ -54,8 +57,11 @@ func (s *Server) cacheWriteHandler(w http.ResponseWriter, r *http.Request) {
 // @Router /cache/{key} [delete]
 // @Success 202
 func (s *Server) cacheDeleteHandler(w http.ResponseWriter, r *http.Request) {
+	_, span := s.tracer.Start(r.Context(), "cacheDeleteHandler")
+	defer span.End()
+
 	if s.pool == nil {
-		s.ErrorResponse(w, r, "cache server is offline", http.StatusBadRequest)
+		s.ErrorResponse(w, r, span, "cache server is offline", http.StatusBadRequest)
 		return
 	}
 
@@ -82,8 +88,11 @@ func (s *Server) cacheDeleteHandler(w http.ResponseWriter, r *http.Request) {
 // @Router /cache/{key} [get]
 // @Success 200 {string} string value
 func (s *Server) cacheReadHandler(w http.ResponseWriter, r *http.Request) {
+	_, span := s.tracer.Start(r.Context(), "cacheReadHandler")
+	defer span.End()
+
 	if s.pool == nil {
-		s.ErrorResponse(w, r, "cache server is offline", http.StatusBadRequest)
+		s.ErrorResponse(w, r, span, "cache server is offline", http.StatusBadRequest)
 		return
 	}
 
