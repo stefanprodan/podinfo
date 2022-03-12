@@ -15,9 +15,7 @@ Specifications:
 * Health checks (readiness and liveness)
 * Graceful shutdown on interrupt signals
 * File watcher for secrets and configmaps
-* Instrumented with Prometheus
-* Tracing with Istio and Jaeger
-* Linkerd service profile
+* Instrumented with Prometheus and Open Telemetry
 * Structured logging with zap 
 * 12-factor app with viper
 * Fault injection (random errors and latency)
@@ -26,7 +24,8 @@ Specifications:
 * End-to-End testing with Kubernetes Kind and Helm
 * Kustomize testing with GitHub Actions and Open Policy Agent
 * Multi-arch container image with Docker buildx and Github Actions
-* CVE scanning with trivy
+* Container image signing with Sigstore cosign
+* CVE scanning with Trivy
 
 Web API:
 
