@@ -1,8 +1,10 @@
 package api
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/gomodule/redigo/redis"
@@ -119,6 +121,23 @@ func (s *Server) cacheReadHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(data))
 }
 
+func (s *Server) getCacheConn() (redis.Conn, error) {
+	redisUrl, err := url.Parse(s.config.CacheServer)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse redis url: %v", err)
+	}
+
+	var opts []redis.DialOption
+	if user := redisUrl.User; user != nil {
+		opts = append(opts, redis.DialUsername(user.Username()))
+		if password, ok := user.Password(); ok {
+			opts = append(opts, redis.DialPassword(password))
+		}
+	}
+
+	return redis.Dial("tcp", redisUrl.Host, opts...)
+}
+
 func (s *Server) startCachePool(ticker *time.Ticker, stopCh <-chan struct{}) {
 	if s.config.CacheServer == "" {
 		return
@@ -126,9 +145,7 @@ func (s *Server) startCachePool(ticker *time.Ticker, stopCh <-chan struct{}) {
 	s.pool = &redis.Pool{
 		MaxIdle:     3,
 		IdleTimeout: 240 * time.Second,
-		Dial: func() (redis.Conn, error) {
-			return redis.Dial("tcp", s.config.CacheServer)
-		},
+		Dial:        s.getCacheConn,
 		TestOnBorrow: func(c redis.Conn, t time.Time) error {
 			_, err := c.Do("PING")
 			return err
