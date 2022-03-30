@@ -107,7 +107,7 @@ oci://ghcr.io/stefanprodan/charts/podinfo
 #### Kustomize
 
 ```bash
-kubectl apply -k github.com/stefanprodan/podinfo//kustomize
+kubectl apply -k github.com/stefanprodan/podinfo/kustomize
 ```
 
 #### Docker
