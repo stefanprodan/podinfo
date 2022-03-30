@@ -70,7 +70,7 @@ jobs:
             org.opencontainers.image.created=${{ steps.prep.outputs.BUILD_DATE }}
       - name: Publish Helm chart to GHCR
         run: |
-          helm build charts/podinfo
+          helm package charts/podinfo
           helm push podinfo-${{ steps.prep.outputs.VERSION }}.tgz oci://ghcr.io/stefanprodan/charts
           rm podinfo-${{ steps.prep.outputs.VERSION }}.tgz
       - name: Sign images
