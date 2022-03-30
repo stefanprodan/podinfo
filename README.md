@@ -76,7 +76,9 @@ To access the Swagger UI open `<podinfo-host>/swagger/index.html` in a browser.
 
 ### Install
 
-Helm:
+#### Helm
+
+Install from github.io:
 
 ```bash
 helm repo add podinfo https://stefanprodan.github.io/podinfo
@@ -95,13 +97,20 @@ helm upgrade --install --wait backend \
 podinfo/podinfo
 ```
 
-Kustomize:
+Install from ghcr.io:
+
+```bash
+helm upgrade --install --wait podinfo --namespace default \
+oci://ghcr.io/stefanprodan/charts/podinfo
+```
+
+#### Kustomize
 
 ```bash
 kubectl apply -k github.com/stefanprodan/podinfo//kustomize
 ```
 
-Docker:
+#### Docker
 
 ```bash
 docker run -dp 9898:9898 stefanprodan/podinfo
