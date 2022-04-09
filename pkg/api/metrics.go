@@ -35,7 +35,7 @@ func NewPrometheusMiddleware() *PrometheusMiddleware {
 			Name:      "requests_total",
 			Help:      "The total number of HTTP requests.",
 		},
-		[]string{"status"},
+		[]string{"method", "path", "status"},
 	)
 
 	prometheus.MustRegister(histogram)
@@ -65,7 +65,7 @@ func (p *PrometheusMiddleware) Handler(next http.Handler) http.Handler {
 			took   = time.Since(begin)
 		)
 		p.Histogram.WithLabelValues(r.Method, path, status).Observe(took.Seconds())
-		p.Counter.WithLabelValues(status).Inc()
+		p.Counter.WithLabelValues(r.Method, path, status).Inc()
 	})
 }
 
