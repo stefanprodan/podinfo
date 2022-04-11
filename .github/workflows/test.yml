@@ -24,6 +24,22 @@ jobs:
           go-version: 1.17.x
       - name: Run unit tests
         run: make test
+      - name: Setup CUE
+        uses: cue-lang/setup-cue@main
+      - name: Verify CUE formatting
+        working-directory: ./cue
+        run: |
+          cue fmt .
+          status=$(git status . --porcelain)
+          [[ -z "$status" ]] || {
+            echo "CUE files are not correctly formatted"
+            echo "$status"
+            git diff
+            exit 1
+          }
+      - name: Validate CUE
+        working-directory: ./cue
+        run: cue vet --all-errors --concrete .
       - name: Check if working tree is dirty
         run: |
           if [[ $(git diff --stat) != '' ]]; then
@@ -45,19 +61,3 @@ jobs:
           command: |
             kustomize build ./kustomize | kubeval --strict --kubernetes-version 1.19.11 --schema-location https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master
             kustomize build ./kustomize | conftest test -p .github/policy -
-      - name: Setup CUE
-        uses: cue-lang/setup-cue@main
-      - name: Verify CUE formatting
-        working-directory: ./cue
-        run: |
-          cue fmt .
-          status=$(git status --porcelain)
-          [[ -z "$status" ]] || {
-            echo "CUE files are not correctly formatted"
-            echo "$status"
-            git diff
-            exit 1
-          }
-      - name: Validate CUE
-        working-directory: ./cue
-        run: cue vet --all-errors --concrete .
