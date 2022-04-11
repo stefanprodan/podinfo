@@ -79,6 +79,7 @@ version-set:
 	/usr/bin/sed -i '' "s/podinfo:$$current/podinfo:$$next/g" deploy/webapp/backend/deployment.yaml && \
 	/usr/bin/sed -i '' "s/podinfo:$$current/podinfo:$$next/g" deploy/bases/frontend/deployment.yaml && \
 	/usr/bin/sed -i '' "s/podinfo:$$current/podinfo:$$next/g" deploy/bases/backend/deployment.yaml && \
+	/usr/bin/sed -i '' "s/tag:\(\s*\)$$current/tag:\1$$next/g" cue/main.cue && \
 	echo "Version $$next set in code, deployment, chart and kustomize"
 
 release:
