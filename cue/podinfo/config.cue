@@ -9,7 +9,7 @@ import (
 	meta: metav1.#ObjectMeta
 	image: {
 		repository: *"ghcr.io/stefanprodan/podinfo" | string
-		tag:        "6.1.1" | string
+		tag:        string
 		pullPolicy: *"IfNotPresent" | string
 	}
 	replicas: *1 | int
