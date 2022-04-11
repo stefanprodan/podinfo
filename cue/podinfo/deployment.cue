@@ -19,13 +19,13 @@ import (
 			type: "RollingUpdate"
 			rollingUpdate: maxUnavailable: 1
 		}
-		selector: matchLabels: #selectorLabels
+		selector: matchLabels: _config.selectorLabels
 		template: {
 			metadata: {
-				labels: #selectorLabels
+				labels: _config.selectorLabels
 				annotations: {
 					"prometheus.io/scrape": "true"
-					"prometheus.io/port":   "\(_config.service.httpPort)"
+					"prometheus.io/port":   "\(_config.service.metricsPort)"
 					_config.podAnnotations
 				}
 			}
@@ -41,6 +41,8 @@ import (
 						command: [
 							"./podinfo",
 							"--port=\(_config.service.httpPort)",
+							"--port-metrics=\(_config.service.metricsPort)",
+							"--grpc-port=\(_config.service.grpcPort)",
 							"--level=\(_config.logLevel)",
 							"--random-delay=\(_config.faults.delay)",
 							"--random-error=\(_config.faults.error)",
@@ -54,6 +56,11 @@ import (
 							{
 								name:          "http-metrics"
 								containerPort: _config.service.metricsPort
+								protocol:      "TCP"
+							},
+							{
+								name:          "grpc"
+								containerPort: _config.service.grpcPort
 								protocol:      "TCP"
 							},
 						]

@@ -1,1 +1,1 @@
-module: "github.com/stefanprodan/podinfo/cuelang"
+module: "github.com/stefanprodan/podinfo/cue"

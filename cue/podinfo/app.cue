@@ -1,9 +1,5 @@
 package podinfo
 
-#selectorLabels: {
-	"app.kubernetes.io/name": "podinfo"
-}
-
 #Application: {
 	input: #Config
 	out: {

@@ -1,7 +1,7 @@
 package main
 
 import (
-	podinfo "github.com/stefanprodan/podinfo/cuelang/podinfo"
+	podinfo "github.com/stefanprodan/podinfo/cue/podinfo"
 )
 
 resources: (podinfo.#Application & {
@@ -9,15 +9,19 @@ resources: (podinfo.#Application & {
 		meta: {
 			name: "podinfo"
 			annotations: {
-				"app.kubernetes.io/name": "podinfo"
+				"app.kubernetes.io/part-of": "podinfo"
 			}
 		}
 		image: {
 			repository: "ghcr.io/stefanprodan/podinfo"
-			tag:        "6.0.3"
+			tag:        "6.1.2"
 		}
-		service: {
-			grpcPort: 6666
+		resources: requests: cpu: "100m"
+		hpa: {
+			enabled:     true
+			minReplicas: 2
+			maxReplicas: 4
+			cpu:         99
 		}
 	}
 }).out
