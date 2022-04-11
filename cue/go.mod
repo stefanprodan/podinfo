@@ -1,4 +1,4 @@
-module github.com/stefanprodan/podinfo/cuelang
+module github.com/stefanprodan/podinfo/cue
 
 go 1.17
 

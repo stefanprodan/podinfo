@@ -1,7 +1,7 @@
 package main
 
 import (
-	podinfo "github.com/stefanprodan/podinfo/cuelang/podinfo"
+	podinfo "github.com/stefanprodan/podinfo/cue/podinfo"
 )
 
 resources: (podinfo.#Application & {
@@ -14,7 +14,7 @@ resources: (podinfo.#Application & {
 		}
 		image: {
 			repository: "ghcr.io/stefanprodan/podinfo"
-			tag:        "6.0.3"
+			tag:        "6.1.1"
 		}
 		service: {
 			grpcPort: 6666
