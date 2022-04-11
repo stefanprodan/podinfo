@@ -14,7 +14,7 @@ resources: (podinfo.#Application & {
 		}
 		image: {
 			repository: "ghcr.io/stefanprodan/podinfo"
-			tag:        "6.1.1"
+			tag:        "6.1.2"
 		}
 		resources: requests: cpu: "100m"
 		hpa: {
