@@ -6,8 +6,8 @@ import (
 
 #hpaConfig: {
 	enabled:     *false | bool
-	cpu:         int
-	memory:      string
+	cpu:         *0 | int
+	memory:      *"" | string
 	minReplicas: int
 	maxReplicas: int
 }
@@ -25,24 +25,31 @@ import (
 		}
 		minReplicas: _config.hpa.minReplicas
 		maxReplicas: _config.hpa.maxReplicas
-		metrics: [ {
-			type: "Resource"
-			resource: {
-				name: "cpu"
-				target: {
-					type:               "Utilization"
-					averageUtilization: _config.hpa.cpu
+		metrics: [
+			if _config.hpa.cpu > 0 {
+				{
+					type: "Resource"
+					resource: {
+						name: "cpu"
+						target: {
+							type:               "Utilization"
+							averageUtilization: _config.hpa.cpu
+						}
+					}
 				}
-			}
-		}, {
-			type: "Resource"
-			resource: {
-				name: "memory"
-				target: {
-					type:         "AverageValue"
-					averageValue: _config.hpa.memory
+			},
+			if _config.hpa.memory != "" {
+				{
+					type: "Resource"
+					resource: {
+						name: "memory"
+						target: {
+							type:         "AverageValue"
+							averageValue: _config.hpa.memory
+						}
+					}
 				}
-			}
-		}]
+			},
+		]
 	}
 }

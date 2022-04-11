@@ -12,6 +12,9 @@ import (
 		tag:        string
 		pullPolicy: *"IfNotPresent" | string
 	}
+	selectorLabels: {
+		"app.kubernetes.io/name": meta.name
+	}
 	replicas: *1 | int
 	service:  #serviceConfig
 	host:     string
@@ -43,12 +46,6 @@ import (
 	nodeSelector: {[ string]: string}
 	affinity: corev1.#Affinity
 	tolerations: [ ...corev1.#Toleration]
-	linkerd: {
-		enabled: *false | bool
-	}
-	redis: {
-		enabled: *false | bool
-	}
 	tls: {
 		enabled:    *false | bool
 		port:       *9899 | int

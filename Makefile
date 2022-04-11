@@ -79,7 +79,7 @@ version-set:
 	/usr/bin/sed -i '' "s/podinfo:$$current/podinfo:$$next/g" deploy/webapp/backend/deployment.yaml && \
 	/usr/bin/sed -i '' "s/podinfo:$$current/podinfo:$$next/g" deploy/bases/frontend/deployment.yaml && \
 	/usr/bin/sed -i '' "s/podinfo:$$current/podinfo:$$next/g" deploy/bases/backend/deployment.yaml && \
-	/usr/bin/sed -i '' "s/tag:\(\s*\)$$current/tag:\1$$next/g" cue/main.cue && \
+	/usr/bin/sed -i '' "s/$$current/$$next/g" cue/main.cue && \
 	echo "Version $$next set in code, deployment, chart and kustomize"
 
 release:
@@ -89,3 +89,8 @@ release:
 swagger:
 	go get github.com/swaggo/swag/cmd/swag
 	cd pkg/api && $$(go env GOPATH)/bin/swag init -g server.go
+
+.PHONY: cue
+cue:
+	@cd cue && cue fmt ./... && cue vet --all-errors --concrete ./...
+	@cd cue && cue gen

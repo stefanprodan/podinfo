@@ -18,6 +18,6 @@ package podinfo
 			interval: _config.serviceMonitor.interval
 		}]
 		namespaceSelector: matchNames: _config.meta.namespace
-		selector: matchLabels:         #selectorLabels
+		selector: matchLabels:         _config.selectorLabels
 	}
 }

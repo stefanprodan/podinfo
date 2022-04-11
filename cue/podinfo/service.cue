@@ -21,7 +21,7 @@ import (
 	metadata:   _config.meta
 	spec:       corev1.#ServiceSpec & {
 		type:     "ClusterIP"
-		selector: #selectorLabels
+		selector: _config.selectorLabels
 		ports: [{
 			name:       "http"
 			port:       _config.service.externalPort
