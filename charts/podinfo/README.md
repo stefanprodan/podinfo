@@ -40,7 +40,7 @@ Parameter | Default | Description
 `logLevel` | `info` | Log level: `debug`, `info`, `warn`, `error`
 `backend` | `None` | Echo backend URL
 `backends` | `[]` | Array of echo backend URLs
-`cache` | `None` | Redis address in the format `<host>:<port>`
+`cache` | `None` | Redis address in the format `tcp://<host>:<port>`
 `redis.enabled` | `false` | Create Redis deployment for caching purposes
 `ui.color` | `#34577c` |  UI color
 `ui.message` | `None` |  UI greetings message

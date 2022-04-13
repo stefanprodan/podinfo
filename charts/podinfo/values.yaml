@@ -81,7 +81,7 @@ hpa:
   # average http requests per second per pod (k8s-prometheus-adapter)
   requests:
 
-# Redis address in the format <host>:<port>
+# Redis address in the format tcp://<host>:<port>
 cache: ""
 # Redis deployment
 redis:
