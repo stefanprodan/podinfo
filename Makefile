@@ -90,7 +90,11 @@ swagger:
 	go get github.com/swaggo/swag/cmd/swag
 	cd pkg/api && $$(go env GOPATH)/bin/swag init -g server.go
 
-.PHONY: cue
-cue:
+.PHONY: cue-mod
+cue-mod:
+	@cd cue && cue get go k8s.io/api/... && cue get go github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1
+
+.PHONY: cue-gen
+cue-gen:
 	@cd cue && cue fmt ./... && cue vet --all-errors --concrete ./...
 	@cd cue && cue gen

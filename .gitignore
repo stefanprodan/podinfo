@@ -20,3 +20,4 @@ build/
 gcloud/
 dist/
 bin/
+cue/cue.mod/gen/

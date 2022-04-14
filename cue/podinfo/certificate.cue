@@ -1,7 +1,7 @@
 package podinfo
 
 import (
-	certmanv1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	certmanv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"encoding/yaml"
 )
 
