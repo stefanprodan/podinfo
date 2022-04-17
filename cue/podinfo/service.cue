@@ -10,8 +10,6 @@ import (
 	httpPort:     *9898 | int
 	metricsPort:  *9797 | int
 	grpcPort:     *9999 | int
-	grpcService:  "podinfo" | string
-	nodePort:     *31198 | int
 }
 
 #Service: corev1.#Service & {
@@ -20,24 +18,27 @@ import (
 	kind:       "Service"
 	metadata:   _config.meta
 	spec:       corev1.#ServiceSpec & {
-		type:     "ClusterIP"
+		type:     _config.service.type
 		selector: _config.selectorLabels
-		ports: [{
-			name:       "http"
-			port:       _config.service.externalPort
-			targetPort: _config.service.httpPort
-			protocol:   "TCP"
-		}, if _config.tls.enabled == true {
-			name:       "https"
-			port:       _config.tls.port
-			targetPort: "https"
-			protocol:   "TCP"
-		}, if _config.service.grpcPort != _|_ {
-			name:       "grpc"
-			port:       _config.service.grpcPort
-			targetPort: "grpc"
-			protocol:   "TCP"
-		},
+		ports: [
+			{
+				name:       "http"
+				port:       _config.service.externalPort
+				targetPort: "\(name)"
+				protocol:   "TCP"
+			},
+			{
+				name:       "http-metrics"
+				port:       _config.service.metricsPort
+				targetPort: "\(name)"
+				protocol:   "TCP"
+			},
+			{
+				name:       "grpc"
+				port:       _config.service.grpcPort
+				targetPort: "\(name)"
+				protocol:   "TCP"
+			},
 		]
 	}
 }

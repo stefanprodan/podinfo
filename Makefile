@@ -92,7 +92,7 @@ swagger:
 
 .PHONY: cue-mod
 cue-mod:
-	@cd cue && cue get go k8s.io/api/... && cue get go github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1
+	@cd cue && cue get go k8s.io/api/...
 
 .PHONY: cue-gen
 cue-gen:

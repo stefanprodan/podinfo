@@ -1,21 +1,26 @@
 package podinfo
 
 #Application: {
-	input: #Config
-	out: {
-		sa:     #ServiceAccount & {_config: input}
-		deploy: #Deployment & {
-			_config:         input
-			_serviceAccount: sa.metadata.name
+	config: #Config
+
+	objects: {
+		service:    #Service & {_config:        config}
+		account:    #ServiceAccount & {_config: config}
+		deployment: #Deployment & {
+			_config:         config
+			_serviceAccount: account.metadata.name
 		}
-		service: #Service & {_config: input}}
-	if input.hpa.enabled == true {
-		out: hpa: #HorizontalPodAutoscaler & {_config: input}
 	}
-	if input.serviceMonitor.enabled == true {
-		out: serviceMonitor: #ServiceMonitor & {_config: input}
+
+	if config.hpa.enabled == true {
+		objects: hpa: #HorizontalPodAutoscaler & {_config: config}
 	}
-	if input.ingress.enabled == true {
-		out: ingress: #Ingress & {_config: input}
+
+	if config.ingress.enabled == true {
+		objects: ingress: #Ingress & {_config: config}
+	}
+
+	if config.serviceMonitor.enabled == true {
+		objects: serviceMonitor: #ServiceMonitor & {_config: config}
 	}
 }

@@ -6,10 +6,10 @@ import (
 
 #hpaConfig: {
 	enabled:     *false | bool
-	cpu:         *0 | int
+	cpu:         *99 | int
 	memory:      *"" | string
-	minReplicas: int
-	maxReplicas: int
+	minReplicas: *1 | int
+	maxReplicas: *1 | int
 }
 
 #HorizontalPodAutoscaler: autoscaling.#HorizontalPodAutoscaler & {

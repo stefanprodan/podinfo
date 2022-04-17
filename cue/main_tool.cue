@@ -7,6 +7,6 @@ import (
 
 command: gen: {
 	task: print: cli.Print & {
-		text: yaml.MarshalStream([ for x in resources {x}])
+		text: yaml.MarshalStream([ for x in objects {x}])
 	}
 }

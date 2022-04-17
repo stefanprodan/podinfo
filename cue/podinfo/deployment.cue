@@ -12,7 +12,7 @@ import (
 	kind:            "Deployment"
 	metadata:        _config.meta
 	spec:            appsv1.#DeploymentSpec & {
-		if _config.hpa.enabled == false {
+		if !_config.hpa.enabled {
 			replicas: _config.replicas
 		}
 		strategy: {
@@ -23,29 +23,33 @@ import (
 		template: {
 			metadata: {
 				labels: _config.selectorLabels
-				annotations: {
-					"prometheus.io/scrape": "true"
-					"prometheus.io/port":   "\(_config.service.metricsPort)"
-					_config.podAnnotations
+				if !_config.serviceMonitor.enabled {
+					annotations: {
+						"prometheus.io/scrape": "true"
+						"prometheus.io/port":   "\(_config.service.metricsPort)"
+					}
 				}
 			}
 			spec: corev1.#PodSpec & {
-				terminationGracePeriodSeconds: 30
+				terminationGracePeriodSeconds: 15
 				serviceAccountName:            _serviceAccount
 				containers: [
 					{
 						name:            "podinfo"
 						image:           "\(_config.image.repository):\(_config.image.tag)"
 						imagePullPolicy: _config.image.pullPolicy
-						securityContext: _config.securityContext
 						command: [
 							"./podinfo",
 							"--port=\(_config.service.httpPort)",
 							"--port-metrics=\(_config.service.metricsPort)",
 							"--grpc-port=\(_config.service.grpcPort)",
 							"--level=\(_config.logLevel)",
-							"--random-delay=\(_config.faults.delay)",
-							"--random-error=\(_config.faults.error)",
+							if _config.cache != _|_ {
+								"--cache-server=\(_config.cache)"
+							},
+							for b in _config.backends {
+								"--backend-url=\(b)"
+							},
 						]
 						ports: [
 							{
@@ -65,56 +69,39 @@ import (
 							},
 						]
 						livenessProbe: {
-							exec: {
-								command: [
-									"podcli",
-									"check",
-									"http",
-									"localhost:\(_config.service.httpPort)/healthz",
-								]
+							httpGet: {
+								path: "/healthz"
+								port: "http"
 							}
-							initialDelaySeconds: 1
-							timeoutSeconds:      5
 						}
 						readinessProbe: {
-							exec: {
-								command: [
-									"podcli",
-									"check",
-									"http",
-									"localhost:\(_config.service.httpPort)/readyz",
-								]
+							httpGet: {
+								path: "/readyz"
+								port: "http"
 							}
-							initialDelaySeconds: 1
-							timeoutSeconds:      5
 						}
 						volumeMounts: [
 							{
 								name:      "data"
 								mountPath: "/data"
 							},
-							if _config.tls.secretName != "" {
-								name:      "tls"
-								mountPath: _config.tls.certPath
-								readOnly:  true
-							},
 						]
 						resources: _config.resources
+						if _config.securityContext != _|_ {
+							securityContext: _config.securityContext
+						}
 					},
 				]
-				nodeSelector: _config.nodeSelector
-				affinity:     _config.affinity
-				tolerations:  _config.tolerations
+				if _config.affinity != _|_ {
+					affinity: _config.affinity
+				}
+				if _config.tolerations != _|_ {
+					tolerations: _config.tolerations
+				}
 				volumes: [
 					{
 						name: "data"
 						emptyDir: {}
-					},
-					if _config.tls.secretName != "" {
-						name: "tls"
-						secret: {
-							secretName: _config.tls.secretName
-						}
 					},
 				]
 			}
