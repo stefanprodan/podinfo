@@ -6,54 +6,36 @@ import (
 )
 
 #Config: {
-	meta: metav1.#ObjectMeta
+	meta:           metav1.#ObjectMeta
+	hpa:            #hpaConfig
+	ingress:        #ingressConfig
+	service:        #serviceConfig
+	serviceMonitor: #serviceMonConfig
+
 	image: {
 		repository: *"ghcr.io/stefanprodan/podinfo" | string
-		tag:        string
 		pullPolicy: *"IfNotPresent" | string
+		tag:        string
 	}
-	selectorLabels: {
-		"app.kubernetes.io/name": meta.name
-	}
-	replicas: *1 | int
-	service:  #serviceConfig
-	host:     string
-	cache:    string
-	backends: [string]
+
+	cache?: string & =~"^tcp://"
+	backends: [...string]
 	logLevel: *"info" | string
-	faults: {
-		delay:     *false | bool
-		error:     *false | bool
-		unhealthy: *false | bool
-		unready:   *false | bool
-	}
-	h2c: {
-		enabled: *false | bool
-	}
-	ui: {
-		color:   *"#34577c" | string
-		message: *"" | string
-		logo:    *"" | string
-	}
-	podAnnotations: {[ string]: string}
-	securityContext: corev1.#PodSecurityContext
-	resources:       *{
+	replicas: *1 | int
+
+	resources: *{
 		requests: {
 			cpu:    "1m"
 			memory: "16Mi"
 		}
+		limits: memory: "128Mi"
 	} | corev1.#ResourceRequirements
-	nodeSelector: {[ string]: string}
-	affinity: corev1.#Affinity
-	tolerations: [ ...corev1.#Toleration]
-	tls: {
-		enabled:    *false | bool
-		port:       *9899 | int
-		certPath:   *"/data/cert" | string
-		secretName: *"" | string
-	}
-	cert:           #certConfig
-	hpa:            #hpaConfig
-	ingress:        #ingressConfig
-	serviceMonitor: #serviceMonConfig
+
+	selectorLabels: *{"app.kubernetes.io/name": meta.name} | {[ string]: string}
+	meta: annotations: *{"app.kubernetes.io/version": "\(image.tag)"} | {[ string]: string}
+	meta: labels:      *selectorLabels | {[ string]:  string}
+
+	securityContext?: corev1.#PodSecurityContext
+	affinity?:        corev1.#Affinity
+	tolerations?: [ ...corev1.#Toleration]
 }

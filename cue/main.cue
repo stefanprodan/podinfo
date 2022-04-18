@@ -4,24 +4,30 @@ import (
 	podinfo "github.com/stefanprodan/podinfo/cue/podinfo"
 )
 
-resources: (podinfo.#Application & {
-	input: {
+app: podinfo.#Application & {
+	config: {
 		meta: {
-			name: "podinfo"
-			annotations: {
-				"app.kubernetes.io/part-of": "podinfo"
-			}
+			name:      "podinfo"
+			namespace: "default"
 		}
-		image: {
-			repository: "ghcr.io/stefanprodan/podinfo"
-			tag:        "6.1.3"
+		image: tag: "6.1.3"
+		resources: requests: {
+			cpu:    "100m"
+			memory: "16Mi"
 		}
-		resources: requests: cpu: "100m"
 		hpa: {
 			enabled:     true
-			minReplicas: 2
-			maxReplicas: 4
-			cpu:         99
+			maxReplicas: 3
 		}
+		ingress: {
+			enabled:   true
+			className: "nginx"
+			host:      "podinfo.example.com"
+			tls:       true
+			annotations: "cert-manager.io/cluster-issuer": "letsencrypt"
+		}
+		serviceMonitor: enabled: true
 	}
-}).out
+}
+
+objects: app.objects

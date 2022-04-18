@@ -5,21 +5,11 @@ import (
 )
 
 #ingressConfig: {
-	svcName:   string
-	svcPort:   int
-	enabled:   *false | bool
-	className: *"" | string
-	tls: [{
-		hosts: [string]
-		secretName: string
-	}]
-	hosts: [{
-		host: "podinfo.local"
-		paths: [{
-			path:     "/"
-			pathType: "ImplementationSpecific"
-		}]
-	}]
+	enabled: *false | bool
+	annotations?: {[ string]: string}
+	className?: string
+	tls:        *false | bool
+	host:       string
 }
 
 #Ingress: netv1.#Ingress & {
@@ -27,22 +17,31 @@ import (
 	apiVersion: "networking.k8s.io/v1"
 	kind:       "Ingress"
 	metadata:   _config.meta
-	spec:       netv1.#IngressSpec & {
-		ingressClassName: _config.ingress.className
-		tls: [ for t in _config.ingress.tls {
-			hosts:      t.hosts
-			secretName: t.secretName
+	if _config.ingress.annotations != _|_ {
+		metadata: annotations: _config.ingress.annotations
+	}
+	spec: netv1.#IngressSpec & {
+		rules: [{
+			host: _config.ingress.host
+			http: {
+				paths: [{
+					pathType: "Prefix"
+					path:     "/"
+					backend: service: {
+						name: _config.meta.name
+						port: name: "http"
+					}
+				}]
+			}
 		}]
-		rules: [ for h in _config.ingress.hosts {
-			host: h.host
-			http: paths: [ for p in h.paths {
-				path:     p.path
-				pathType: p.pathType
-				backend: service: {
-					name: _config.meta.name
-					port: number: _config.service.externalPort
-				}
+		if _config.ingress.tls {
+			tls: [{
+				hosts: [_config.ingress.host]
+				secretName: "\(_config.meta.name)-cert"
 			}]
-		}]
+		}
+		if _config.ingress.className != _|_ {
+			ingressClassName: _config.ingress.className
+		}
 	}
 }

@@ -3,7 +3,6 @@ package podinfo
 #serviceMonConfig: {
 	enabled:  *false | bool
 	interval: *"15s" | string
-	matchLabels: {}
 }
 
 #ServiceMonitor: {
@@ -14,10 +13,10 @@ package podinfo
 	spec: {
 		endpoints: [{
 			path:     "/metrics"
-			port:     "http"
+			port:     "http-metrics"
 			interval: _config.serviceMonitor.interval
 		}]
 		namespaceSelector: matchNames: _config.meta.namespace
-		selector: matchLabels:         _config.selectorLabels
+		selector: matchLabels:         _config.meta.labels
 	}
 }
