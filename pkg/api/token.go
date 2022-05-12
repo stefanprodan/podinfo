@@ -8,7 +8,7 @@ import (
 
 	"io/ioutil"
 
-	"github.com/dgrijalva/jwt-go"
+	"github.com/dgrijalva/jwt-go/v4"
 	"go.uber.org/zap"
 )
 
@@ -26,10 +26,13 @@ type jwtCustomClaims struct {
 // @Router /token [post]
 // @Success 200 {object} api.TokenResponse
 func (s *Server) tokenGenerateHandler(w http.ResponseWriter, r *http.Request) {
+	_, span := s.tracer.Start(r.Context(), "tokenGenerateHandler")
+	defer span.End()
+
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		s.logger.Error("reading the request body failed", zap.Error(err))
-		s.ErrorResponse(w, r, "invalid request body", http.StatusBadRequest)
+		s.ErrorResponse(w, r, span, "invalid request body", http.StatusBadRequest)
 		return
 	}
 	defer r.Body.Close()
@@ -39,24 +42,25 @@ func (s *Server) tokenGenerateHandler(w http.ResponseWriter, r *http.Request) {
 		user = string(body)
 	}
 
+	expiresAt := time.Now().Add(time.Minute * 1)
 	claims := &jwtCustomClaims{
 		user,
 		jwt.StandardClaims{
 			Issuer:    "podinfo",
-			ExpiresAt: time.Now().Add(time.Minute * 1).Unix(),
+			ExpiresAt: jwt.At(expiresAt),
 		},
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	t, err := token.SignedString([]byte(s.config.JWTSecret))
 	if err != nil {
-		s.ErrorResponse(w, r, err.Error(), http.StatusBadRequest)
+		s.ErrorResponse(w, r, span, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	var result = TokenResponse{
 		Token:     t,
-		ExpiresAt: time.Unix(claims.StandardClaims.ExpiresAt, 0),
+		ExpiresAt: time.Unix(claims.StandardClaims.ExpiresAt.Unix(), 0),
 	}
 
 	s.JSONResponse(w, r, result)
@@ -74,14 +78,17 @@ func (s *Server) tokenGenerateHandler(w http.ResponseWriter, r *http.Request) {
 // Get: JWT=$(curl -s -d 'test' localhost:9898/token | jq -r .token)
 // Post: curl -H "Authorization: Bearer ${JWT}" localhost:9898/token/validate
 func (s *Server) tokenValidateHandler(w http.ResponseWriter, r *http.Request) {
+	_, span := s.tracer.Start(r.Context(), "tokenValidateHandler")
+	defer span.End()
+
 	authorizationHeader := r.Header.Get("authorization")
 	if authorizationHeader == "" {
-		s.ErrorResponse(w, r, "authorization bearer header required", http.StatusUnauthorized)
+		s.ErrorResponse(w, r, span, "authorization bearer header required", http.StatusUnauthorized)
 		return
 	}
 	bearerToken := strings.Split(authorizationHeader, " ")
 	if len(bearerToken) != 2 || strings.ToLower(bearerToken[0]) != "bearer" {
-		s.ErrorResponse(w, r, "authorization bearer header required", http.StatusUnauthorized)
+		s.ErrorResponse(w, r, span, "authorization bearer header required", http.StatusUnauthorized)
 		return
 	}
 
@@ -93,22 +100,22 @@ func (s *Server) tokenValidateHandler(w http.ResponseWriter, r *http.Request) {
 		return []byte(s.config.JWTSecret), nil
 	})
 	if err != nil {
-		s.ErrorResponse(w, r, err.Error(), http.StatusUnauthorized)
+		s.ErrorResponse(w, r, span, err.Error(), http.StatusUnauthorized)
 		return
 	}
 
 	if token.Valid {
 		if claims.StandardClaims.Issuer != "podinfo" {
-			s.ErrorResponse(w, r, "invalid issuer", http.StatusUnauthorized)
+			s.ErrorResponse(w, r, span, "invalid issuer", http.StatusUnauthorized)
 		} else {
 			var result = TokenValidationResponse{
 				TokenName: claims.Name,
-				ExpiresAt: time.Unix(claims.StandardClaims.ExpiresAt, 0),
+				ExpiresAt: time.Unix(claims.StandardClaims.ExpiresAt.Unix(), 0),
 			}
 			s.JSONResponse(w, r, result)
 		}
 	} else {
-		s.ErrorResponse(w, r, "Invalid authorization token", http.StatusUnauthorized)
+		s.ErrorResponse(w, r, span, "Invalid authorization token", http.StatusUnauthorized)
 	}
 }
 

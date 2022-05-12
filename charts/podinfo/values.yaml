@@ -8,7 +8,7 @@ backends: []
 
 image:
   repository: ghcr.io/stefanprodan/podinfo
-  tag: 5.2.0
+  tag: 6.1.4
   pullPolicy: IfNotPresent
 
 ui:
@@ -81,7 +81,7 @@ hpa:
   # average http requests per second per pod (k8s-prometheus-adapter)
   requests:
 
-# Redis address in the format <host>:<port>
+# Redis address in the format tcp://<host>:<port>
 cache: ""
 # Redis deployment
 redis:
@@ -101,12 +101,15 @@ securityContext: {}
 
 ingress:
   enabled: false
+  className: ""
   annotations: {}
     # kubernetes.io/ingress.class: nginx
     # kubernetes.io/tls-acme: "true"
-  path: /*
-  hosts: []
-  #  - podinfo.local
+  hosts:
+    - host: podinfo.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
   tls: []
   #  - secretName: chart-example-tls
   #    hosts:
@@ -120,6 +123,7 @@ linkerd:
 serviceMonitor:
   enabled: false
   interval: 15s
+  additionalLabels: {}
 
 resources:
   limits:

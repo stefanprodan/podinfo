@@ -1,6 +1,6 @@
 # Podinfo
 
-Podinfo is a tiny web application made with Go 
+Podinfo is a tiny web application made with Go
 that showcases best practices of running microservices in Kubernetes.
 
 Podinfo is used by CNCF projects like [Flux](https://github.com/fluxcd/flux2)
@@ -14,7 +14,7 @@ To install the chart with the release name `my-release`:
 ```console
 $ helm repo add podinfo https://stefanprodan.github.io/podinfo
 
-$ helm upgrade -i my-release podinfo/podinfo 
+$ helm upgrade -i my-release podinfo/podinfo
 ```
 
 The command deploys podinfo on the Kubernetes cluster in the default namespace.
@@ -40,7 +40,7 @@ Parameter | Default | Description
 `logLevel` | `info` | Log level: `debug`, `info`, `warn`, `error`
 `backend` | `None` | Echo backend URL
 `backends` | `[]` | Array of echo backend URLs
-`cache` | `None` | Redis address in the format `<host>:<port>`
+`cache` | `None` | Redis address in the format `tcp://<host>:<port>`
 `redis.enabled` | `false` | Create Redis deployment for caching purposes
 `ui.color` | `#34577c` |  UI color
 `ui.message` | `None` |  UI greetings message
@@ -74,9 +74,10 @@ Parameter | Default | Description
 `linkerd.profile.enabled` | `false` | Create Linkerd service profile
 `serviceMonitor.enabled` | `false` | Whether a Prometheus Operator service monitor should be created
 `serviceMonitor.interval` | `15s` | Prometheus scraping interval
+`serviceMonitor.additionalLabels` | `{}` | Add additional labels to the service monitor |
 `ingress.enabled` | `false` | Enables Ingress
+`ingress.className ` | `""` | Use ingressClassName
 `ingress.annotations` | `{}` | Ingress annotations
-`ingress.path` | `/*` | Ingress path
 `ingress.hosts` | `[]` | Ingress accepted hosts
 `ingress.tls` | `[]` | Ingress TLS configuration
 `resources.requests.cpu` | `1m` | Pod CPU request
