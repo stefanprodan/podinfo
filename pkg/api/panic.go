@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"os"
 )
 
 // Panic godoc
@@ -10,5 +11,6 @@ import (
 // @Tags HTTP API
 // @Router /panic [get]
 func (s *Server) panicHandler(w http.ResponseWriter, r *http.Request) {
-	s.logger.Panic("Panic command received")
+	s.logger.Info("Panic command received")
+	os.Exit(255)
 }

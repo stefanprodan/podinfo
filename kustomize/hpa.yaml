@@ -2,7 +2,6 @@ apiVersion: autoscaling/v2beta2
 kind: HorizontalPodAutoscaler
 metadata:
   name: podinfo
-  namespace: paul
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
