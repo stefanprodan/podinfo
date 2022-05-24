@@ -1,4 +1,4 @@
-ARG GO_VERSION=1.17
+ARG GO_VERSION=1.18
 ARG XX_VERSION=1.1.0
 
 FROM --platform=$BUILDPLATFORM tonistiigi/xx:${XX_VERSION} AS xx
@@ -28,7 +28,7 @@ RUN xx-go build -ldflags "-s -w \
     -X github.com/stefanprodan/podinfo/pkg/version.REVISION=${REVISION}" \
     -a -o bin/podcli cmd/podcli/*
 
-FROM alpine:3.15
+FROM alpine:3.16
 
 ARG BUILD_DATE
 ARG VERSION
