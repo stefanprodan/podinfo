@@ -1,27 +1,31 @@
 # podinfo
 
-[![CircleCI](https://circleci.com/gh/stefanprodan/podinfo.svg?style=svg)](https://circleci.com/gh/stefanprodan/podinfo)
-[![conftest](https://github.com/stefanprodan/podinfo/workflows/test/badge.svg)](https://github.com/stefanprodan/podinfo/blob/master/.github/workflows/test.yml)
+[![e2e](https://github.com/stefanprodan/podinfo/workflows/e2e/badge.svg)](https://github.com/stefanprodan/podinfo/blob/master/.github/workflows/e2e.yml)
+[![test](https://github.com/stefanprodan/podinfo/workflows/test/badge.svg)](https://github.com/stefanprodan/podinfo/blob/master/.github/workflows/test.yml)
+[![cve-scan](https://github.com/stefanprodan/podinfo/workflows/cve-scan/badge.svg)](https://github.com/stefanprodan/podinfo/blob/master/.github/workflows/cve-scan.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/stefanprodan/podinfo)](https://goreportcard.com/report/github.com/stefanprodan/podinfo)
 [![Docker Pulls](https://img.shields.io/docker/pulls/stefanprodan/podinfo)](https://hub.docker.com/r/stefanprodan/podinfo)
 
 Podinfo is a tiny web application made with Go that showcases best practices of running microservices in Kubernetes.
+Podinfo is used by CNCF projects like [Flux](https://github.com/fluxcd/flux2) and [Flagger](https://github.com/fluxcd/flagger)
+for end-to-end testing and workshops.
 
 Specifications:
 
 * Health checks (readiness and liveness)
 * Graceful shutdown on interrupt signals
 * File watcher for secrets and configmaps
-* Instrumented with Prometheus
-* Tracing with Istio and Jaeger
-* Linkerd service profile
+* Instrumented with Prometheus and Open Telemetry
 * Structured logging with zap 
 * 12-factor app with viper
 * Fault injection (random errors and latency)
 * Swagger docs
-* Helm and Kustomize installers
+* CUE, Helm and Kustomize installers
 * End-to-End testing with Kubernetes Kind and Helm
 * Kustomize testing with GitHub Actions and Open Policy Agent
+* Multi-arch container image with Docker buildx and Github Actions
+* Container image signing with Sigstore cosign
+* CVE scanning with Trivy
 
 Web API:
 
@@ -41,8 +45,9 @@ Web API:
 * `POST /token` issues a JWT token valid for one minute `JWT=$(curl -sd 'anon' podinfo:9898/token | jq -r .token)`
 * `GET /token/validate` validates the JWT token `curl -H "Authorization: Bearer $JWT" podinfo:9898/token/validate`
 * `GET /configs` returns a JSON with configmaps and/or secrets mounted in the `config` volume
-* `POST /cache` saves the posted content to Redis and returns the SHA1 hash of the content
-* `GET /cache/{hash}` returns the content from Redis if the key exists
+* `POST/PUT /cache/{key}` saves the posted content to Redis
+* `GET /cache/{key}` returns the content from Redis if the key exists
+* `DELETE /cache/{key}` deletes the key from Redis if exists
 * `POST /store` writes the posted content to disk at /data/hash and returns the SHA1 hash of the content
 * `GET /store/{hash}` returns the content of the file /data/hash if exists
 * `GET /ws/echo` echos content via websockets `podcli ws ws://localhost:9898/ws/echo`
@@ -71,7 +76,9 @@ To access the Swagger UI open `<podinfo-host>/swagger/index.html` in a browser.
 
 ### Install
 
-Helm:
+#### Helm
+
+Install from github.io:
 
 ```bash
 helm repo add podinfo https://stefanprodan.github.io/podinfo
@@ -82,23 +89,107 @@ helm upgrade --install --wait frontend \
 --set backend=http://backend-podinfo:9898/echo \
 podinfo/podinfo
 
-# Test pods have hook-delete-policy: hook-succeeded
 helm test frontend
 
 helm upgrade --install --wait backend \
 --namespace test \
---set hpa.enabled=true \
+--set redis.enabled=true \
 podinfo/podinfo
 ```
 
-Kustomize:
+Install from ghcr.io:
+
+```bash
+helm upgrade --install --wait podinfo --namespace default \
+oci://ghcr.io/stefanprodan/charts/podinfo
+```
+
+#### Kustomize
 
 ```bash
 kubectl apply -k github.com/stefanprodan/podinfo//kustomize
 ```
 
-Docker:
+#### Docker
 
 ```bash
 docker run -dp 9898:9898 stefanprodan/podinfo
 ```
+
+### Continuous Delivery
+
+In order to install podinfo on a Kubernetes cluster and keep it up to date with the latest
+release in an automated manner, you can use [Flux](https://fluxcd.io).
+
+Install the Flux CLI on MacOS and Linux using Homebrew:
+
+```sh
+brew install fluxcd/tap/flux
+```
+
+Install the Flux controllers needed for Helm operations:
+
+```sh
+flux install \
+--namespace=flux-system \
+--network-policy=false \
+--components=source-controller,helm-controller
+```
+
+Add podinfo's Helm repository to your cluster and
+configure Flux to check for new chart releases every ten minutes:
+
+```sh
+flux create source helm podinfo \
+--namespace=default \
+--url=https://stefanprodan.github.io/podinfo \
+--interval=10m
+```
+
+Create a `podinfo-values.yaml` file locally:
+
+```sh
+cat > podinfo-values.yaml <<EOL
+replicaCount: 2
+resources:
+  limits:
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 64Mi
+EOL
+```
+
+Create a Helm release for deploying podinfo in the default namespace:
+
+```sh
+flux create helmrelease podinfo \
+--namespace=default \
+--source=HelmRepository/podinfo \
+--release-name=podinfo \
+--chart=podinfo \
+--chart-version=">5.0.0" \
+--values=podinfo-values.yaml
+```
+
+Based on the above definition, Flux will upgrade the release automatically
+when a new version of podinfo is released. If the upgrade fails, Flux
+can [rollback](https://toolkit.fluxcd.io/components/helm/helmreleases/#configuring-failure-remediation)
+to the previous working version.
+
+You can check what version is currently deployed with:
+
+```sh
+flux get helmreleases -n default
+```
+
+To delete podinfo's Helm repository and release from your cluster run:
+
+```sh
+flux -n default delete source helm podinfo
+flux -n default delete helmrelease podinfo
+```
+
+If you wish to manage the lifecycle of your applications in a **GitOps** manner, check out
+this [workflow example](https://github.com/fluxcd/flux2-kustomize-helm-example)
+for multi-env deployments with Flux, Kustomize and Helm.

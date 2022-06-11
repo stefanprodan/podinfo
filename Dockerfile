@@ -1,4 +1,6 @@
-FROM golang:1.14 as builder
+FROM golang:1.18-alpine as builder
+
+ARG REVISION
 
 RUN mkdir -p /podinfo/
 
@@ -8,24 +10,26 @@ COPY . .
 
 RUN go mod download
 
-RUN go test -v -race ./...
-
-RUN GIT_COMMIT=$(git rev-list -1 HEAD) && \
-    CGO_ENABLED=0 GOOS=linux go build -ldflags "-s -w \
-    -X github.com/stefanprodan/podinfo/pkg/version.REVISION=${GIT_COMMIT}" \
+RUN CGO_ENABLED=0 go build -ldflags "-s -w \
+    -X github.com/stefanprodan/podinfo/pkg/version.REVISION=${REVISION}" \
     -a -o bin/podinfo cmd/podinfo/*
 
-RUN GIT_COMMIT=$(git rev-list -1 HEAD) && \
-    CGO_ENABLED=0 GOOS=linux go build -ldflags "-s -w \
-    -X github.com/stefanprodan/podinfo/pkg/version.REVISION=${GIT_COMMIT}" \
+RUN CGO_ENABLED=0 go build -ldflags "-s -w \
+    -X github.com/stefanprodan/podinfo/pkg/version.REVISION=${REVISION}" \
     -a -o bin/podcli cmd/podcli/*
 
-FROM alpine:3.11
+FROM alpine:3.16
+
+ARG BUILD_DATE
+ARG VERSION
+ARG REVISION
+
+LABEL maintainer="stefanprodan"
 
 RUN addgroup -S app \
-    && adduser -S -g app app \
+    && adduser -S -G app app \
     && apk --no-cache add \
-    curl openssl netcat-openbsd
+    ca-certificates curl netcat-openbsd
 
 WORKDIR /home/app
 

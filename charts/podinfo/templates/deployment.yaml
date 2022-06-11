@@ -3,10 +3,7 @@ kind: Deployment
 metadata:
   name: {{ template "podinfo.fullname" . }}
   labels:
-    app: {{ template "podinfo.fullname" . }}
-    chart: {{ template "podinfo.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+    {{- include "podinfo.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.hpa.enabled }}
   replicas: {{ .Values.replicaCount }}
@@ -17,14 +14,17 @@ spec:
       maxUnavailable: 1
   selector:
     matchLabels:
-      app: {{ template "podinfo.fullname" . }}
+      {{- include "podinfo.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        app: {{ template "podinfo.fullname" . }}
+        {{- include "podinfo.selectorLabels" . | nindent 8 }}
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: "{{ .Values.service.httpPort }}"
+        {{- range $key, $value := .Values.podAnnotations }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
     spec:
       terminationGracePeriodSeconds: 30
       {{- if .Values.serviceAccount.enabled }}
@@ -34,9 +34,30 @@ spec:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if .Values.securityContext }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          {{- else if (or .Values.service.hostPort .Values.tls.hostPort) }}
+          securityContext:
+            allowPrivilegeEscalation: true
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - NET_BIND_SERVICE
+          {{- end }}
           command:
             - ./podinfo
             - --port={{ .Values.service.httpPort | default 9898 }}
+            {{- if .Values.host }}
+            - --host={{ .Values.host }}
+            {{- end }}
+            {{- if .Values.tls.enabled }}
+            - --secure-port={{ .Values.tls.port }}
+            {{- end }}
+            {{- if .Values.tls.certPath }}
+            - --cert-path={{ .Values.tls.certPath }}
+            {{- end }}
             {{- if .Values.service.metricsPort }}
             - --port-metrics={{ .Values.service.metricsPort }}
             {{- end }}
@@ -51,6 +72,8 @@ spec:
             {{- end }}
             {{- if .Values.cache }}
             - --cache-server={{ .Values.cache }}
+            {{- else if .Values.redis.enabled }}
+            - --cache-server=tcp://{{ template "podinfo.fullname" . }}-redis:6379
             {{- end }}
             - --level={{ .Values.logLevel }}
             - --random-delay={{ .Values.faults.delay }}
@@ -75,7 +98,7 @@ spec:
           {{- end }}
           {{- if .Values.ui.color }}
           - name: PODINFO_UI_COLOR
-            value: {{ .Values.ui.color }}
+            value: {{ quote .Values.ui.color }}
           {{- end }}
           {{- if .Values.backend }}
           - name: PODINFO_BACKEND_URL
@@ -85,6 +108,17 @@ spec:
             - name: http
               containerPort: {{ .Values.service.httpPort | default 9898 }}
               protocol: TCP
+              {{- if .Values.service.hostPort }}
+              hostPort: {{ .Values.service.hostPort }}
+              {{- end }}
+            {{- if .Values.tls.enabled }}
+            - name: https
+              containerPort: {{ .Values.tls.port | default 9899 }}
+              protocol: TCP
+              {{- if .Values.tls.hostPort }}
+              hostPort: {{ .Values.tls.hostPort }}
+              {{- end }}
+            {{- end }}
             {{- if .Values.service.metricsPort }}
             - name: http-metrics
               containerPort: {{ .Values.service.metricsPort }}
@@ -116,6 +150,11 @@ spec:
           volumeMounts:
           - name: data
             mountPath: /data
+          {{- if .Values.tls.enabled }}
+          - name: tls
+            mountPath: {{ .Values.tls.certPath | default "/data/cert" }}
+            readOnly: true
+          {{- end }}
           resources:
 {{ toYaml .Values.resources | indent 12 }}
     {{- with .Values.nodeSelector }}
@@ -133,3 +172,8 @@ spec:
       volumes:
       - name: data
         emptyDir: {}
+      {{- if .Values.tls.enabled }}
+      - name: tls
+        secret:
+          secretName: {{ template "podinfo.tlsSecretName" . }}
+      {{- end }}

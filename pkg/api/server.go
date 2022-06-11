@@ -6,6 +6,7 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 	"os"
+	"path"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -18,6 +19,8 @@ import (
 	"github.com/stefanprodan/podinfo/pkg/fscache"
 	httpSwagger "github.com/swaggo/http-swagger"
 	"github.com/swaggo/swag"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
@@ -43,11 +46,6 @@ var (
 	watcher *fscache.Watcher
 )
 
-type FluxConfig struct {
-	GitUrl    string `mapstructure:"git-url"`
-	GitBranch string `mapstructure:"git-branch"`
-}
-
 type Config struct {
 	HttpClientTimeout         time.Duration `mapstructure:"http-client-timeout"`
 	HttpServerTimeout         time.Duration `mapstructure:"http-server-timeout"`
@@ -59,11 +57,17 @@ type Config struct {
 	UIPath                    string        `mapstructure:"ui-path"`
 	DataPath                  string        `mapstructure:"data-path"`
 	ConfigPath                string        `mapstructure:"config-path"`
+	CertPath                  string        `mapstructure:"cert-path"`
+	Host                      string        `mapstructure:"host"`
 	Port                      string        `mapstructure:"port"`
+	SecurePort                string        `mapstructure:"secure-port"`
 	PortMetrics               int           `mapstructure:"port-metrics"`
 	Hostname                  string        `mapstructure:"hostname"`
 	H2C                       bool          `mapstructure:"h2c"`
 	RandomDelay               bool          `mapstructure:"random-delay"`
+	RandomDelayUnit           string        `mapstructure:"random-delay-unit"`
+	RandomDelayMin            int           `mapstructure:"random-delay-min"`
+	RandomDelayMax            int           `mapstructure:"random-delay-max"`
 	RandomError               bool          `mapstructure:"random-error"`
 	Unhealthy                 bool          `mapstructure:"unhealthy"`
 	Unready                   bool          `mapstructure:"unready"`
@@ -72,10 +76,13 @@ type Config struct {
 }
 
 type Server struct {
-	router *mux.Router
-	logger *zap.Logger
-	config *Config
-	pool   *redis.Pool
+	router         *mux.Router
+	logger         *zap.Logger
+	config         *Config
+	pool           *redis.Pool
+	handler        http.Handler
+	tracer         trace.Tracer
+	tracerProvider *sdktrace.TracerProvider
 }
 
 func NewServer(config *Config, logger *zap.Logger) (*Server, error) {
@@ -106,8 +113,9 @@ func (s *Server) registerHandlers() {
 	s.router.HandleFunc("/status/{code:[0-9]+}", s.statusHandler).Methods("GET", "POST", "PUT").Name("status")
 	s.router.HandleFunc("/store", s.storeWriteHandler).Methods("POST", "PUT")
 	s.router.HandleFunc("/store/{hash}", s.storeReadHandler).Methods("GET").Name("store")
-	s.router.HandleFunc("/cache", s.cacheWriteHandler).Methods("POST", "PUT")
-	s.router.HandleFunc("/cache/{hash}", s.cacheReadHandler).Methods("GET").Name("cache")
+	s.router.HandleFunc("/cache/{key}", s.cacheWriteHandler).Methods("POST", "PUT")
+	s.router.HandleFunc("/cache/{key}", s.cacheDeleteHandler).Methods("DELETE")
+	s.router.HandleFunc("/cache/{key}", s.cacheReadHandler).Methods("GET").Name("cache")
 	s.router.HandleFunc("/configs", s.configReadHandler).Methods("GET")
 	s.router.HandleFunc("/token", s.tokenGenerateHandler).Methods("POST")
 	s.router.HandleFunc("/token/validate", s.tokenValidateHandler).Methods("GET")
@@ -116,9 +124,6 @@ func (s *Server) registerHandlers() {
 	s.router.HandleFunc("/ws/echo", s.echoWsHandler)
 	s.router.HandleFunc("/chunked", s.chunkedHandler)
 	s.router.HandleFunc("/chunked/{wait:[0-9]+}", s.chunkedHandler)
-	s.router.PathPrefix("/swagger/").Handler(httpSwagger.Handler(
-		httpSwagger.URL("/swagger/doc.json"),
-	))
 	s.router.PathPrefix("/swagger/").Handler(httpSwagger.Handler(
 		httpSwagger.URL("/swagger/doc.json"),
 	))
@@ -134,11 +139,14 @@ func (s *Server) registerHandlers() {
 func (s *Server) registerMiddlewares() {
 	prom := NewPrometheusMiddleware()
 	s.router.Use(prom.Handler)
+	otel := NewOpenTelemetryMiddleware()
+	s.router.Use(otel)
 	httpLogger := NewLoggingMiddleware(s.logger)
 	s.router.Use(httpLogger.Handler)
 	s.router.Use(versionMiddleware)
 	if s.config.RandomDelay {
-		s.router.Use(randomDelayMiddleware)
+		randomDelayer := NewRandomDelayMiddleware(s.config.RandomDelayMin, s.config.RandomDelayMax, s.config.RandomDelayUnit)
+		s.router.Use(randomDelayer.Handler)
 	}
 	if s.config.RandomError {
 		s.router.Use(randomErrorMiddleware)
@@ -146,24 +154,18 @@ func (s *Server) registerMiddlewares() {
 }
 
 func (s *Server) ListenAndServe(stopCh <-chan struct{}) {
+	ctx := context.Background()
+
 	go s.startMetricsServer()
 
+	s.initTracer(ctx)
 	s.registerHandlers()
 	s.registerMiddlewares()
 
-	var handler http.Handler
 	if s.config.H2C {
-		handler = h2c.NewHandler(s.router, &http2.Server{})
+		s.handler = h2c.NewHandler(s.router, &http2.Server{})
 	} else {
-		handler = s.router
-	}
-
-	srv := &http.Server{
-		Addr:         ":" + s.config.Port,
-		WriteTimeout: s.config.HttpServerTimeout,
-		ReadTimeout:  s.config.HttpServerTimeout,
-		IdleTimeout:  2 * s.config.HttpServerTimeout,
-		Handler:      handler,
+		s.handler = s.router
 	}
 
 	//s.printRoutes()
@@ -180,32 +182,14 @@ func (s *Server) ListenAndServe(stopCh <-chan struct{}) {
 	}
 
 	// start redis connection pool
-	s.startCachePool()
-	if s.pool != nil {
-		ticker := time.NewTicker(30 * time.Second)
-		go func() {
-			for {
-				select {
-				case <-stopCh:
-					return
-				case <-ticker.C:
-					conn := s.pool.Get()
-					_, err := redis.String(conn.Do("PING"))
-					if err != nil {
-						s.logger.Warn("cache server is offline", zap.Error(err), zap.String("server", s.config.CacheServer))
-					}
-					_ = conn.Close()
-				}
-			}
-		}()
-	}
+	ticker := time.NewTicker(30 * time.Second)
+	s.startCachePool(ticker, stopCh)
 
-	// run server in background
-	go func() {
-		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
-			s.logger.Fatal("HTTP server crashed", zap.Error(err))
-		}
-	}()
+	// create the http server
+	srv := s.startServer()
+
+	// create the secure server
+	secureSrv := s.startSecureServer()
 
 	// signal Kubernetes the server is ready to receive traffic
 	if !s.config.Unhealthy {
@@ -217,7 +201,7 @@ func (s *Server) ListenAndServe(stopCh <-chan struct{}) {
 
 	// wait for SIGTERM or SIGINT
 	<-stopCh
-	ctx, cancel := context.WithTimeout(context.Background(), s.config.HttpServerShutdownTimeout)
+	ctx, cancel := context.WithTimeout(ctx, s.config.HttpServerShutdownTimeout)
 	defer cancel()
 
 	// all calls to /healthz and /readyz will fail from now on
@@ -229,7 +213,7 @@ func (s *Server) ListenAndServe(stopCh <-chan struct{}) {
 		_ = s.pool.Close()
 	}
 
-	s.logger.Info("Shutting down HTTP server", zap.Duration("timeout", s.config.HttpServerShutdownTimeout))
+	s.logger.Info("Shutting down HTTP/HTTPS server", zap.Duration("timeout", s.config.HttpServerShutdownTimeout))
 
 	// wait for Kubernetes readiness probe to remove this instance from the load balancer
 	// the readiness check interval must be lower than the timeout
@@ -237,12 +221,87 @@ func (s *Server) ListenAndServe(stopCh <-chan struct{}) {
 		time.Sleep(3 * time.Second)
 	}
 
-	// attempt graceful shutdown
-	if err := srv.Shutdown(ctx); err != nil {
-		s.logger.Warn("HTTP server graceful shutdown failed", zap.Error(err))
-	} else {
-		s.logger.Info("HTTP server stopped")
+	// stop OpenTelemetry tracer provider
+	if s.tracerProvider != nil {
+		if err := s.tracerProvider.Shutdown(ctx); err != nil {
+			s.logger.Warn("stopping tracer provider", zap.Error(err))
+		}
 	}
+
+	// determine if the http server was started
+	if srv != nil {
+		if err := srv.Shutdown(ctx); err != nil {
+			s.logger.Warn("HTTP server graceful shutdown failed", zap.Error(err))
+		}
+	}
+
+	// determine if the secure server was started
+	if secureSrv != nil {
+		if err := secureSrv.Shutdown(ctx); err != nil {
+			s.logger.Warn("HTTPS server graceful shutdown failed", zap.Error(err))
+		}
+	}
+}
+
+func (s *Server) startServer() *http.Server {
+
+	// determine if the port is specified
+	if s.config.Port == "0" {
+
+		// move on immediately
+		return nil
+	}
+
+	srv := &http.Server{
+		Addr:         s.config.Host + ":" + s.config.Port,
+		WriteTimeout: s.config.HttpServerTimeout,
+		ReadTimeout:  s.config.HttpServerTimeout,
+		IdleTimeout:  2 * s.config.HttpServerTimeout,
+		Handler:      s.handler,
+	}
+
+	// start the server in the background
+	go func() {
+		s.logger.Info("Starting HTTP Server.", zap.String("addr", srv.Addr))
+		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
+			s.logger.Fatal("HTTP server crashed", zap.Error(err))
+		}
+	}()
+
+	// return the server and routine
+	return srv
+}
+
+func (s *Server) startSecureServer() *http.Server {
+
+	// determine if the port is specified
+	if s.config.SecurePort == "0" {
+
+		// move on immediately
+		return nil
+	}
+
+	srv := &http.Server{
+		Addr:         s.config.Host + ":" + s.config.SecurePort,
+		WriteTimeout: s.config.HttpServerTimeout,
+		ReadTimeout:  s.config.HttpServerTimeout,
+		IdleTimeout:  2 * s.config.HttpServerTimeout,
+		Handler:      s.handler,
+	}
+
+	cert := path.Join(s.config.CertPath, "tls.crt")
+	key := path.Join(s.config.CertPath, "tls.key")
+
+	// start the server in the background
+	go func() {
+		s.logger.Info("Starting HTTPS Server.", zap.String("addr", srv.Addr))
+		if err := srv.ListenAndServeTLS(cert, key); err != http.ErrServerClosed {
+			s.logger.Fatal("HTTPS server crashed", zap.Error(err))
+		}
+	}()
+
+	// return the server
+	return srv
 }
 
 func (s *Server) startMetricsServer() {

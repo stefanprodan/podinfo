@@ -1,0 +1,123 @@
+name: release
+
+on:
+  push:
+    tags:
+      - '*'
+
+permissions:
+  contents: write # needed to write releases
+  id-token: write # needed for keyless signing
+  packages: write # needed for ghcr access
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: imjasonh/setup-crane@v0.1
+      - uses: sigstore/cosign-installer@main
+      - name: Setup Helm
+        uses: ./.github/actions/helm
+        with:
+          version: 3.8.1
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v1
+        with:
+          platforms: all
+      - name: Setup Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.GHCR_TOKEN }}
+      - name: Login to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Prepare
+        id: prep
+        run: |
+          VERSION=sha-${GITHUB_SHA::8}
+          if [[ $GITHUB_REF == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF/refs\/tags\//}
+          fi
+          echo ::set-output name=BUILD_DATE::$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+          echo ::set-output name=VERSION::${VERSION}
+      - name: Publish multi-arch image
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          builder: ${{ steps.buildx.outputs.name }}
+          context: .
+          file: ./Dockerfile.xx
+          platforms: linux/amd64,linux/arm/v7,linux/arm64
+          tags: |
+            docker.io/stefanprodan/podinfo:${{ steps.prep.outputs.VERSION }}
+            docker.io/stefanprodan/podinfo:latest
+            ghcr.io/stefanprodan/podinfo:${{ steps.prep.outputs.VERSION }}
+          labels: |
+            org.opencontainers.image.title=${{ github.event.repository.name }}
+            org.opencontainers.image.description=${{ github.event.repository.description }}
+            org.opencontainers.image.source=${{ github.event.repository.html_url }}
+            org.opencontainers.image.url=${{ github.event.repository.html_url }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ steps.prep.outputs.VERSION }}
+            org.opencontainers.image.created=${{ steps.prep.outputs.BUILD_DATE }}
+      - name: Publish Helm chart to GHCR
+        run: |
+          helm package charts/podinfo
+          helm push podinfo-${{ steps.prep.outputs.VERSION }}.tgz oci://ghcr.io/stefanprodan/charts
+          rm podinfo-${{ steps.prep.outputs.VERSION }}.tgz
+      - name: Sign images
+        env:
+          COSIGN_EXPERIMENTAL: 1
+        run: |
+          cosign sign docker.io/stefanprodan/podinfo:${{ steps.prep.outputs.VERSION }}
+          cosign sign docker.io/stefanprodan/podinfo:latest
+          cosign sign ghcr.io/stefanprodan/podinfo:${{ steps.prep.outputs.VERSION }}
+          cosign sign ghcr.io/stefanprodan/charts/podinfo:${{ steps.prep.outputs.VERSION }}
+      - name: Publish base image
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          builder: ${{ steps.buildx.outputs.name }}
+          context: .
+          platforms: linux/amd64
+          file: ./Dockerfile.base
+          tags: docker.io/stefanprodan/podinfo-base:latest
+      - name: Publish helm chart
+        uses: stefanprodan/helm-gh-pages@master
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish config artifact
+        run: |
+          cd kustomize
+          tar -cf config.tar * --numeric-owner --owner=0 --group=0
+          crane append -f config.tar -t ghcr.io/stefanprodan/podinfo-deploy:${{ steps.prep.outputs.VERSION }}
+          crane tag ghcr.io/stefanprodan/podinfo-deploy:${{ steps.prep.outputs.VERSION }} latest
+          rm config.tar
+      - name: Sign config artifact
+        run: |
+          echo "$COSIGN_KEY" > /tmp/cosign.key
+          cosign sign -key /tmp/cosign.key ghcr.io/stefanprodan/podinfo-deploy:${{ steps.prep.outputs.VERSION }}
+          cosign sign -key /tmp/cosign.key ghcr.io/stefanprodan/podinfo-deploy:latest
+        env:
+          COSIGN_PASSWORD: ${{secrets.COSIGN_PASSWORD}}
+          COSIGN_KEY: ${{secrets.COSIGN_KEY}}
+      - uses: ./.github/actions/release-notes
+      - name: Generate release notes
+        run: |
+          echo 'CHANGELOG' > /tmp/release.txt
+          github-release-notes -org stefanprodan -repo podinfo -since-latest-release >> /tmp/release.txt
+      - name: Publish release
+        uses: goreleaser/goreleaser-action@v1
+        with:
+          version: latest
+          args: release --release-notes=/tmp/release.txt --skip-validate
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

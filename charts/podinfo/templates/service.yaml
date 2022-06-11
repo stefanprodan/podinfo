@@ -4,10 +4,11 @@ kind: Service
 metadata:
   name: {{ template "podinfo.fullname" . }}
   labels:
-    app: {{ template "podinfo.name" . }}
-    chart: {{ template "podinfo.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+    {{- include "podinfo.labels" . | nindent 4 }}
+{{- with .Values.service.annotations }}
+  annotations:
+{{ toYaml . | indent 4 }}
+{{- end }}
 spec:
   type: {{ .Values.service.type }}
   ports:
@@ -18,6 +19,12 @@ spec:
       {{- if (and (eq .Values.service.type "NodePort") (not (empty .Values.service.nodePort))) }}
       nodePort: {{ .Values.service.nodePort }}
       {{- end }}
+    {{- if .Values.tls.enabled }}
+    - port: {{ .Values.tls.port | default 9899 }}
+      targetPort: https
+      protocol: TCP
+      name: https
+    {{- end }}
     {{- if .Values.service.grpcPort }}
     - port: {{ .Values.service.grpcPort }}
       targetPort: grpc
@@ -25,5 +32,5 @@ spec:
       name: grpc
     {{- end }}
   selector:
-    app: {{ template "podinfo.fullname" . }}
+    {{- include "podinfo.selectorLabels" . | nindent 4 }}
 {{- end }}

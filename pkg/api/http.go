@@ -8,19 +8,10 @@ import (
 	"time"
 
 	"github.com/stefanprodan/podinfo/pkg/version"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
-
-func randomDelayMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		min := 0
-		max := 5
-		rand.Seed(time.Now().Unix())
-		delay := rand.Intn(max-min) + min
-		time.Sleep(time.Duration(delay) * time.Second)
-		next.ServeHTTP(w, r)
-	})
-}
 
 func randomErrorMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -42,27 +33,6 @@ func versionMiddleware(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r)
 	})
-}
-
-// TODO: use Istio tracing package
-// https://github.com/istio/istio/blob/master/pkg/tracing/config.go
-func copyTracingHeaders(from *http.Request, to *http.Request) {
-	headers := []string{
-		"x-request-id",
-		"x-b3-traceid",
-		"x-b3-spanid",
-		"x-b3-parentspanid",
-		"x-b3-sampled",
-		"x-b3-flags",
-		"x-ot-span-context",
-	}
-
-	for i := range headers {
-		headerValue := from.Header.Get(headers[i])
-		if len(headerValue) > 0 {
-			to.Header.Set(headers[i], headerValue)
-		}
-	}
 }
 
 func (s *Server) JSONResponse(w http.ResponseWriter, r *http.Request, result interface{}) {
@@ -93,7 +63,7 @@ func (s *Server) JSONResponseCode(w http.ResponseWriter, r *http.Request, result
 	w.Write(prettyJSON(body))
 }
 
-func (s *Server) ErrorResponse(w http.ResponseWriter, r *http.Request, error string, code int) {
+func (s *Server) ErrorResponse(w http.ResponseWriter, r *http.Request, span trace.Span, error string, code int) {
 	data := struct {
 		Code    int    `json:"code"`
 		Message string `json:"message"`
@@ -101,6 +71,8 @@ func (s *Server) ErrorResponse(w http.ResponseWriter, r *http.Request, error str
 		Code:    code,
 		Message: error,
 	}
+
+	span.SetStatus(codes.Error, error)
 
 	body, err := json.Marshal(data)
 	if err != nil {

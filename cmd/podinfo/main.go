@@ -23,30 +23,37 @@ import (
 func main() {
 	// flags definition
 	fs := pflag.NewFlagSet("default", pflag.ContinueOnError)
-	fs.Int("port", 9898, "HTTP port")
+	fs.String("host", "", "Host to bind service to")
+	fs.Int("port", 9898, "HTTP port to bind service to")
+	fs.Int("secure-port", 0, "HTTPS port")
 	fs.Int("port-metrics", 0, "metrics port")
 	fs.Int("grpc-port", 0, "gRPC port")
 	fs.String("grpc-service-name", "podinfo", "gPRC service name")
-	fs.String("level", "info", "log level debug, info, warn, error, flat or panic")
+	fs.String("level", "info", "log level debug, info, warn, error, fatal or panic")
 	fs.StringSlice("backend-url", []string{}, "backend service URL")
 	fs.Duration("http-client-timeout", 2*time.Minute, "client timeout duration")
 	fs.Duration("http-server-timeout", 30*time.Second, "server read and write timeout duration")
 	fs.Duration("http-server-shutdown-timeout", 5*time.Second, "server graceful shutdown timeout duration")
 	fs.String("data-path", "/data", "data local path")
 	fs.String("config-path", "", "config dir path")
+	fs.String("cert-path", "/data/cert", "certificate path for HTTPS port")
 	fs.String("config", "config.yaml", "config file name")
 	fs.String("ui-path", "./ui", "UI local path")
 	fs.String("ui-logo", "", "UI logo")
 	fs.String("ui-color", "#34577c", "UI color")
 	fs.String("ui-message", fmt.Sprintf("greetings from podinfo v%v", version.VERSION), "UI message")
 	fs.Bool("h2c", false, "allow upgrading to H2C")
-	fs.Bool("random-delay", false, "between 0 and 5 seconds random delay")
+	fs.Bool("random-delay", false, "between 0 and 5 seconds random delay by default")
+	fs.String("random-delay-unit", "s", "either s(seconds) or ms(milliseconds")
+	fs.Int("random-delay-min", 0, "min for random delay: 0 by default")
+	fs.Int("random-delay-max", 5, "max for random delay: 5 by default")
 	fs.Bool("random-error", false, "1/3 chances of a random response error")
 	fs.Bool("unhealthy", false, "when set, healthy state is never reached")
 	fs.Bool("unready", false, "when set, ready state is never reached")
 	fs.Int("stress-cpu", 0, "number of CPU cores with 100 load")
 	fs.Int("stress-memory", 0, "MB of data to load into memory")
-	fs.String("cache-server", "", "Redis address in the format <host>:<port>")
+	fs.String("cache-server", "", "Redis address in the format 'tcp://<host>:<port>'")
+	fs.String("otel-service-name", "", "service name for reporting to open telemetry address, when not set tracing is disabled")
 
 	versionFlag := fs.BoolP("version", "v", false, "get version number")
 
@@ -78,11 +85,11 @@ func main() {
 	viper.AutomaticEnv()
 
 	// load config from file
-	if _, err := os.Stat(filepath.Join(viper.GetString("config-path"), viper.GetString("config"))); err == nil {
+	if _, fileErr := os.Stat(filepath.Join(viper.GetString("config-path"), viper.GetString("config"))); fileErr == nil {
 		viper.SetConfigName(strings.Split(viper.GetString("config"), ".")[0])
 		viper.AddConfigPath(viper.GetString("config-path"))
-		if err := viper.ReadInConfig(); err != nil {
-			fmt.Printf("Error reading config file, %v\n", err)
+		if readErr := viper.ReadInConfig(); readErr != nil {
+			fmt.Printf("Error reading config file, %v\n", readErr)
 		}
 	}
 
@@ -99,6 +106,26 @@ func main() {
 	if _, err := strconv.Atoi(viper.GetString("port")); err != nil {
 		port, _ := fs.GetInt("port")
 		viper.Set("port", strconv.Itoa(port))
+	}
+
+	// validate secure port
+	if _, err := strconv.Atoi(viper.GetString("secure-port")); err != nil {
+		securePort, _ := fs.GetInt("secure-port")
+		viper.Set("secure-port", strconv.Itoa(securePort))
+	}
+
+	// validate random delay options
+	if viper.GetInt("random-delay-max") < viper.GetInt("random-delay-min") {
+		logger.Panic("`--random-delay-max` should be greater than `--random-delay-min`")
+	}
+
+	switch delayUnit := viper.GetString("random-delay-unit"); delayUnit {
+	case
+		"s",
+		"ms":
+		break
+	default:
+		logger.Panic("`random-delay-unit` accepted values are: s|ms")
 	}
 
 	// load gRPC server config

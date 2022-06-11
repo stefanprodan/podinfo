@@ -1,0 +1,53 @@
+ARG GO_VERSION=1.18
+ARG XX_VERSION=1.1.0
+
+FROM --platform=$BUILDPLATFORM tonistiigi/xx:${XX_VERSION} AS xx
+
+FROM --platform=$BUILDPLATFORM golang:${GO_VERSION}-alpine as builder
+
+# Copy the build utilities.
+COPY --from=xx / /
+
+ARG TARGETPLATFORM
+ARG REVISION
+
+RUN mkdir -p /podinfo/
+
+WORKDIR /podinfo
+
+COPY . .
+
+RUN go mod download
+
+ENV CGO_ENABLED=0
+RUN xx-go build -ldflags "-s -w \
+    -X github.com/stefanprodan/podinfo/pkg/version.REVISION=${REVISION}" \
+    -a -o bin/podinfo cmd/podinfo/*
+
+RUN xx-go build -ldflags "-s -w \
+    -X github.com/stefanprodan/podinfo/pkg/version.REVISION=${REVISION}" \
+    -a -o bin/podcli cmd/podcli/*
+
+FROM alpine:3.16
+
+ARG BUILD_DATE
+ARG VERSION
+ARG REVISION
+
+LABEL maintainer="stefanprodan"
+
+RUN addgroup -S app \
+    && adduser -S -G app app \
+    && apk --no-cache add \
+    ca-certificates curl netcat-openbsd
+
+WORKDIR /home/app
+
+COPY --from=builder /podinfo/bin/podinfo .
+COPY --from=builder /podinfo/bin/podcli /usr/local/bin/podcli
+COPY ./ui ./ui
+RUN chown -R app:app ./
+
+USER app
+
+CMD ["./podinfo"]
