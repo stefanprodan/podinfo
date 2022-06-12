@@ -1,7 +1,8 @@
 apiVersion: spot.io/v1beta1
 kind: SpotDeployment
 metadata:
-  name: backend
+  name: podinfo
+  namespace: test1
 spec:
   minReadySeconds: 3
   revisionHistoryLimit: 5
