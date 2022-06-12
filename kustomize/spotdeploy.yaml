@@ -42,7 +42,7 @@ spec:
         - --cache-server=cache:6379
         env:
         - name: PODINFO_UI_COLOR
-          value: "#34577d"
+          value: "#345774"
         livenessProbe:
           exec:
             command:
