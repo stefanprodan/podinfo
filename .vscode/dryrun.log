@@ -1,0 +1,6 @@
+make: Entering directory `/Users/olegv/dev/tools/podinfo'
+go run -ldflags "-s -w -X github.com/stefanprodan/podinfo/pkg/version.REVISION=f6584f5" cmd/podinfo/* \
+	--level=debug --grpc-port=9999 --backend-url=https://httpbin.org/status/401 --backend-url=https://httpbin.org/status/500 \
+	--ui-logo=https://raw.githubusercontent.com/stefanprodan/podinfo/gh-pages/cuddle_clap.gif 
+make: Leaving directory `/Users/olegv/dev/tools/podinfo'
+ 

@@ -1,0 +1,1 @@
+{"buildTargets":[".PHONY","build","build-base","build-charts","build-container","build-xx","cue-gen","cue-mod","fmt","push-base","push-container","release","run","swagger","test","test-container","tidy","version-set"],"launchTargets":[],"customConfigurationProvider":{"workspaceBrowse":{"browsePath":[],"compilerArgs":[]},"fileIndex":[]}}
