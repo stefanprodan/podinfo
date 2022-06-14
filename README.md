@@ -89,7 +89,7 @@ helm upgrade --install --wait frontend \
 --set backend=http://backend-podinfo:9898/echo \
 podinfo/podinfo
 
-helm test frontend
+helm test frontend --namespace test
 
 helm upgrade --install --wait backend \
 --namespace test \
