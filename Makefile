@@ -87,7 +87,9 @@ release:
 	git push origin $(VERSION)
 
 swagger:
-	go install github.com/swaggo/swag/cmd/swag
+	go install github.com/swaggo/swag/cmd/swag@latest
+	go get github.com/swaggo/swag/gen@latest
+	go get github.com/swaggo/swag/cmd/swag@latest
 	cd pkg/api && $$(go env GOPATH)/bin/swag init -g server.go
 
 .PHONY: cue-mod

@@ -99,6 +99,15 @@
                     "HTTP API"
                 ],
                 "summary": "Get payload from cache",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Key to load from cache",
+                        "name": "key",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -120,6 +129,15 @@
                     "HTTP API"
                 ],
                 "summary": "Save payload in cache",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Key to save to",
+                        "name": "key",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "202": {
                         "description": ""
@@ -138,6 +156,15 @@
                     "HTTP API"
                 ],
                 "summary": "Delete payload from cache",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Key to delete",
+                        "name": "key",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "202": {
                         "description": ""
@@ -292,7 +319,8 @@
                 "tags": [
                     "HTTP API"
                 ],
-                "summary": "Panic"
+                "summary": "Panic",
+                "responses": {}
             }
         },
         "/readyz": {

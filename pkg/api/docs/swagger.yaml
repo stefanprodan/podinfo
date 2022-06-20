@@ -103,6 +103,12 @@ paths:
       consumes:
       - application/json
       description: deletes the key and its value from cache
+      parameters:
+      - description: Key to delete
+        in: path
+        name: key
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -115,6 +121,12 @@ paths:
       consumes:
       - application/json
       description: returns the content from cache if key exists
+      parameters:
+      - description: Key to load from cache
+        in: path
+        name: key
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -129,6 +141,12 @@ paths:
       consumes:
       - application/json
       description: writes the posted content in cache
+      parameters:
+      - description: Key to save to
+        in: path
+        name: key
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -233,6 +251,7 @@ paths:
   /panic:
     get:
       description: crashes the process with exit code 255
+      responses: {}
       summary: Panic
       tags:
       - HTTP API
