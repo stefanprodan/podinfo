@@ -161,6 +161,12 @@ paths:
       - application/json
       description: uses transfer-encoding type chunked to give a partial response
         and then waits for the specified period
+      parameters:
+      - description: seconds to wait for
+        in: path
+        name: seconds
+        required: true
+        type: integer
       produces:
       - application/json
       responses:
@@ -176,6 +182,12 @@ paths:
       consumes:
       - application/json
       description: waits for the specified period
+      parameters:
+      - description: seconds to wait for
+        in: path
+        name: seconds
+        required: true
+        type: integer
       produces:
       - application/json
       responses:
@@ -306,6 +318,12 @@ paths:
       consumes:
       - application/json
       description: sets the response status code to the specified code
+      parameters:
+      - description: status code to return
+        in: path
+        name: code
+        required: true
+        type: integer
       produces:
       - application/json
       responses:
@@ -337,6 +355,12 @@ paths:
       consumes:
       - application/json
       description: returns the content of the file /data/hash if exists
+      parameters:
+      - description: hash value
+        in: path
+        name: hash
+        required: true
+        type: string
       produces:
       - text/plain
       responses:

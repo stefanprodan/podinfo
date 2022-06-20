@@ -188,6 +188,15 @@ const docTemplate = `{
                     "HTTP API"
                 ],
                 "summary": "Chunked transfer encoding",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "seconds to wait for",
+                        "name": "seconds",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -211,6 +220,15 @@ const docTemplate = `{
                     "HTTP API"
                 ],
                 "summary": "Delay",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "seconds to wait for",
+                        "name": "seconds",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -408,6 +426,15 @@ const docTemplate = `{
                     "HTTP API"
                 ],
                 "summary": "Status code",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "status code to return",
+                        "name": "code",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -454,6 +481,15 @@ const docTemplate = `{
                     "HTTP API"
                 ],
                 "summary": "Download file",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "hash value",
+                        "name": "hash",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "file",

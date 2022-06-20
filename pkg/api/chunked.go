@@ -15,6 +15,7 @@ import (
 // @Tags HTTP API
 // @Accept json
 // @Produce json
+// @Param seconds path int true "seconds to wait for"
 // @Router /chunked/{seconds} [get]
 // @Success 200 {object} api.MapResponse
 func (s *Server) chunkedHandler(w http.ResponseWriter, r *http.Request) {
