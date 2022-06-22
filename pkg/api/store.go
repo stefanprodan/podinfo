@@ -45,6 +45,7 @@ func (s *Server) storeWriteHandler(w http.ResponseWriter, r *http.Request) {
 // @Tags HTTP API
 // @Accept json
 // @Produce plain
+// @Param hash path string true "hash value"
 // @Router /store/{hash} [get]
 // @Success 200 {string} string "file"
 func (s *Server) storeReadHandler(w http.ResponseWriter, r *http.Request) {

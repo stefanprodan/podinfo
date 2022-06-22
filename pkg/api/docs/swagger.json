@@ -99,6 +99,15 @@
                     "HTTP API"
                 ],
                 "summary": "Get payload from cache",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Key to load from cache",
+                        "name": "key",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -120,6 +129,15 @@
                     "HTTP API"
                 ],
                 "summary": "Save payload in cache",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Key to save to",
+                        "name": "key",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "202": {
                         "description": ""
@@ -138,6 +156,15 @@
                     "HTTP API"
                 ],
                 "summary": "Delete payload from cache",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Key to delete",
+                        "name": "key",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "202": {
                         "description": ""
@@ -158,6 +185,15 @@
                     "HTTP API"
                 ],
                 "summary": "Chunked transfer encoding",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "seconds to wait for",
+                        "name": "seconds",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -181,6 +217,15 @@
                     "HTTP API"
                 ],
                 "summary": "Delay",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "seconds to wait for",
+                        "name": "seconds",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -292,7 +337,8 @@
                 "tags": [
                     "HTTP API"
                 ],
-                "summary": "Panic"
+                "summary": "Panic",
+                "responses": {}
             }
         },
         "/readyz": {
@@ -377,6 +423,15 @@
                     "HTTP API"
                 ],
                 "summary": "Status code",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "status code to return",
+                        "name": "code",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -423,6 +478,15 @@
                     "HTTP API"
                 ],
                 "summary": "Download file",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "hash value",
+                        "name": "hash",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "file",

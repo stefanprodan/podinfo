@@ -20,6 +20,7 @@ import (
 // @Tags HTTP API
 // @Accept json
 // @Produce json
+// @Param key path string true "Key to save to"
 // @Router /cache/{key} [post]
 // @Success 202
 func (s *Server) cacheWriteHandler(w http.ResponseWriter, r *http.Request) {
@@ -56,6 +57,7 @@ func (s *Server) cacheWriteHandler(w http.ResponseWriter, r *http.Request) {
 // @Tags HTTP API
 // @Accept json
 // @Produce json
+// @Param key path string true "Key to delete"
 // @Router /cache/{key} [delete]
 // @Success 202
 func (s *Server) cacheDeleteHandler(w http.ResponseWriter, r *http.Request) {
@@ -87,6 +89,7 @@ func (s *Server) cacheDeleteHandler(w http.ResponseWriter, r *http.Request) {
 // @Tags HTTP API
 // @Accept json
 // @Produce json
+// @Param key path string true "Key to load from cache"
 // @Router /cache/{key} [get]
 // @Success 200 {string} string value
 func (s *Server) cacheReadHandler(w http.ResponseWriter, r *http.Request) {
