@@ -140,7 +140,7 @@
                 ],
                 "responses": {
                     "202": {
-                        "description": ""
+                        "description": "Accepted"
                     }
                 }
             },
@@ -167,7 +167,7 @@
                 ],
                 "responses": {
                     "202": {
-                        "description": ""
+                        "description": "Accepted"
                     }
                 }
             }
