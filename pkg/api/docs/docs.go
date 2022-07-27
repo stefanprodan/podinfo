@@ -143,7 +143,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "202": {
-                        "description": ""
+                        "description": "Accepted"
                     }
                 }
             },
@@ -170,7 +170,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "202": {
-                        "description": ""
+                        "description": "Accepted"
                     }
                 }
             }

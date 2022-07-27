@@ -113,7 +113,7 @@ paths:
       - application/json
       responses:
         "202":
-          description: ""
+          description: Accepted
       summary: Delete payload from cache
       tags:
       - HTTP API
@@ -151,7 +151,7 @@ paths:
       - application/json
       responses:
         "202":
-          description: ""
+          description: Accepted
       summary: Save payload in cache
       tags:
       - HTTP API
