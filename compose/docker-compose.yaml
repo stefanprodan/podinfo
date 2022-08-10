@@ -39,4 +39,4 @@ networks:
     driver: bridge
 
 volumes:
-  user_service_db:
+  service_db:
