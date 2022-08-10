@@ -4,8 +4,6 @@ import (
 	"context"
 	"os"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 type NewDBConnectionTestMetadata struct {
@@ -36,7 +34,9 @@ func TestNewDbConnection(t *testing.T) {
 		}
 
 		if !scenario.shouldErrorOccur {
-			assert.NotNil(t, conn)
+			if conn == nil {
+				t.Errorf("connection object is nil")
+			}
 		}
 	}
 }

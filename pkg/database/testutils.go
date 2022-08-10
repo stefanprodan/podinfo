@@ -111,24 +111,6 @@ func generateRandomizedAccount() *schema.UserAccount {
 	return &schema.UserAccount{
 		Id:    0,
 		Email: generateRandomString(10),
-		Address: &schema.Address{
-			Address:   generateRandomString(10),
-			Unit:      generateRandomString(10),
-			ZipCode:   generateRandomString(10),
-			City:      generateRandomString(10),
-			State:     generateRandomString(10),
-			Longitude: generateRandomString(10),
-			Lattitude: generateRandomString(10),
-		},
-		Bio:            generateRandomString(10),
-		Headline:       generateRandomString(10),
-		PhoneNumber:    "123456789",
-		Tags:           nil,
-		AuthnAccountId: 0,
-		IsActive:       false,
-		Firstname:      generateRandomString(5),
-		Lastname:       generateRandomString(6),
-		Username:       generateRandomString(6),
 	}
 }
 
@@ -136,8 +118,5 @@ func generateRandomizedAccount() *schema.UserAccount {
 func generateAcctWithMissingRequiredFields() *schema.UserAccount {
 	testAcctWitMissingFields := generateRandomizedAccount()
 	testAcctWitMissingFields.Email = EMPTY
-	testAcctWitMissingFields.Username = EMPTY
-	testAcctWitMissingFields.Firstname = EMPTY
-	testAcctWitMissingFields.Lastname = EMPTY
 	return testAcctWitMissingFields
 }

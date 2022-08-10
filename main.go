@@ -12,8 +12,8 @@ import (
 
 	_ "net/http/pprof"
 
+	user "github.com/SimifiniiCTO/simfiny-microservice-template/api-definition/gen"
 	"github.com/SimifiniiCTO/simfiny-microservice-template/pkg/database"
-	user "github.com/SimifiniiCTO/simfiny-microservice-template/pkg/gen"
 	"github.com/SimifiniiCTO/simfiny-microservice-template/pkg/metrics"
 	"github.com/SimifiniiCTO/simfiny-microservice-template/pkg/middleware"
 	"github.com/SimifiniiCTO/simfiny-microservice-template/pkg/version"

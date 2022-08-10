@@ -119,9 +119,5 @@ func (d *Db) accountExists(tx *gorm.DB, accountID uint64, accountEmail string) (
 		}
 	}
 
-	if !account.IsActive {
-		err := errors.New("account does not exist. account was soft deleted")
-		return schema.UserAccountORM{}, false, err
-	}
 	return account, true, nil
 }

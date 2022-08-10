@@ -1,0 +1,158 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "service.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "User"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/api/v1/user": {
+      "post": {
+        "summary": "CreateUser: Used to create a user account. Account creation is comprised of\nnumerous operations against downstream dependent services.",
+        "operationId": "User_CreateUser",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1CreateUserResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1CreateUserRequest"
+            }
+          }
+        ],
+        "tags": [
+          "User"
+        ]
+      }
+    },
+    "/api/v1/user/{userID}": {
+      "get": {
+        "summary": "GetUser: Used to get a user account if it indeed exists.",
+        "operationId": "User_GetUser",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetUserResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "userID",
+            "description": "The account ID associated with the user",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "User"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1CreateUserRequest": {
+      "type": "object",
+      "properties": {
+        "account": {
+          "$ref": "#/definitions/v1rpcUserAccount"
+        }
+      },
+      "title": "CreateUserRequest: Represents the request object invoked against the user\nservice to create a user account"
+    },
+    "v1CreateUserResponse": {
+      "type": "object",
+      "properties": {
+        "userID": {
+          "type": "string",
+          "format": "uint64"
+        }
+      },
+      "title": "CreateUserResponse: Represents the response object returned as a response to\nthe `create-user` request"
+    },
+    "v1GetUserResponse": {
+      "type": "object",
+      "properties": {
+        "account": {
+          "$ref": "#/definitions/v1rpcUserAccount"
+        }
+      },
+      "title": "GetUserResponse: Represents the object returned as a response to `get-user`\nrequest"
+    },
+    "v1rpcUserAccount": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uint64",
+          "title": "account id"
+        },
+        "email": {
+          "type": "string",
+          "title": "account email"
+        }
+      },
+      "title": "rpcUserAccount: represents a user account in the context of simfinni"
+    }
+  }
+}

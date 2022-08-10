@@ -46,8 +46,8 @@ func (d *Db) validateAccount(acct *schema.UserAccount) (bool, error) {
 
 // containsRequiredFields asserts an account object contains all necessary required fields
 func (d *Db) containsRequiredFields(acct *schema.UserAccount) (bool, error) {
-	if acct.Email == EMPTY || acct.Username == EMPTY || acct.Lastname == EMPTY || acct.Firstname == EMPTY {
-		err := fmt.Errorf("invalid account object. username: %s, lastname: %s, firstname: %s, email: %s", acct.Username, acct.Lastname, acct.Firstname, acct.Email)
+	if acct.Email == EMPTY {
+		err := fmt.Errorf("invalid account object. username: %s, lastname: %s, firstname: %s, email: %s", acct.Email)
 		d.Logger.Error(err.Error())
 		return false, err
 	}
