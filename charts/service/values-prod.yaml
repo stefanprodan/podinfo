@@ -1,14 +1,14 @@
-# Production values for podinfo.
+# Production values for service.
 # Includes Redis deployment and memory limits.
 
 replicaCount: 1
 logLevel: info
-backend: #http://backend-podinfo:9898/echo
+backend: #http://backend-service:9898/echo
 backends: []
 
 image:
-  repository: ghcr.io/stefanprodan/podinfo
-  tag: 6.1.8
+  repository: feelguuds/service
+  tag: latest
   pullPolicy: IfNotPresent
 
 ui:
@@ -34,14 +34,14 @@ service:
   httpPort: 9898
   externalPort: 9898
   grpcPort: 9999
-  grpcService: podinfo
+  grpcService: service
   nodePort: 31198
 
 # enable h2c protocol (non-TLS version of HTTP/2)
 h2c:
   enabled: false
 
-# enable tls on the podinfo service
+# enable tls on the service service
 tls:
   enabled: false
   # the name of the secret used to mount the certificate key pair
@@ -64,7 +64,7 @@ certificate:
     name: self-signed
   # the hostname / subject alternative names for the certificate
   dnsNames:
-    - podinfo
+    - service
 
 # metrics-server add-on required
 hpa:
@@ -102,7 +102,7 @@ ingress:
     # kubernetes.io/ingress.class: nginx
     # kubernetes.io/tls-acme: "true"
   hosts:
-    - host: podinfo.local
+    - host: service.local
       paths:
         - path: /
           pathType: ImplementationSpecific
