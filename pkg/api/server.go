@@ -115,7 +115,6 @@ func (s *Server) registerHandlers() {
 	s.router.HandleFunc("/cache/{key}", s.cacheWriteHandler).Methods("POST", "PUT")
 	s.router.HandleFunc("/cache/{key}", s.cacheDeleteHandler).Methods("DELETE")
 	s.router.HandleFunc("/cache/{key}", s.cacheReadHandler).Methods("GET").Name("cache")
-	s.router.HandleFunc("/configs", s.configReadHandler).Methods("GET")
 	s.router.HandleFunc("/token", s.tokenGenerateHandler).Methods("POST")
 	s.router.HandleFunc("/token/validate", s.tokenValidateHandler).Methods("GET")
 	s.router.HandleFunc("/api/info", s.infoHandler).Methods("GET")

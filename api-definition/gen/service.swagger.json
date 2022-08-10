@@ -6,7 +6,7 @@
   },
   "tags": [
     {
-      "name": "User"
+      "name": "Service"
     }
   ],
   "consumes": [
@@ -16,10 +16,10 @@
     "application/json"
   ],
   "paths": {
-    "/api/v1/user": {
+    "/api/v1/service": {
       "post": {
         "summary": "CreateUser: Used to create a user account. Account creation is comprised of\nnumerous operations against downstream dependent services.",
-        "operationId": "User_CreateUser",
+        "operationId": "Service_CreateUser",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -45,14 +45,14 @@
           }
         ],
         "tags": [
-          "User"
+          "Service"
         ]
       }
     },
-    "/api/v1/user/{userID}": {
+    "/api/v1/service/{userID}": {
       "get": {
         "summary": "GetUser: Used to get a user account if it indeed exists.",
-        "operationId": "User_GetUser",
+        "operationId": "Service_GetUser",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -78,7 +78,7 @@
           }
         ],
         "tags": [
-          "User"
+          "Service"
         ]
       }
     }

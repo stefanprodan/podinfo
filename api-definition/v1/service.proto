@@ -2,14 +2,14 @@ syntax = "proto3";
 
 package api.v1;
 
-option go_package = "api/v1/user";
+option go_package = "api/v1/service";
 
 /**
- * User: Represents the service of the simifinii platform.
+ * Service: Represents the service of the simifinii platform.
  *
  * The service serves as the sole store of all user specific details
  */
-service User {
+service Service {
   /*
    GetUser: Used to get a user account if it indeed exists.
   */

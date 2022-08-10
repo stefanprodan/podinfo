@@ -3,8 +3,8 @@ config_version: 3
 
 http:
   rules:
-    - selector: api.v1.User.GetUser
-      get: /api/v1/user/{userID}
-    - selector: api.v1.User.CreateUser
-      post: /api/v1/user
+    - selector: api.v1.Service.GetUser
+      get: /api/v1/service/{userID}
+    - selector: api.v1.Service.CreateUser
+      post: /api/v1/service
       body: '*'

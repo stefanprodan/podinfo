@@ -20,7 +20,7 @@ import (
 )
 
 type Server struct {
-	user.UnimplementedUserServer
+	user.UnimplementedServiceServer
 	config                *Config
 	Logger                *zap.Logger
 	InstrumentationClient *newrelic.Application
@@ -41,7 +41,7 @@ type Config struct {
 	DtmManagerURI   string `mapstructure:"DTX_MANAGER_URI"`
 }
 
-var _ user.UserServer = (*Server)(nil)
+var _ user.ServiceServer = (*Server)(nil)
 
 type ServiceConnInterface func(cc grpc.ClientConnInterface) interface{}
 
@@ -50,7 +50,7 @@ type ServiceDtxOperation string
 
 // RegisterGrpcServer registers the grpc server object
 func (server *Server) RegisterGrpcServer(srv *grpc.Server) {
-	user.RegisterUserServer(srv, server)
+	user.RegisterServiceServer(srv, server)
 }
 
 // NewServer returns a new instance of the grpc server

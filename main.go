@@ -113,7 +113,7 @@ func main() {
 	grpcEntry.AddStreamInterceptors(middleware.RequestLatencyStreamServerInterceptor(srv.MetricEngine, srv.ServiceMetrics))
 
 	grpcEntry.AddRegFuncGrpc(srv.RegisterGrpcServer)
-	grpcEntry.AddRegFuncGw(user.RegisterUserHandlerFromEndpoint)
+	grpcEntry.AddRegFuncGw(user.RegisterServiceHandlerFromEndpoint)
 
 	// Bootstrap
 	boot.Bootstrap(context.Background())
