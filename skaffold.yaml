@@ -1,0 +1,21 @@
+apiVersion: skaffold/v2beta28
+kind: Config
+build:
+  artifacts:
+  - image: feelguuds/service
+    context: .
+    docker:
+      dockerfile: Dockerfile
+      noCache: false
+  tagPolicy:
+    envTemplate:
+      template: "latest"
+
+deploy:
+  helm:
+    releases:
+    - name: service
+      chartPath: charts/service
+      skipBuildDependencies: true
+      valuesFiles:
+          - charts/service/values.yaml

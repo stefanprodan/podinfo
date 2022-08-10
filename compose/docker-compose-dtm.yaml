@@ -1,0 +1,50 @@
+version: '3'
+services:
+  dtm:
+    image: feelguuds/dtx-manager:latest
+    container_name: dtm
+    environment:
+      IS_DOCKER: 1
+      STORE_DRIVER: 'postgres'
+      STORE_HOST: 'dtm-db'
+      STORE_USER: 'postgres'
+      STORE_PASSWORD: 'postgres'
+      STORE_PORT: 5432
+    ports:
+      - '3689:36789'
+      - '3690:36790'
+    depends_on:
+      - dtm-db
+    networks:
+      - service-network
+
+  dtm-db:
+    container_name: dtm-db
+    image: postgres:latest
+    restart: always
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-q", "-d", "postgres", "-U", "postgres" ]
+      timeout: 45s
+      interval: 10s
+      retries: 10
+    ports:
+      - "5440:5432"
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=postgres
+      - PGDATA=/data/dtm-db
+    volumes:
+      - dtm-db:/data/dtm-db
+      - ./dtm-deps/dtmsrv.sql:/docker-entrypoint-initdb.d/dtmsrv.sql
+      - ./dtm-deps/busi.sql:/docker-entrypoint-initdb.d/busi.sql
+      - ./dtm-deps/dtmcli.sql:/docker-entrypoint-initdb.d/dtmcli.sql
+    networks:
+      - service-network
+      
+volumes:
+  dtm-db: {}
+
+networks:
+  service-network:
+    driver: bridge

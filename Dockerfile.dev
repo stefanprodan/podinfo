@@ -1,0 +1,40 @@
+FROM golang
+
+ARG BUILD_DATE
+ARG VERSION
+ARG REVISION
+
+# define container level tags
+LABEL version="1.0" maintainer="Yoan Yomba <yoanyombapro@gmail.com>"
+LABEL author="Yoan Yomba"
+LABEL company="simfinii"
+LABEL maintainer="simfinii" \
+  org.opencontainers.image.created=$BUILD_DATE \
+  org.opencontainers.image.url="https://github.com/SimifiniiCTO/simfiny-microservice-template" \
+  org.opencontainers.image.source="https://github.com/SimifiniiCTO/simfiny-microservice-template" \
+  org.opencontainers.image.version=$VERSION \
+  org.opencontainers.image.revision=$REVISION \
+  org.opencontainers.image.vendor="simfinii" \
+  org.opencontainers.image.title="simfinii" \
+  org.opencontainers.image.description="Microservice For The Simifinii \
+  Platform" \
+  org.opencontainers.image.licenses="MIT"
+
+RUN git config --global url."https://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:x-oauth-basic@github.com/SimifiniiCTO".insteadOf "https://github.com/SimifiniiCTO"
+
+# create a directory in which to copy files on local filesystem
+RUN mkdir -p /go/src/github.com/SimifiniiCTO/simfiny-microservice-template
+
+# copy files on local file system
+ADD . /go/src/github.com/SimifiniiCTO/simfiny-microservice-template
+
+# define execution context
+WORKDIR /go/src/github.com/SimifiniiCTO/simfiny-microservice-template
+
+# download package level dependencies
+RUN go mod download
+RUN go get github.com/canthefason/go-watcher
+RUN go install github.com/canthefason/go-watcher/cmd/watcher
+
+# define container entrypoint
+ENTRYPOINT watcher -run /go/src/github.com/SimifiniiCTO/simfiny-microservice-template/ -watch github.com/SimifiniiCTO/simfiny-microservice-template

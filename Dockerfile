@@ -2,42 +2,23 @@ FROM golang:1.18-alpine as builder
 
 ARG REVISION
 
-RUN mkdir -p /podinfo/
+RUN apk update
+RUN apk add git
 
-WORKDIR /podinfo
+RUN mkdir -p /go/src/github.com/SimifiniiCTO/simfiny-microservice-template/
+
+WORKDIR /go/src/github.com/SimifiniiCTO/simfiny-microservice-template
 
 COPY . .
 
+RUN git config --global url."https://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:x-oauth-basic@github.com/SimifiniiCTO".insteadOf "https://github.com/SimifiniiCTO"
+
 RUN go mod download
+RUN CGO_ENABLED=0 go build -ldflags "-s -w -X github.com/SimifiniiCTO/simfiny-microservice-template/pkg/version.REVISION=${REVISION}" -a -o main main.go
 
-RUN CGO_ENABLED=0 go build -ldflags "-s -w \
-    -X github.com/stefanprodan/podinfo/pkg/version.REVISION=${REVISION}" \
-    -a -o bin/podinfo cmd/podinfo/*
+RUN set -ex && apk --no-cache add sudo
+RUN apk update && apk add bash
 
-RUN CGO_ENABLED=0 go build -ldflags "-s -w \
-    -X github.com/stefanprodan/podinfo/pkg/version.REVISION=${REVISION}" \
-    -a -o bin/podcli cmd/podcli/*
+RUN curl -Ls https://download.newrelic.com/install/newrelic-cli/scripts/install.sh | bash && sudo NEW_RELIC_API_KEY=NRAK-FGBHISKJUMWR9DXMIV4Q4EFZJTK NEW_RELIC_ACCOUNT_ID=3270596 /usr/local/bin/newrelic install -n logs-integration
 
-FROM alpine:3.16
-
-ARG BUILD_DATE
-ARG VERSION
-ARG REVISION
-
-LABEL maintainer="stefanprodan"
-
-RUN addgroup -S app \
-    && adduser -S -G app app \
-    && apk --no-cache add \
-    ca-certificates curl netcat-openbsd
-
-WORKDIR /home/app
-
-COPY --from=builder /podinfo/bin/podinfo .
-COPY --from=builder /podinfo/bin/podcli /usr/local/bin/podcli
-COPY ./ui ./ui
-RUN chown -R app:app ./
-
-USER app
-
-CMD ["./podinfo"]
+CMD ["./main"]

@@ -1,0 +1,177 @@
+---
+app:
+  description: "Service For The Simfinii Platform"
+  keywords: ["simfinii", "golang"] # Optional, default: []
+  homeUrl: "https://github.com/SimifiniiCTO/simfinii" # Optional, default: ""
+  name: "Service"
+  version: v1.0.0
+  #  iconUrl: "http://example.com"                           # Optional, default: ""
+  #  docsUrl: ["http://example.com"]                         # Optional, default: []
+  maintainers: ["yoan yomba"] # Optional, default: []
+zapLogger:
+  - name: zap-logger # Required
+    description: "Description of entry" # Optional
+    zap:
+      level: info # Optional, default: info, options: [debug, DEBUG, info, INFO, warn, WARN, dpanic, DPANIC, panic, PANIC, fatal, FATAL]
+      development: false # Optional, default: true
+      disableCaller: false # Optional, default: false
+      disableStacktrace: false # Optional, default: true
+      sampling:
+        initial: 0 # Optional, default: 0
+        thereafter: 0 # Optional, default: 0
+      encoding: json # Optional, default: "console", options: [console, json]
+      encoderConfig:
+        messageKey: "msg" # Optional, default: "msg"
+        levelKey: "level" # Optional, default: "level"
+        timeKey: "ts" # Optional, default: "ts"
+        nameKey: "logger" # Optional, default: "logger"
+        callerKey: "caller" # Optional, default: "caller"
+        functionKey: "" # Optional, default: ""
+        stacktraceKey: "stacktrace" # Optional, default: "msg"
+        lineEnding: "\n" # Optional, default: "\n"
+        levelEncoder: "capitalColor" # Optional, default: "capitalColor", options: [capital, capitalColor, color, lowercase]
+        timeEncoder: "iso8601" # Optional, default: "iso8601", options: [rfc3339nano, RFC3339Nano, rfc3339, RFC3339, iso8601, ISO8601, millis, nanos]
+        durationEncoder: "string" # Optional, default: "string", options: [string, nanos, ms]
+        callerEncoder: "" # Optional, default: ""
+        nameEncoder: "" # Optional, default: ""
+        consoleSeparator: "" # Optional, default: ""
+      outputPaths: ["stdout"] # Optional, default: ["stdout"], stdout would be replaced if specified
+      errorOutputPaths: ["stderr"] # Optional, default: ["stderr"], stderr would be replaced if specified
+      initialFields: # Optional, default: empty map
+        key: "value"
+    lumberjack:
+      filename: "rkapp.log" # Optional, default: It uses <processname>-lumberjack.log in os.TempDir() if empty.
+      maxsize: 1024 # Optional, default: 1024 (MB)
+      maxage: 7 # Optional, default: 7 (days)
+      maxbackups: 3 # Optional, default: 3 (days)
+      localtime: true # Optional, default: true
+      compress: true # Optional, default: true
+event:
+  - name: event-logger                                        # Required
+    description: "Description of entry"                   # Optional
+    domain: "*"                                           # Optional, default: "*"
+    encoding: json                                     # Optional, default: console
+    outputPaths: ["stdout"]                               # Optional, default: [stdout]
+#cred:
+#  - name: "local-cred"                                    # Required
+#    description: "Description of entry"                   # Optional
+#    provider: "localFs"                                   # Required, etcd, consul, localFs, remoteFs are supported options
+#    locale: "*::*::*::*"                                  # Required, default: ""
+#    paths:                                                # Optional
+#      - "example/boot/full/cred.yaml"
+#cert:                                                     # Optional
+#  - name: "local-cert"                                    # Required
+#    provider: "localFs"                                   # Required, etcd, consul, localFs, remoteFs are supported options
+#    locale: "*::*::*::*"                                  # Required, default: ""
+#    description: "Description of entry"                   # Optional
+#    serverCertPath: "example/boot/full/server.pem"        # Optional, default: "", path of certificate on local FS
+#    serverKeyPath: "example/boot/full/server-key.pem"     # Optional, default: "", path of certificate on local FS
+#    clientCertPath: "example/boot/full/server.pem"        # Optional, default: "", path of certificate on local FS
+#config:
+#  - name: my-config                                       # Required
+#    locale: "*::*::*::*"                                  # Required
+#    path: config/default.yaml                             # Required
+#    description: "Description of entry"                   # Optional
+grpc:
+  - name: service # Required, Name of grpc entry
+    port: 9896 # Required, Port of grpc entry
+    enabled: true # Required, Enable grpc entry
+    pprof:
+      enabled: true
+      path: "/profile"
+    enableReflection: true # Optional, Enable grpc server reflection, https://github.com/grpc/grpc/blob/master/doc/server-reflection.md
+    enableRkGwOption: true # Optional, Enable grpc gateway server option as RK style
+    description: The service for the simfinii platform
+    prom:
+      enabled: true # Enable prometheus client
+    commonService:
+      enabled: true # Optional, Enable common service
+    tv:
+      enabled: true # Optional, Enable RK 
+    docs:
+      enabled: true                                       # Optional, default: false
+      path: "/docs"                                        # Optional, default: "docs"
+      specPath: ""                                        # Optional
+      headers: ["sw:rk"]                                  # Optional, default: []
+      style:                                              # Optional
+        theme: "light"                                    # Optional, default: "light"
+      debug: false                                        # Optional, default: false
+    static:
+      enabled: true                                       # Optional, default: false
+      path: "/static"                                     # Optional, default: /static
+      sourceType: local                                   # Required, options: pkger, local
+      sourcePath: "."                                     # Required, full path of source directory
+    sw:
+      enabled: true # Optional, Enable Swagger UI
+      jsonPath: "api-definition/gen/" # Boot will look for swagger config files from this folder
+    gwMappingFilePaths:
+      - "api-definition/v1/gw_mapping.yaml" # Boot will look for gateway mapping files and load information into memory 
+    middleware:
+      meta:
+        enabled: true                                     # Optional, default: false
+        prefix: "rk"                                      # Optional, default: "rk"
+      trace:
+        enabled: true
+        exporter:
+          file:
+            enabled: true
+            outputPath: "stdout"
+      prom:
+        enabled: true                                     # Optional, default: false
+      logging:
+        enabled: true
+        ignore: [""]
+        loggerEncoding: "json"
+        eventEncoding: "json"
+      timeout:
+        enabled: true                                    # Optional, default: false
+        ignore: [""]                                      # Optional, default: []
+        timeoutMs: 5000                                   # Optional, default: 5000
+        paths:
+          - path: "/rk/v1/healthy"                        # Optional, default: ""
+            timeoutMs: 1000                               # Optional, default: 5000
+      rateLimit:
+        enabled: false                                    # Optional, default: false
+        ignore: [""]                                      # Optional, default: []
+        algorithm: "leakyBucket"                          # Optional, default: "tokenBucket"
+        reqPerSec: 100                                    # Optional, default: 1000000
+        paths:
+          - path: "/rk/v1/healthy"                        # Optional, default: ""
+            reqPerSec: 0                                  # Optional, default: 1000000
+      secure:
+        enabled: true                                     # Optional, default: false
+        ignore: [""]                                      # Optional, default: []
+        xssProtection: ""                                 # Optional, default: "1; mode=block"
+        contentTypeNosniff: ""                            # Optional, default: nosniff
+        xFrameOptions: ""                                 # Optional, default: SAMEORIGIN
+        hstsMaxAge: 0                                     # Optional, default: 0
+        hstsExcludeSubdomains: false                      # Optional, default: false
+        hstsPreloadEnabled: false                         # Optional, default: false
+        contentSecurityPolicy: ""                         # Optional, default: ""
+        cspReportOnly: false                              # Optional, default: false
+        referrerPolicy: ""                                # Optional, default: ""
+      csrf:
+        enabled: false                                     # Optional, default: false
+        ignore: [""]                                      # Optional, default: []
+        tokenLength: 32                                   # Optional, default: 32
+        tokenLookup: "header:X-CSRF-Token"                # Optional, default: "header:X-CSRF-Token"
+        cookieName: "_csrf"                               # Optional, default: _csrf
+        cookieDomain: ""                                  # Optional, default: ""
+        cookiePath: ""                                    # Optional, default: ""
+        cookieMaxAge: 86400                               # Optional, default: 86400
+        cookieHttpOnly: false                             # Optional, default: false
+        cookieSameSite: "default"                         # Optional, default: "default", options: lax, strict, none, default
+      gzip:
+        enabled: true                                     # Optional, default: false
+        ignore: [""]                                      # Optional, default: []
+        level: bestSpeed                                  # Optional, options: [noCompression, bestSpeed， bestCompression, defaultCompression, huffmanOnly]
+      cors:
+        enabled: true                                     # Optional, default: false
+        ignore: [""]                                      # Optional, default: []
+        allowOrigins:                                     # Optional, default: []
+          - "http://localhost:*"                          # Optional, default: *
+        allowCredentials: false                           # Optional, default: false
+        allowHeaders: []                                  # Optional, default: []
+        allowMethods: []                                  # Optional, default: []
+        exposeHeaders: []                                 # Optional, default: []
+        maxAge: 0                                         # Optional, default: 0

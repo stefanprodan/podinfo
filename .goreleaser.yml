@@ -1,7 +1,7 @@
 builds:
   - main: ./cmd/podcli
     binary: podcli
-    ldflags: -s -w -X github.com/stefanprodan/podinfo/pkg/version.REVISION={{.Commit}}
+    ldflags: -s -w -X github.com/SimifiniiCTO/simfiny-microservice-template/pkg/version.REVISION={{.Commit}}
     goos:
       - windows
       - darwin

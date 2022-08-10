@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package api.v1;
+
+option go_package = "api/v1/user";
+
+/**
+ * User: Represents the service of the simifinii platform.
+ *
+ * The service serves as the sole store of all user specific details
+ */
+service User {
+  /*
+   GetUser: Used to get a user account if it indeed exists.
+  */
+  rpc GetUser(GetUserRequest) returns (GetUserResponse) {}
+
+  /*
+    CreateUser: Used to create a user account. Account creation is comprised of
+    numerous operations against downstream dependent services.
+  */
+  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse) {}
+}
+
+// GetUserRequest: Represents the request object invoked against the user
+// service to obtain a user account
+message GetUserRequest {
+  // The account ID associated with the user
+  uint64 userID = 1;
+}
+
+// GetUserResponse: Represents the object returned as a response to `get-user`
+// request
+message GetUserResponse { rpcUserAccount account = 1; }
+
+// CreateUserRequest: Represents the request object invoked against the user
+// service to create a user account
+message CreateUserRequest { rpcUserAccount account = 1; }
+
+// CreateUserResponse: Represents the response object returned as a response to
+// the `create-user` request
+message CreateUserResponse { uint64 userID = 1; }
+
+/*
+======================== API FIELDS ========================
+*/
+
+/*
+ rpcUserAccount: represents a user account in the context of simfinni
+*/
+message rpcUserAccount {
+  // account id
+  uint64 id = 1;
+  // account email
+  string email = 2;
+}

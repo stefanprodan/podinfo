@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+import "github.com/infobloxopen/protoc-gen-gorm/options/gorm.proto";
+
+package service_schema;
+option go_package = "github.com/SimifiniiCTO/simfiny-microservice-template/pkg/gen/proto/service_schema";
+
+/*
+ UserAccount: represents a account in the context of simfinni
+*/
+message UserAccount {
+  option (gorm.opts) = {
+    ormable : true,
+  };
+  // account id
+  uint64 id = 1;
+  // account email
+  string email = 2;
+}

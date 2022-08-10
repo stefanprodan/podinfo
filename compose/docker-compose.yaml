@@ -1,0 +1,42 @@
+version: '3.7'
+
+services:
+  service:
+    build:
+      context: ../
+      dockerfile: Dockerfile.dev
+    container_name: service
+    ports:
+      - "9396:9896" # grpc port
+    restart: always
+    networks:
+      - service-network
+    volumes:
+      - '../:/go/src/github.com/SimifiniiCTO/simfiny-microservice-template'
+    depends_on:
+      - service_db
+    env_file:
+      - ../service.env
+
+  service_db:
+    container_name: service_db
+    image: postgres
+    environment:
+      POSTGRES_DB: service_db
+      POSTGRES_USER: service_db
+      POSTGRES_PASSWORD: service_db
+      PGDATA: /data/service_db
+    volumes:
+      - service_db:/data/service_db
+    ports:
+      - "5433:5432"
+    restart: always
+    networks:
+      - service-network
+
+networks:
+  service-network:
+    driver: bridge
+
+volumes:
+  user_service_db:

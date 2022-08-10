@@ -6,5 +6,7 @@ WORKDIR /workspace
 COPY go.mod go.mod
 COPY go.sum go.sum
 
+RUN git config --global url."https://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:x-oauth-basic@github.com/SimifiniiCTO".insteadOf "https://github.com/SimifiniiCTO"
+
 # cache modules
 RUN go mod download
