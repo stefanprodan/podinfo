@@ -9,6 +9,10 @@ DOCKER_IMAGE_NAME:=$(DOCKER_REPOSITORY)/$(NAME)
 GIT_COMMIT:=$(shell git describe --dirty --always)
 VERSION:=$(shell grep 'VERSION' pkg/version/version.go | awk '{ print $$4 }' | tr -d '"')
 EXTRA_RUN_ARGS?=
+DC=docker-compose -f ./compose/docker-compose-otel.yaml -f ./compose/docker-compose.yaml -f ./compose/docker-compose-dtm.yaml
+
+.PHONY: help
+.DEFAULT_GOAL := help
 
 run:
 	go run -ldflags "-s -w -X github.com/stefanprodan/podinfo/pkg/version.REVISION=$(GIT_COMMIT)" cmd/podinfo/* \
@@ -101,22 +105,6 @@ cue-gen:
 	@cd cue && cue fmt ./... && cue vet --all-errors --concrete ./...
 	@cd cue && cue gen
 
-# start docker containers in the backgound
-.PHONY: up-d
-up-d:
-	echo "starting user service"
-	docker-compose -f ./compose/docker-compose.yaml -f ./compose/docker-compose-dtm.yaml up --remove-orphans --detach
-
-# stop all docker containers
-.PHONY: down
-down: 
-	docker-compose -f ./compose/docker-compose.yaml -f ./compose/docker-compose-dtm.yaml down --remove-orphans
-
-# start docker containers with logs running in the foreground
-.PHONY: up
-up:
-	docker-compose -f ./compose/docker-compose.yaml -f ./compose/docker-compose-dtm.yaml up --remove-orphans
-
 ##
 # Cover runs go_test on GO_PKGS and produces code coverage in multiple formats.
 # A coverage.html file for human viewing will be at $(TMP_COVERAGE)/coverage.html
@@ -141,13 +129,13 @@ go-mod:
 	go list -m -u all
 
 .PHONY: ci-test
-ci-test: compose-up-d
+ci-test: run-background
 	echo "waiting for services to be ready to accept connections"
 	sleep 30
 	go test -v -race ./...
 
 .PHONY: unit-test
-unit-test: up-d
+unit-test: run-background
 	echo "starting unit tests and integration tests"
 	docker ps -a
 	go get github.com/mfridman/tparse
@@ -155,7 +143,7 @@ unit-test: up-d
 	go tool cover -html=cover.out
 
 .PHONY: unit-test
-benchmark-test: up-d
+benchmark-test: run-background
 	./benchmark/benchmark.sh
 
 .PHONY: integration-test
@@ -232,3 +220,22 @@ start-minikube-deployment:
 .PHONY: stop-minikube-deployment
 stop-minikube-deployment:
 	./scripts/local-nuke.sh
+
+help:
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+
+stop: ## Stop all Docker Containers run in Compose
+	$(DC) stop
+
+clean: stop ## Clean all Docker Containers and Volumes
+	$(DC) down --rmi local --remove-orphans -v
+	$(DC) rm -f -v
+
+build: clean ## Rebuild the Docker Image for use by Compose
+	$(DC) build
+
+run: stop ## Run the Application
+	$(DC) up
+
+run-background: stop ## Run the Application
+	$(DC) up --detach

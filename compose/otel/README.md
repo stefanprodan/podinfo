@@ -35,3 +35,5 @@ curl -X POST -v http://localhost:9898/api/echo
 ```shell
 make stop
 ```
+
+# https://github.com/newrelic/newrelic-opentelemetry-examples/tree/main/collector

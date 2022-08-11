@@ -1,0 +1,17 @@
+version: '2'
+
+services:
+  collector:
+    image: otel/opentelemetry-collector-contrib:0.57.2
+    volumes:
+    - ./otel/otel-config-nr.yaml:/otel-config.yaml
+    command: ["/otelcol-contrib", "--config=/otel-config.yaml", "${OTELCOL_ARGS}"]
+    environment:
+      LOG_EXPORTER_LOG_LEVEL: "DEBUG"
+      NEW_RELIC_API_KEY: "62fd721c712d5863a4e75b8f547b7c1ea884NRAL"
+    ports:
+      - "4317:4317"     # grpc
+      - "4318:4318"     # http
+      - "13133:13133"   # health
+      - "8006:8006"     # fluentdforward
+      - "8006:8006/udp" # fluentforward

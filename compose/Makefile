@@ -1,4 +1,4 @@
-DC=docker-compose -f docker-compose.yaml
+DC=docker-compose -f ./otel/docker-compose-otel.yaml -f docker-compose.yaml -f docker-compose-dtm.yaml
 
 .PHONY: help
 .DEFAULT_GOAL := help
