@@ -2,13 +2,13 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ template "podinfo.fullname" . }}-redis
+  name: {{ template "service.fullname" . }}-redis
   labels:
-    app: {{ template "podinfo.fullname" . }}-redis
+    app: {{ template "service.fullname" . }}-redis
 spec:
   type: ClusterIP
   selector:
-    app: {{ template "podinfo.fullname" . }}-redis
+    app: {{ template "service.fullname" . }}-redis
   ports:
     - name: redis
       port: 6379

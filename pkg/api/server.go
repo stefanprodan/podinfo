@@ -18,8 +18,6 @@ import (
 	"github.com/stefanprodan/podinfo/pkg/fscache"
 	httpSwagger "github.com/swaggo/http-swagger"
 	"github.com/swaggo/swag"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
@@ -75,13 +73,11 @@ type Config struct {
 }
 
 type Server struct {
-	router         *mux.Router
-	logger         *zap.Logger
-	config         *Config
-	pool           *redis.Pool
-	handler        http.Handler
-	tracer         trace.Tracer
-	tracerProvider *sdktrace.TracerProvider
+	router  *mux.Router
+	logger  *zap.Logger
+	config  *Config
+	pool    *redis.Pool
+	handler http.Handler
 }
 
 func NewServer(config *Config, logger *zap.Logger) (*Server, error) {
@@ -137,8 +133,6 @@ func (s *Server) registerHandlers() {
 func (s *Server) registerMiddlewares() {
 	prom := NewPrometheusMiddleware()
 	s.router.Use(prom.Handler)
-	otel := NewOpenTelemetryMiddleware()
-	s.router.Use(otel)
 	httpLogger := NewLoggingMiddleware(s.logger)
 	s.router.Use(httpLogger.Handler)
 	s.router.Use(versionMiddleware)
@@ -156,7 +150,6 @@ func (s *Server) ListenAndServe(stopCh <-chan struct{}) {
 
 	go s.startMetricsServer()
 
-	s.initTracer(ctx)
 	s.registerHandlers()
 	s.registerMiddlewares()
 
@@ -217,13 +210,6 @@ func (s *Server) ListenAndServe(stopCh <-chan struct{}) {
 	// the readiness check interval must be lower than the timeout
 	if viper.GetString("level") != "debug" {
 		time.Sleep(3 * time.Second)
-	}
-
-	// stop OpenTelemetry tracer provider
-	if s.tracerProvider != nil {
-		if err := s.tracerProvider.Shutdown(ctx); err != nil {
-			s.logger.Warn("stopping tracer provider", zap.Error(err))
-		}
 	}
 
 	// determine if the http server was started

@@ -14,5 +14,6 @@ if [[ $namespaceStatus != "Active" ]]; then
     kubectl create namespace ${namespace}
 fi
 
+
 echo "installing service in default namespace"
 helm upgrade --install service ./charts/service --values ./charts/service/values.production.yaml -n ${namespace}

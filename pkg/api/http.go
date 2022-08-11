@@ -8,8 +8,6 @@ import (
 	"time"
 
 	"github.com/stefanprodan/podinfo/pkg/version"
-	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -63,7 +61,7 @@ func (s *Server) JSONResponseCode(w http.ResponseWriter, r *http.Request, result
 	w.Write(prettyJSON(body))
 }
 
-func (s *Server) ErrorResponse(w http.ResponseWriter, r *http.Request, span trace.Span, error string, code int) {
+func (s *Server) ErrorResponse(w http.ResponseWriter, r *http.Request, error string, code int) {
 	data := struct {
 		Code    int    `json:"code"`
 		Message string `json:"message"`
@@ -71,8 +69,6 @@ func (s *Server) ErrorResponse(w http.ResponseWriter, r *http.Request, span trac
 		Code:    code,
 		Message: error,
 	}
-
-	span.SetStatus(codes.Error, error)
 
 	body, err := json.Marshal(data)
 	if err != nil {

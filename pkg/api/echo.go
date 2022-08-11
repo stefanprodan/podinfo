@@ -6,12 +6,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"net/http/httptrace"
 	"sync"
 
 	"github.com/stefanprodan/podinfo/pkg/version"
-	"go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace"
-	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.uber.org/zap"
 )
 
@@ -24,18 +21,17 @@ import (
 // @Router /api/echo [post]
 // @Success 202 {object} api.MapResponse
 func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
-	ctx, span := s.tracer.Start(r.Context(), "echoHandler")
-	defer span.End()
+	ctx := r.Context()
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		s.logger.Error("reading the request body failed", zap.Error(err))
-		s.ErrorResponse(w, r, span, "invalid request body", http.StatusBadRequest)
+		s.ErrorResponse(w, r, "invalid request body", http.StatusBadRequest)
 		return
 	}
 	defer r.Body.Close()
 
-	client := http.Client{Transport: otelhttp.NewTransport(http.DefaultTransport)}
+	client := http.Client{Transport: http.DefaultTransport}
 
 	if len(s.config.BackendURL) > 0 {
 		result := make([]string, len(s.config.BackendURL))
@@ -45,7 +41,6 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 			go func(index int, backend string) {
 				defer wg.Done()
 
-				ctx = httptrace.WithClientTrace(ctx, otelhttptrace.NewClientTrace(ctx))
 				ctx, cancel := context.WithTimeout(ctx, s.config.HttpClientTimeout)
 				defer cancel()
 

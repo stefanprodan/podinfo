@@ -14,9 +14,6 @@ import (
 // @Router / [get]
 // @Success 200 {string} string "OK"
 func (s *Server) indexHandler(w http.ResponseWriter, r *http.Request) {
-	_, span := s.tracer.Start(r.Context(), "indexHandler")
-	defer span.End()
-
 	tmpl, err := template.New("vue.html").ParseFiles(path.Join(s.config.UIPath, "vue.html"))
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)

@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: {{ template "podinfo.fullname" . }}-grpc-test-{{ randAlphaNum 5 | lower }}
+  name: {{ template "service.fullname" . }}-grpc-test-{{ randAlphaNum 5 | lower }}
   labels:
-    {{- include "podinfo.labels" . | nindent 4 }}
+    {{- include "service.labels" . | nindent 4 }}
   annotations:
     "helm.sh/hook": test-success
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
@@ -15,5 +15,5 @@ spec:
     - name: grpc-health-probe
       image: stefanprodan/grpc_health_probe:v0.3.0
       command: ['grpc_health_probe']
-      args:  ['-addr={{ template "podinfo.fullname" . }}.{{ .Release.Namespace }}:{{ .Values.service.grpcPort }}']
+      args:  ['-addr={{ template "service.fullname" . }}.{{ .Release.Namespace }}:{{ .Values.service.grpcPort }}']
   restartPolicy: Never

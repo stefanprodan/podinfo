@@ -2,9 +2,9 @@
 apiVersion: linkerd.io/v1alpha2
 kind: ServiceProfile
 metadata:
-  name: {{ template "podinfo.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local
+  name: {{ template "service.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local
   labels:
-    {{- include "podinfo.labels" . | nindent 4 }}  
+    {{- include "service.labels" . | nindent 4 }}  
 spec:
   routes:
     - condition:

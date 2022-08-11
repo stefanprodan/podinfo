@@ -2,9 +2,9 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: {{ template "podinfo.fullname" . }}-cache-test-{{ randAlphaNum 5 | lower }}
+  name: {{ template "service.fullname" . }}-cache-test-{{ randAlphaNum 5 | lower }}
   labels:
-    {{- include "podinfo.labels" . | nindent 4 }}
+    {{- include "service.labels" . | nindent 4 }}
   annotations:
     "helm.sh/hook": test
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
@@ -24,6 +24,6 @@ spec:
           curl -s -XDELETE ${PODINFO_SVC}/cache/test
       env:
       - name: PODINFO_SVC
-        value: "{{ template "podinfo.fullname" . }}.{{ .Release.Namespace }}:{{ .Values.service.externalPort }}"
+        value: "{{ template "service.fullname" . }}.{{ .Release.Namespace }}:{{ .Values.service.externalPort }}"
   restartPolicy: Never
 {{- end }}

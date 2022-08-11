@@ -1,47 +1,119 @@
-# Production values for service.
-# Includes Redis deployment and memory limits.
+# Default values for service.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
 
-replicaCount: 1
-logLevel: info
-backend: #http://backend-service:9898/echo
-backends: []
+replicaCount: 2
 
 image:
   repository: feelguuds/service
-  tag: latest
   pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "latest"
 
-ui:
-  color: "#34577c"
-  message: ""
-  logo: ""
+imagePullSecrets: []
+nameOverride: "service"
+fullnameOverride: ""
 
-# failure conditions
-faults:
-  delay: false
-  error: false
-  unhealthy: false
-  unready: false
-  testFail: false
-  testTimeout: false
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname podAnnotationstemplate
+  name: "service"
 
-# Kubernetes Service settings
+podAnnotations:
+  service: feelguuds/service
+
+podSecurityContext:
+  {}
+  # fsGroup: 2000
+
+securityContext:
+  {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+postgres:
+  enabled: false
+
 service:
   enabled: true
   annotations: {}
   type: ClusterIP
   metricsPort: 9797
-  httpPort: 9898
+  httpPort: 9896
   externalPort: 9898
   grpcPort: 9999
-  grpcService: service
+  grpcService: podinfo
   nodePort: 31198
+  port: 9896
+  hostPort:
+  env:
+    ENVIRONMENT: "prod"
+    HOST: ""
+    METRICS_PORT: "9899"
+    GRPC_PORT: "9896"
+    GRPC_SERVICE_NAME: "service"
+    LOG_LEVEL: "info"
+    BACKEND_URL: ""
+    RANDOM_DELAY: false
+    RANDOM_DELAY_UNIT: "ms"
+    RANDOM_DELAY_MIN: 0
+    RANDOM_DELAY_MAX: 5
+    RANDOM_ERROR: false
+    STRESS_CPU: 0
+    STRESS_MEMORY: 0
+    NEWRELIC_KEY: "62fd721c712d5863a4e75b8f547b7c1ea884NRAL"
+    DATABASE_HOST: "simfiny-db-cluster-do-user-11446161-0.b.db.ondigitalocean.com"
+    DATABASE_PORT: "25060"
+    DATABASE_USER: "doadmin"
+    DATABASE_PASSWORD: "AVNS_QIibiEIbI5JVODo"
+    DATABASE_NAME: "service-db"
+    DATABASE_SSLMODE: "require"
+    MAX_DATABASE_CONNECTION_ATTEMPTS: "3"
+    MAX_DATABASE_CONNECTION_RETRIES: "2"
+    MAX_DATABASE_RETRY_TIMEOUT: "500ms"
+    MAX_DATABASE_RETRY_SLEEP: "100ms"
+    GRPC_DEADLINE_IN_MS: "2000"
+    GRPC_RETRIES: "3"
+    GRPC_RETRY_TIMEOUT: "600"
+    GRPC_RETRY_BACKOOF: "600"
 
-# enable h2c protocol (non-TLS version of HTTP/2)
-h2c:
+dependencies:
+  headlessAuth:
+    name: headless-authentication-service
+    port: 9796
+  financialIntegration:
+    name: financial-integration-service
+    port: 9896
+  dtmManager:
+    name: dtm-manager
+    grpcPort: 36790
+    httpPort: 36789
+
+ingress:
   enabled: false
+  className: ""
+  annotations:
+    {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: service.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls:
+    - secretName: service-tls
+      hosts:
+        - service.local
 
-# enable tls on the service service
 tls:
   enabled: false
   # the name of the secret used to mount the certificate key pair
@@ -55,9 +127,29 @@ tls:
   # in local clusters such as kind without port forwarding
   hostPort:
 
+resources:
+  limits:
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 64Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
 # create a certificate manager certificate (cert-manager required)
 certificate:
-  create: false
+  create: true
   # the issuer used to issue the certificate
   issuerRef:
     kind: ClusterIssuer
@@ -77,6 +169,30 @@ hpa:
   # average http requests per second per pod (k8s-prometheus-adapter)
   requests:
 
+deploymentStrategy:
+  maxSurge: 25%
+  maxUnavailable: 25%
+  type: RollingUpdate
+
+failures:
+  failurethreshold: 5
+  periodSeconds: 30
+  successThresholds: 1
+  timeoutSeconds: 10
+  initialDelaySeconds: 30
+
+integrationTests:
+  enabled: false
+
+# failure conditions
+faults:
+  delay: false
+  error: false
+  unhealthy: false
+  unready: false
+  testFail: false
+  testTimeout: false
+
 # Redis address in the format tcp://<host>:<port>
 cache: ""
 # Redis deployment
@@ -84,32 +200,6 @@ redis:
   enabled: true
   repository: redis
   tag: 6.0.8
-
-serviceAccount:
-  # Specifies whether a service account should be created
-  enabled: false
-  # The name of the service account to use.
-  # If not set and create is true, a name is generated using the fullname template
-  name:
-
-# set container security context
-securityContext: {}
-
-ingress:
-  enabled: false
-  className: ""
-  annotations: {}
-    # kubernetes.io/ingress.class: nginx
-    # kubernetes.io/tls-acme: "true"
-  hosts:
-    - host: service.local
-      paths:
-        - path: /
-          pathType: ImplementationSpecific
-  tls: []
-  #  - secretName: chart-example-tls
-  #    hosts:
-  #      - chart-example.local
 
 linkerd:
   profile:
@@ -120,18 +210,3 @@ serviceMonitor:
   enabled: false
   interval: 15s
   additionalLabels: {}
-
-resources:
-  limits:
-    memory: 256Mi
-  requests:
-    cpu: 100m
-    memory: 64Mi
-
-nodeSelector: {}
-
-tolerations: []
-
-affinity: {}
-
-podAnnotations: {}

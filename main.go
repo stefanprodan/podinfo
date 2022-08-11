@@ -168,7 +168,7 @@ func initFlags() *pflag.FlagSet {
 	fs.String("HOST", "", "Host to bind service to")
 	fs.Int("METRICS_PORT", 0, "metrics port")
 	fs.Int("GRPC_PORT", 9896, "gRPC port")
-	fs.String("GRPC_SERVICE_NAME", "financial-integration-service", "gPRC service name")
+	fs.String("GRPC_SERVICE_NAME", "service", "gPRC service name")
 	fs.String("LOG_LEVEL", "info", "log level debug, info, warn, error, flat or panic")
 	fs.StringSlice("BACKEND_URL", []string{}, "backend service URL")
 	fs.String("CONFIG_PATH", "", "config dir path")
@@ -198,8 +198,6 @@ func initFlags() *pflag.FlagSet {
 	fs.Int("GRPC_RETRY_TIMEOUT", 600, "RPC operation retry timeout in ms")
 	fs.Int("GRPC_RETRY_BACKOOF", 600, "RPC operation retry backoff in ms")
 
-	fs.String("HEADLESS_AUTHENTICATION_SERVICE_URI", "headless-authentication-service:9796", "uri of the headless authentication service")
-	fs.String("FINANCIAL_INTEGRATION_SERVICE_URI", "financial-integration-service:9896", "uri of the financial integration service")
 	fs.String("DTX_MANAGER_URI", "dtm:36790", "uri of the dtm manager service")
 
 	fs.String("SERVICE_ENVIRONMENT", "dev", "environment in which service is running")

@@ -2,24 +2,24 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ template "podinfo.fullname" . }}-redis
+  name: {{ template "service.fullname" . }}-redis
   labels:
-    app: {{ template "podinfo.fullname" . }}-redis
+    app: {{ template "service.fullname" . }}-redis
 spec:
   strategy:
     type: Recreate
   selector:
     matchLabels:
-      app: {{ template "podinfo.fullname" . }}-redis
+      app: {{ template "service.fullname" . }}-redis
   template:
     metadata:
       labels:
-        app: {{ template "podinfo.fullname" . }}-redis
+        app: {{ template "service.fullname" . }}-redis
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/redis/config.yaml") . | sha256sum | quote }}
     spec:
       {{- if .Values.serviceAccount.enabled }}
-      serviceAccountName: {{ template "podinfo.serviceAccountName" . }}
+      serviceAccountName: {{ template "service.serviceAccountName" . }}
       {{- end }}
       containers:
         - name: redis
@@ -61,7 +61,7 @@ spec:
           emptyDir: {}
         - name: config
           configMap:
-            name: {{ template "podinfo.fullname" . }}-redis
+            name: {{ template "service.fullname" . }}-redis
             items:
               - key: redis.conf
                 path: redis.conf

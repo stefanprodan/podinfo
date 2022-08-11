@@ -2,9 +2,9 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: {{ template "podinfo.fullname" . }}-fault-test-{{ randAlphaNum 5 | lower }}
+  name: {{ template "service.fullname" . }}-fault-test-{{ randAlphaNum 5 | lower }}
   labels:
-    {{- include "podinfo.labels" . | nindent 4 }}
+    {{- include "service.labels" . | nindent 4 }}
   annotations:
     "helm.sh/hook": test-success
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
