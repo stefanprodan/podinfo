@@ -90,7 +90,7 @@ swagger:
 	go install github.com/swaggo/swag/cmd/swag@latest
 	go get github.com/swaggo/swag/gen@latest
 	go get github.com/swaggo/swag/cmd/swag@latest
-	cd pkg/api-definition && $$(go env GOPATH)/bin/swag init -g server.go
+	cd pkg/api && $$(go env GOPATH)/bin/swag init -g server.go
 
 .PHONY: cue-mod
 cue-mod:

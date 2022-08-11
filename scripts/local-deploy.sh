@@ -10,7 +10,6 @@ helm repo add jetstack https://charts.jetstack.io || true
 helm repo add bitnami https://charts.bitnami.com/bitnami
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo add kube-state-metrics https://kubernetes.github.io/kube-state-metrics
-helm repo add podinfo https://stefanprodan.github.io/podinfo
 helm repo update
 
 kubectl create namespace newrelic

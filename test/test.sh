@@ -2,8 +2,8 @@
 
 set -e
 
-# wait for podinfo
-kubectl rollout status deployment/podinfo --timeout=3m
+# wait for service
+kubectl rollout status deployment/service --timeout=3m
 
-# test podinfo
-helm test podinfo
+# test service
+helm test service

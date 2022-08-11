@@ -18,9 +18,9 @@ spec:
   selfSigned: {}
 EOF
 
-# install podinfo with tls enabled
-helm upgrade --install podinfo ./charts/podinfo \
-    --set image.repository=test/podinfo \
+# install service with tls enabled
+helm upgrade --install service ./charts/service \
+    --set image.repository=test/service \
     --set image.tag=latest \
     --set tls.enabled=true \
     --set certificate.create=true \
