@@ -1,74 +1,139 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: podinfo
+  name: service
+  labels:
+    helm.sh/chart: podinfo-6.1.8
+    app.kubernetes.io/name: service
+    app.kubernetes.io/version: "6.1.8"
+    app.kubernetes.io/managed-by: Helm
 spec:
-  minReadySeconds: 3
-  revisionHistoryLimit: 5
-  progressDeadlineSeconds: 60
   strategy:
-    rollingUpdate:
-      maxUnavailable: 0
     type: RollingUpdate
+    rollingUpdate:
+        maxSurge: 2
+        maxUnavailable: 1
   selector:
     matchLabels:
-      app: podinfo
+      app.kubernetes.io/name: service
   template:
     metadata:
+      labels:
+        app.kubernetes.io/name: service
       annotations:
         prometheus.io/scrape: "true"
-        prometheus.io/port: "9797"
-      labels:
-        app: podinfo
+        prometheus.io/port: ""
+        domain: "backend/services"
+        name: "feelguuds/service"
+        platform: "simfiny"
     spec:
+      terminationGracePeriodSeconds: 30
+      initContainers:
+      - name: init-user-svc-db-dependency
+        image: busybox:1.28
+        command: ['sh', '-c', "until nslookup service-db.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for service-db.; sleep 10; done"]
       containers:
-      - name: podinfod
-        image: ghcr.io/stefanprodan/podinfo:6.1.8
-        imagePullPolicy: IfNotPresent
-        ports:
-        - name: http
-          containerPort: 9898
-          protocol: TCP
-        - name: http-metrics
-          containerPort: 9797
-          protocol: TCP
-        - name: grpc
-          containerPort: 9999
-          protocol: TCP
-        command:
-        - ./podinfo
-        - --port=9898
-        - --port-metrics=9797
-        - --grpc-port=9999
-        - --grpc-service-name=podinfo
-        - --level=info
-        - --random-delay=false
-        - --random-error=false
-        env:
-        - name: PODINFO_UI_COLOR
-          value: "#34577c"
-        livenessProbe:
-          exec:
-            command:
-            - podcli
-            - check
-            - http
-            - localhost:9898/healthz
-          initialDelaySeconds: 5
-          timeoutSeconds: 5
-        readinessProbe:
-          exec:
-            command:
-            - podcli
-            - check
-            - http
-            - localhost:9898/readyz
-          initialDelaySeconds: 5
-          timeoutSeconds: 5
-        resources:
-          limits:
-            cpu: 2000m
-            memory: 512Mi
-          requests:
-            cpu: 100m
-            memory: 64Mi
+        - name: podinfo
+          image: "feelguuds/service:latest"
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1000
+          ports:
+            - name: grpc
+              containerPort: 9896
+              protocol: TCP
+          livenessProbe:
+            exec:
+              command:
+              - curl
+              - localhost:9896/healthz
+            initialDelaySeconds: 1
+            timeoutSeconds: 5
+          readinessProbe:
+            exec:
+              command:
+              - curl
+              - localhost:9896/readyz
+            initialDelaySeconds: 1
+            timeoutSeconds: 5
+          resources:
+            limits:
+              cpu: 100m
+              memory: 256Mi
+            requests:
+              cpu: 100m
+              memory: 64Mi
+          env:
+            - name: HOST
+              value: ""
+            - name: METRICS_PORT
+              value: "9899"
+            - name: GRPC_PORT
+              value: "9896"
+            - name: GRPC_SERVICE_NAME
+              value: "service"
+            - name: LOG_LEVEL
+              value: "info"
+            - name: BACKEND_URL
+              value: ""
+            - name: RANDOM_DELAY
+              value: "false"
+            - name: RANDOM_DELAY_UNIT
+              value: "ms"
+            - name: RANDOM_DELAY_MIN
+              value: "0"
+            - name: RANDOM_DELAY_MAX
+              value: "5"
+            - name: RANDOM_ERROR
+              value: "false"
+            - name: STRESS_CPU
+              value: "0"
+            - name: STRESS_MEMORY
+              value: "0"
+            - name: NEWRELIC_KEY
+              value: "62fd721c712d5863a4e75b8f547b7c1ea884NRAL"
+            - name: DATABASE_HOST
+              value: "service-db.default.svc.cluster.local"
+            - name: DATABASE_PORT
+              value: "5432"
+            - name: DATABASE_USER
+              value: "service"
+            - name: DATABASE_PASSWORD
+              value: "service"
+            - name: DATABASE_NAME
+              value: "service"
+            - name: DATABASE_SSLMODE
+              value: "disable"
+            - name: MAX_DATABASE_CONNECTION_ATTEMPTS
+              value: "3"
+            - name: MAX_DATABASE_CONNECTION_RETRIES
+              value: "2"
+            - name: MAX_DATABASE_RETRY_TIMEOUT
+              value: "500ms"
+            - name: MAX_DATABASE_RETRY_SLEEP
+              value: "100ms"
+            - name: GRPC_DEADLINE_IN_MS
+              value: "2000"
+            - name: GRPC_RETRIES
+              value: "3"
+            - name: GRPC_RETRY_TIMEOUT
+              value: "600"
+            - name: GRPC_RETRY_BACKOOF
+              value: "600"
+            - name: DTM_MANAGER_URI
+              value: "dtm-manager.default.svc.cluster.local:36790"
+            - name: SERVICE_ENVIRONMENT
+              value: "Development"
+            - name: SERVICE_DOCUMENTATION
+              value: "https://github.com/SimifiniiCTO/simfinii/blob/main/src/backend/services/service/documentation/setup.md"
+            - name: POINT_OF_CONTACT
+              value: "yoanyomba"
+            - name: VERSION
+              value: "6.1.8"
+            - name: METRICS_REPORTING_ENABLED
+              value: "true"

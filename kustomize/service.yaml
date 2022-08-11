@@ -1,17 +1,22 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: podinfo
+  name: service
+  labels:
+    helm.sh/chart: podinfo-6.1.8
+    app.kubernetes.io/name: service
+    app.kubernetes.io/version: "6.1.8"
+    app.kubernetes.io/managed-by: Helm
 spec:
   type: ClusterIP
-  selector:
-    app: podinfo
   ports:
-    - name: http
-      port: 9898
-      protocol: TCP
+    - port: 9898
       targetPort: http
-    - port: 9999
-      targetPort: grpc
+      protocol: TCP
+      name: http
+    - port: 9896
+      targetgrpcPort: grpc
       protocol: TCP
       name: grpc
+  selector:
+    app.kubernetes.io/name: service

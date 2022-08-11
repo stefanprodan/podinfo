@@ -130,6 +130,7 @@ require (
 	github.com/prometheus/procfs v0.8.0 // indirect
 	github.com/pseudomuto/protoc-gen-doc v1.5.1 // indirect
 	github.com/pseudomuto/protokit v0.2.0 // indirect
+	github.com/rookie-ninja/rk-boot/v2 v2.2.3
 	github.com/rookie-ninja/rk-common v1.2.3 // indirect
 	github.com/rookie-ninja/rk-entry v1.0.11 // indirect
 	github.com/rookie-ninja/rk-entry/v2 v2.2.3 // indirect

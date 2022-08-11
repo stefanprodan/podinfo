@@ -1,20 +1,23 @@
 apiVersion: autoscaling/v2beta2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: podinfo
+  name: service
+  labels:
+    helm.sh/chart: podinfo-6.1.8
+    app.kubernetes.io/name: service
+    app.kubernetes.io/version: "6.1.8"
+    app.kubernetes.io/managed-by: Helm  
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: podinfo
-  minReplicas: 2
-  maxReplicas: 4
+    name: service
+  minReplicas: 1
+  maxReplicas: 5
   metrics:
   - type: Resource
     resource:
       name: cpu
       target:
         type: Utilization
-        # scale up if usage is above
-        # 99% of the requested CPU (100m)
         averageUtilization: 99
