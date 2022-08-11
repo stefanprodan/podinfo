@@ -24,20 +24,20 @@ serviceAccount:
   name: "service"
 
 podAnnotations:
-  service: feelguuds/service
+  name: feelguuds/service
+  platform: simfiny
+  domain: backend/services
 
 podSecurityContext:
-  {}
-  # fsGroup: 2000
+  fsGroup: 2000
 
 securityContext:
-  {}
-  # capabilities:
-  #   drop:
-  #   - ALL
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
-  # runAsUser: 1000
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000
 
 postgres:
   enabled: true
