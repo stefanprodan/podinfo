@@ -27,7 +27,7 @@ spec:
     {{- end }}
     {{- if .Values.service.grpcPort }}
     - port: {{ .Values.service.grpcPort }}
-      targetPort: grpc
+      targetgrpcPort: grpc
       protocol: TCP
       name: grpc
     {{- end }}

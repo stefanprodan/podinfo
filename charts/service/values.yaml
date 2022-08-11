@@ -46,13 +46,10 @@ service:
   enabled: true
   annotations: {}
   type: ClusterIP
-  metricsPort: 9797
-  httpPort: 9898
   externalPort: 9898
-  grpcPort: 9999
-  grpcService: podinfo
+  grpcPort: 9896
+  grpcService: service
   nodePort: 31198
-  port: 9896
   hostPort:
   env:
     ENVIRONMENT: "local"
@@ -90,12 +87,6 @@ service:
     METRICS_REPORTING_ENABLED: true
 
 dependencies:
-  headlessAuth:
-    name: headless-authentication-service
-    port: 9796
-  financialIntegration:
-    name: financial-integration-service
-    port: 9896
   dtmManager:
     name: dtm-manager
     grpcPort: 36790

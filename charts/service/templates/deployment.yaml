@@ -61,6 +61,20 @@ spec:
             - name: grpc
               containerPort: {{ .Values.service.env.GRPC_PORT }}
               protocol: TCP
+          livenessProbe:
+            exec:
+              command:
+              - curl
+              - localhost:{{ .Values.service.env.GRPC_PORT | default 9896 }}/healthz
+            initialDelaySeconds: 1
+            timeoutSeconds: 5
+          readinessProbe:
+            exec:
+              command:
+              - curl
+              - localhost:{{ .Values.service.env.GRPC_PORT | default 9896 }}/readyz
+            initialDelaySeconds: 1
+            timeoutSeconds: 5
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           env:
