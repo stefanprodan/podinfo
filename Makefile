@@ -199,6 +199,18 @@ gen-data:
 			-I=$(GOPATH)/src/github.com/SimifiniiCTO/simfiny-microservice-template/api-definition/proto/schema/service_schema.proto \
 			api-definition/proto/schema/service_schema.proto --gorm_out="engine=postgres:$(GOPATH)/src"
 
+gen-docs:
+	@echo "setting up grpc schema definition via protobuf"
+	protoc -I. \
+			-I=$(GOPATH)/src \
+			-I=$(GOPATH)/src/github.com/infobloxopen/protoc-gen-gorm \
+			-I=$(GOPATH)/src/github.com/infobloxopen/atlas-app-toolkit \
+			-I=$(GOPATH)/src/github.com/lyft/protoc-gen-validate/validate/validate.proto \
+			-I=$(GOPATH)/src/github.com/infobloxopen/protoc-gen-gorm/options \
+			-I=$(GOPATH)/src/github.com/protobuf/src/google/protobuf/timestamp.proto \
+			-I=$(GOPATH)/src/github.com/SimifiniiCTO/simfinii/src/backend/services/user-service/api/proto/schema/user_service_schema.proto \
+			api-definition/proto/schema/service_schema.proto --doc_out=./documentation --doc_opt=markdown,schema.md
+
 gen-rpc:
 	buf generate
 
