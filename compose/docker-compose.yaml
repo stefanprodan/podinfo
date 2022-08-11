@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile.dev
     container_name: service
     ports:
-      - "9396:9896" # grpc port
+      - "9896:9896" # grpc port
     restart: always
     networks:
       - service-network

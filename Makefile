@@ -9,7 +9,7 @@ DOCKER_IMAGE_NAME:=$(DOCKER_REPOSITORY)/$(NAME)
 GIT_COMMIT:=$(shell git describe --dirty --always)
 VERSION:=$(shell grep 'VERSION' pkg/version/version.go | awk '{ print $$4 }' | tr -d '"')
 EXTRA_RUN_ARGS?=
-DC=docker-compose -f ./compose/docker-compose-otel.yaml -f ./compose/docker-compose.yaml -f ./compose/docker-compose-dtm.yaml
+DC=docker-compose -f ./compose/docker-compose.yaml -f ./compose/docker-compose-dtm.yaml
 
 .PHONY: help
 .DEFAULT_GOAL := help

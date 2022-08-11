@@ -21,13 +21,13 @@ import (
 
 type Server struct {
 	user.UnimplementedServiceServer
-	config                *Config
-	Logger                *zap.Logger
-	InstrumentationClient *newrelic.Application
-	DatabaseConn          *database.Db
-	DtmManagerClient      dtmgpb.DtmClient
-	MetricEngine          *metrics.MetricsEngine // *core_metrics_newrelic.ServiceMetricsEngine
-	ServiceMetrics        *metrics.ServiceMetrics
+	config           *Config
+	Logger           *zap.Logger
+	Tracer           *newrelic.Application
+	DatabaseConn     *database.Db
+	DtmManagerClient dtmgpb.DtmClient
+	MetricEngine     *metrics.MetricsEngine // *core_metrics_newrelic.ServiceMetricsEngine
+	ServiceMetrics   *metrics.ServiceMetrics
 }
 
 type Config struct {
@@ -54,7 +54,7 @@ func (server *Server) RegisterGrpcServer(srv *grpc.Server) {
 }
 
 // NewServer returns a new instance of the grpc server
-func NewServer(config *Config, logger *zap.Logger, instrumentationSdk *newrelic.Application, db *database.Db, svcMetricsEngine *metrics.MetricsEngine) (*Server, error) {
+func NewServer(config *Config, logger *zap.Logger, tracer *newrelic.Application, db *database.Db, svcMetricsEngine *metrics.MetricsEngine) (*Server, error) {
 	dtmClient, err := connectToDtmManager(&config.DtmManagerURI)
 	if err != nil {
 		logger.Error("failed to connect to dtm-manager service", zap.Error(err))
@@ -64,13 +64,13 @@ func NewServer(config *Config, logger *zap.Logger, instrumentationSdk *newrelic.
 	logger.Info(fmt.Sprintf("successfully established connection to dtm manager service. URI: %s", config.DtmManagerURI))
 
 	srv := &Server{
-		Logger:                logger,
-		config:                config,
-		InstrumentationClient: instrumentationSdk,
-		DatabaseConn:          db,
-		DtmManagerClient:      *dtmClient,
-		MetricEngine:          svcMetricsEngine,
-		ServiceMetrics:        svcMetricsEngine.Metrics,
+		Logger:           logger,
+		config:           config,
+		Tracer:           tracer,
+		DatabaseConn:     db,
+		DtmManagerClient: *dtmClient,
+		MetricEngine:     svcMetricsEngine,
+		ServiceMetrics:   svcMetricsEngine.Metrics,
 	}
 
 	return srv, nil

@@ -5,8 +5,6 @@ app:
   homeUrl: "https://github.com/SimifiniiCTO/simfinii" # Optional, default: ""
   name: "Service"
   version: v1.0.0
-  #  iconUrl: "http://example.com"                           # Optional, default: ""
-  #  docsUrl: ["http://example.com"]                         # Optional, default: []
   maintainers: ["yoan yomba"] # Optional, default: []
 zapLogger:
   - name: zap-logger # Required
@@ -38,7 +36,7 @@ zapLogger:
       outputPaths: ["stdout"] # Optional, default: ["stdout"], stdout would be replaced if specified
       errorOutputPaths: ["stderr"] # Optional, default: ["stderr"], stderr would be replaced if specified
       initialFields: # Optional, default: empty map
-        key: "value"
+        platform: "simfiny"
     lumberjack:
       filename: "rkapp.log" # Optional, default: It uses <processname>-lumberjack.log in os.TempDir() if empty.
       maxsize: 1024 # Optional, default: 1024 (MB)
@@ -52,33 +50,12 @@ event:
     domain: "*"                                           # Optional, default: "*"
     encoding: json                                     # Optional, default: console
     outputPaths: ["stdout"]                               # Optional, default: [stdout]
-#cred:
-#  - name: "local-cred"                                    # Required
-#    description: "Description of entry"                   # Optional
-#    provider: "localFs"                                   # Required, etcd, consul, localFs, remoteFs are supported options
-#    locale: "*::*::*::*"                                  # Required, default: ""
-#    paths:                                                # Optional
-#      - "example/boot/full/cred.yaml"
-#cert:                                                     # Optional
-#  - name: "local-cert"                                    # Required
-#    provider: "localFs"                                   # Required, etcd, consul, localFs, remoteFs are supported options
-#    locale: "*::*::*::*"                                  # Required, default: ""
-#    description: "Description of entry"                   # Optional
-#    serverCertPath: "example/boot/full/server.pem"        # Optional, default: "", path of certificate on local FS
-#    serverKeyPath: "example/boot/full/server-key.pem"     # Optional, default: "", path of certificate on local FS
-#    clientCertPath: "example/boot/full/server.pem"        # Optional, default: "", path of certificate on local FS
-#config:
-#  - name: my-config                                       # Required
-#    locale: "*::*::*::*"                                  # Required
-#    path: config/default.yaml                             # Required
-#    description: "Description of entry"                   # Optional
 grpc:
   - name: service # Required, Name of grpc entry
     port: 9896 # Required, Port of grpc entry
     enabled: true # Required, Enable grpc entry
     pprof:
       enabled: true
-      path: "/profile"
     enableReflection: true # Optional, Enable grpc server reflection, https://github.com/grpc/grpc/blob/master/doc/server-reflection.md
     enableRkGwOption: true # Optional, Enable grpc gateway server option as RK style
     description: The service for the simfinii platform
@@ -90,12 +67,6 @@ grpc:
       enabled: true # Optional, Enable RK 
     docs:
       enabled: true                                       # Optional, default: false
-      path: "/docs"                                        # Optional, default: "docs"
-      specPath: ""                                        # Optional
-      headers: ["sw:rk"]                                  # Optional, default: []
-      style:                                              # Optional
-        theme: "light"                                    # Optional, default: "light"
-      debug: false                                        # Optional, default: false
     static:
       enabled: true                                       # Optional, default: false
       path: "/static"                                     # Optional, default: /static
