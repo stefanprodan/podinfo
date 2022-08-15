@@ -79,7 +79,7 @@ jobs:
             --path="./kustomize" \
             --source="${{ github.event.repository.html_url }}" \
             --revision="${GITHUB_REF_NAME}/${GITHUB_SHA}"
-          flux tag oci://ghcr.io/stefanprodan/manifests/podinfo:${{ steps.prep.outputs.VERSION }} --tag latest
+          flux tag artifact oci://ghcr.io/stefanprodan/manifests/podinfo:${{ steps.prep.outputs.VERSION }} --tag latest
       - name: Sign OCI artifacts
         env:
           COSIGN_EXPERIMENTAL: 1
@@ -107,7 +107,7 @@ jobs:
             --path="./kustomize" \
             --source="${{ github.event.repository.html_url }}" \
             --revision="${GITHUB_REF_NAME}/${GITHUB_SHA}"
-          flux tag oci://ghcr.io/stefanprodan/podinfo-deploy:${{ steps.prep.outputs.VERSION }} --tag latest
+          flux tag artifact oci://ghcr.io/stefanprodan/podinfo-deploy:${{ steps.prep.outputs.VERSION }} --tag latest
       - name: Sign config artifact
         run: |
           echo "$COSIGN_KEY" > /tmp/cosign.key
