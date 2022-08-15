@@ -14,30 +14,28 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: imjasonh/setup-crane@v0.1
+      - uses: actions/checkout@v3
       - uses: sigstore/cosign-installer@main
+      - uses: fluxcd/flux2/action@main
       - name: Setup Helm
         uses: ./.github/actions/helm
         with:
           version: 3.8.1
-      - name: Setup Flux CLI
-        uses: fluxcd/flux2/action@main
       - name: Setup QEMU
-        uses: docker/setup-qemu-action@v1
+        uses: docker/setup-qemu-action@v2
         with:
           platforms: all
       - name: Setup Docker Buildx
         id: buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v1
+        uses: docker/login-action@v2
         with:
           registry: ghcr.io
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.GHCR_TOKEN }}
       - name: Login to Docker Hub
-        uses: docker/login-action@v1
+        uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
@@ -50,26 +48,26 @@ jobs:
           fi
           echo ::set-output name=BUILD_DATE::$(date -u +'%Y-%m-%dT%H:%M:%SZ')
           echo ::set-output name=VERSION::${VERSION}
+      - name: Generate images meta
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: |
+            docker.io/stefanprodan/podinfo
+            ghcr.io/stefanprodan/podinfo
+          tags: |
+            type=raw,value=${{ steps.prep.outputs.VERSION }}
+            type=raw,value=latest
       - name: Publish multi-arch image
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3
         with:
           push: true
           builder: ${{ steps.buildx.outputs.name }}
           context: .
           file: ./Dockerfile.xx
           platforms: linux/amd64,linux/arm/v7,linux/arm64
-          tags: |
-            docker.io/stefanprodan/podinfo:${{ steps.prep.outputs.VERSION }}
-            docker.io/stefanprodan/podinfo:latest
-            ghcr.io/stefanprodan/podinfo:${{ steps.prep.outputs.VERSION }}
-          labels: |
-            org.opencontainers.image.title=${{ github.event.repository.name }}
-            org.opencontainers.image.description=${{ github.event.repository.description }}
-            org.opencontainers.image.source=${{ github.event.repository.html_url }}
-            org.opencontainers.image.url=${{ github.event.repository.html_url }}
-            org.opencontainers.image.revision=${{ github.sha }}
-            org.opencontainers.image.version=${{ steps.prep.outputs.VERSION }}
-            org.opencontainers.image.created=${{ steps.prep.outputs.BUILD_DATE }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
       - name: Publish Helm chart to GHCR
         run: |
           helm package charts/podinfo
@@ -82,7 +80,7 @@ jobs:
             --source="${{ github.event.repository.html_url }}" \
             --revision="${GITHUB_REF_NAME}/${GITHUB_SHA}"
           flux tag oci://ghcr.io/stefanprodan/manifests/podinfo:${{ steps.prep.outputs.VERSION }} --tag latest
-      - name: Sign images
+      - name: Sign OCI artifacts
         env:
           COSIGN_EXPERIMENTAL: 1
         run: |
@@ -105,11 +103,11 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Publish config artifact
         run: |
-          cd kustomize
-          tar -cf config.tar * --numeric-owner --owner=0 --group=0
-          crane append -f config.tar -t ghcr.io/stefanprodan/podinfo-deploy:${{ steps.prep.outputs.VERSION }}
-          crane tag ghcr.io/stefanprodan/podinfo-deploy:${{ steps.prep.outputs.VERSION }} latest
-          rm config.tar
+          flux push artifact oci://ghcr.io/stefanprodan/podinfo-deploy:${{ steps.prep.outputs.VERSION }} \
+            --path="./kustomize" \
+            --source="${{ github.event.repository.html_url }}" \
+            --revision="${GITHUB_REF_NAME}/${GITHUB_SHA}"
+          flux tag oci://ghcr.io/stefanprodan/podinfo-deploy:${{ steps.prep.outputs.VERSION }} --tag latest
       - name: Sign config artifact
         run: |
           echo "$COSIGN_KEY" > /tmp/cosign.key
@@ -124,7 +122,7 @@ jobs:
           echo 'CHANGELOG' > /tmp/release.txt
           github-release-notes -org stefanprodan -repo podinfo -since-latest-release >> /tmp/release.txt
       - name: Publish release
-        uses: goreleaser/goreleaser-action@v1
+        uses: goreleaser/goreleaser-action@v3
         with:
           version: latest
           args: release --release-notes=/tmp/release.txt --skip-validate
