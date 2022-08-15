@@ -21,6 +21,8 @@ jobs:
         uses: ./.github/actions/helm
         with:
           version: 3.8.1
+      - name: Setup Flux CLI
+        uses: fluxcd/flux2/action@main
       - name: Setup QEMU
         uses: docker/setup-qemu-action@v1
         with:
@@ -73,14 +75,21 @@ jobs:
           helm package charts/podinfo
           helm push podinfo-${{ steps.prep.outputs.VERSION }}.tgz oci://ghcr.io/stefanprodan/charts
           rm podinfo-${{ steps.prep.outputs.VERSION }}.tgz
+      - name: Publish Flux OCI artifact to GHCR
+        run: |
+          flux push artifact oci://ghcr.io/stefanprodan/manifests/podinfo:${{ steps.prep.outputs.VERSION }} \
+            --path="./kustomize" \
+            --source="${{ github.event.repository.html_url }}" \
+            --revision="${GITHUB_REF_NAME}/${GITHUB_SHA}"
+          flux tag oci://ghcr.io/stefanprodan/manifests/podinfo:${{ steps.prep.outputs.VERSION }} --tag latest
       - name: Sign images
         env:
           COSIGN_EXPERIMENTAL: 1
         run: |
           cosign sign docker.io/stefanprodan/podinfo:${{ steps.prep.outputs.VERSION }}
-          cosign sign docker.io/stefanprodan/podinfo:latest
           cosign sign ghcr.io/stefanprodan/podinfo:${{ steps.prep.outputs.VERSION }}
           cosign sign ghcr.io/stefanprodan/charts/podinfo:${{ steps.prep.outputs.VERSION }}
+          cosign sign ghcr.io/stefanprodan/manifests/podinfo:${{ steps.prep.outputs.VERSION }}
       - name: Publish base image
         uses: docker/build-push-action@v2
         with:
