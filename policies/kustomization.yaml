@@ -1,0 +1,8 @@
+kind: Kustomization
+apiVersion: kustomize.config.k8s.io/v1beta1
+resources:
+    - minimum-replica-count.yaml
+    - privilege-escalation.yaml
+    - privileged-mode.yaml
+buildMetadata:
+    - originAnnotations

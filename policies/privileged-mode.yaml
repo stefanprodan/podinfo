@@ -1,0 +1,50 @@
+apiVersion: magalix.com/v1
+kind: Policy
+metadata:
+  name: magalix.policies.containers-running-in-privileged-mode
+spec:
+  id: magalix.policies.containers-running-in-privileged-mode
+  name: Containers Running In Privileged Mode
+  description: description
+  how_to_solve: how_to_solve
+  category: magalix.categories.pod-security
+  severity: high
+  targets: 
+    kind: 
+    - Deployment
+    - ReplicationController
+    - ReplicaSet
+    - StatefulSet
+  parameters:
+  - name: privilege
+    type: boolean
+    required: true
+    value: false
+  code: |
+    package magalix.advisor.podSecurity.privileged
+
+    privilege := input.parameters.privilege
+    violation[result] {
+      some i
+      container := controller_spec.containers[i]
+      security_context_priv := container.securityContext.privileged
+      not security_context_priv == privilege
+      result = {
+        "msg": sprintf("Container should set privileged to '%v'; detected '%v'", [privilege, security_context_priv]),
+        "violating_key": sprintf("spec.template.spec.containers[%v].securityContext.privileged", [i]),
+        "recommended_value": privilege
+      }
+    }
+
+    controller_input = input.review.object
+    controller_spec = controller_input.spec.template.spec {
+      contains_kind(controller_input.kind, {"StatefulSet" , "DaemonSet", "Deployment", "Job"})
+    } else = controller_input.spec {
+      controller_input.kind == "Pod"
+    } else = controller_input.spec.jobTemplate.spec.template.spec {
+      controller_input.kind == "CronJob"
+    }
+
+    contains_kind(kind, kinds) {
+      kinds[_] = kind
+    }

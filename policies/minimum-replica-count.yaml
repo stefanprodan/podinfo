@@ -1,0 +1,47 @@
+apiVersion: magalix.com/v1
+kind: Policy
+metadata:
+  name: magalix.policies.containers-minimum-replica-count
+spec:
+  id: magalix.policies.containers-minimum-replica-count
+  name: Containers Minimum Replica Count
+  description: description
+  how_to_solve: how_to_solve
+  category: magalix.categories.reliability
+  severity: medium
+  targets: 
+    kind: 
+    - Deployment
+    - ReplicationController
+    - ReplicaSet
+    - StatefulSet
+  parameters:
+  - name: replica_count
+    type: integer
+    required: true
+    value: 3
+  code: |
+    package magalix.advisor.pods.replica_count
+
+    replica_count := input.parameters.replica_count
+    violation[result] {
+      not controller_input.spec.replicas >= replica_count
+      result = {
+        "msg": sprintf("Replica count must be greater than or equal to '%v'; found '%v'.", [replica_count, controller_input.spec.replicas]),
+        "violating_key": "spec.replicas",
+        "recommended_value": replica_count
+      }
+    }
+
+    controller_input = input.review.object
+    controller_spec = controller_input.spec.template.spec {
+      contains_kind(controller_input.kind, {"StatefulSet" , "DaemonSet", "Deployment", "Job"})
+    } else = controller_input.spec {
+      controller_input.kind == "Pod"
+    } else = controller_input.spec.jobTemplate.spec.template.spec {
+      controller_input.kind == "CronJob"
+    }
+
+    contains_kind(kind, kinds) {
+      kinds[_] = kind
+    }

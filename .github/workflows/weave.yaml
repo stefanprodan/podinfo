@@ -1,0 +1,19 @@
+name: Weaveworks
+on:
+  push:
+    branches: [ master ]
+jobs:
+  main:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: weaveworks/weave-action@v1
+        with:
+          path: entities/kubernetes
+          policies-path: policies
+          remediate: true
+          sarif-file: results.sarif
+      - uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: results.sarif
