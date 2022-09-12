@@ -15,7 +15,7 @@ spec:
     - ReplicationController
     - ReplicaSet
     - StatefulSet
-    - HPA
+    - HorizontalPodAutoscaler
   parameters:
   - name: replica_count
     type: integer
