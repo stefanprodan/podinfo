@@ -15,6 +15,7 @@ spec:
     - ReplicationController
     - ReplicaSet
     - StatefulSet
+    - HPA
   parameters:
   - name: replica_count
     type: integer
