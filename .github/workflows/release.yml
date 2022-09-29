@@ -48,6 +48,7 @@ jobs:
           fi
           echo ::set-output name=BUILD_DATE::$(date -u +'%Y-%m-%dT%H:%M:%SZ')
           echo ::set-output name=VERSION::${VERSION}
+          echo ::set-output name=REVISION::${GITHUB_SHA}
       - name: Generate images meta
         id: meta
         uses: docker/metadata-action@v4
@@ -65,6 +66,8 @@ jobs:
           builder: ${{ steps.buildx.outputs.name }}
           context: .
           file: ./Dockerfile.xx
+          build-args: |
+            REVISION=${{ steps.prep.outputs.REVISION }}
           platforms: linux/amd64,linux/arm/v7,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
