@@ -136,8 +136,13 @@ spec:
               - check
               - http
               - localhost:{{ .Values.service.httpPort | default 9898 }}/healthz
-            initialDelaySeconds: 1
-            timeoutSeconds: 5
+            {{- with .Values.probes.liveness }}
+            initialDelaySeconds: {{ .initialDelaySeconds | default 1 }}
+            timeoutSeconds: {{ .timeoutSeconds | default 5 }}
+            failureThreshold: {{ .failureThreshold | default 3 }}
+            successThreshold: {{ .successThreshold | default 1 }}
+            periodSeconds: {{ .periodSeconds | default 10 }}
+            {{- end }}
           readinessProbe:
             exec:
               command:
@@ -145,8 +150,13 @@ spec:
               - check
               - http
               - localhost:{{ .Values.service.httpPort | default 9898 }}/readyz
-            initialDelaySeconds: 1
-            timeoutSeconds: 5
+            {{- with .Values.probes.readiness }}
+            initialDelaySeconds: {{ .initialDelaySeconds | default 1 }}
+            timeoutSeconds: {{ .timeoutSeconds | default 5 }}
+            failureThreshold: {{ .failureThreshold | default 3 }}
+            successThreshold: {{ .successThreshold | default 1 }}
+            periodSeconds: {{ .periodSeconds | default 10 }}
+            {{- end }}
           volumeMounts:
           - name: data
             mountPath: /data
