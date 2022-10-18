@@ -18,6 +18,7 @@ import (
 	"github.com/stefanprodan/podinfo/pkg/grpc"
 	"github.com/stefanprodan/podinfo/pkg/signals"
 	"github.com/stefanprodan/podinfo/pkg/version"
+	go_grpc "google.golang.org/grpc"
 )
 
 func main() {
@@ -33,7 +34,7 @@ func main() {
 	fs.StringSlice("backend-url", []string{}, "backend service URL")
 	fs.Duration("http-client-timeout", 2*time.Minute, "client timeout duration")
 	fs.Duration("http-server-timeout", 30*time.Second, "server read and write timeout duration")
-	fs.Duration("http-server-shutdown-timeout", 5*time.Second, "server graceful shutdown timeout duration")
+	fs.Duration("server-shutdown-timeout", 5*time.Second, "server graceful shutdown timeout duration")
 	fs.String("data-path", "/data", "data local path")
 	fs.String("config-path", "", "config dir path")
 	fs.String("cert-path", "/data/cert", "certificate path for HTTPS port")
@@ -135,9 +136,10 @@ func main() {
 	}
 
 	// start gRPC server
+	var grpcServer *go_grpc.Server
 	if grpcCfg.Port > 0 {
 		grpcSrv, _ := grpc.NewServer(&grpcCfg, logger)
-		go grpcSrv.ListenAndServe()
+		grpcServer = grpcSrv.ListenAndServe()
 	}
 
 	// load HTTP server config
@@ -155,8 +157,12 @@ func main() {
 
 	// start HTTP server
 	srv, _ := api.NewServer(&srvCfg, logger)
+	httpServer, httpsServer, healthy, ready := srv.ListenAndServe()
+
+	// graceful shutdown
 	stopCh := signals.SetupSignalHandler()
-	srv.ListenAndServe(stopCh)
+	sd, _ := signals.NewShutdown(srvCfg.ServerShutdownTimeout, logger)
+	sd.Graceful(stopCh, httpServer, httpsServer, grpcServer, healthy, ready)
 }
 
 func initZap(logLevel string) (*zap.Logger, error) {
