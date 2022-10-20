@@ -141,7 +141,7 @@ func (s *Server) getCacheConn() (redis.Conn, error) {
 	return redis.Dial("tcp", redisUrl.Host, opts...)
 }
 
-func (s *Server) startCachePool(ticker *time.Ticker, stopCh <-chan struct{}) {
+func (s *Server) startCachePool(ticker *time.Ticker) {
 	if s.config.CacheServer == "" {
 		return
 	}
@@ -169,8 +169,6 @@ func (s *Server) startCachePool(ticker *time.Ticker, stopCh <-chan struct{}) {
 		setVersion()
 		for {
 			select {
-			case <-stopCh:
-				return
 			case <-ticker.C:
 				setVersion()
 			}

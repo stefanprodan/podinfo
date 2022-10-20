@@ -30,7 +30,7 @@ func NewServer(config *Config, logger *zap.Logger) (*Server, error) {
 	return srv, nil
 }
 
-func (s *Server) ListenAndServe() {
+func (s *Server) ListenAndServe() *grpc.Server {
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%v", s.config.Port))
 	if err != nil {
 		s.logger.Fatal("failed to listen", zap.Int("port", s.config.Port))
@@ -42,7 +42,11 @@ func (s *Server) ListenAndServe() {
 	grpc_health_v1.RegisterHealthServer(srv, server)
 	server.SetServingStatus(s.config.ServiceName, grpc_health_v1.HealthCheckResponse_SERVING)
 
-	if err := srv.Serve(listener); err != nil {
-		s.logger.Fatal("failed to serve", zap.Error(err))
-	}
+	go func() {
+		if err := srv.Serve(listener); err != nil {
+			s.logger.Fatal("failed to serve", zap.Error(err))
+		}
+	}()
+
+	return srv
 }
