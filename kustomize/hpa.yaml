@@ -8,7 +8,7 @@ spec:
     kind: Deployment
     name: podinfo
   minReplicas: 2
-  maxReplicas: 4
+  maxReplicas: 3
   metrics:
   - type: Resource
     resource:
