@@ -16,7 +16,7 @@ package podinfo
 			port:     "http-metrics"
 			interval: _config.serviceMonitor.interval
 		}]
-		namespaceSelector: matchNames: _config.meta.namespace
+		namespaceSelector: matchNames: [_config.meta.namespace]
 		selector: matchLabels:         _config.meta.labels
 	}
 }
