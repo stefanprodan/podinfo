@@ -24,7 +24,10 @@ build:
 	GIT_COMMIT=$$(git rev-list -1 HEAD) && CGO_ENABLED=0 go build  -ldflags "-s -w -X github.com/stefanprodan/podinfo/pkg/version.REVISION=$(GIT_COMMIT)" -a -o ./bin/podcli ./cmd/podcli/*
 
 tidy:
-	rm -f go.sum; go mod tidy -compat=1.18
+	rm -f go.sum; go mod tidy -compat=1.19
+
+vet:
+	go vet ./...
 
 fmt:
 	gofmt -l -s -w ./
