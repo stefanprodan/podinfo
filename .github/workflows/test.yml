@@ -6,6 +6,9 @@ on:
     branches:
       - 'master'
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -22,6 +25,10 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: 1.19.x
+      - name: Setup Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: v3.10.3
       - name: Setup CUE
         uses: cue-lang/setup-cue@main
       - name: Run unit tests
@@ -49,17 +56,4 @@ jobs:
             exit 1
           fi
       - name: Validate Helm chart
-        uses: stefanprodan/kube-tools@v1
-        with:
-          kubectl: 1.19.11
-          helm: 2.17.0
-          helmv3: 3.6.0
-          command: |
-            helmv3 template ./charts/podinfo | kubeval --strict --kubernetes-version 1.19.11 --schema-location https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master
-      - name: Validate kustomization
-        uses: stefanprodan/kube-tools@v1
-        with:
-          kubectl: 1.19.11
-          command: |
-            kustomize build ./kustomize | kubeval --strict --kubernetes-version 1.19.11 --schema-location https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master
-            kustomize build ./kustomize | conftest test -p .github/policy -
+        run: helm lint ./charts/podinfo/
