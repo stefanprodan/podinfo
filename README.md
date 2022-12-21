@@ -22,7 +22,6 @@ Specifications:
 * Swagger docs
 * CUE, Helm and Kustomize installers
 * End-to-End testing with Kubernetes Kind and Helm
-* Kustomize testing with GitHub Actions and Open Policy Agent
 * Multi-arch container image with Docker buildx and Github Actions
 * Container image signing with Sigstore cosign
 * CVE scanning with Trivy
@@ -75,6 +74,8 @@ To access the Swagger UI open `<podinfo-host>/swagger/index.html` in a browser.
 * [Securing EKS Ingress With Contour And Let’s Encrypt The GitOps Way](https://aws.amazon.com/blogs/containers/securing-eks-ingress-contour-lets-encrypt-gitops/)
 
 ### Install
+
+To install Podinfo on Kubernetes the minimum required version is **Kubernetes v1.23**.
 
 #### Helm
 
