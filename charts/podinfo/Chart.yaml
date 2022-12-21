@@ -10,4 +10,4 @@ maintainers:
   name: stefanprodan
 sources:
 - https://github.com/stefanprodan/podinfo
-kubeVersion: ">=1.19.0-0"
+kubeVersion: ">=1.23.0-0"
