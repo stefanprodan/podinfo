@@ -1,7 +1,7 @@
 package podinfo
 
 import (
-	autoscaling "k8s.io/api/autoscaling/v2beta2"
+	autoscaling "k8s.io/api/autoscaling/v2"
 )
 
 #hpaConfig: {
@@ -14,7 +14,7 @@ import (
 
 #HorizontalPodAutoscaler: autoscaling.#HorizontalPodAutoscaler & {
 	_config:    #Config
-	apiVersion: "autoscaling/v2beta2"
+	apiVersion: "autoscaling/v2"
 	kind:       "HorizontalPodAutoscaler"
 	metadata:   _config.meta
 	spec: {
