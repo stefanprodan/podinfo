@@ -249,6 +249,6 @@ func beginStressTest(cpus int, mem int, logger *zap.Logger) {
 		if err != nil {
 			logger.Error("memory stress failed", zap.Error(err))
 		}
-		logger.Info("starting CPU stress", zap.Int("memory", len(stressMemoryPayload)))
+		logger.Info("starting MEMORY stress", zap.Int("memory", len(stressMemoryPayload)))
 	}
 }
