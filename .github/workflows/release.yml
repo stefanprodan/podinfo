@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: sigstore/cosign-installer@main
+      - uses: sigstore/cosign-installer@v3
       - uses: fluxcd/flux2/action@main
       - name: Setup Go
         uses: actions/setup-go@v3
@@ -93,10 +93,10 @@ jobs:
         env:
           COSIGN_EXPERIMENTAL: 1
         run: |
-          cosign sign docker.io/stefanprodan/podinfo:${{ steps.prep.outputs.VERSION }}
-          cosign sign ghcr.io/stefanprodan/podinfo:${{ steps.prep.outputs.VERSION }}
-          cosign sign ghcr.io/stefanprodan/charts/podinfo:${{ steps.prep.outputs.VERSION }}
-          cosign sign ghcr.io/stefanprodan/manifests/podinfo:${{ steps.prep.outputs.VERSION }}
+          cosign sign docker.io/stefanprodan/podinfo:${{ steps.prep.outputs.VERSION }} --yes
+          cosign sign ghcr.io/stefanprodan/podinfo:${{ steps.prep.outputs.VERSION }} --yes
+          cosign sign ghcr.io/stefanprodan/charts/podinfo:${{ steps.prep.outputs.VERSION }} --yes
+          cosign sign ghcr.io/stefanprodan/manifests/podinfo:${{ steps.prep.outputs.VERSION }} --yes
       - name: Publish base image
         uses: docker/build-push-action@v3
         with:
@@ -120,8 +120,8 @@ jobs:
       - name: Sign config artifact
         run: |
           echo "$COSIGN_KEY" > /tmp/cosign.key
-          cosign sign -key /tmp/cosign.key ghcr.io/stefanprodan/podinfo-deploy:${{ steps.prep.outputs.VERSION }}
-          cosign sign -key /tmp/cosign.key ghcr.io/stefanprodan/podinfo-deploy:latest
+          cosign sign -key /tmp/cosign.key ghcr.io/stefanprodan/podinfo-deploy:${{ steps.prep.outputs.VERSION }} --yes
+          cosign sign -key /tmp/cosign.key ghcr.io/stefanprodan/podinfo-deploy:latest --yes
         env:
           COSIGN_PASSWORD: ${{secrets.COSIGN_PASSWORD}}
           COSIGN_KEY: ${{secrets.COSIGN_KEY}}
@@ -131,7 +131,7 @@ jobs:
           echo 'CHANGELOG' > /tmp/release.txt
           github-release-notes -org stefanprodan -repo podinfo -since-latest-release >> /tmp/release.txt
       - name: Publish release
-        uses: goreleaser/goreleaser-action@v3
+        uses: goreleaser/goreleaser-action@v4
         with:
           version: latest
           args: release --release-notes=/tmp/release.txt --skip-validate
