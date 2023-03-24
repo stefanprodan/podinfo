@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: configMap
+metadata:
+  name: belalicious
+  namespace: datadog
+data:
+  key: value
