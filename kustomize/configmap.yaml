@@ -9,7 +9,7 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: belalicious
+  name: alexisGooD
   namespace: main
 data:
   key: value
