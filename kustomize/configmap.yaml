@@ -9,7 +9,7 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: alexisGooD
+  name: fuckoffflux
   namespace: main
 data:
   key: value
