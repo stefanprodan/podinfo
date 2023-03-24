@@ -5,3 +5,11 @@ metadata:
   namespace: datadog
 data:
   key: value
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: belalicious
+  namespace: main
+data:
+  key: value
