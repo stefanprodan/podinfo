@@ -97,6 +97,8 @@ swagger:
 
 .PHONY: cue-mod
 cue-mod:
+	@cd cue && go mod init github.com/stefanprodan/podinfo/cue
+	@cd cue && go get k8s.io/api/...
 	@cd cue && cue get go k8s.io/api/...
 
 .PHONY: cue-gen
