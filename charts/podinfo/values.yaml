@@ -155,3 +155,10 @@ probes:
     failureThreshold: 3
     successThreshold: 1
     periodSeconds: 10
+  startup:
+    enable: false
+    initialDelaySeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 20
+    successThreshold: 1
+    periodSeconds: 10
