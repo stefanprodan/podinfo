@@ -1,3 +1,7 @@
+# NOTE
+
+This is a fork of stefanprodan/podinfo.   I created it just so I could have a podinfo whose webpage could be browsed without requiring an internet connection.
+
 # podinfo
 
 [![e2e](https://github.com/dee0sap/self-contained-podinfo/workflows/e2e/badge.svg)](https://github.com/dee0sap/self-contained-podinfo/blob/master/.github/workflows/e2e.yml)
