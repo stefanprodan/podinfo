@@ -23,7 +23,7 @@ spec:
     spec:
       containers:
       - name: podinfod
-        image: ghcr.io/dee0sap/self-contained-podinfo:6.3.5
+        image: ghcr.io/dee0sap/self-contained-podinfo:0.0.12
         imagePullPolicy: IfNotPresent
         ports:
         - name: http
