@@ -4,10 +4,10 @@
   <title>{{.Title}}</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <link rel="shortcut icon" type="image/png" href="https://kubernetes.io/images/favicon.png">
-  <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css?family=Material+Icons" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
+  <link rel="shortcut icon" type="image/png" href="/asset/favicon.png">
+  <link href="/asset/googleapi.css" rel="stylesheet">
+  <link href="/asset/material-icons" rel="stylesheet">
+  <link href="/asset/vuetify.min.css" rel="stylesheet">
   <style>
 	[v-cloak] {
     display: none;
@@ -22,7 +22,7 @@
    <v-app dark>
     <v-content>
       <section>
-        <v-parallax id="parallax-hero" :style="cuddleStyle" src="https://upload.wikimedia.org/wikipedia/commons/c/ca/1x1.png">
+        <v-parallax id="parallax-hero" :style="cuddleStyle" src="/asset/1x1.png">
           <v-layout
             column
             align-center
@@ -71,8 +71,8 @@
   </v-app>
  </div>
 
- <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
- <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
+ <script src="/asset/vue.js"></script>
+ <script src="/asset/vuetify.js"></script>
  <script>
    new Vue({
     delimiters: ['${', '}'],

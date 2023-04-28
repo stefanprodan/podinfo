@@ -99,6 +99,7 @@ func (s *Server) registerHandlers() {
 	s.router.PathPrefix("/debug/pprof/").Handler(http.DefaultServeMux)
 	s.router.HandleFunc("/", s.indexHandler).HeadersRegexp("User-Agent", "^Mozilla.*").Methods("GET")
 	s.router.HandleFunc("/", s.infoHandler).Methods("GET")
+	s.router.PathPrefix("/asset/" ).HandlerFunc( s.assetHandler).HeadersRegexp("User-Agent", "^Mozilla.*").Methods("GET")
 	s.router.HandleFunc("/version", s.versionHandler).Methods("GET")
 	s.router.HandleFunc("/echo", s.echoHandler).Methods("POST")
 	s.router.HandleFunc("/env", s.envHandler).Methods("GET", "POST")
