@@ -58,8 +58,8 @@ jobs:
         uses: docker/metadata-action@v4
         with:
           images: |
-            docker.io/stefanprodan/podinfo
-            ghcr.io/stefanprodan/podinfo
+            docker.io/dee0sap/self-contained-podinfo
+            ghcr.io/dee0sap/self-contained-podinfo
           tags: |
             type=raw,value=${{ steps.prep.outputs.VERSION }}
             type=raw,value=latest
@@ -80,23 +80,23 @@ jobs:
       - name: Publish Helm chart to GHCR
         run: |
           helm package charts/podinfo
-          helm push podinfo-${{ steps.prep.outputs.VERSION }}.tgz oci://ghcr.io/stefanprodan/charts
+          helm push podinfo-${{ steps.prep.outputs.VERSION }}.tgz oci://ghcr.io/dee0sap/charts
           rm podinfo-${{ steps.prep.outputs.VERSION }}.tgz
       - name: Publish Flux OCI artifact to GHCR
         run: |
-          flux push artifact oci://ghcr.io/stefanprodan/manifests/podinfo:${{ steps.prep.outputs.VERSION }} \
+          flux push artifact oci://ghcr.io/dee0sap/manifests/podinfo:${{ steps.prep.outputs.VERSION }} \
             --path="./kustomize" \
             --source="${{ github.event.repository.html_url }}" \
             --revision="${GITHUB_REF_NAME}/${GITHUB_SHA}"
-          flux tag artifact oci://ghcr.io/stefanprodan/manifests/podinfo:${{ steps.prep.outputs.VERSION }} --tag latest
+          flux tag artifact oci://ghcr.io/dee0sap/manifests/podinfo:${{ steps.prep.outputs.VERSION }} --tag latest
       - name: Sign OCI artifacts
         env:
           COSIGN_EXPERIMENTAL: 1
         run: |
-          cosign sign docker.io/stefanprodan/podinfo:${{ steps.prep.outputs.VERSION }} --yes
-          cosign sign ghcr.io/stefanprodan/podinfo:${{ steps.prep.outputs.VERSION }} --yes
-          cosign sign ghcr.io/stefanprodan/charts/podinfo:${{ steps.prep.outputs.VERSION }} --yes
-          cosign sign ghcr.io/stefanprodan/manifests/podinfo:${{ steps.prep.outputs.VERSION }} --yes
+          cosign sign docker.io/dee0sap/podinfo:${{ steps.prep.outputs.VERSION }} --yes
+          cosign sign ghcr.io/dee0sap/podinfo:${{ steps.prep.outputs.VERSION }} --yes
+          cosign sign ghcr.io/dee0sap/charts/podinfo:${{ steps.prep.outputs.VERSION }} --yes
+          cosign sign ghcr.io/dee0sap/manifests/podinfo:${{ steps.prep.outputs.VERSION }} --yes
       - name: Publish base image
         uses: docker/build-push-action@v3
         with:
@@ -105,23 +105,23 @@ jobs:
           context: .
           platforms: linux/amd64
           file: ./Dockerfile.base
-          tags: docker.io/stefanprodan/podinfo-base:latest
+          tags: docker.io/dee0sap/podinfo-base:latest
       - name: Publish helm chart
-        uses: stefanprodan/helm-gh-pages@master
+        uses: dee0sap/helm-gh-pages@master
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Publish config artifact
         run: |
-          flux push artifact oci://ghcr.io/stefanprodan/podinfo-deploy:${{ steps.prep.outputs.VERSION }} \
+          flux push artifact oci://ghcr.io/dee0sap/podinfo-deploy:${{ steps.prep.outputs.VERSION }} \
             --path="./kustomize" \
             --source="${{ github.event.repository.html_url }}" \
             --revision="${GITHUB_REF_NAME}/${GITHUB_SHA}"
-          flux tag artifact oci://ghcr.io/stefanprodan/podinfo-deploy:${{ steps.prep.outputs.VERSION }} --tag latest
+          flux tag artifact oci://ghcr.io/dee0sap/podinfo-deploy:${{ steps.prep.outputs.VERSION }} --tag latest
       - name: Sign config artifact
         run: |
           echo "$COSIGN_KEY" > /tmp/cosign.key
-          cosign sign -key /tmp/cosign.key ghcr.io/stefanprodan/podinfo-deploy:${{ steps.prep.outputs.VERSION }} --yes
-          cosign sign -key /tmp/cosign.key ghcr.io/stefanprodan/podinfo-deploy:latest --yes
+          cosign sign -key /tmp/cosign.key ghcr.io/dee0sap/podinfo-deploy:${{ steps.prep.outputs.VERSION }} --yes
+          cosign sign -key /tmp/cosign.key ghcr.io/dee0sap/podinfo-deploy:latest --yes
         env:
           COSIGN_PASSWORD: ${{secrets.COSIGN_PASSWORD}}
           COSIGN_KEY: ${{secrets.COSIGN_KEY}}
@@ -129,7 +129,7 @@ jobs:
       - name: Generate release notes
         run: |
           echo 'CHANGELOG' > /tmp/release.txt
-          github-release-notes -org stefanprodan -repo podinfo -since-latest-release >> /tmp/release.txt
+          github-release-notes -org dee0sap -repo podinfo -since-latest-release >> /tmp/release.txt
       - name: Publish release
         uses: goreleaser/goreleaser-action@v4
         with:

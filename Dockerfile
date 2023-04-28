@@ -11,11 +11,11 @@ COPY . .
 RUN go mod download
 
 RUN CGO_ENABLED=0 go build -ldflags "-s -w \
-    -X github.com/stefanprodan/podinfo/pkg/version.REVISION=${REVISION}" \
+    -X github.com/dee0sap/self-contained-podinfo/pkg/version.REVISION=${REVISION}" \
     -a -o bin/podinfo cmd/podinfo/*
 
 RUN CGO_ENABLED=0 go build -ldflags "-s -w \
-    -X github.com/stefanprodan/podinfo/pkg/version.REVISION=${REVISION}" \
+    -X github.com/dee0sap/self-contained-podinfo/pkg/version.REVISION=${REVISION}" \
     -a -o bin/podcli cmd/podcli/*
 
 FROM alpine:3.17
@@ -24,7 +24,7 @@ ARG BUILD_DATE
 ARG VERSION
 ARG REVISION
 
-LABEL maintainer="stefanprodan"
+LABEL maintainer="dee0sap"
 
 RUN addgroup -S app \
     && adduser -S -G app app \

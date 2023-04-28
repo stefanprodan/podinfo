@@ -10,25 +10,25 @@ for end-to-end testing and workshops.
 ## Installing the Chart
 
 The Podinfo charts are published to
-[GitHub Container Registry](https://github.com/stefanprodan/podinfo/pkgs/container/charts%2Fpodinfo)
+[GitHub Container Registry](https://github.com/dee0sap/self-contained-podinfo/pkgs/container/charts%2Fpodinfo)
 and signed with [Cosign](https://github.com/sigstore/cosign) & GitHub Actions OIDC.
 
 To install the chart with the release name `my-release` from GHCR:
 
 ```console
-$ helm upgrade -i my-release oci://ghcr.io/stefanprodan/charts/podinfo
+$ helm upgrade -i my-release oci://ghcr.io/dee0sap/charts/podinfo
 ```
 
 To verify a chart with Cosign:
 
 ```console
-$ cosign verify ghcr.io/stefanprodan/charts/podinfo:<VERSION>
+$ cosign verify ghcr.io/dee0sap/charts/podinfo:<VERSION>
 ```
 
 Alternatively, you can install the chart from GitHub pages:
 
 ```console
-$ helm repo add podinfo https://stefanprodan.github.io/podinfo
+$ helm repo add podinfo https://dee0sap.github.io/podinfo
 
 $ helm upgrade -i my-release podinfo/podinfo
 ```
@@ -67,7 +67,7 @@ The following tables lists the configurable parameters of the podinfo chart and 
 | `faults.unready`                  | `false`                | When set, the ready state is never reached                                                                             |
 | `faults.testFail`                 | `false`                | When set, a helm test is included which always fails                                                                   |
 | `faults.testTimeout`              | `false`                | When set, a helm test is included which always times out                                                               |
-| `image.repository`                | `stefanprodan/podinfo` | Image repository                                                                                                       |
+| `image.repository`                | `dee0sap/self-contained-podinfo` | Image repository                                                                                                       |
 | `image.tag`                       | `<VERSION>`            | Image tag                                                                                                              |
 | `image.pullPolicy`                | `IfNotPresent`         | Image pull policy                                                                                                      |
 | `service.enabled`                 | `true`                 | Create a Kubernetes Service, should be disabled when using [Flagger](https://flagger.app)                              |

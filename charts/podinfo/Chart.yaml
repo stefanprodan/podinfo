@@ -4,10 +4,10 @@ appVersion: 6.3.5
 name: podinfo
 engine: gotpl
 description: Podinfo Helm chart for Kubernetes
-home: https://github.com/stefanprodan/podinfo
+home: https://github.com/dee0sap/self-contained-podinfo
 maintainers:
-- email: stefanprodan@users.noreply.github.com
-  name: stefanprodan
+- email: dee0sap@users.noreply.github.com
+  name: dee0sap
 sources:
-- https://github.com/stefanprodan/podinfo
+- https://github.com/dee0sap/self-contained-podinfo
 kubeVersion: ">=1.23.0-0"

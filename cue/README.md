@@ -16,7 +16,7 @@ brew install cue
 Generate the Kubernetes API definitions required by this module with:
 
 ```shell
-go mod init github.com/stefanprodan/podinfo/cue
+go mod init github.com/dee0sap/self-contained-podinfo/cue
 go get k8s.io/api/...
 cue get go k8s.io/api/...
 ```

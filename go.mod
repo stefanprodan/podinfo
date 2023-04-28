@@ -1,4 +1,4 @@
-module github.com/stefanprodan/podinfo
+module github.com/dee0sap/self-contained-podinfo
 
 go 1.19
 
