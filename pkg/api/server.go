@@ -11,11 +11,11 @@ import (
 	"sync/atomic"
 	"time"
 
+	_ "github.com/dee0sap/self-contained-podinfo/pkg/api/docs"
+	"github.com/dee0sap/self-contained-podinfo/pkg/fscache"
 	"github.com/gomodule/redigo/redis"
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	_ "github.com/stefanprodan/podinfo/pkg/api/docs"
-	"github.com/stefanprodan/podinfo/pkg/fscache"
 	httpSwagger "github.com/swaggo/http-swagger"
 	"github.com/swaggo/swag"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -30,10 +30,10 @@ import (
 // @description Go microservice template for Kubernetes.
 
 // @contact.name Source Code
-// @contact.url https://github.com/stefanprodan/podinfo
+// @contact.url https://github.com/dee0sap/self-contained-podinfo
 
 // @license.name MIT License
-// @license.url https://github.com/stefanprodan/podinfo/blob/master/LICENSE
+// @license.url https://github.com/dee0sap/self-contained-podinfo/blob/master/LICENSE
 
 // @host localhost:9898
 // @BasePath /
@@ -99,7 +99,7 @@ func (s *Server) registerHandlers() {
 	s.router.PathPrefix("/debug/pprof/").Handler(http.DefaultServeMux)
 	s.router.HandleFunc("/", s.indexHandler).HeadersRegexp("User-Agent", "^Mozilla.*").Methods("GET")
 	s.router.HandleFunc("/", s.infoHandler).Methods("GET")
-	s.router.PathPrefix("/asset/" ).HandlerFunc( s.assetHandler).HeadersRegexp("User-Agent", "^Mozilla.*").Methods("GET")
+	s.router.PathPrefix("/asset/").HandlerFunc(s.assetHandler).HeadersRegexp("User-Agent", "^Mozilla.*").Methods("GET")
 	s.router.HandleFunc("/version", s.versionHandler).Methods("GET")
 	s.router.HandleFunc("/echo", s.echoHandler).Methods("POST")
 	s.router.HandleFunc("/env", s.envHandler).Methods("GET", "POST")

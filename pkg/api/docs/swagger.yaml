@@ -47,11 +47,11 @@ host: localhost:9898
 info:
   contact:
     name: Source Code
-    url: https://github.com/stefanprodan/podinfo
+    url: https://github.com/dee0sap/self-contained-podinfo
   description: Go microservice template for Kubernetes.
   license:
     name: MIT License
-    url: https://github.com/stefanprodan/podinfo/blob/master/LICENSE
+    url: https://github.com/dee0sap/self-contained-podinfo/blob/master/LICENSE
   title: Podinfo API
   version: "2.0"
 paths:

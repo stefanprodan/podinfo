@@ -11,7 +11,7 @@ import (
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 
-	"github.com/stefanprodan/podinfo/pkg/version"
+	"github.com/dee0sap/self-contained-podinfo/pkg/version"
 )
 
 // Cache godoc

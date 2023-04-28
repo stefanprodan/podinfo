@@ -6,8 +6,9 @@ import (
 	"runtime"
 	"strconv"
 
-	"github.com/stefanprodan/podinfo/pkg/version"
 	"fmt"
+
+	"github.com/dee0sap/self-contained-podinfo/pkg/version"
 )
 
 // Info godoc
@@ -21,7 +22,7 @@ import (
 func (s *Server) infoHandler(w http.ResponseWriter, r *http.Request) {
 	_, span := s.tracer.Start(r.Context(), "infoHandler")
 	defer span.End()
-        fmt.Println( "infoHandler" )
+	fmt.Println("infoHandler")
 	data := RuntimeResponse{
 		Hostname:     s.config.Hostname,
 		Version:      version.VERSION,
