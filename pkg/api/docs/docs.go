@@ -676,6 +676,8 @@ var SwaggerInfo = &swag.Spec{
 	Description:      "Go microservice template for Kubernetes.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
+	LeftDelim:        "{{",
+	RightDelim:       "}}",
 }
 
 func init() {
