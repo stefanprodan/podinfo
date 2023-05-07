@@ -1,0 +1,12 @@
+# This file provides instructions to ocm-controller
+# Not part of OCM spec
+apiVersion: config.ocm.software/v1alpha1
+kind: ConfigData
+metadata:
+  name: ocm-config
+localization:
+  - name: image
+    file: deployment.yaml
+    image: spec.template.spec.containers[0].image
+    resource:
+      name: image

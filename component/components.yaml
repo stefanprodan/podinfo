@@ -1,0 +1,27 @@
+# This file describes an OCM component version
+- name: github.com/acme/podinfo
+  version: "v0.0.1"	# Immutable component ID, separate from artifact location
+  provider:
+    name: acme.org
+  resources:		# The artifacts & locations.  Note no aggregation in this example
+    - name: deployment
+      type: Directory
+      input:
+        type: dir
+        path: "../kustomize"
+        excludeFiles: 
+        - kustomization.yaml
+        compress: true
+    - name: config
+      type: PlainText
+      input:
+        type: file
+        path: "config.yaml"
+        compress: true
+    - name: image
+      type: ociImage
+      version: "v0.0.1"
+      access:
+        type: ociArtifact
+        imageReference: gitea-https.gitea/svc/cluster/local/public-org/spodinfo:0.0.1
+
