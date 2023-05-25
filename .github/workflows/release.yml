@@ -15,12 +15,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: sigstore/cosign-installer@main
+      - uses: sigstore/cosign-installer@v3
       - uses: fluxcd/flux2/action@main
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.19.x
+          go-version: 1.20.x
       - name: Setup Helm
         uses: azure/setup-helm@v3
         with:
@@ -50,9 +50,9 @@ jobs:
           if [[ $GITHUB_REF == refs/tags/* ]]; then
             VERSION=${GITHUB_REF/refs\/tags\//}
           fi
-          echo ::set-output name=BUILD_DATE::$(date -u +'%Y-%m-%dT%H:%M:%SZ')
-          echo ::set-output name=VERSION::${VERSION}
-          echo ::set-output name=REVISION::${GITHUB_SHA}
+          echo "BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
+          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
+          echo "REVISION=${GITHUB_SHA}" >> $GITHUB_OUTPUT
       - name: Generate images meta
         id: meta
         uses: docker/metadata-action@v4
@@ -66,6 +66,8 @@ jobs:
       - name: Publish multi-arch image
         uses: docker/build-push-action@v3
         with:
+          sbom: true
+          provenance: true
           push: true
           builder: ${{ steps.buildx.outputs.name }}
           context: .
@@ -91,12 +93,12 @@ jobs:
         env:
           COSIGN_EXPERIMENTAL: 1
         run: |
-          cosign sign docker.io/stefanprodan/podinfo:${{ steps.prep.outputs.VERSION }}
-          cosign sign ghcr.io/stefanprodan/podinfo:${{ steps.prep.outputs.VERSION }}
-          cosign sign ghcr.io/stefanprodan/charts/podinfo:${{ steps.prep.outputs.VERSION }}
-          cosign sign ghcr.io/stefanprodan/manifests/podinfo:${{ steps.prep.outputs.VERSION }}
+          cosign sign docker.io/stefanprodan/podinfo:${{ steps.prep.outputs.VERSION }} --yes
+          cosign sign ghcr.io/stefanprodan/podinfo:${{ steps.prep.outputs.VERSION }} --yes
+          cosign sign ghcr.io/stefanprodan/charts/podinfo:${{ steps.prep.outputs.VERSION }} --yes
+          cosign sign ghcr.io/stefanprodan/manifests/podinfo:${{ steps.prep.outputs.VERSION }} --yes
       - name: Publish base image
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3
         with:
           push: true
           builder: ${{ steps.buildx.outputs.name }}
@@ -118,8 +120,8 @@ jobs:
       - name: Sign config artifact
         run: |
           echo "$COSIGN_KEY" > /tmp/cosign.key
-          cosign sign -key /tmp/cosign.key ghcr.io/stefanprodan/podinfo-deploy:${{ steps.prep.outputs.VERSION }}
-          cosign sign -key /tmp/cosign.key ghcr.io/stefanprodan/podinfo-deploy:latest
+          cosign sign -key /tmp/cosign.key ghcr.io/stefanprodan/podinfo-deploy:${{ steps.prep.outputs.VERSION }} --yes
+          cosign sign -key /tmp/cosign.key ghcr.io/stefanprodan/podinfo-deploy:latest --yes
         env:
           COSIGN_PASSWORD: ${{secrets.COSIGN_PASSWORD}}
           COSIGN_KEY: ${{secrets.COSIGN_KEY}}
@@ -129,7 +131,7 @@ jobs:
           echo 'CHANGELOG' > /tmp/release.txt
           github-release-notes -org stefanprodan -repo podinfo -since-latest-release >> /tmp/release.txt
       - name: Publish release
-        uses: goreleaser/goreleaser-action@v3
+        uses: goreleaser/goreleaser-action@v4
         with:
           version: latest
           args: release --release-notes=/tmp/release.txt --skip-validate

@@ -8,7 +8,7 @@ backends: []
 
 image:
   repository: ghcr.io/stefanprodan/podinfo
-  tag: 6.3.0
+  tag: 6.3.6
   pullPolicy: IfNotPresent
 
 ui:
@@ -153,5 +153,12 @@ probes:
     initialDelaySeconds: 1
     timeoutSeconds: 5
     failureThreshold: 3
+    successThreshold: 1
+    periodSeconds: 10
+  startup:
+    enable: false
+    initialDelaySeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 20
     successThreshold: 1
     periodSeconds: 10

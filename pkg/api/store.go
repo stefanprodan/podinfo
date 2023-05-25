@@ -3,8 +3,9 @@ package api
 import (
 	"crypto/sha1"
 	"encoding/hex"
-	"io/ioutil"
+	"io"
 	"net/http"
+	"os"
 	"path"
 
 	"github.com/gorilla/mux"
@@ -23,14 +24,14 @@ func (s *Server) storeWriteHandler(w http.ResponseWriter, r *http.Request) {
 	_, span := s.tracer.Start(r.Context(), "storeWriteHandler")
 	defer span.End()
 
-	body, err := ioutil.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		s.ErrorResponse(w, r, span, "reading the request body failed", http.StatusBadRequest)
 		return
 	}
 
 	hash := hash(string(body))
-	err = ioutil.WriteFile(path.Join(s.config.DataPath, hash), body, 0644)
+	err = os.WriteFile(path.Join(s.config.DataPath, hash), body, 0644)
 	if err != nil {
 		s.logger.Warn("writing file failed", zap.Error(err), zap.String("file", path.Join(s.config.DataPath, hash)))
 		s.ErrorResponse(w, r, span, "writing file failed", http.StatusInternalServerError)
@@ -53,7 +54,7 @@ func (s *Server) storeReadHandler(w http.ResponseWriter, r *http.Request) {
 	defer span.End()
 
 	hash := mux.Vars(r)["hash"]
-	content, err := ioutil.ReadFile(path.Join(s.config.DataPath, hash))
+	content, err := os.ReadFile(path.Join(s.config.DataPath, hash))
 	if err != nil {
 		s.logger.Warn("reading file failed", zap.Error(err), zap.String("file", path.Join(s.config.DataPath, hash)))
 		s.ErrorResponse(w, r, span, "reading file failed", http.StatusInternalServerError)

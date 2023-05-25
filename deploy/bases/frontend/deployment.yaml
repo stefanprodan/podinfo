@@ -23,7 +23,7 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: ghcr.io/stefanprodan/podinfo:6.3.0
+        image: ghcr.io/stefanprodan/podinfo:6.3.6
         imagePullPolicy: IfNotPresent
         ports:
         - name: http

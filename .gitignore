@@ -21,3 +21,5 @@ gcloud/
 dist/
 bin/
 cue/cue.mod/gen/
+cue/go.mod
+cue/go.sum
