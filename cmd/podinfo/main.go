@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -244,12 +243,12 @@ func beginStressTest(cpus int, mem int, logger *zap.Logger) {
 			logger.Error("memory stress failed", zap.Error(err))
 		}
 
-		stressMemoryPayload, err = ioutil.ReadFile(path)
+		stressMemoryPayload, err = os.ReadFile(path)
 		f.Close()
 		os.Remove(path)
 		if err != nil {
 			logger.Error("memory stress failed", zap.Error(err))
 		}
-		logger.Info("starting CPU stress", zap.Int("memory", len(stressMemoryPayload)))
+		logger.Info("starting MEMORY stress", zap.Int("memory", len(stressMemoryPayload)))
 	}
 }

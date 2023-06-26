@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptrace"
 	"sync"
@@ -27,7 +27,7 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, span := s.tracer.Start(r.Context(), "echoHandler")
 	defer span.End()
 
-	body, err := ioutil.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		s.logger.Error("reading the request body failed", zap.Error(err))
 		s.ErrorResponse(w, r, span, "invalid request body", http.StatusBadRequest)
@@ -78,7 +78,7 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 				}
 
 				// forward the received body
-				rbody, err := ioutil.ReadAll(resp.Body)
+				rbody, err := io.ReadAll(resp.Body)
 				if err != nil {
 					s.logger.Error(
 						"reading the backend request body failed",

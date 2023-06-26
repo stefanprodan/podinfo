@@ -24,7 +24,10 @@ build:
 	GIT_COMMIT=$$(git rev-list -1 HEAD) && CGO_ENABLED=0 go build  -ldflags "-s -w -X github.com/stefanprodan/podinfo/pkg/version.REVISION=$(GIT_COMMIT)" -a -o ./bin/podcli ./cmd/podcli/*
 
 tidy:
-	rm -f go.sum; go mod tidy -compat=1.18
+	rm -f go.sum; go mod tidy -compat=1.19
+
+vet:
+	go vet ./...
 
 fmt:
 	gofmt -l -s -w ./
@@ -83,7 +86,7 @@ version-set:
 	echo "Version $$next set in code, deployment, chart and kustomize"
 
 release:
-	git tag $(VERSION)
+	git tag -s -m $(VERSION) $(VERSION)
 	git push origin $(VERSION)
 
 swagger:
@@ -94,6 +97,8 @@ swagger:
 
 .PHONY: cue-mod
 cue-mod:
+	@cd cue && go mod init github.com/stefanprodan/podinfo/cue
+	@cd cue && go get k8s.io/api/...
 	@cd cue && cue get go k8s.io/api/...
 
 .PHONY: cue-gen

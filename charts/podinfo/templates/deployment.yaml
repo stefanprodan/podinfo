@@ -129,6 +129,22 @@ spec:
               containerPort: {{ .Values.service.grpcPort }}
               protocol: TCP
             {{- end }}
+          {{- if .Values.probes.startup.enable }}
+          startupProbe:
+            exec:
+              command:
+              - podcli
+              - check
+              - http
+              - localhost:{{ .Values.service.httpPort | default 9898 }}/healthz
+            {{- with .Values.probes.startup }}
+            initialDelaySeconds: {{ .initialDelaySeconds | default 1 }}
+            timeoutSeconds: {{ .timeoutSeconds | default 5 }}
+            failureThreshold: {{ .failureThreshold | default 3 }}
+            successThreshold: {{ .successThreshold | default 1 }}
+            periodSeconds: {{ .periodSeconds | default 10 }}
+            {{- end }}
+            {{- end }}
           livenessProbe:
             exec:
               command:

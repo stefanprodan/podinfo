@@ -2,8 +2,8 @@ package fscache
 
 import (
 	"errors"
-	"io/ioutil"
 	"log"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -77,7 +77,7 @@ func (w *Watcher) Watch() {
 // updateCache reads files content and loads them into the cache
 func (w *Watcher) updateCache() error {
 	fileMap := make(map[string]string)
-	files, err := ioutil.ReadDir(w.dir)
+	files, err := os.ReadDir(w.dir)
 	if err != nil {
 		return err
 	}
@@ -86,7 +86,7 @@ func (w *Watcher) updateCache() error {
 	for _, file := range files {
 		name := filepath.Base(file.Name())
 		if !file.IsDir() && !strings.Contains(name, "..") {
-			b, err := ioutil.ReadFile(filepath.Join(w.dir, file.Name()))
+			b, err := os.ReadFile(filepath.Join(w.dir, file.Name()))
 			if err != nil {
 				return err
 			}

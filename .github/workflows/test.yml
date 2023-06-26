@@ -6,6 +6,12 @@ on:
     branches:
       - 'master'
 
+permissions:
+  contents: read
+
+env:
+  KUBERNETES_VERSION: 1.26.0
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -21,11 +27,28 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.19.x
+          go-version: 1.20.x
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: v${{ env.KUBERNETES_VERSION }}
+      - name: Setup kubeconform
+        uses: ./.github/actions/kubeconform
+      - name: Setup Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: v3.10.3
       - name: Setup CUE
         uses: cue-lang/setup-cue@main
       - name: Run unit tests
         run: make test
+      - name: Validate Helm chart
+        run: |
+          helm lint ./charts/podinfo/
+          helm template ./charts/podinfo/ | kubeconform -strict -summary -kubernetes-version ${{ env.KUBERNETES_VERSION }}
+      - name: Validate Kustomize overlay
+        run: |
+          kubectl kustomize ./kustomize/ | kubeconform -strict -summary -kubernetes-version ${{ env.KUBERNETES_VERSION }}
       - name: Generate CUE definitions
         run: make cue-mod
       - name: Verify CUE formatting
@@ -41,25 +64,12 @@ jobs:
           }
       - name: Validate CUE
         working-directory: ./cue
-        run: cue vet --all-errors --concrete .
+        run: |
+          cue vet --all-errors --concrete .
+          cue gen | kubeconform -strict -summary -skip=ServiceMonitor -kubernetes-version ${{ env.KUBERNETES_VERSION }}
       - name: Check if working tree is dirty
         run: |
           if [[ $(git diff --stat) != '' ]]; then
             echo 'run make test and commit changes'
             exit 1
           fi
-      - name: Validate Helm chart
-        uses: stefanprodan/kube-tools@v1
-        with:
-          kubectl: 1.19.11
-          helm: 2.17.0
-          helmv3: 3.6.0
-          command: |
-            helmv3 template ./charts/podinfo | kubeval --strict --kubernetes-version 1.19.11 --schema-location https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master
-      - name: Validate kustomization
-        uses: stefanprodan/kube-tools@v1
-        with:
-          kubectl: 1.19.11
-          command: |
-            kustomize build ./kustomize | kubeval --strict --kubernetes-version 1.19.11 --schema-location https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master
-            kustomize build ./kustomize | conftest test -p .github/policy -

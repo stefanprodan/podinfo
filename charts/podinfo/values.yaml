@@ -8,7 +8,7 @@ backends: []
 
 image:
   repository: ghcr.io/stefanprodan/podinfo
-  tag: 6.2.2
+  tag: 6.4.0
   pullPolicy: IfNotPresent
 
 ui:
@@ -87,7 +87,7 @@ cache: ""
 redis:
   enabled: false
   repository: redis
-  tag: 6.0.8
+  tag: 7.0.7
 
 serviceAccount:
   # Specifies whether a service account should be created
@@ -153,5 +153,12 @@ probes:
     initialDelaySeconds: 1
     timeoutSeconds: 5
     failureThreshold: 3
+    successThreshold: 1
+    periodSeconds: 10
+  startup:
+    enable: false
+    initialDelaySeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 20
     successThreshold: 1
     periodSeconds: 10
