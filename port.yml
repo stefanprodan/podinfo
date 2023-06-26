@@ -1,0 +1,99 @@
+# Description: The port.yml file is the main file of the port gitOps.
+# It contains all the information about the components that are part of the system.
+
+# domain
+- identifier: orders
+  title: Orders
+  blueprint: domain
+  properties:
+    description: The orders domain is responsible for managing the process of enrolling and maintaining customers in a orders service. This may include tasks such as handling orders, payments, and customer support.
+    architecture: https://lucid.app/documents/embedded/c3d64493-a5fe-4b18-98d5-66d355080de3#
+    techSpec: https://notioniframe.com/notion/cd2q9rpo7la
+    domainDocs: https://confluence.com/orders
+    slackChannel: https://slack.com/orders
+# systems
+- identifier: cart
+  title: Cart
+  blueprint: system
+  properties:
+    description: The cart is a system that contains all the cart related products with the ability to add, remove, and update products within the Customers card.
+    architecture: https://lucid.app/documents/embedded/c3d64493-a5fe-4b18-98d5-66d355080de3#
+    slackChannel: https://slack.com/cart
+  relations:
+    domain: "orders"
+- identifier: product
+  title: Product
+  blueprint: system
+  properties:
+    description: The product is a system that contains all the product related products with the ability to add, remove, and update products.
+    architecture: https://lucid.app/documents/embedded/c3d64493-a5fe-4b18-98d5-66d355080de3#
+    slackChannel: https://slack.com/product
+  relations:
+    domain: "orders"
+# resources
+- identifier: cartSqlDb
+  title: Cart SQL DB
+  blueprint: resource
+  properties:
+    type: database
+    cloudProvider: AWS
+    numberOfReplicas: 3
+# apis
+- identifier: cartApi
+  title: Cart Api
+  blueprint: api
+  properties:
+    type: Open API
+    swagger: https://petstore.swagger.io/v2/swagger.json
+# components
+- identifier: coreKafkaLibrary
+  title: Core Kafka Library
+  blueprint: component
+  properties:
+    type: library
+    tier: Other
+    language: Node
+    lifecycle: Production
+    url: https://example.com
+    slackChannel: https://slack.com/channel
+- identifier: corePaymentLibrary
+  title: Core Payment Library
+  blueprint: component
+  properties:
+    type: library
+    tier: Other
+    language: Node
+    lifecycle: Production
+    url: https://example.com
+    slackChannel: https://slack.com/channel
+- identifier: cartService
+  title: Cart Service
+  blueprint: component
+  properties:
+    type: service
+    tier: Customer Facing
+    lifecycle: Production
+    language: Node
+    url: https://example.com
+    slackChannel: https://slack.com/channel
+  relations:
+    system: "cart"
+    resources: ["cartSqlDb"]
+    consumesApi: []
+    providesApi: "cartApi"
+    components: ["coreKafkaLibrary", "corePaymentLibrary"]
+- identifier: productService
+  title: Products Service
+  blueprint: component
+  properties:
+    type: service
+    tier: Customer Facing
+    lifecycle: Production
+    language: GO
+    url: https://example.com
+    slackChannel: https://slack.com/channel
+  relations:
+    system: "product"
+    resources: []
+    consumesApi: ["cartApi"]
+    components: ["coreKafkaLibrary", "corePaymentLibrary"]
