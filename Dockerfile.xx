@@ -28,7 +28,7 @@ RUN xx-go build -ldflags "-s -w \
     -X github.com/stefanprodan/podinfo/pkg/version.REVISION=${REVISION}" \
     -a -o bin/podcli cmd/podcli/*
 
-FROM alpine:3.17
+FROM alpine:3.18
 
 ARG BUILD_DATE
 ARG VERSION
