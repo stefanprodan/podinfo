@@ -86,7 +86,7 @@ version-set:
 	echo "Version $$next set in code, deployment, chart and kustomize"
 
 release:
-	git tag $(VERSION)
+	git tag -s -m $(VERSION) $(VERSION)
 	git push origin $(VERSION)
 
 swagger:
