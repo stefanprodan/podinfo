@@ -16,7 +16,7 @@ Specifications:
 * Graceful shutdown on interrupt signals
 * File watcher for secrets and configmaps
 * Instrumented with Prometheus and Open Telemetry
-* Structured logging with zap 
+* Structured logging with zap
 * 12-factor app with viper
 * Fault injection (random errors and latency)
 * Swagger docs
@@ -30,7 +30,7 @@ Specifications:
 Web API:
 
 * `GET /` prints runtime information
-* `GET /version` prints podinfo version and git commit hash 
+* `GET /version` prints podinfo version and git commit hash
 * `GET /metrics` return HTTP requests duration and Go runtime metrics
 * `GET /healthz` used by Kubernetes liveness probe
 * `GET /readyz` used by Kubernetes readiness probe
@@ -38,7 +38,7 @@ Web API:
 * `POST /readyz/disable` signals the Kubernetes LB to stop sending requests to this instance
 * `GET /status/{code}` returns the status code
 * `GET /panic` crashes the process with exit code 255
-* `POST /echo` forwards the call to the backend service and echos the posted content 
+* `POST /echo` forwards the call to the backend service and echos the posted content
 * `GET /env` returns the environment variables as a JSON array
 * `GET /headers` returns a JSON with the request HTTP headers
 * `GET /delay/{seconds}` waits for the specified period
@@ -97,6 +97,7 @@ helm upgrade --install --wait backend \
 --namespace test \
 --set redis.enabled=true \
 podinfo/podinfo
+
 ```
 
 Install from ghcr.io:
@@ -104,18 +105,21 @@ Install from ghcr.io:
 ```bash
 helm upgrade --install --wait podinfo --namespace default \
 oci://ghcr.io/stefanprodan/charts/podinfo
+
 ```
 
 #### Kustomize
 
 ```bash
 kubectl apply -k github.com/stefanprodan/podinfo//kustomize
+
 ```
 
 #### Docker
 
 ```bash
 docker run -dp 9898:9898 stefanprodan/podinfo
+
 ```
 
 ### Continuous Delivery
@@ -127,6 +131,7 @@ Install the Flux CLI on MacOS and Linux using Homebrew:
 
 ```sh
 brew install fluxcd/tap/flux
+
 ```
 
 Install the Flux controllers needed for Helm operations:
@@ -136,6 +141,7 @@ flux install \
 --namespace=flux-system \
 --network-policy=false \
 --components=source-controller,helm-controller
+
 ```
 
 Add podinfo's Helm repository to your cluster and
@@ -146,6 +152,7 @@ flux create source helm podinfo \
 --namespace=default \
 --url=https://stefanprodan.github.io/podinfo \
 --interval=10m
+
 ```
 
 Create a `podinfo-values.yaml` file locally:
@@ -160,6 +167,7 @@ resources:
     cpu: 100m
     memory: 64Mi
 EOL
+
 ```
 
 Create a Helm release for deploying podinfo in the default namespace:
@@ -172,6 +180,7 @@ flux create helmrelease podinfo \
 --chart=podinfo \
 --chart-version=">5.0.0" \
 --values=podinfo-values.yaml
+
 ```
 
 Based on the above definition, Flux will upgrade the release automatically
@@ -183,6 +192,7 @@ You can check what version is currently deployed with:
 
 ```sh
 flux get helmreleases -n default
+
 ```
 
 To delete podinfo's Helm repository and release from your cluster run:
@@ -190,8 +200,11 @@ To delete podinfo's Helm repository and release from your cluster run:
 ```sh
 flux -n default delete source helm podinfo
 flux -n default delete helmrelease podinfo
+
 ```
 
 If you wish to manage the lifecycle of your applications in a **GitOps** manner, check out
 this [workflow example](https://github.com/fluxcd/flux2-kustomize-helm-example)
 for multi-env deployments with Flux, Kustomize and Helm.
+
+2
