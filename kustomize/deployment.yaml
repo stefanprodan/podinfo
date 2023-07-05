@@ -23,7 +23,7 @@ spec:
     spec:
       containers:
       - name: podinfod
-        image: ghcr.io/stefanprodan/podinfo:6.4.0
+        image: harbor.huaruicloud.cn/tkg/podinfo:latest
         imagePullPolicy: IfNotPresent
         ports:
         - name: http
