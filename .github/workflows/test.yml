@@ -5,7 +5,7 @@ on:
 
 jobs:
   debug-branch-name:
-    runs-on: ubuntu-latest-private
+    runs-on: ubuntu-latest
     steps:
       # Printout GHAction variablesdd
       - name: Print GHAction variables
