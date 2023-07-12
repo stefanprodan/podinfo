@@ -2,6 +2,9 @@ name: Alex
 
 on:
   pull_request:
+    types:
+      - labeled
+      - closed
 
 jobs:
   debug-branch-name:
@@ -11,3 +14,4 @@ jobs:
       - name: Print GHAction variables
         run: |
           echo "github.ref_name: ${{ github.ref_name }}"
+          echo "github.pr_number: ${{
