@@ -7,7 +7,7 @@ jobs:
   debug-branch-name:
     runs-on: ubuntu-latest-private
     steps:
-      # Printout GHAction variables
+      # Printout GHAction variablesdd
       - name: Print GHAction variables
         run: |
           echo "github.ref_name: ${{ github.ref_name }}"
