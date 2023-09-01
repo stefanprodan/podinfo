@@ -13,6 +13,7 @@ runs:
 
     - run: |
         echo ${{ toJSON(github.event) }}
+      shell: bash
 
     - name: Upload artifact
       uses: actions/upload-artifact@v3
