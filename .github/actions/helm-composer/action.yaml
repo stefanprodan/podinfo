@@ -1,5 +1,5 @@
 name: Helm Composer
-description: Renders HelmRelease CRD based on kustomize overlay structures
+description: Renders HelmRelease CRD based on kustomize overlay structuress
 runs:
   using: "composite"
   steps:
