@@ -1,0 +1,161 @@
+# This is a basic workflow to help you get started with Actions
+name: Helm Deployer
+
+# Controls when the workflow will run
+on: 
+  workflow_call:
+    inputs:
+      repository:
+        description: Flux repository to open PR against
+        type: string
+        required: true
+      cluster:
+        type: string
+        description: Cluster to modify HelmRelease in
+        required: true
+      namespace:
+        type: string
+        description: Namespace to modify HelmRelease in
+        required: true
+      artifact_name:
+        type: string
+        description: artifact name
+        default: 'rendered-helmreleases'
+    secrets:
+      token:
+        required: true
+        description: Token to access flux repo
+      
+
+jobs:
+
+  helm-deployer:
+
+    defaults:
+      run:
+        shell: bash
+
+    runs-on: ubuntu-latest
+    permissions:
+      issues: read
+      checks: write
+      packages: write
+      actions: read
+      contents: write  # for actions/checkout to fetch code
+      pull-requests: write
+
+    steps:
+
+    - name: 'Checkout Source Code'
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+        repository: evveryaaaa/${{ inputs.repository }}
+        token: ${{ secrets.token }}
+    
+    - name: 'Download rendered templates'
+      uses: actions/download-artifact@v3
+      with:
+        name: ${{ inputs.artifact_name }}
+
+    - name: 'Get branch Name'
+      uses: actions/github-script@v6
+      id: branch_naming
+      env:
+        master_suffix: ${{ github.event_name == 'push' && github.ref_name == 'master' && '-master' || '' }}
+      with:
+        retries: 3
+        script: |
+
+          // Set loop control variable
+          var completed = false
+
+          core.setOutput('pr_available','false')
+
+          // Find project PR that generated this master commit and set branch name
+          core.info('Listing pull requests to find the match of this commit')
+          for await (const response of github.paginate.iterator(
+            github.rest.pulls.list,
+            {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'all',
+              base: 'master',
+            }
+          )){
+            
+
+            for (const pull of response.data){
+              if (pull.merge_commit_sha == context.sha){
+                core.info('Matching pull request found, generating step outputs')
+                core.setOutput('branch_name',`${pull.head.ref}-${context.repo.repo}${process.env.master_suffix}`)
+                core.setOutput('pr_url', pull.html_url)
+                core.info('Outputs branch_name and pr_url have been generated successfully')
+                completed = true
+                break
+              }
+            }
+
+            if (completed){
+              break
+            }
+            
+          }
+
+          core.info('Requesting commit info to access commit url')
+          const commit_info = await github.rest.repos.getCommit({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: context.sha
+              })
+
+          core.setOutput('commit_url',`${commit_info.data.html_url}`)
+          core.info('Output commit_url has been generated successfully')
+
+          // If no PR is found set branch name to feature/<project>-<sha>
+
+          if (!completed){
+            core.setOutput('branch_name',`feature/${context.repo.repo}-${context.sha}`)
+            core.info('No matching PR was found, using default branch naming (feature/<project>-<sha>)')
+          }
+
+    - name: 'Copy development template to proper route (PR)'
+      if: github.event_name != 'push'
+      id: copy_file_pr
+      env:
+        MICROSERVICE: ${{ github.repository }}
+        CLUSTER: ${{ inputs.cluster }}
+        NAMESPACE: ${{ inputs.namespace }}
+      run: |
+        ls -la
+        cp podinfo-* clusters/"${CLUSTER}"/"${NAMESPACE}"/
+        rm podinfo-*
+
+        
+    - name: 'Copy development template to proper route (master)'
+      if: github.event_name == 'push'
+      id: copy_file
+      env:
+        MICROSERVICE: ${{ github.repository }}
+        CLUSTER: ${{ inputs.cluster }}
+        NAMESPACE: ${{ inputs.namespace }}
+      run: |
+        cp internal/* clusters/"${CLUSTER}"/"${NAMESPACE}"/
+        rm podinfo-*
+
+    - name: 'Create Pull Request'
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ secrets.token }}
+        add-paths: 'clusters/${{ inputs.cluster }}/${{ inputs.namespace }}/*'
+        commit-message: 'Automatic update clusters/${{ inputs.cluster }}/${{ inputs.namespace }}/${{ steps.copy_file_pr.outputs.MICROSERVICE }} file via ${{ github.repository }} repository event'
+        body: ${{ format('Automatic HelmRelease CRD updating via {0} repository event.{1}{2}', github.repository, steps.branch_naming.outputs.pr_url != '' && format(' [Associated PR]({0}).', steps.branch_naming.outputs.pr_url ) || '',  steps.branch_naming.outputs.commit_url != '' && format(' [Associated Commit]({0}).', steps.branch_naming.outputs.commit_url) || '') }}
+        title: ${{ steps.branch_naming.outputs.branch_name }}
+        branch: ${{ steps.branch_naming.outputs.branch_name }}
+        delete-branch: true
+
+
+
+  
+
+
