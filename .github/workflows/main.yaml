@@ -47,7 +47,6 @@ jobs:
     - uses: ./.github/actions/helm-composer
 
   deployer:
-    if: github.event_name != 'pull_request'
     needs: composer
     permissions:
       issues: read
