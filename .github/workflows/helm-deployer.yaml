@@ -120,7 +120,7 @@ jobs:
           }
 
     - name: 'Copy development template to proper route (PR)'
-      if: github.event_name == 'pull_request'
+      if: github.event_name != 'push'
       id: copy_file_pr
       env:
         MICROSERVICE: ${{ github.repository }}
