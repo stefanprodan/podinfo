@@ -127,7 +127,8 @@ jobs:
         CLUSTER: ${{ inputs.cluster }}
         NAMESPACE: ${{ inputs.namespace }}
       run: |
-        cp internal/* clusters/"${CLUSTER}"/"${NAMESPACE}"/
+        ls -la
+        cp podinfo-* clusters/"${CLUSTER}"/"${NAMESPACE}"/
         rm podinfo-*
 
         
