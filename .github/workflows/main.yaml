@@ -9,6 +9,7 @@ on:
     branches: [ "master" ]
   pull_request:
     branches: [ "master" ]
+  merge_group:
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -46,6 +47,7 @@ jobs:
     - uses: ./.github/actions/helm-composer
 
   deployer:
+    if: github.event_name != 'pull_request'
     needs: composer
     permissions:
       issues: read

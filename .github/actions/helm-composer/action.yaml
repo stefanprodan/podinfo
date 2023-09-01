@@ -9,7 +9,7 @@ runs:
         files: '["internal/*.yaml"]'
       env:
         version: 3
-        prcommit: ${{ github.event.pull_request.head.sha }}
+        prcommit: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
 
     - name: Upload artifact
       uses: actions/upload-artifact@v3
