@@ -1,0 +1,19 @@
+name: Helm Composer
+description: Renders HelmRelease CRD based on kustomize overlay structures
+runs:
+  using: "composite"
+  steps:
+
+    - uses: cschleiden/replace-tokens@v1
+      with:
+        files: '["internal/*.yaml"]'
+      env:
+        version: 3
+        prcommit: ${{{ github.sha }}}
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: rendered-helmreleases
+        path: ./internal/
+        retention-days: 90
