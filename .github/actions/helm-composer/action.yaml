@@ -12,7 +12,7 @@ runs:
         prcommit: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
 
     - run: |
-        echo ${{ toJSON(github.event) }}
+        echo '${{ toJSON(github.event) }}'
       shell: bash
 
     - name: Upload artifact
