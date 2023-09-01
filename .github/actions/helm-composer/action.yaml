@@ -11,6 +11,9 @@ runs:
         version: 3
         prcommit: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
 
+    - run: |
+        echo ${{ toJSON(github.event) }}
+
     - name: Upload artifact
       uses: actions/upload-artifact@v3
       with:
