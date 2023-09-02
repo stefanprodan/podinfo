@@ -60,13 +60,18 @@ jobs:
         retries: 3
         script: |
 
-          const protection = await github.rest.repos.getBranchProtection({
+          for await (const pull_requests of github.paginate.iterator(
+            octokit.rest.issues.listForRepo,
+            {
               owner: context.repo.owner,
               repo: context.repo.repo,
-              branch: context.payload.pull_request.base.ref,
-            });
-
-          console.log(JSON.stringify(protection.data))
+              state: 'closed',
+              base: context.payload.pull_request.base.ref
+            },
+          )) {
+            
+            console.log(pull_requests)
+          }
 
   cd:
 
