@@ -58,22 +58,6 @@ jobs:
       with:
         name: ${{ inputs.artifact_name }}
 
-
-    - name: 'Skip flux notification check status'
-      if: github.event_name == 'pull_request'
-      uses: actions/github-script@v6
-      with:
-        retries: 3
-        script: |
-
-          const statuses = await github.rest.repos.listCommitStatusesForRef({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            ref: context.payload.pull_request.head.sha,
-          });
-
-          console.log(statuses)
-
     - name: 'Get branch Name'
       uses: actions/github-script@v6
       id: branch_naming
