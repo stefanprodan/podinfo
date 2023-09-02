@@ -69,6 +69,14 @@ jobs:
               base: context.payload.pull_request.base.ref
             },
           )) {
+
+
+            for (const pr of pull_requests.data){
+
+              if (pr.data.merged_at){
+                console.log('hola')
+              }
+            }
             
             console.log(pull_requests)
           }
