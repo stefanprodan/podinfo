@@ -73,7 +73,7 @@ jobs:
 
             for (const pr of pull_requests.data){
 
-              if (pr.data.merged_at){
+              if (pr.merged_at){
                 console.log('hola')
               }
             }
