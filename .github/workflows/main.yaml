@@ -61,7 +61,7 @@ jobs:
         script: |
 
           for await (const pull_requests of github.paginate.iterator(
-            octokit.rest.issues.listForRepo,
+            github.rest.issues.listForRepo,
             {
               owner: context.repo.owner,
               repo: context.repo.repo,
