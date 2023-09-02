@@ -68,6 +68,15 @@ jobs:
 
           console.log(JSON.stringify(statuses.data))
 
+
+          const pr = await github.rest.pulls.get({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            pull_number: context.payload.number,
+          });
+
+          console.log(JSON.stringify(pr.data))
+
   cd:
 
     if: github.event_name != 'pull_request'
