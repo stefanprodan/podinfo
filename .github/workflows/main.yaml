@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: CI
+name: CI-CD
 
 # Controls when the workflow will run
 on:
@@ -35,7 +35,7 @@ on:
 #           token: ${{ secrets.FLUX_REPO_TOKEN }}
 jobs:
 
-  composer:
+  ci:
     runs-on: ubuntu-latest
     steps:
 
@@ -44,10 +44,21 @@ jobs:
       with:
         fetch-depth: 0
 
+    - uses: cschleiden/replace-tokens@v1
+      with:
+        files: '["internal/*.yaml"]'
+      env:
+        version: 3 #for us this would be output release from version job
+        prcommit: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
     - uses: ./.github/actions/helm-composer
 
-  deployer:
-    needs: composer
+  cd:
+
+    if: github.event_name != 'pull_request'
+
+    needs: ci
+
     permissions:
       issues: read
       checks: write
@@ -55,10 +66,14 @@ jobs:
       actions: read
       contents: write  # for actions/checkout to fetch code
       pull-requests: write
+
     uses: ./.github/workflows/helm-deployer.yaml
+
     with:
       repository: fleet-infra
-      cluster: my-cluster
+      cluster: ${{ github.event_name == 'merge_group' && 'my-cluster' || 'main-cluster' }}
       namespace: namespace01
+      artifact_name: ${{ github.event_name == 'merge_group' && 'internal-gitops' || 'rendered-helmreleases' }}
+
     secrets:
       token: ${{ secrets.FLUX_REPO_TOKEN }}

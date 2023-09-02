@@ -6,7 +6,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 1m0s
-  path: ./kustomize
+  path: ./templates/development
   prune: true
   sourceRef:
     kind: GitRepository

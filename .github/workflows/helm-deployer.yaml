@@ -58,6 +58,22 @@ jobs:
       with:
         name: ${{ inputs.artifact_name }}
 
+
+    - name: 'Skip flux notification check status'
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v6
+      with:
+        retries: 3
+        script: |
+
+          const statuses = await github.rest.repos.listCommitStatusesForRef({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            ref: context.payload.pull_request.head.sha,
+          });
+
+          console.log(statuses)
+
     - name: 'Get branch Name'
       uses: actions/github-script@v6
       id: branch_naming
@@ -119,36 +135,25 @@ jobs:
             core.info('No matching PR was found, using default branch naming (feature/<project>-<sha>)')
           }
 
-    - name: 'Copy development template to proper route (PR)'
+    - name: 'Copy files to proper route'
       if: github.event_name != 'push'
-      id: copy_file_pr
-      env:
-        MICROSERVICE: ${{ github.repository }}
-        CLUSTER: ${{ inputs.cluster }}
-        NAMESPACE: ${{ inputs.namespace }}
-      run: |
-        ls -la
-        cp podinfo-* clusters/"${CLUSTER}"/"${NAMESPACE}"/
-        rm podinfo-*
-
-        
-    - name: 'Copy development template to proper route (master)'
-      if: github.event_name == 'push'
       id: copy_file
       env:
         MICROSERVICE: ${{ github.repository }}
         CLUSTER: ${{ inputs.cluster }}
         NAMESPACE: ${{ inputs.namespace }}
       run: |
-        cp internal/* clusters/"${CLUSTER}"/"${NAMESPACE}"/
-        rm podinfo-*
+        shopt -s extglob
+        MICROSERVICE="${MICROSERVICE##*/}"
+        cp ${MICROSERVICE}-* clusters/"${CLUSTER}"/"${NAMESPACE}"/
+        rm ${MICROSERVICE}-*
 
     - name: 'Create Pull Request'
       uses: peter-evans/create-pull-request@v5
       with:
         token: ${{ secrets.token }}
         add-paths: 'clusters/${{ inputs.cluster }}/${{ inputs.namespace }}/*'
-        commit-message: 'Automatic update clusters/${{ inputs.cluster }}/${{ inputs.namespace }}/${{ steps.copy_file_pr.outputs.MICROSERVICE }} file via ${{ github.repository }} repository event'
+        commit-message: 'Automatic update clusters/${{ inputs.cluster }}/${{ inputs.namespace }}/${{ steps.copy_file.outputs.MICROSERVICE }} file via ${{ github.repository }} repository event'
         body: ${{ format('Automatic HelmRelease CRD updating via {0} repository event.{1}{2}', github.repository, steps.branch_naming.outputs.pr_url != '' && format(' [Associated PR]({0}).', steps.branch_naming.outputs.pr_url ) || '',  steps.branch_naming.outputs.commit_url != '' && format(' [Associated Commit]({0}).', steps.branch_naming.outputs.commit_url) || '') }}
         title: ${{ steps.branch_naming.outputs.branch_name }}
         branch: ${{ steps.branch_naming.outputs.branch_name }}

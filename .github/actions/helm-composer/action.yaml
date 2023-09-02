@@ -4,16 +4,31 @@ runs:
   using: "composite"
   steps:
 
-    - uses: cschleiden/replace-tokens@v1
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
       with:
-        files: '["internal/*.yaml"]'
+        name: internal-gitops
+        path: ./internal/
+        retention-days: 90
+
+    - name: Compose/Render HelmRelease CRD
+      shell: bash
       env:
-        version: 3
-        prcommit: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        MICROSERVICE: ${{ github.repository }}
+      run: |
+        shopt -s extglob
+        mkdir rendered_templates
+        MICROSERVICE="${MICROSERVICE##*/}"
+        echo "MICROSERVICE=${MICROSERVICE}" >> "$GITHUB_ENV"
+        for d in templates/!(base)/   
+        do
+          ENVIRONMENT=$(basename "$d")
+          kubectl kustomize "$d" >> rendered_templates/"${MICROSERVICE}"-release-"$ENVIRONMENT".yaml
+        done
 
     - name: Upload artifact
       uses: actions/upload-artifact@v3
       with:
         name: rendered-helmreleases
-        path: ./internal/
+        path: ./rendered_templates/
         retention-days: 90
