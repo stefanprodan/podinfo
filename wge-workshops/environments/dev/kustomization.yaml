@@ -3,6 +3,8 @@ namespace: podinfo-dev
 images:
 - name:  ghcr.io/stefanprodan/podinfo:6.4.1
   newTag: 6.4.1
+spec:
+  replicas: 2
 resources:
 - ../../../kustomize
 - namespace.yaml
