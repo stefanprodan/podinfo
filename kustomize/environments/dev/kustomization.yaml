@@ -1,0 +1,11 @@
+---
+namespace: podinfo-dev
+images:
+- name:  ghcr.io/stefanprodan/podinfo:6.4.1
+  newTag: v6.4.1
+resources:
+- ../../
+- namespace.yaml
+commonLabels:
+  gitops.pro/environment: dev
+
