@@ -9,3 +9,13 @@ resources:
 commonLabels:
   gitops.pro/environment: dev
 
+patches:
+- target:
+    kind: Deployment
+    name: podinfo
+    #labelSelector: "app=podinfo"
+  patch: |-
+    # add with inline operation
+    - op: replace
+      path: /spec/replicas
+      value: 1
