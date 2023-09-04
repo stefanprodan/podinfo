@@ -1,5 +1,5 @@
 ---
-namespace: podinfo-dev
+namespace: podinfo-staging
 images:
 - name:  ghcr.io/stefanprodan/podinfo:6.4.1
   newTag: 6.4.1
@@ -7,7 +7,7 @@ resources:
 - ../../../kustomize
 - namespace.yaml
 commonLabels:
-  gitops.pro/environment: dev
+  gitops.pro/environment: staging
 
 patches:
 - target:
@@ -18,4 +18,4 @@ patches:
     # add with inline operation
     - op: replace
       path: /spec/replicas
-      value: 1 
+      value: 2
