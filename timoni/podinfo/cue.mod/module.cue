@@ -1,0 +1,1 @@
+module: "timoni.sh/podinfo"
