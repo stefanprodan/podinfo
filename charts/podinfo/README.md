@@ -51,7 +51,7 @@ The command removes all the Kubernetes components associated with the chart and 
 The following tables lists the configurable parameters of the podinfo chart and their default values.
 
 | Parameter                         | Default                | Description                                                                                                            |
-|-----------------------------------|------------------------|------------------------------------------------------------------------------------------------------------------------|
+| --------------------------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | `replicaCount`                    | `1`                    | Desired number of pods                                                                                                 |
 | `logLevel`                        | `info`                 | Log level: `debug`, `info`, `warn`, `error`                                                                            |
 | `backend`                         | `None`                 | Echo backend URL                                                                                                       |
@@ -94,6 +94,7 @@ The following tables lists the configurable parameters of the podinfo chart and 
 | `serviceMonitor.additionalLabels` | `{}`                   | Add additional labels to the service monitor                                                                           |
 | `ingress.enabled`                 | `false`                | Enables Ingress                                                                                                        |
 | `ingress.className `              | `""`                   | Use ingressClassName                                                                                                   |
+| `ingress.additionalLabels`        | `{}`                   | Add additional labels to the ingress                                                                                   |
 | `ingress.annotations`             | `{}`                   | Ingress annotations                                                                                                    |
 | `ingress.hosts`                   | `[]`                   | Ingress accepted hosts                                                                                                 |
 | `ingress.tls`                     | `[]`                   | Ingress TLS configuration                                                                                              |
@@ -127,4 +128,3 @@ $ helm install my-release podinfo/podinfo -f values.yaml
 ```
 
 > **Tip**: You can use the default [values.yaml](values.yaml)
-

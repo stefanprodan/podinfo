@@ -100,6 +100,7 @@ securityContext: {}
 ingress:
   enabled: false
   className: ""
+  additionalLabels: {}
   annotations: {}
     # kubernetes.io/ingress.class: nginx
     # kubernetes.io/tls-acme: "true"
