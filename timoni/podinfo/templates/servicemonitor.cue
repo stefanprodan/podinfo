@@ -18,7 +18,7 @@ import (
 		endpoints: [{
 			path:     "/metrics"
 			port:     "http-metrics"
-			interval: _config.monitoring.interval
+			interval: "\(_config.monitoring.interval)s"
 		}]
 		namespaceSelector: matchNames: [_config.metadata.namespace]
 		selector: matchLabels: _config.metadata.labelSelector

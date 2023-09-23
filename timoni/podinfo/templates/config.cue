@@ -16,7 +16,7 @@ import (
 	metadata: version: moduleVersion
 
 	// Deployment
-	replicas: *1 | int & >0
+	replicas: *1 | int & >=0
 
 	// Pod
 	podAnnotations?: {[ string]: string}
@@ -33,7 +33,11 @@ import (
 	securityContext?: corev1.#SecurityContext
 
 	// Service
-	service: port: *80 | int & >0 & <=65535
+	service: {
+		port: *80 | int & >0 & <=65535
+		annotations?: {[ string]: string}
+		labels?: {[ string]: string}
+	}
 
 	// HorizontalPodAutoscaler (optional)
 	autoscaling: {
@@ -50,13 +54,14 @@ import (
 		tls:     *false | bool
 		host:    *"podinfo.local" | string
 		annotations?: {[ string]: string}
+		labels?: {[ string]: string}
 		className?: string
 	}
 
 	// ServiceMonitor (optional)
 	monitoring: {
 		enabled:  *false | bool
-		interval: *"15s" | string
+		interval: *15 | int & >=5 & <=3600
 	}
 
 	// Caching (optional)

@@ -118,10 +118,10 @@ values: {
 
 ### Monitoring values
 
-| Key                     | Type     | Default | Description                                                                   |
-|-------------------------|----------|---------|-------------------------------------------------------------------------------|
-| `monitoring: enabled:`  | `bool`   | `false` | Enable [Prometheus ServiceMonitor](https://prometheus-operator.dev/) creation |
-| `monitoring: interval:` | `string` | `15s`   | Prometheus scrape interval                                                    |
+| Key                     | Type   | Default | Description                                                                   |
+|-------------------------|--------|---------|-------------------------------------------------------------------------------|
+| `monitoring: enabled:`  | `bool` | `false` | Enable [Prometheus ServiceMonitor](https://prometheus-operator.dev/) creation |
+| `monitoring: interval:` | `int`  | `15`    | Prometheus scrape interval in seconds                                         |
 
 ### Cashing values
 

@@ -21,12 +21,22 @@ import (
 		if !_config.autoscaling.enabled {
 			replicas: _config.replicas
 		}
+		strategy: {
+			type: "RollingUpdate"
+			rollingUpdate: maxUnavailable: "50%"
+		}
 		selector: matchLabels: _config.metadata.labelSelector
 		template: {
 			metadata: {
 				labels: _config.metadata.labelSelector
 				if _config.podAnnotations != _|_ {
 					annotations: _config.podAnnotations
+				}
+				if !_config.monitoring.enabled {
+					annotations: {
+						"prometheus.io/scrape": "true"
+						"prometheus.io/port":   "9797"
+					}
 				}
 			}
 			spec: corev1.#PodSpec & {
@@ -40,6 +50,11 @@ import (
 							{
 								name:          "http"
 								containerPort: 9898
+								protocol:      "TCP"
+							},
+							{
+								name:          "http-metrics"
+								containerPort: 9797
 								protocol:      "TCP"
 							},
 						]
@@ -64,6 +79,8 @@ import (
 						command: [
 							"./podinfo",
 							"--level=info",
+							"--port=9898",
+							"--port-metrics=9797",
 							if _config.caching.enabled {
 								"--cache-server=\(_config.caching.redisURL)"
 							},
