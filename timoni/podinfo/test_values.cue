@@ -23,7 +23,7 @@ values: {
 		annotations: "cert-manager.io/cluster-issuer": "letsencrypt"
 	}
 
-	monitoring: enabled: true
+	monitoring: enabled: false
 
 	_mcpu: 100
 	_mem:  128
