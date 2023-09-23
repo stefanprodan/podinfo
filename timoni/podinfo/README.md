@@ -19,7 +19,7 @@ timoni -n default apply podinfo oci://ghcr.io/stefanprodan/modules/podinfo
 To install a specific module version:
 
 ```shell
-timoni -n default apply podinfo oci://ghcr.io/stefanprodan/modules/podinfo -v 6.3.5
+timoni -n default apply podinfo oci://ghcr.io/stefanprodan/modules/podinfo -v 6.5.0
 ```
 
 To change the [default configuration](#configuration),
@@ -129,3 +129,11 @@ values: {
 |----------------------|----------|---------|---------------------------------------------------------|
 | `caching: enabled:`  | `bool`   | `false` | Enable Redis caching                                    |
 | `caching: redisURL:` | `string` | `""`    | Redis URL in the format `tcp://:[password]@host[:port]` |
+
+### UI values
+
+| Key            | Type     | Default   | Description      |
+|----------------|----------|-----------|------------------|
+| `ui: color:`   | `string` | `#34577c` | Background color |
+| `ui: message:` | `string` | `""`      | Greeting message |
+| `ui: backend:` | `string` | `""`      | Backend URL      |

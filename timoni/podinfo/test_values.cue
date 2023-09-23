@@ -3,6 +3,8 @@
 package main
 
 values: {
+	ui: backend: "http://backend.default.svc.cluster.local/echo"
+
 	metadata: {
 		labels: "app.kubernetes.io/part-of":   "podinfo"
 		annotations: "app.kubernetes.io/team": "dev"

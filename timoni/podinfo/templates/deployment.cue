@@ -76,6 +76,24 @@ import (
 						if _config.securityContext != _|_ {
 							securityContext: _config.securityContext
 						}
+						env: [
+							{
+								name:  "PODINFO_UI_COLOR"
+								value: _config.ui.color
+							},
+							if _config.ui.message != _|_ {
+								{
+									name:  "PODINFO_UI_MESSAGE"
+									value: _config.ui.message
+								}
+							},
+							if _config.ui.backend != _|_ {
+								{
+									name:  "PODINFO_BACKEND_URL"
+									value: _config.ui.backend
+								}
+							},
+						]
 						command: [
 							"./podinfo",
 							"--level=info",
@@ -83,6 +101,12 @@ import (
 							"--port-metrics=9797",
 							if _config.caching.enabled {
 								"--cache-server=\(_config.caching.redisURL)"
+							},
+						]
+						volumeMounts: [
+							{
+								name:      "data"
+								mountPath: "/data"
 							},
 						]
 					},
@@ -102,6 +126,12 @@ import (
 				if _config.imagePullSecrets != _|_ {
 					imagePullSecrets: _config.imagePullSecrets
 				}
+				volumes: [
+					{
+						name: "data"
+						emptyDir: {}
+					},
+				]
 			}
 		}
 	}

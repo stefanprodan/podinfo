@@ -7,6 +7,13 @@ import (
 
 // Config defines the schema and defaults for the Instance values.
 #Config: {
+	// UI setting
+	ui: {
+		color:    *"#34577c" | string
+		message?: string
+		backend?: string
+	}
+
 	// Runtime version info
 	moduleVersion!: string
 	kubeVersion!:   string
