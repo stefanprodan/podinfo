@@ -3,6 +3,8 @@
 package main
 
 values: {
+	ui: backend: "http://backend.default.svc.cluster.local/echo"
+
 	metadata: {
 		labels: "app.kubernetes.io/part-of":   "podinfo"
 		annotations: "app.kubernetes.io/team": "dev"
@@ -21,7 +23,7 @@ values: {
 		annotations: "cert-manager.io/cluster-issuer": "letsencrypt"
 	}
 
-	monitoring: enabled: true
+	monitoring: enabled: false
 
 	_mcpu: 100
 	_mem:  128

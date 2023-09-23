@@ -12,6 +12,9 @@ import (
 		name:      _config.metadata.name
 		namespace: _config.metadata.namespace
 		labels:    _config.metadata.labels
+		if _config.ingress.labels != _|_ {
+			labels: _config.ingress.labels
+		}
 		if _config.metadata.annotations != _|_ {
 			annotations: _config.metadata.annotations
 		}
