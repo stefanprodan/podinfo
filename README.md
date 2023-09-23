@@ -20,7 +20,7 @@ Specifications:
 * 12-factor app with viper
 * Fault injection (random errors and latency)
 * Swagger docs
-* CUE, Helm and Kustomize installers
+* [Timoni](http://github.com/stefanprodan/timoni), Helm and Kustomize installers
 * End-to-End testing with Kubernetes Kind and Helm
 * Multi-arch container image with Docker buildx and Github Actions
 * Container image signing with Sigstore cosign
@@ -104,6 +104,14 @@ Install from ghcr.io:
 ```bash
 helm upgrade --install --wait podinfo --namespace default \
 oci://ghcr.io/stefanprodan/charts/podinfo
+```
+
+#### Timoni
+
+Install with [Timoni](https://timoni.sh):
+
+```bash
+timoni -n default apply podinfo oci://ghcr.io/stefanprodan/modules/podinfo
 ```
 
 #### Kustomize
