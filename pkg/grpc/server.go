@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/stefanprodan/podinfo/pkg/grpc/echo"
+
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
@@ -30,6 +32,7 @@ func NewServer(config *Config, logger *zap.Logger) (*Server, error) {
 	return srv, nil
 }
 
+
 func (s *Server) ListenAndServe() *grpc.Server {
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%v", s.config.Port))
 	if err != nil {
@@ -38,6 +41,11 @@ func (s *Server) ListenAndServe() *grpc.Server {
 
 	srv := grpc.NewServer()
 	server := health.NewServer()
+	
+	// Register grpc apis
+	echo.RegisterEchoServiceServer(srv, &echoServer{})
+
+
 	reflection.Register(srv)
 	grpc_health_v1.RegisterHealthServer(srv, server)
 	server.SetServingStatus(s.config.ServiceName, grpc_health_v1.HealthCheckResponse_SERVING)
