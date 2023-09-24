@@ -17,17 +17,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
-      - name: Restore Go cache
-        uses: actions/cache@v3
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: ${{ runner.os }}-go-
+        uses: actions/checkout@v4
       - name: Setup Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v4
         with:
           go-version: 1.21.x
+          cache-dependency-path: |
+            **/go.sum
+            **/go.mod
       - name: Setup kubectl
         uses: azure/setup-kubectl@v3
         with:
@@ -39,7 +36,9 @@ jobs:
         with:
           version: v3.10.3
       - name: Setup CUE
-        uses: cue-lang/setup-cue@main
+        uses: cue-lang/setup-cue@v1.0.0
+      - name: Setup Timoni
+        uses: stefanprodan/timoni/actions/setup@main
       - name: Run unit tests
         run: make test
       - name: Validate Helm chart
@@ -49,12 +48,10 @@ jobs:
       - name: Validate Kustomize overlay
         run: |
           kubectl kustomize ./kustomize/ | kubeconform -strict -summary -kubernetes-version ${{ env.KUBERNETES_VERSION }}
-      - name: Generate CUE definitions
-        run: make cue-mod
       - name: Verify CUE formatting
-        working-directory: ./cue
+        working-directory: ./timoni/podinfo
         run: |
-          cue fmt .
+          cue fmt ./..
           status=$(git status . --porcelain)
           [[ -z "$status" ]] || {
             echo "CUE files are not correctly formatted"
@@ -62,11 +59,11 @@ jobs:
             git diff
             exit 1
           }
-      - name: Validate CUE
-        working-directory: ./cue
+      - name: Validate Timoni module
+        working-directory: ./timoni/podinfo
         run: |
-          cue vet --all-errors --concrete .
-          cue gen | kubeconform -strict -summary -skip=ServiceMonitor -kubernetes-version ${{ env.KUBERNETES_VERSION }}
+          timoni mod lint . 
+          timoni build podinfo . -f test_values.cue | kubeconform -strict -summary -skip=ServiceMonitor -kubernetes-version ${{ env.KUBERNETES_VERSION }}
       - name: Check if working tree is dirty
         run: |
           if [[ $(git diff --stat) != '' ]]; then
