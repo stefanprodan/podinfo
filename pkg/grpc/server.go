@@ -13,6 +13,9 @@ import (
 	"google.golang.org/grpc/reflection"
 
 	"github.com/stefanprodan/podinfo/pkg/grpc/version"
+	"github.com/stefanprodan/podinfo/pkg/grpc/status"
+	"github.com/stefanprodan/podinfo/pkg/grpc/panic"
+	"github.com/stefanprodan/podinfo/pkg/grpc/token"
 )
 
 type Server struct {
@@ -47,7 +50,9 @@ func (s *Server) ListenAndServe() *grpc.Server {
 	// Register grpc apis
 	echo.RegisterEchoServiceServer(srv, &echoServer{})
 	version.RegisterVersionServiceServer(srv, &VersionServer{})
-
+	status.RegisterStatusServiceServer(srv, &StatusServer{})
+	panic.RegisterPanicServiceServer(srv, &PanicServer{})
+	token.RegisterTokenServiceServer(srv, &TokenServer{})
 
 	reflection.Register(srv)
 	grpc_health_v1.RegisterHealthServer(srv, server)
