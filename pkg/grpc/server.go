@@ -11,6 +11,8 @@ import (
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
+
+	"github.com/stefanprodan/podinfo/pkg/grpc/version"
 )
 
 type Server struct {
@@ -44,6 +46,7 @@ func (s *Server) ListenAndServe() *grpc.Server {
 	
 	// Register grpc apis
 	echo.RegisterEchoServiceServer(srv, &echoServer{})
+	version.RegisterVersionServiceServer(srv, &VersionServer{})
 
 
 	reflection.Register(srv)
