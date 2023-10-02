@@ -2,6 +2,22 @@ apiVersion: v1
 entries:
   podinfo:
   - apiVersion: v1
+    appVersion: 6.5.1
+    created: "2023-10-02T18:11:27.967050998Z"
+    description: Podinfo Helm chart for Kubernetes
+    digest: c8d9148d7804dff85e86524a00d9676756ba93b8118c885ec0be6166eacada86
+    home: https://github.com/stefanprodan/podinfo
+    kubeVersion: '>=1.23.0-0'
+    maintainers:
+    - email: stefanprodan@users.noreply.github.com
+      name: stefanprodan
+    name: podinfo
+    sources:
+    - https://github.com/stefanprodan/podinfo
+    urls:
+    - https://stefanprodan.github.io/podinfo/podinfo-6.5.1.tgz
+    version: 6.5.1
+  - apiVersion: v1
     appVersion: 6.5.0
     created: "2023-09-23T09:43:02.356972747Z"
     description: Podinfo Helm chart for Kubernetes
@@ -1259,4 +1275,4 @@ entries:
     urls:
     - https://stefanprodan.github.io/podinfo/podinfo-0.1.0.tgz
     version: 0.1.0
-generated: "2023-09-23T09:43:02.354972643Z"
+generated: "2023-10-02T18:11:27.965666906Z"
