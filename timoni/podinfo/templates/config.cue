@@ -19,8 +19,10 @@ import (
 	kubeVersion!:   string
 
 	// Metadata (common to all resources)
-	metadata: timoniv1.#Metadata
-	metadata: version: moduleVersion
+	metadata: timoniv1.#Metadata & {#Version: moduleVersion}
+
+	// Label selector (common to all resources)
+	selector: timoniv1.#Selector & {#Name: metadata.name}
 
 	// Deployment
 	replicas: *1 | int & >=0
