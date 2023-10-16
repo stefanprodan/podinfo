@@ -16,6 +16,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	_ "github.com/stefanprodan/podinfo/pkg/api/docs"
 	"github.com/stefanprodan/podinfo/pkg/fscache"
+	"github.com/stefanprodan/podinfo/pkg/grpc/info"
 	httpSwagger "github.com/swaggo/http-swagger"
 	"github.com/swaggo/swag"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -82,6 +83,7 @@ type Server struct {
 	handler        http.Handler
 	tracer         trace.Tracer
 	tracerProvider *sdktrace.TracerProvider
+	info.UnimplementedInfoServiceServer
 }
 
 func NewServer(config *Config, logger *zap.Logger) (*Server, error) {
