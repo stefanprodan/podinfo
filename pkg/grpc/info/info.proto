@@ -10,8 +10,8 @@ message InfoResponse {
   	string	hostname = 1;
 	string	version = 2;
 	string	revision = 3;
-    string  logo = 4 ;
-	string	color = 5 ;
+    string  color = 4 ;
+	string	logo = 5 ;
 	string	message = 6 ;
 	string	goos = 7;
     string	goarch = 8; 

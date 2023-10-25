@@ -2,9 +2,11 @@ package grpc
 
 import (
 	"context"
+	"log"
 	"os"
-	"go.uber.org/zap"
+
 	pb "github.com/stefanprodan/podinfo/pkg/grpc/panic"
+	"go.uber.org/zap"
 )
 
 type PanicServer struct {
@@ -15,6 +17,8 @@ type PanicServer struct {
 // SayHello implements helloworld.GreeterServer
 
 func (s *PanicServer) Panic(ctx context.Context, req *pb.PanicRequest) (*pb.PanicResponse, error) {
+	
+	if(s.logger == nil) {log.Printf("S.log is nil")}
 	s.logger.Info("Panic command received")
 	os.Exit(225)
 	return &pb.PanicResponse{}, nil

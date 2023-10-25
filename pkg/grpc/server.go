@@ -76,7 +76,7 @@ func (s *Server) ListenAndServe() *grpc.Server {
 	
 	// Register grpc apis
 	echo.RegisterEchoServiceServer(srv, &echoServer{})
-	info.RegisterInfoServiceServer(srv, &infoServer{})
+	info.RegisterInfoServiceServer(srv, &infoServer{config: s.config})
 
 	version.RegisterVersionServiceServer(srv, &VersionServer{})
 	status.RegisterStatusServiceServer(srv, &StatusServer{})
