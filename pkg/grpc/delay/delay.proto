@@ -8,10 +8,10 @@ message DelayRequest {
     int64 seconds = 1;
 }
 
-message DelayResponse {
-    string message = 1;
+message Response {
+    int64 message = 1;
 }
 
 service DelayService {
-    rpc Delay (DelayRequest) returns (DelayResponse) {}
+    rpc Delay (DelayRequest) returns (Response) {}
 }
