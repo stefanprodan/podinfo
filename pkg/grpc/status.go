@@ -4,10 +4,13 @@ import (
 	"context"
 
 	pb "github.com/stefanprodan/podinfo/pkg/grpc/status"
+	"go.uber.org/zap"
 )
 
 type StatusServer struct {
 	pb.UnimplementedStatusServiceServer
+	config *Config
+	logger *zap.Logger
 }
 
 // SayHello implements helloworld.GreeterServer

@@ -78,10 +78,10 @@ func (s *Server) ListenAndServe() *grpc.Server {
 	echo.RegisterEchoServiceServer(srv, &echoServer{})
 	info.RegisterInfoServiceServer(srv, &infoServer{config: s.config})
 
-	version.RegisterVersionServiceServer(srv, &VersionServer{})
-	status.RegisterStatusServiceServer(srv, &StatusServer{})
-	panic.RegisterPanicServiceServer(srv, &PanicServer{})
-	token.RegisterTokenServiceServer(srv, &TokenServer{})
+	version.RegisterVersionServiceServer(srv, &VersionServer{config: s.config, logger: s.logger})
+	status.RegisterStatusServiceServer(srv, &StatusServer{config: s.config, logger: s.logger})
+	panic.RegisterPanicServiceServer(srv, &PanicServer{config: s.config, logger: s.logger})
+	token.RegisterTokenServiceServer(srv, &TokenServer{config: s.config, logger: s.logger})
 
 	reflection.Register(srv)
 	grpc_health_v1.RegisterHealthServer(srv, server)

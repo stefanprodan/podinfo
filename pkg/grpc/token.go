@@ -12,6 +12,7 @@ import (
 
 type TokenServer struct {
 	pb.UnimplementedTokenServiceServer
+	config *Config
 	logger *zap.Logger
 }
 
