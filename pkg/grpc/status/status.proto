@@ -10,10 +10,10 @@ service StatusService {
 }
 
 message StatusRequest {
-    int64 code = 1;
+    string code = 1;
 }
 
 message StatusResponse {
-    int64 status = 1;
+    string status = 1;
 }
 
