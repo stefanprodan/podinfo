@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/stefanprodan/podinfo/pkg/grpc/delay"
 	"github.com/stefanprodan/podinfo/pkg/grpc/echo"
+	"github.com/stefanprodan/podinfo/pkg/grpc/env"
 	"github.com/stefanprodan/podinfo/pkg/grpc/info"
 
 	"go.uber.org/zap"
@@ -77,6 +79,8 @@ func (s *Server) ListenAndServe() *grpc.Server {
 	// Register grpc apis
 	echo.RegisterEchoServiceServer(srv, &echoServer{})
 	info.RegisterInfoServiceServer(srv, &infoServer{config: s.config})
+	delay.RegisterDelayServiceServer(srv, &delayServer{})
+	env.RegisterEnvServiceServer(srv, &envServer{})
 
 	version.RegisterVersionServiceServer(srv, &VersionServer{})
 	status.RegisterStatusServiceServer(srv, &StatusServer{})
