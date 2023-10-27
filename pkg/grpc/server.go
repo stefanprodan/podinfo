@@ -15,6 +15,7 @@ import (
 	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
 
+	"github.com/stefanprodan/podinfo/pkg/grpc/header"
 	"github.com/stefanprodan/podinfo/pkg/grpc/panic"
 	"github.com/stefanprodan/podinfo/pkg/grpc/status"
 	"github.com/stefanprodan/podinfo/pkg/grpc/token"
@@ -81,6 +82,7 @@ func (s *Server) ListenAndServe() *grpc.Server {
 	info.RegisterInfoServiceServer(srv, &infoServer{config: s.config})
 	delay.RegisterDelayServiceServer(srv, &delayServer{})
 	env.RegisterEnvServiceServer(srv, &envServer{})
+	header.RegisterHeaderServiceServer(srv, &headerServer{})
 
 	version.RegisterVersionServiceServer(srv, &VersionServer{config: s.config, logger: s.logger})
 	status.RegisterStatusServiceServer(srv, &StatusServer{config: s.config, logger: s.logger})
