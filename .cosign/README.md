@@ -1,9 +1,10 @@
 # Podinfo signed releases
 
-Podinfo deployment manifests are published to GitHub Container Registry as OCI artifacts
-and are signed using [cosign](https://github.com/sigstore/cosign).
+Podinfo release assets (container image, Helm chart, Flux artifact, Timoni module)
+are published to GitHub Container Registry and are signed with
+[Cosign v2](https://github.com/sigstore/cosign) keyless & GitHub Actions OIDC.
 
-## Verify the artifacts with cosign
+## Verify podinfo with cosign
 
 Install the [cosign](https://github.com/sigstore/cosign) CLI:
 
@@ -11,29 +12,50 @@ Install the [cosign](https://github.com/sigstore/cosign) CLI:
 brew install sigstore/tap/cosign
 ```
 
-Verify a podinfo release with cosign CLI:
+### Container image
+
+Verify the podinfo container image hosted on GHCR:
 
 ```sh
-cosign verify -key https://raw.githubusercontent.com/stefanprodan/podinfo/master/cosign/cosign.pub \
-ghcr.io/stefanprodan/podinfo-deploy:latest
+cosign verify ghcr.io/stefanprodan/podinfo:6.5.0 \
+--certificate-identity-regexp="^https://github.com/stefanprodan/podinfo.*$" \
+--certificate-oidc-issuer=https://token.actions.githubusercontent.com
 ```
 
-## Download the artifacts with crane
-
-Install the [crane](https://github.com/google/go-containerregistry/tree/main/cmd/crane) CLI:
+Verify the podinfo container image hosted on Docker Hub:
 
 ```sh
-brew install crane
+cosign verify docker.io/stefanprodan/podinfo:6.5.0 \
+--certificate-identity-regexp="^https://github.com/stefanprodan/podinfo.*$" \
+--certificate-oidc-issuer=https://token.actions.githubusercontent.com
 ```
 
-Download the podinfo deployment manifests with crane CLI:
+### Helm chart
 
-```console
-$ crane export ghcr.io/stefanprodan/podinfo-deploy:latest -| tar -xf - 
+Verify the podinfo [Helm](https://helm.sh) chart hosted on GHCR:
 
-$ ls -1
-deployment.yaml
-hpa.yaml
-kustomization.yaml
-service.yaml
+```sh
+cosign verify ghcr.io/stefanprodan/charts/podinfo:6.5.0 \
+--certificate-identity-regexp="^https://github.com/stefanprodan/podinfo.*$" \
+--certificate-oidc-issuer=https://token.actions.githubusercontent.com
+```
+
+### Flux artifact
+
+Verify the podinfo [Flux](https://fluxcd.io) artifact hosted on GHCR:
+
+```sh
+cosign verify ghcr.io/stefanprodan/manifests/podinfo:6.5.0 \
+--certificate-identity-regexp="^https://github.com/stefanprodan/podinfo.*$" \
+--certificate-oidc-issuer=https://token.actions.githubusercontent.com
+```
+
+### Timoni module
+
+Verify the podinfo [Timoni](https://timoni.sh) module hosted on GHCR:
+
+```sh
+cosign verify ghcr.io/stefanprodan/modules/podinfo:6.5.0 \
+--certificate-identity-regexp="^https://github.com/stefanprodan/podinfo.*$" \
+--certificate-oidc-issuer=https://token.actions.githubusercontent.com
 ```
