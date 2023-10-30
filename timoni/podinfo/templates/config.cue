@@ -78,6 +78,12 @@ import (
 		enabled:   *false | bool
 		redisURL?: string & =~"^tcp://.*$"
 	}
+
+	// Test Jobs (optional)
+	test: {
+		enabled: *false | bool
+		image!:  timoniv1.#Image
+	}
 }
 
 // Instance takes the config values and outputs the Kubernetes objects.
@@ -100,5 +106,9 @@ import (
 		if config.monitoring.enabled {
 			"\(config.metadata.name)-monitor": #ServiceMonitor & {_config: config}
 		}
+	}
+
+	tests: {
+		"test-svc": #TestJob & {_config: config}
 	}
 }
