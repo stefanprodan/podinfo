@@ -25,6 +25,7 @@ bundle: {
 					maxReplicas: 10
 					cpu:         90
 				}
+				test: enabled: true
 			}
 		}
 		frontend: {
@@ -60,6 +61,7 @@ bundle: {
 						"cert-manager.io/cluster-issuer":                 "self-signed"
 					}
 				}
+				test: enabled: true
 			}
 		}
 	}
