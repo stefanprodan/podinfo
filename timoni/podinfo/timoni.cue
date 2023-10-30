@@ -45,5 +45,5 @@ timoni: {
 
 	// Pass Kubernetes resources outputted by the instance
 	// to Timoni's multi-step apply.
-	apply: all: [ for obj in instance.objects {obj}]
+	apply: app: [ for obj in instance.objects {obj}]
 }
