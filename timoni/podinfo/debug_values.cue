@@ -11,6 +11,15 @@ values: {
 		digest:     ""
 	}
 
+	test: {
+		enabled: true
+		image: {
+			repository: "ghcr.io/curl/curl-container/curl-multi"
+			tag:        "master"
+			digest:     ""
+		}
+	}
+
 	ui: backend: "http://backend.default.svc.cluster.local/echo"
 
 	metadata: {

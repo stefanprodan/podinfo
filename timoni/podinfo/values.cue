@@ -12,4 +12,9 @@ values: {
 		tag:        "6.5.2"
 		digest:     ""
 	}
+	test: image: {
+		repository: "ghcr.io/curl/curl-container/curl-multi"
+		tag:        "master"
+		digest:     ""
+	}
 }

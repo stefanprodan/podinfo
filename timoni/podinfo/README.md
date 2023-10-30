@@ -71,6 +71,7 @@ timoni -n default delete podinfo
 | `topologySpreadConstraints:` | `[...corev1.#TopologySpreadConstraint]` | `[]`                           | [Kubernetes pod topology spread constraints](https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints)            |
 | `podSecurityContext:`        | `corev1.#PodSecurityContext`            | `{}`                           | [Kubernetes pod security context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context)                                 |
 | `securityContext:`           | `corev1.#SecurityContext`               | `{}`                           | [Kubernetes container security context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context)                           |
+| `test: enabled:`             | `bool`                                  | `false`                        | Run end-to-end tests at install and upgrades                                                                                                 |
 
 #### Recommended values
 
