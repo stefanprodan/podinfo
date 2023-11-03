@@ -15,7 +15,7 @@ type echoServer struct {
 
 func (s *echoServer) Echo (ctx context.Context, message *echo.Message) (*echo.Message, error){
 	log.Printf("Received message body from client: %s", message.Body)
-	return &echo.Message {Body: "Hello form the Server!"}, nil
+	return &echo.Message {Body: message.Body}, nil
 }
 
 // // func (s *Server) Echo (ctx context.Context, message *Message) (*Message, error){

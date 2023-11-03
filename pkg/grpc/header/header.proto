@@ -6,10 +6,8 @@ package header;
 
 message headerRequest {}
 
-// type MD map[string][]string
-
 message headerResponse {
-   string header = 1;
+   repeated string headers = 1;
 }
 
 service HeaderService {

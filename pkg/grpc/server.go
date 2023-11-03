@@ -77,7 +77,7 @@ func (s *Server) ListenAndServe() *grpc.Server {
 	srv := grpc.NewServer()
 	server := health.NewServer()
 	
-	// Register grpc apis
+	// Register grpc apis for refection
 	echo.RegisterEchoServiceServer(srv, &echoServer{})
 	info.RegisterInfoServiceServer(srv, &infoServer{config: s.config})
 	delay.RegisterDelayServiceServer(srv, &delayServer{})

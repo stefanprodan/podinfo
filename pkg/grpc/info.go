@@ -2,7 +2,6 @@ package grpc
 
 import (
 	"context"
-	"log"
 	"runtime"
 	"strconv"
 
@@ -16,10 +15,6 @@ type infoServer struct {
 }
 
 func (s *infoServer) Info (ctx context.Context, message *info.InfoRequest) (*info.InfoResponse, error){
-	log.Printf("Received message body from client: hardcode")
-	log.Printf("Received message body from client: %s", runtime.GOOS)
-
-	if(s.config == nil) {log.Printf("S.config is nil")}
 
 	return &info.InfoResponse {
 		Hostname:     s.config.Hostname,
