@@ -5,9 +5,8 @@ import (
 
 	pb "github.com/stefanprodan/podinfo/pkg/grpc/status"
 	"go.uber.org/zap"
-	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/codes"
-
+	"google.golang.org/grpc/status"
 )
 
 type StatusServer struct {
@@ -46,7 +45,7 @@ func (s *StatusServer) Status(ctx context.Context, req *pb.StatusRequest) (*pb.S
 	// try to access the map with the request code string as key. If the key is not found, return an error
 	// if the key is found, return the grpc status code
 	code, ok := grpcCodes[reqCode]
-	s.logger.Info(string(code))
+	//s.logger.Info(string(code))
 	if !ok {
 		return nil, status.Error(codes.Unknown, "Unknown status code")
 	}
