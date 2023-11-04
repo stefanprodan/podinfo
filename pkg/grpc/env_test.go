@@ -7,13 +7,13 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/stefanprodan/podinfo/pkg/grpc/info"
+	"github.com/stefanprodan/podinfo/pkg/grpc/env"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
 )
 
-func TestGrpcInfo(t *testing.T) {
+func TestGrpcEnv(t *testing.T) {
 
 	// Server initialization
 	// bufconn => uses in-memory connection instead of system network I/O
@@ -22,13 +22,13 @@ func TestGrpcInfo(t *testing.T) {
 		lis.Close()
 	})
 
-	s := NewMockGrpcServer()
-	srv := grpc.NewServer() // replace this with Mock that return srv that has all the config, logger, etc
+
+	srv := grpc.NewServer()
 	t.Cleanup(func() {
 		srv.Stop()
 	})
 
-	info.RegisterInfoServiceServer(srv, &infoServer{config: s.config})
+	env.RegisterEnvServiceServer(srv, &envServer{})
 
 	go func(){
 		if err := srv.Serve(lis); err != nil {
@@ -52,19 +52,19 @@ func TestGrpcInfo(t *testing.T) {
 		t.Fatalf("grpc.DialContext %v", err)
 	}
 
-	client := info.NewInfoServiceClient(conn)
-	res, err := client.Info(context.Background(), &info.InfoRequest{})
+	client := env.NewEnvServiceClient(conn)
+	res , err := client.Env(context.Background(), &env.EnvRequest{})
 
 	// Check the status code is what we expect.
 	if _, ok := status.FromError(err); !ok {
-		t.Errorf("Info returned type %T, want %T", err, status.Error)
+		t.Errorf("Env returned type %T, want %T", err, status.Error)
 	}
 
 	// Check the response body is what we expect.
-	expected := ".*color.*blue.*"
+	expected := ".*HOSTNAME.*"
 	r := regexp.MustCompile(expected)
 	if !r.MatchString(res.String()) {
 		t.Fatalf("Returned unexpected body:\ngot \n%v \nwant \n%s",
-			res.Color, expected)
+			res, expected)
 	}
 }
