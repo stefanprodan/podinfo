@@ -6,14 +6,16 @@ import (
 	"net"
 	"regexp"
 	"testing"
+	"fmt"
 
-	"github.com/stefanprodan/podinfo/pkg/grpc/env"
+	"github.com/stefanprodan/podinfo/pkg/grpc/version"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
+	v "github.com/stefanprodan/podinfo/pkg/version"
 )
 
-func TestGrpcEnv(t *testing.T) {
+func TestGrpcVersion(t *testing.T) {
 
 	// Server initialization
 	// bufconn => uses in-memory connection instead of system network I/O
@@ -28,7 +30,7 @@ func TestGrpcEnv(t *testing.T) {
 		srv.Stop()
 	})
 
-	env.RegisterEnvServiceServer(srv, &envServer{})
+	version.RegisterVersionServiceServer(srv, &VersionServer{})
 
 	go func(){
 		if err := srv.Serve(lis); err != nil {
@@ -52,16 +54,16 @@ func TestGrpcEnv(t *testing.T) {
 		t.Fatalf("grpc.DialContext %v", err)
 	}
 
-	client := env.NewEnvServiceClient(conn)
-	res , err := client.Env(context.Background(), &env.EnvRequest{})
+	client := version.NewVersionServiceClient(conn)
+	res , err := client.Version(context.Background(), &version.VersionRequest{})
 
 	// Check the status code is what we expect.
 	if _, ok := status.FromError(err); !ok {
-		t.Errorf("Env returned type %T, want %T", err, status.Error)
+		t.Errorf("Version returned type %T, want %T", err, status.Error)
 	}
 
 	// Check the response body is what we expect.
-	expected := ".*HOSTTYPE.*"
+	expected := fmt.Sprintf(".*%s.*", v.VERSION)
 	r := regexp.MustCompile(expected)
 	if !r.MatchString(res.String()) {
 		t.Fatalf("Returned unexpected body:\ngot \n%v \nwant \n%s",
