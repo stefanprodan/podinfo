@@ -4,16 +4,15 @@ import (
 	"context"
 	"log"
 	"net"
-	"regexp"
 	"testing"
 
-	"github.com/stefanprodan/podinfo/pkg/grpc/env"
+	"github.com/stefanprodan/podinfo/pkg/grpc/token"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
 )
 
-func TestGrpcEnv(t *testing.T) {
+func TestGrpcToken(t *testing.T) {
 
 	// Server initialization
 	// bufconn => uses in-memory connection instead of system network I/O
@@ -28,7 +27,7 @@ func TestGrpcEnv(t *testing.T) {
 		srv.Stop()
 	})
 
-	env.RegisterEnvServiceServer(srv, &envServer{})
+	token.RegisterTokenServiceServer(srv, &TokenServer{})
 
 	go func(){
 		if err := srv.Serve(lis); err != nil {
@@ -52,19 +51,20 @@ func TestGrpcEnv(t *testing.T) {
 		t.Fatalf("grpc.DialContext %v", err)
 	}
 
-	client := env.NewEnvServiceClient(conn)
-	res , err := client.Env(context.Background(), &env.EnvRequest{})
+	client := token.NewTokenServiceClient(conn)
+	res , err := client.Token(context.Background(), &token.TokenRequest{})
 
 	// Check the status code is what we expect.
 	if _, ok := status.FromError(err); !ok {
-		t.Errorf("Env returned type %T, want %T", err, status.Error)
+		t.Errorf("Token Handler returned type %T, want %T", err, status.Error)
 	}
 
-	// Check the response body is what we expect.
-	expected := ".*HOSTTYPE.*"
-	r := regexp.MustCompile(expected)
-	if !r.MatchString(res.String()) {
-		t.Fatalf("Returned unexpected body:\ngot \n%v \nwant \n%s",
-			res, expected)
+	var token = token.TokenResponse{
+		Token: res.Token,
+		ExpiresAt: res.ExpiresAt,
+	}
+	
+	if token.Token == "" {
+		t.Fatalf("Handler returned no token")
 	}
 }
