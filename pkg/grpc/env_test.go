@@ -61,7 +61,7 @@ func TestGrpcEnv(t *testing.T) {
 	}
 
 	// Check the response body is what we expect.
-	expected := ".*HOSTTYPE.*"
+	expected := ".*PATH.*"
 	r := regexp.MustCompile(expected)
 	if !r.MatchString(res.String()) {
 		t.Fatalf("Returned unexpected body:\ngot \n%v \nwant \n%s",
