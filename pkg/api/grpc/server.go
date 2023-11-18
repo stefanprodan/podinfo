@@ -4,10 +4,7 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/stefanprodan/podinfo/pkg/api/grpc/delay"
 	"github.com/stefanprodan/podinfo/pkg/api/grpc/echo"
-	"github.com/stefanprodan/podinfo/pkg/api/grpc/env"
-	"github.com/stefanprodan/podinfo/pkg/api/grpc/info"
 
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -15,15 +12,12 @@ import (
 	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
 
-	"github.com/stefanprodan/podinfo/pkg/api/grpc/header"
 	"github.com/stefanprodan/podinfo/pkg/api/grpc/panic"
-	"github.com/stefanprodan/podinfo/pkg/api/grpc/status"
-	"github.com/stefanprodan/podinfo/pkg/api/grpc/token"
 	"github.com/stefanprodan/podinfo/pkg/api/grpc/version"
 )
 
 type Server struct {
-	info.UnimplementedInfoServiceServer
+	//info.UnimplementedInfoServiceServer
 	logger *zap.Logger
 	config *Config
 }
@@ -79,15 +73,9 @@ func (s *Server) ListenAndServe() *grpc.Server {
 	
 	// Register grpc apis for refection
 	echo.RegisterEchoServiceServer(srv, &echoServer{})
-	info.RegisterInfoServiceServer(srv, &infoServer{config: s.config})
-	delay.RegisterDelayServiceServer(srv, &delayServer{})
-	env.RegisterEnvServiceServer(srv, &envServer{})
-	header.RegisterHeaderServiceServer(srv, &headerServer{})
 
 	version.RegisterVersionServiceServer(srv, &VersionServer{config: s.config, logger: s.logger})
-	status.RegisterStatusServiceServer(srv, &StatusServer{config: s.config, logger: s.logger})
 	panic.RegisterPanicServiceServer(srv, &PanicServer{config: s.config, logger: s.logger})
-	token.RegisterTokenServiceServer(srv, &TokenServer{config: s.config, logger: s.logger})
 
 	reflection.Register(srv)
 	grpc_health_v1.RegisterHealthServer(srv, server)

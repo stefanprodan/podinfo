@@ -14,7 +14,6 @@ import (
 	"github.com/gomodule/redigo/redis"
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/stefanprodan/podinfo/pkg/api/grpc/info"
 	_ "github.com/stefanprodan/podinfo/pkg/api/http/docs"
 	"github.com/stefanprodan/podinfo/pkg/fscache"
 	httpSwagger "github.com/swaggo/http-swagger"
@@ -83,7 +82,6 @@ type Server struct {
 	handler        http.Handler
 	tracer         trace.Tracer
 	tracerProvider *sdktrace.TracerProvider
-	info.UnimplementedInfoServiceServer
 }
 
 func NewServer(config *Config, logger *zap.Logger) (*Server, error) {
