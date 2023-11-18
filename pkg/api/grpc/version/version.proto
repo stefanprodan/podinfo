@@ -4,7 +4,7 @@ option go_package = "./version";
 
 package version;
 
-// The greeting service definition.
+
 service VersionService {
     rpc Version (VersionRequest) returns (VersionResponse) {}
 }
