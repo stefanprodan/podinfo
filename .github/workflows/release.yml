@@ -85,7 +85,7 @@ jobs:
           timoni mod push ./timoni/podinfo oci://ghcr.io/stefanprodan/modules/podinfo \
           --sign cosign \
           --version ${{ steps.prep.outputs.VERSION }} \
-          --source https://github.com/stefanprodan/podinfo  \
+          -a 'org.opencontainers.image.source=https://github.com/stefanprodan/podinfo' \
           -a 'org.opencontainers.image.licenses=Apache-2.0' \
           -a 'org.opencontainers.image.description=A timoni.sh module for deploying Podinfo.' \
           -a 'org.opencontainers.image.documentation=https://github.com/stefanprodan/podinfo/blob/main/timoni/podinfo/README.md'

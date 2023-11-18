@@ -5,15 +5,8 @@ import (
 )
 
 #ServiceMonitor: promv1.#ServiceMonitor & {
-	_config: #Config
-	metadata: {
-		name:      _config.metadata.name
-		namespace: _config.metadata.namespace
-		labels:    _config.metadata.labels
-		if _config.metadata.annotations != _|_ {
-			annotations: _config.metadata.annotations
-		}
-	}
+	_config:  #Config
+	metadata: _config.metadata
 	spec: {
 		endpoints: [{
 			path:     "/metrics"
@@ -21,6 +14,6 @@ import (
 			interval: "\(_config.monitoring.interval)s"
 		}]
 		namespaceSelector: matchNames: [_config.metadata.namespace]
-		selector: matchLabels: _config.metadata.labelSelector
+		selector: matchLabels: _config.selector.labels
 	}
 }

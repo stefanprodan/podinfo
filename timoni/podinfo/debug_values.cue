@@ -1,8 +1,25 @@
-@if(test)
+@if(debug)
 
 package main
 
+// Values used by debug_tool.cue.
+// Debug example 'cue cmd -t debug -t name=podinfo -t namespace=test -t mv=1.0.0 -t kv=1.28.0 build'.
 values: {
+	image: {
+		repository: "docker.io/stefanprodan/podinfo"
+		tag:        "latest"
+		digest:     ""
+	}
+
+	test: {
+		enabled: true
+		image: {
+			repository: "ghcr.io/curl/curl-container/curl-multi"
+			tag:        "master"
+			digest:     ""
+		}
+	}
+
 	ui: backend: "http://backend.default.svc.cluster.local/echo"
 
 	metadata: {
@@ -23,7 +40,7 @@ values: {
 		annotations: "cert-manager.io/cluster-issuer": "letsencrypt"
 	}
 
-	monitoring: enabled: false
+	monitoring: enabled: true
 
 	_mcpu: 100
 	_mem:  128

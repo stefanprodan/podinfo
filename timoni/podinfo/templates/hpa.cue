@@ -8,14 +8,7 @@ import (
 	_config:    #Config
 	apiVersion: "autoscaling/v2"
 	kind:       "HorizontalPodAutoscaler"
-	metadata: {
-		name:      _config.metadata.name
-		namespace: _config.metadata.namespace
-		labels:    _config.metadata.labels
-		if _config.metadata.annotations != _|_ {
-			annotations: _config.metadata.annotations
-		}
-	}
+	metadata:   _config.metadata
 	spec: {
 		scaleTargetRef: {
 			apiVersion: "apps/v1"
