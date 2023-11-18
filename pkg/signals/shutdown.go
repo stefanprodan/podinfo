@@ -48,7 +48,8 @@ func (s *Shutdown) Graceful(stopCh <-chan struct{}, httpServer *http.Server, htt
 
 	s.logger.Info("Shutting down HTTP/HTTPS server", zap.Duration("timeout", s.serverShutdownTimeout))
 
-	// wait for Kubernetes readiness probe to remove this instance from the load balancer
+	// There could be a period where a terminating pod may still receive requests. Implementing a brief wait can mitigate this.
+	// See: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-termination
 	// the readiness check interval must be lower than the timeout
 	if viper.GetString("level") != "debug" {
 		time.Sleep(3 * time.Second)

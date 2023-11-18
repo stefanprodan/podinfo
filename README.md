@@ -20,7 +20,7 @@ Specifications:
 * 12-factor app with viper
 * Fault injection (random errors and latency)
 * Swagger docs
-* [Timoni](http://github.com/stefanprodan/timoni), Helm and Kustomize installers
+* Timoni, Helm and Kustomize installers
 * End-to-End testing with Kubernetes Kind and Helm
 * Multi-arch container image with Docker buildx and Github Actions
 * Container image signing with Sigstore cosign
@@ -66,17 +66,22 @@ To access the Swagger UI open `<podinfo-host>/swagger/index.html` in a browser.
 
 ### Guides
 
-* [GitOps Progressive Deliver with Flagger, Helm v3 and Linkerd](https://helm.workshop.flagger.dev/intro/)
-* [GitOps Progressive Deliver on EKS with Flagger and AppMesh](https://eks.handson.flagger.dev/prerequisites/)
-* [Automated canary deployments with Flagger and Istio](https://medium.com/google-cloud/automated-canary-deployments-with-flagger-and-istio-ac747827f9d1)
-* [Kubernetes autoscaling with Istio metrics](https://medium.com/google-cloud/kubernetes-autoscaling-with-istio-metrics-76442253a45a)
-* [Autoscaling EKS on Fargate with custom metrics](https://aws.amazon.com/blogs/containers/autoscaling-eks-on-fargate-with-custom-metrics/)
-* [Managing Helm releases the GitOps way](https://medium.com/google-cloud/managing-helm-releases-the-gitops-way-207a6ac6ff0e)
-* [Securing EKS Ingress With Contour And Let’s Encrypt The GitOps Way](https://aws.amazon.com/blogs/containers/securing-eks-ingress-contour-lets-encrypt-gitops/)
+* [Getting started with Timoni](https://timoni.sh/quickstart/)
+* [Getting started with Flux](https://fluxcd.io/flux/get-started/)
+* [Progressive Deliver with Flagger and Linkerd](https://docs.flagger.app/tutorials/linkerd-progressive-delivery)
+* [Automated canary deployments with Kubernetes Gateway API](https://docs.flagger.app/tutorials/gatewayapi-progressive-delivery)
 
 ### Install
 
 To install Podinfo on Kubernetes the minimum required version is **Kubernetes v1.23**.
+
+#### Timoni
+
+Install with [Timoni](https://timoni.sh):
+
+```bash
+timoni -n default apply podinfo oci://ghcr.io/stefanprodan/modules/podinfo
+```
 
 #### Helm
 
@@ -104,14 +109,6 @@ Install from ghcr.io:
 ```bash
 helm upgrade --install --wait podinfo --namespace default \
 oci://ghcr.io/stefanprodan/charts/podinfo
-```
-
-#### Timoni
-
-Install with [Timoni](https://timoni.sh):
-
-```bash
-timoni -n default apply podinfo oci://ghcr.io/stefanprodan/modules/podinfo
 ```
 
 #### Kustomize
