@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 
+
 	"github.com/stefanprodan/podinfo/pkg/api/grpc/echo"
 
 	"go.uber.org/zap"
@@ -12,12 +13,13 @@ import (
 	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
 
+
 	"github.com/stefanprodan/podinfo/pkg/api/grpc/panic"
 	"github.com/stefanprodan/podinfo/pkg/api/grpc/version"
 )
 
+
 type Server struct {
-	//info.UnimplementedInfoServiceServer
 	logger *zap.Logger
 	config *Config
 }
@@ -25,6 +27,7 @@ type Server struct {
 type Config struct {
 	Port        int    `mapstructure:"grpc-port"`
 	ServiceName string `mapstructure:"grpc-service-name"`
+
 
 	BackendURL            []string      `mapstructure:"backend-url"`
 	UILogo                string        `mapstructure:"ui-logo"`
@@ -70,6 +73,7 @@ func (s *Server) ListenAndServe() *grpc.Server {
 
 	srv := grpc.NewServer()
 	server := health.NewServer()
+
 	
 	// Register grpc apis for refection
 	echo.RegisterEchoServiceServer(srv, &echoServer{})
