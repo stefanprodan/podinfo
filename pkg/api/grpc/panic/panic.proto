@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+option go_package = "./panic";
+
+package panic;
+
+// The greeting service definition.
+service PanicService {
+    rpc Panic (PanicRequest) returns (PanicResponse) {}
+}
+
+message PanicRequest {
+}
+
+message PanicResponse {
+}
+
