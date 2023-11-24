@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net"
 
-
 	"github.com/stefanprodan/podinfo/pkg/api/grpc/echo"
 
 	"go.uber.org/zap"
@@ -12,7 +11,6 @@ import (
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
-
 
 	"github.com/stefanprodan/podinfo/pkg/api/grpc/panic"
 	"github.com/stefanprodan/podinfo/pkg/api/grpc/version"
@@ -76,7 +74,7 @@ func (s *Server) ListenAndServe() *grpc.Server {
 
 	
 	// Register grpc apis for refection
-	echo.RegisterEchoServiceServer(srv, &echoServer{})
+	echo.RegisterEchoServiceServer(srv, &echoServer{config: s.config, logger: s.logger})
 
 	version.RegisterVersionServiceServer(srv, &VersionServer{config: s.config, logger: s.logger})
 	panic.RegisterPanicServiceServer(srv, &PanicServer{config: s.config, logger: s.logger})
