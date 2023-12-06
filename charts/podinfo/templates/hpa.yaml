@@ -4,7 +4,8 @@ kind: HorizontalPodAutoscaler
 metadata:
   name: {{ template "podinfo.fullname" . }}
   labels:
-    {{- include "podinfo.labels" . | nindent 4 }}  
+    {{- include "podinfo.labels" . | nindent 4 }}
+    app.kubernetes.io/component: autoscaling
 spec:
   scaleTargetRef:
     apiVersion: apps/v1

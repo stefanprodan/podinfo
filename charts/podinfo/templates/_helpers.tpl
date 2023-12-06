@@ -36,6 +36,8 @@ Common labels
 {{- define "podinfo.labels" -}}
 helm.sh/chart: {{ include "podinfo.chart" . }}
 {{ include "podinfo.selectorLabels" . }}
+app.kubernetes.io/instance: podinfo 
+app.kubernetes.io/part-of: podinfo
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
