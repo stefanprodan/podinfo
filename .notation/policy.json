@@ -1,0 +1,16 @@
+{
+    "version": "1.0",
+    "trustPolicies": [
+        {
+            "name": "fluxcd.io",
+            "registryScopes": [ "ghcr.io/jasonthedeveloper/podinfo-deploy" ],
+            "signatureVerification": {
+                "level" : "strict"
+            },
+            "trustStores": [ "ca:fluxcd.io" ],
+            "trustedIdentities": [
+                "*"
+            ]
+        }
+    ]
+}
