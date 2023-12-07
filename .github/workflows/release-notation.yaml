@@ -21,6 +21,7 @@ jobs:
           version: "1.0.0"
       - name: Setup Notation signing keys
         run: |
+          mkdir -p ~/.config/notation/
           cp ./.notation/signingkeys.json ~/.config/notation/
           ls ~/.config/notation/
           cat ~/.config/notation/signingkeys.json
