@@ -21,104 +21,92 @@ jobs:
           version: "1.0.0"
       - name: Setup Notation signing keys
         run: |
-          mkdir -p ~/.config/notation/
+          mkdir -p ~/.config/notation/localkeys/
           cp ./.notation/signingkeys.json ~/.config/notation/
-          ls ~/.config/notation/
-          cat ~/.config/notation/signingkeys.json
-          # notation cert generate-test --default "fluxcd.io"
-      # - uses: fluxcd/flux2/action@main
-      # - name: Setup Go
-      #   uses: actions/setup-go@v4
-      #   with:
-      #     go-version: 1.21.x
-      # - name: Setup Helm
-      #   uses: azure/setup-helm@v3
-      #   with:
-      #     version: v3.12.3
-      # - name: Setup QEMU
-      #   uses: docker/setup-qemu-action@v3
-      #   with:
-      #     platforms: all
-      # - name: Setup Docker Buildx
-      #   id: buildx
-      #   uses: docker/setup-buildx-action@v3
-      # - name: Login to GitHub Container Registry
-      #   uses: docker/login-action@v3
-      #   with:
-      #     registry: ghcr.io
-      #     username: ${{ github.actor }}
-      #     password: ${{ secrets.GITHUB_TOKEN }}
-      # - name: Prepare
-      #   id: prep
-      #   run: |
-      #     VERSION=sha-${GITHUB_SHA::8}
-      #     if [[ $GITHUB_REF == refs/tags/* ]]; then
-      #       VERSION=${GITHUB_REF/refs\/tags\//}
-      #     fi
-      #     echo "BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
-      #     echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
-      #     echo "REVISION=${GITHUB_SHA}" >> $GITHUB_OUTPUT
-      # - name: Generate images meta
-      #   id: meta
-      #   uses: docker/metadata-action@v5
-      #   with:
-      #     images: |
-      #       ghcr.io/jasonthedeveloper/podinfo
-      #     tags: |
-      #       type=raw,value=${{ steps.prep.outputs.VERSION }}
-      #       type=raw,value=latest
-      # - name: Publish multi-arch image
-      #   uses: docker/build-push-action@v5
-      #   with:
-      #     sbom: true
-      #     provenance: true
-      #     push: true
-      #     builder: ${{ steps.buildx.outputs.name }}
-      #     context: .
-      #     file: ./Dockerfile.xx
-      #     build-args: |
-      #       REVISION=${{ steps.prep.outputs.REVISION }}
-      #     platforms: linux/amd64,linux/arm/v7,linux/arm64
-      #     tags: ${{ steps.meta.outputs.tags }}
-      #     labels: ${{ steps.meta.outputs.labels }}
-      # - name: Publish Helm chart to GHCR
-      #   run: |
-      #     helm package charts/podinfo
-      #     helm push podinfo-${{ steps.prep.outputs.VERSION }}.tgz oci://ghcr.io/jasonthedeveloper/charts
-      #     rm podinfo-${{ steps.prep.outputs.VERSION }}.tgz
-      # - name: Publish Flux OCI artifact to GHCR
-      #   run: |
-      #     flux push artifact oci://ghcr.io/jasonthedeveloper/manifests/podinfo:${{ steps.prep.outputs.VERSION }} \
-      #       --path="./kustomize" \
-      #       --source="${{ github.event.repository.html_url }}" \
-      #       --revision="${GITHUB_REF_NAME}/${GITHUB_SHA}"
-      #     flux tag artifact oci://ghcr.io/jasonthedeveloper/manifests/podinfo:${{ steps.prep.outputs.VERSION }} --tag latest
-      # - name: Sign OCI artifacts
-      #   env:
-      #     COSIGN_EXPERIMENTAL: 1
-      #   run: |
-      #     cosign sign ghcr.io/jasonthedeveloper/podinfo:${{ steps.prep.outputs.VERSION }} --yes
-      #     cosign sign ghcr.io/jasonthedeveloper/charts/podinfo:${{ steps.prep.outputs.VERSION }} --yes
-      #     cosign sign ghcr.io/jasonthedeveloper/manifests/podinfo:${{ steps.prep.outputs.VERSION }} --yes
-      # - name: Publish config artifact
-      #   run: |
-      #     flux push artifact oci://ghcr.io/jasonthedeveloper/podinfo-deploy:${{ steps.prep.outputs.VERSION }} \
-      #       --path="./kustomize" \
-      #       --source="${{ github.event.repository.html_url }}" \
-      #       --revision="${GITHUB_REF_NAME}/${GITHUB_SHA}"
-      #     flux tag artifact oci://ghcr.io/jasonthedeveloper/podinfo-deploy:${{ steps.prep.outputs.VERSION }} --tag latest
-      # - name: Sign config artifact
-      #   run: |
-      #     echo "$COSIGN_KEY" > /tmp/cosign.key
-      #     cosign sign -key /tmp/cosign.key ghcr.io/jasonthedeveloper/podinfo-deploy:${{ steps.prep.outputs.VERSION }} --yes
-      #     cosign sign -key /tmp/cosign.key ghcr.io/jasonthedeveloper/podinfo-deploy:latest --yes
-      #   env:
-      #     COSIGN_PASSWORD: ${{secrets.COSIGN_PASSWORD}}
-      #     COSIGN_KEY: ${{secrets.COSIGN_KEY}}
-      # - name: Publish release
-      #   uses: goreleaser/goreleaser-action@v5
-      #   with:
-      #     version: latest
-      #     args: release --skip-validate
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          cp ./.notation/notation.crt ~/.config/notation/localkeys/
+          echo "$NOTATION_KEY" > ~/.config/notation/localkeys/notation.key
+        env:
+          NOTATION_KEY: ${{ secrets.SIGNING_KEY }}
+      - uses: fluxcd/flux2/action@main
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.21.x
+      - name: Setup Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: v3.12.3
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: all
+      - name: Setup Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Prepare
+        id: prep
+        run: |
+          VERSION=sha-${GITHUB_SHA::8}
+          if [[ $GITHUB_REF == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF/refs\/tags\//}
+          fi
+          echo "BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
+          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
+          echo "REVISION=${GITHUB_SHA}" >> $GITHUB_OUTPUT
+      - name: Generate images meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ghcr.io/jasonthedeveloper/podinfo
+          tags: |
+            type=raw,value=${{ steps.prep.outputs.VERSION }}
+            type=raw,value=latest
+      - name: Publish multi-arch image
+        uses: docker/build-push-action@v5
+        with:
+          sbom: true
+          provenance: true
+          push: true
+          builder: ${{ steps.buildx.outputs.name }}
+          context: .
+          file: ./Dockerfile.xx
+          build-args: |
+            REVISION=${{ steps.prep.outputs.REVISION }}
+          platforms: linux/amd64,linux/arm/v7,linux/arm64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+      - name: Publish Helm chart to GHCR
+        run: |
+          helm package charts/podinfo
+          helm push podinfo-${{ steps.prep.outputs.VERSION }}.tgz oci://ghcr.io/jasonthedeveloper/charts
+          rm podinfo-${{ steps.prep.outputs.VERSION }}.tgz
+      - name: Publish Flux OCI artifact to GHCR
+        run: |
+          flux push artifact oci://ghcr.io/jasonthedeveloper/manifests/podinfo:${{ steps.prep.outputs.VERSION }} \
+            --path="./kustomize" \
+            --source="${{ github.event.repository.html_url }}" \
+            --revision="${GITHUB_REF_NAME}/${GITHUB_SHA}"
+          flux tag artifact oci://ghcr.io/jasonthedeveloper/manifests/podinfo:${{ steps.prep.outputs.VERSION }} --tag latest
+      - name: Sign OCI artifacts
+        run: |
+          notation sign --signature-format cose ghcr.io/jasonthedeveloper/podinfo:${{ steps.prep.outputs.VERSION }} --yes
+          notation sign --signature-format cose ghcr.io/jasonthedeveloper/charts/podinfo:${{ steps.prep.outputs.VERSION }} --yes
+          notation sign --signature-format cose ghcr.io/jasonthedeveloper/manifests/podinfo:${{ steps.prep.outputs.VERSION }} --yes
+      - name: Publish config artifact
+        run: |
+          flux push artifact oci://ghcr.io/jasonthedeveloper/podinfo-deploy:${{ steps.prep.outputs.VERSION }} \
+            --path="./kustomize" \
+            --source="${{ github.event.repository.html_url }}" \
+            --revision="${GITHUB_REF_NAME}/${GITHUB_SHA}"
+          flux tag artifact oci://ghcr.io/jasonthedeveloper/podinfo-deploy:${{ steps.prep.outputs.VERSION }} --tag latest
+      - name: Sign config artifact
+        run: |
+          notation sign --signature-format cose ghcr.io/jasonthedeveloper/podinfo-deploy:${{ steps.prep.outputs.VERSION }} --yes
+          notation sign --signature-format cose ghcr.io/jasonthedeveloper/podinfo-deploy:latest --yes
