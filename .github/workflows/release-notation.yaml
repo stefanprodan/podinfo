@@ -2,6 +2,8 @@ name: release
 
 on:
   push:
+    tags:
+      - '*'
 
 permissions:
   contents: read
