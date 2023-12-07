@@ -98,9 +98,9 @@ jobs:
           flux tag artifact oci://ghcr.io/jasonthedeveloper/manifests/podinfo:${{ steps.prep.outputs.VERSION }} --tag latest
       - name: Sign OCI artifacts
         run: |
-          notation sign --signature-format cose ghcr.io/jasonthedeveloper/podinfo:${{ steps.prep.outputs.VERSION }} --yes
-          notation sign --signature-format cose ghcr.io/jasonthedeveloper/charts/podinfo:${{ steps.prep.outputs.VERSION }} --yes
-          notation sign --signature-format cose ghcr.io/jasonthedeveloper/manifests/podinfo:${{ steps.prep.outputs.VERSION }} --yes
+          notation sign --signature-format cose ghcr.io/jasonthedeveloper/podinfo:${{ steps.prep.outputs.VERSION }}
+          notation sign --signature-format cose ghcr.io/jasonthedeveloper/charts/podinfo:${{ steps.prep.outputs.VERSION }}
+          notation sign --signature-format cose ghcr.io/jasonthedeveloper/manifests/podinfo:${{ steps.prep.outputs.VERSION }}
       - name: Publish config artifact
         run: |
           flux push artifact oci://ghcr.io/jasonthedeveloper/podinfo-deploy:${{ steps.prep.outputs.VERSION }} \
@@ -110,5 +110,5 @@ jobs:
           flux tag artifact oci://ghcr.io/jasonthedeveloper/podinfo-deploy:${{ steps.prep.outputs.VERSION }} --tag latest
       - name: Sign config artifact
         run: |
-          notation sign --signature-format cose ghcr.io/jasonthedeveloper/podinfo-deploy:${{ steps.prep.outputs.VERSION }} --yes
-          notation sign --signature-format cose ghcr.io/jasonthedeveloper/podinfo-deploy:latest --yes
+          notation sign --signature-format cose ghcr.io/jasonthedeveloper/podinfo-deploy:${{ steps.prep.outputs.VERSION }}
+          notation sign --signature-format cose ghcr.io/jasonthedeveloper/podinfo-deploy:latest

@@ -1,9 +1,10 @@
 name: release
 
 on:
+  pull_request:
   push:
-    tags:
-      - '*'
+    branches:
+      - 'master'
 
 permissions:
   contents: read
