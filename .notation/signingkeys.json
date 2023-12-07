@@ -1,0 +1,10 @@
+{
+    "default": "fluxcd.io",
+    "keys": [
+        {
+            "name": "fluxcd.io",
+            "keyPath": "/home/runner/.config/notation/localkeys/flux.key",
+            "certPath": "/home/runner/.config/notation/localkeys/flux.crt"
+        }
+    ]
+}
