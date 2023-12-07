@@ -19,9 +19,12 @@ jobs:
         uses: notaryproject/notation-action/setup@v1
         with:
           version: "1.0.0"
-      - name: Generate
+      - name: Setup Notation signing keys
         run: |
-          notation cert generate-test --default "fluxcd.io"
+          cp ./.notation/signingkeys.json ~/.config/notation/
+          ls ~/.config/notation/
+          cat ~/.config/notation/signingkeys.json
+          # notation cert generate-test --default "fluxcd.io"
       # - uses: fluxcd/flux2/action@main
       # - name: Setup Go
       #   uses: actions/setup-go@v4
