@@ -3,7 +3,10 @@
     "trustPolicies": [
         {
             "name": "fluxcd.io",
-            "registryScopes": [ "ghcr.io/jasonthedeveloper/podinfo-deploy" ],
+            "registryScopes": [
+                "ghcr.io/jasonthedeveloper/podinfo-display",
+                "ghcr.io/jasonthedeveloper/charts/podinfo"
+            ],
             "signatureVerification": {
                 "level" : "strict"
             },
