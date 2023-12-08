@@ -4,7 +4,7 @@
         {
             "name": "fluxcd.io",
             "registryScopes": [
-                "ghcr.io/jasonthedeveloper/podinfo-display",
+                "ghcr.io/jasonthedeveloper/podinfo-deploy",
                 "ghcr.io/jasonthedeveloper/charts/podinfo"
             ],
             "signatureVerification": {
@@ -12,7 +12,7 @@
             },
             "trustStores": [ "ca:fluxcd.io" ],
             "trustedIdentities": [
-                "*"
+                "x509.subject: C=US, ST=WA, L=Seattle, O=Notary, CN=fluxcd.io"
             ]
         }
     ]
