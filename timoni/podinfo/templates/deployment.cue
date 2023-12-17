@@ -10,7 +10,7 @@ import (
 	apiVersion: "apps/v1"
 	kind:       "Deployment"
 	metadata:   _config.metadata
-	spec:       appsv1.#DeploymentSpec & {
+	spec: appsv1.#DeploymentSpec & {
 		if !_config.autoscaling.enabled {
 			replicas: _config.replicas
 		}
@@ -38,7 +38,7 @@ import (
 					{
 						name:            _config.metadata.name
 						image:           _config.image.reference
-						imagePullPolicy: _config.imagePullPolicy
+						imagePullPolicy: _config.image.pullPolicy
 						ports: [
 							{
 								name:          "http"
