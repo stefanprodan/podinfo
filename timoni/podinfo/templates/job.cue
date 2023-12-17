@@ -13,20 +13,20 @@ import (
 	_config:    #Config
 	apiVersion: "batch/v1"
 	kind:       "Job"
-	metadata: name:        "\(_config.metadata.name)-test"
-	metadata: namespace:   _config.metadata.namespace
-	metadata: labels:      _config.metadata.labels
+	metadata: timoniv1.#MetaComponent & {
+		#Meta:      _config.metadata
+		#Component: "test"
+	}
 	metadata: annotations: timoniv1.Action.Force
 	spec: batchv1.#JobSpec & {
 		template: corev1.#PodTemplateSpec & {
-			metadata: labels: _config.metadata.labels
 			let _checksum = uuid.SHA1(uuid.ns.DNS, yaml.Marshal(_config))
 			metadata: annotations: "timoni.sh/checksum": "\(_checksum)"
 			spec: {
 				containers: [{
 					name:            "curl"
 					image:           _config.test.image.reference
-					imagePullPolicy: _config.imagePullPolicy
+					imagePullPolicy: _config.test.image.pullPolicy
 					command: [
 						"curl",
 						"-v",
