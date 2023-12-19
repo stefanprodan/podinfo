@@ -203,3 +203,7 @@ spec:
         secret:
           secretName: {{ template "podinfo.tlsSecretName" . }}
       {{- end }}
+    {{- with .Values.topologySpreadConstraints }}
+      topologySpreadConstraints:
+{{- toYaml . | nindent 8 }}
+    {{- end }}
