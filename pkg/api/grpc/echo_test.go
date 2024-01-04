@@ -22,12 +22,13 @@ func TestGrpcEcho(t *testing.T) {
 		lis.Close()
 	})
 
+	s := NewMockGrpcServer()
 	srv := grpc.NewServer()
 	t.Cleanup(func() {
 		srv.Stop()
 	})
 
-	echo.RegisterEchoServiceServer(srv, &echoServer{})
+	echo.RegisterEchoServiceServer(srv, &echoServer{config: s.config, logger: s.logger})
 
 	go func(){
 		if err := srv.Serve(lis); err != nil {
