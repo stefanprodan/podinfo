@@ -43,7 +43,6 @@ definitions:
       token_name:
         type: string
     type: object
-host: localhost:9898
 info:
   contact:
     name: Source Code
