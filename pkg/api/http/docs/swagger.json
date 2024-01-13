@@ -17,7 +17,6 @@
         },
         "version": "2.0"
     },
-    "host": "localhost:9898",
     "basePath": "/",
     "paths": {
         "/": {
@@ -57,7 +56,7 @@
                     "202": {
                         "description": "Accepted",
                         "schema": {
-                            "$ref": "#/definitions/api.MapResponse"
+                            "$ref": "#/definitions/http.MapResponse"
                         }
                     }
                 }
@@ -80,7 +79,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.RuntimeResponse"
+                            "$ref": "#/definitions/http.RuntimeResponse"
                         }
                     }
                 }
@@ -198,7 +197,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.MapResponse"
+                            "$ref": "#/definitions/http.MapResponse"
                         }
                     }
                 }
@@ -230,7 +229,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.MapResponse"
+                            "$ref": "#/definitions/http.MapResponse"
                         }
                     }
                 }
@@ -436,7 +435,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.MapResponse"
+                            "$ref": "#/definitions/http.MapResponse"
                         }
                     }
                 }
@@ -459,7 +458,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.MapResponse"
+                            "$ref": "#/definitions/http.MapResponse"
                         }
                     }
                 }
@@ -514,7 +513,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.TokenResponse"
+                            "$ref": "#/definitions/http.TokenResponse"
                         }
                     }
                 }
@@ -537,7 +536,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.TokenValidationResponse"
+                            "$ref": "#/definitions/http.TokenValidationResponse"
                         }
                     },
                     "401": {
@@ -563,7 +562,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.MapResponse"
+                            "$ref": "#/definitions/http.MapResponse"
                         }
                     }
                 }
@@ -586,7 +585,7 @@
                     "202": {
                         "description": "Accepted",
                         "schema": {
-                            "$ref": "#/definitions/api.MapResponse"
+                            "$ref": "#/definitions/http.MapResponse"
                         }
                     }
                 }
@@ -594,13 +593,13 @@
         }
     },
     "definitions": {
-        "api.MapResponse": {
+        "http.MapResponse": {
             "type": "object",
             "additionalProperties": {
                 "type": "string"
             }
         },
-        "api.RuntimeResponse": {
+        "http.RuntimeResponse": {
             "type": "object",
             "properties": {
                 "color": {
@@ -638,7 +637,7 @@
                 }
             }
         },
-        "api.TokenResponse": {
+        "http.TokenResponse": {
             "type": "object",
             "properties": {
                 "expires_at": {
@@ -649,7 +648,7 @@
                 }
             }
         },
-        "api.TokenValidationResponse": {
+        "http.TokenValidationResponse": {
             "type": "object",
             "properties": {
                 "expires_at": {

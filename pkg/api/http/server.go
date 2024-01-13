@@ -35,7 +35,6 @@ import (
 // @license.name MIT License
 // @license.url https://github.com/stefanprodan/podinfo/blob/master/LICENSE
 
-// @host localhost:9898
 // @BasePath /
 // @schemes http https
 

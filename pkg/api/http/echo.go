@@ -22,7 +22,7 @@ import (
 // @Accept json
 // @Produce json
 // @Router /api/echo [post]
-// @Success 202 {object} api.MapResponse
+// @Success 202 {object} http.MapResponse
 func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, span := s.tracer.Start(r.Context(), "echoHandler")
 	defer span.End()

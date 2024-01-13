@@ -51,7 +51,7 @@ func (m *RandomDelayMiddleware) Handler(next http.Handler) http.Handler {
 // @Produce json
 // @Param seconds path int true "seconds to wait for"
 // @Router /delay/{seconds} [get]
-// @Success 200 {object} api.MapResponse
+// @Success 200 {object} http.MapResponse
 func (s *Server) delayHandler(w http.ResponseWriter, r *http.Request) {
 	_, span := s.tracer.Start(r.Context(), "delayHandler")
 	defer span.End()
