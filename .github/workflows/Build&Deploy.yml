@@ -37,7 +37,7 @@ jobs:
         run: |    
           echo "Building the applicaiotn"
 
-  Pusing Artifact:        
+  PushingArtifact:        
     name: "Pushing Artifact"
     runs-on: [ubuntu-latest]
     needs: [Build]
@@ -50,9 +50,19 @@ jobs:
   Deploy:        
     name: "Deploy"
     runs-on: [ubuntu-latest]
-    needs: [Pusing Artifact]
+    needs: [PushingArtifact]
 
     steps:
       - name: "Deploying"        
         run: |
           echo "Deploying"
+          
+  StopRunner:  
+    name: "Start Runner"
+    runs-on: [ubuntu-latest]
+    needs: [Deploy]
+    steps:      
+      - name: "Stoping Runner"
+        shell: bash        
+        run: |
+          echo "Stoping the runner..."
