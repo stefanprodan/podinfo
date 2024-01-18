@@ -1,0 +1,59 @@
+---
+name: Build and Pord-Deploy
+
+on: 
+  workflow_dispatch:
+          
+env:
+  AWS_DEFAULT_REGION: us-east-1
+  
+jobs:
+  StartRunner:  
+    name: "Start Runner"
+    runs-on: [ubuntu-latest]
+
+    steps:      
+      - name: "Starting Runner"
+        shell: bash        
+        run: |
+          echo "Starting the runner..."
+
+  Build:  
+    name: "App Build"
+    runs-on: [ubuntu-latest]
+    needs: [StartRunner]
+
+    steps:
+      - name: "Building applicaiton"
+        run: |    
+          echo "Building the applicaiotn"
+
+  PushingArtifact:        
+    name: "Pushing Artifact"
+    runs-on: [ubuntu-latest]
+    needs: [Build]
+
+    steps:
+      - name: "Pushing Artifact"
+        run: |
+          echo "Pushing Artifact"
+  
+  Deploy:        
+    name: "Deploy"
+    runs-on: [ubuntu-latest]
+    needs: [PushingArtifact]
+
+    steps:
+      - name: "Deploying"        
+        run: |
+          echo "Deploying"
+          
+  StopRunner:  
+    name: "Start Runner"
+    runs-on: [ubuntu-latest]
+    needs: [Deploy]
+    steps:      
+      - name: "Stoping Runner"
+        shell: bash        
+        run: |
+          echo "Stoping the runner..."
