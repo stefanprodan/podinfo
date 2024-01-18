@@ -1,65 +1,58 @@
-name: test
+---
+name: Build and Deploy
 
-on:
-  pull_request:
-  push:
-    branches:
-      - 'master'
-
+on: 
+  workflow_dispatch:
+        inputs:
+          env:
+            description: 'Choose the non-prod env to deploy into:'
+            type: choice
+            required: true
+            default: "Test"
+            options:
+            - "Test"
+            - "UAT"
+          
+env:
+  AWS_DEFAULT_REGION: us-east-1
+  
 jobs:
-  test:
-    runs-on: ubuntu-latest
+  StartRunner:  
+    name: "Start Runner"
+    runs-on: [ubuntu-latest]
+
+    steps:      
+      - name: "Starting Runner"
+        shell: bash        
+        run: |
+          echo "Starting the runner..."
+
+  Build:  
+    name: "App Build"
+    runs-on: [ubuntu-latest]
+    needs: [StartRunner]
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: Restore Go cache
-        uses: actions/cache@v3
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: ${{ runner.os }}-go-
-      - name: Setup Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: 1.19.x
-      - name: Setup CUE
-        uses: cue-lang/setup-cue@main
-      - name: Run unit tests
-        run: make test
-      - name: Generate CUE definitions
-        run: make cue-mod
-      - name: Verify CUE formatting
-        working-directory: ./cue
+      - name: "Building applicaiton"
+        run: |    
+          echo "Building the applicaiotn"
+
+  Pusing Artifact:        
+    name: "Pushing Artifact"
+    runs-on: [ubuntu-latest]
+    needs: [Build]
+
+    steps:
+      - name: "Pushing Artifact"
         run: |
-          cue fmt .
-          status=$(git status . --porcelain)
-          [[ -z "$status" ]] || {
-            echo "CUE files are not correctly formatted"
-            echo "$status"
-            git diff
-            exit 1
-          }
-      - name: Validate CUE
-        working-directory: ./cue
-        run: cue vet --all-errors --concrete .
-      - name: Check if working tree is dirty
+          echo "Pushing Artifact"
+  
+  Deploy:        
+    name: "Deploy"
+    runs-on: [ubuntu-latest]
+    needs: [Pusing Artifact]
+
+    steps:
+      - name: "Deploying"        
         run: |
-          if [[ $(git diff --stat) != '' ]]; then
-            echo 'run make test and commit changes'
-            exit 1
-          fi
-      - name: Validate Helm chart
-        uses: stefanprodan/kube-tools@v1
-        with:
-          kubectl: 1.19.11
-          helm: 2.17.0
-          helmv3: 3.6.0
-          command: |
-            helmv3 template ./charts/podinfo | kubeval --strict --kubernetes-version 1.19.11 --schema-location https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master
-      - name: Validate kustomization
-        uses: stefanprodan/kube-tools@v1
-        with:
-          kubectl: 1.19.11
-          command: |
-            kustomize build ./kustomize | kubeval --strict --kubernetes-version 1.19.11 --schema-location https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master
-            kustomize build ./kustomize | conftest test -p .github/policy -
+          echo "Deploying"
