@@ -3,6 +3,7 @@ package api
 import (
 	"math/rand"
 	"net/http"
+	"regexp"
 
 	"strconv"
 	"time"
@@ -58,13 +59,25 @@ func (s *Server) delayHandler(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
 
-	delay, err := strconv.Atoi(vars["wait"])
+	wait := vars["wait"]
+	re := regexp.MustCompile(`(?P<duration>\d+)(?P<unit>ms|s)?`)
+
+	match := re.FindStringSubmatch(wait)
+	delay, err := strconv.Atoi(match[1])
+
+	unit := time.Second
+	unitString := "s"
+	if match[2] == "ms" {
+		unit = time.Millisecond
+		unitString = "ms"
+	}
+
 	if err != nil {
 		s.ErrorResponse(w, r, span, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	time.Sleep(time.Duration(delay) * time.Second)
+	time.Sleep(time.Duration(delay) * unit)
 
-	s.JSONResponse(w, r, map[string]int{"delay": delay})
+	s.JSONResponse(w, r, map[string]any{"delay": delay, "unit": unitString})
 }
