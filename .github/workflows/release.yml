@@ -21,6 +21,18 @@ jobs:
       - uses: sigstore/cosign-installer@v3
       - uses: fluxcd/flux2/action@main
       - uses: stefanprodan/timoni/actions/setup@main
+      - name: Setup Notation CLI
+        uses: notaryproject/notation-action/setup@v1
+        with:
+          version: "1.0.0"
+      - name: Setup Notation signing keys
+        run: |
+          mkdir -p ~/.config/notation/localkeys/
+          cp ./.notation/signingkeys.json ~/.config/notation/
+          cp ./.notation/notation.crt ~/.config/notation/localkeys/
+          echo "$NOTATION_KEY" > ~/.config/notation/localkeys/notation.key
+        env:
+          NOTATION_KEY: ${{ secrets.NOTATION_SIGNING_KEY }}
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
@@ -110,6 +122,10 @@ jobs:
           cosign sign ghcr.io/stefanprodan/podinfo:${{ steps.prep.outputs.VERSION }} --yes
           cosign sign ghcr.io/stefanprodan/charts/podinfo:${{ steps.prep.outputs.VERSION }} --yes
           cosign sign ghcr.io/stefanprodan/manifests/podinfo:${{ steps.prep.outputs.VERSION }} --yes
+          notation sign --signature-format cose docker.io/stefanprodan/podinfo:${{ steps.prep.outputs.VERSION }}
+          notation sign --signature-format cose ghcr.io/stefanprodan/podinfo:${{ steps.prep.outputs.VERSION }}
+          notation sign --signature-format cose ghcr.io/stefanprodan/charts/podinfo:${{ steps.prep.outputs.VERSION }}
+          notation sign --signature-format cose ghcr.io/stefanprodan/manifests/podinfo:${{ steps.prep.outputs.VERSION }}
       - name: Publish base image
         uses: docker/build-push-action@v5
         with:
@@ -135,6 +151,8 @@ jobs:
           echo "$COSIGN_KEY" > /tmp/cosign.key
           cosign sign -key /tmp/cosign.key ghcr.io/stefanprodan/podinfo-deploy:${{ steps.prep.outputs.VERSION }} --yes
           cosign sign -key /tmp/cosign.key ghcr.io/stefanprodan/podinfo-deploy:latest --yes
+          notation sign --signature-format cose ghcr.io/stefanprodan/podinfo-deploy:${{ steps.prep.outputs.VERSION }}
+          notation sign --signature-format cose ghcr.io/stefanprodan/podinfo-deploy:latest
         env:
           COSIGN_PASSWORD: ${{secrets.COSIGN_PASSWORD}}
           COSIGN_KEY: ${{secrets.COSIGN_KEY}}
