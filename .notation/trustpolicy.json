@@ -4,8 +4,8 @@
         {
             "name": "fluxcd.io",
             "registryScopes": [
-                "ghcr.io/jasonthedeveloper/podinfo-deploy",
-                "ghcr.io/jasonthedeveloper/charts/podinfo"
+                "ghcr.io/stefanprodan/podinfo-deploy",
+                "ghcr.io/stefanprodan/charts/podinfo"
             ],
             "signatureVerification": {
                 "level" : "strict"
