@@ -7,45 +7,70 @@ import (
 
 // Config defines the schema and defaults for the Instance values.
 #Config: {
-	// UI setting
+	// Podinfo optional UI setting.
 	ui: {
 		color:    *"#34577c" | string
 		message?: string
 		backend?: string
 	}
 
-	// Runtime version info
+	// Runtime version info automatically set at apply-time.
 	moduleVersion!: string
 	kubeVersion!:   string
 
-	// Metadata (common to all resources)
+	// The minimum Kubernetes version to 1.20.
+	clusterVersion: timoniv1.#SemVer & {#Version: kubeVersion, #Minimum: "1.20.0"}
+
+	// Kubernetes metadata common to all resources.
 	metadata: timoniv1.#Metadata & {#Version: moduleVersion}
 
-	// Label selector (common to all resources)
+	// Label selector common to all resources.
 	selector: timoniv1.#Selector & {#Name: metadata.name}
 
-	// Deployment
+	// The number of pods replicas.
+	// By default, the number of replicas is 1.
 	replicas: *1 | int & >=0
 
-	// Pod
-	podAnnotations?: {[ string]: string}
+	// The image allows setting the container image repository,
+	// tag, digest and pull policy.
+	// The default image repository and tag is set in `values.cue`.
+	image!: timoniv1.#Image
+
+	// The resources allows setting the container resource requirements.
+	// By default, the container requests 10m CPU and 32Mi memory.
+	resources: timoniv1.#ResourceRequirements & {
+		requests: {
+			cpu:    *"10m" | timoniv1.#CPUQuantity
+			memory: *"32Mi" | timoniv1.#MemoryQuantity
+		}
+	}
+
+	// The securityContext allows setting the container security context.
+	securityContext?: corev1.#SecurityContext
+
+	// Pod optinal settings.
+	podAnnotations?: {[string]: string}
 	podSecurityContext?: corev1.#PodSecurityContext
 	imagePullSecrets?: [...corev1.LocalObjectReference]
-	tolerations?: [ ...corev1.#Toleration]
-	affinity?: corev1.#Affinity
+	tolerations?: [...corev1.#Toleration]
 	topologySpreadConstraints?: [...corev1.#TopologySpreadConstraint]
 
-	// Container
-	image:            timoniv1.#Image
-	imagePullPolicy:  *"IfNotPresent" | string
-	resources?:       corev1.#ResourceRequirements
-	securityContext?: corev1.#SecurityContext
+	// Pod affinity rules, by default, pods are scheduled on Linux nodes.
+	affinity: *{
+		nodeAffinity: requiredDuringSchedulingIgnoredDuringExecution: nodeSelectorTerms: [{
+			matchExpressions: [{
+				key:      corev1.#LabelOSStable
+				operator: "In"
+				values: ["linux"]
+			}]
+		}]
+	} | corev1.#Affinity
 
 	// Service
 	service: {
-		port: *80 | int & >0 & <=65535
-		annotations?: {[ string]: string}
-		labels?: {[ string]: string}
+		port:         *80 | int & >0 & <=65535
+		annotations?: timoniv1.#Annotations
+		labels?:      timoniv1.#Labels
 	}
 
 	// HorizontalPodAutoscaler (optional)
@@ -59,12 +84,12 @@ import (
 
 	// Ingress (optional)
 	ingress: {
-		enabled: *false | bool
-		tls:     *false | bool
-		host:    *"podinfo.local" | string
-		annotations?: {[ string]: string}
-		labels?: {[ string]: string}
-		className?: string
+		enabled:      *false | bool
+		tls:          *false | bool
+		host:         *"podinfo.local" | string
+		className?:   string
+		annotations?: timoniv1.#Annotations
+		labels?:      timoniv1.#Labels
 	}
 
 	// ServiceMonitor (optional)
@@ -91,9 +116,9 @@ import (
 	config: #Config
 
 	objects: {
-		"\(config.metadata.name)-sa":     #ServiceAccount & {_config: config}
-		"\(config.metadata.name)-svc":    #Service & {_config:        config}
-		"\(config.metadata.name)-deploy": #Deployment & {_config:     config}
+		"\(config.metadata.name)-sa": #ServiceAccount & {_config: config}
+		"\(config.metadata.name)-svc": #Service & {_config: config}
+		"\(config.metadata.name)-deploy": #Deployment & {_config: config}
 
 		if config.autoscaling.enabled {
 			"\(config.metadata.name)-hpa": #HorizontalPodAutoscaler & {_config: config}
