@@ -1,8 +1,8 @@
 {
-    "default": "fluxcd.io",
+    "default": "stefanprodan.com",
     "keys": [
         {
-            "name": "fluxcd.io",
+            "name": "stefanprodan.com",
             "keyPath": "/home/runner/.config/notation/localkeys/notation.key",
             "certPath": "/home/runner/.config/notation/localkeys/notation.crt"
         }
