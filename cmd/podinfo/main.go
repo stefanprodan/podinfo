@@ -13,8 +13,8 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	"github.com/stefanprodan/podinfo/pkg/api"
-	"github.com/stefanprodan/podinfo/pkg/grpc"
+	"github.com/stefanprodan/podinfo/pkg/api/grpc"
+	"github.com/stefanprodan/podinfo/pkg/api/http"
 	"github.com/stefanprodan/podinfo/pkg/signals"
 	"github.com/stefanprodan/podinfo/pkg/version"
 	go_grpc "google.golang.org/grpc"
@@ -138,11 +138,13 @@ func main() {
 	var grpcServer *go_grpc.Server
 	if grpcCfg.Port > 0 {
 		grpcSrv, _ := grpc.NewServer(&grpcCfg, logger)
+		//grpcinfoSrv, _ := grpc.NewInfoServer(&grpcCfg)
+		
 		grpcServer = grpcSrv.ListenAndServe()
 	}
 
 	// load HTTP server config
-	var srvCfg api.Config
+	var srvCfg http.Config
 	if err := viper.Unmarshal(&srvCfg); err != nil {
 		logger.Panic("config unmarshal failed", zap.Error(err))
 	}
@@ -155,7 +157,7 @@ func main() {
 	)
 
 	// start HTTP server
-	srv, _ := api.NewServer(&srvCfg, logger)
+	srv, _ := http.NewServer(&srvCfg, logger)
 	httpServer, httpsServer, healthy, ready := srv.ListenAndServe()
 
 	// graceful shutdown
