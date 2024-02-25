@@ -2,7 +2,7 @@
     "version": "1.0",
     "trustPolicies": [
         {
-            "name": "fluxcd.io",
+            "name": "stefanprodan.com",
             "registryScopes": [
                 "ghcr.io/stefanprodan/podinfo-deploy",
                 "ghcr.io/stefanprodan/charts/podinfo"
@@ -10,9 +10,9 @@
             "signatureVerification": {
                 "level" : "strict"
             },
-            "trustStores": [ "ca:fluxcd.io" ],
+            "trustStores": [ "ca:stefanprodan.com" ],
             "trustedIdentities": [
-                "x509.subject: C=US, ST=WA, L=Seattle, O=Notary, CN=fluxcd.io"
+                "x509.subject: C=RO, ST=BU, L=Bucharest, O=Notary, CN=stefanprodan.com"
             ]
         }
     ]
