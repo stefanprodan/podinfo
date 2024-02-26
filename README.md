@@ -57,6 +57,8 @@ Web API:
 gRPC API:
 
 * `/grpc.health.v1.Health/Check` health checking
+* `/grpc.EchoService/Echo` echos the received content
+* `/grpc.VersionService/Version` returns podinfo version and Git commit hash
 
 Web UI:
 
