@@ -23,7 +23,7 @@ jobs:
       - name: Setup Notation CLI
         uses: notaryproject/notation-action/setup@v1
         with:
-          version: "1.0.0"
+          version: "1.1.0"
       - name: Setup Notation signing keys
         run: |
           mkdir -p ~/.config/notation/localkeys/
