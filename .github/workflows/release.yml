@@ -113,7 +113,7 @@ jobs:
             --source="${{ github.event.repository.html_url }}" \
             --revision="${GITHUB_REF_NAME}/${GITHUB_SHA}"
           flux tag artifact oci://ghcr.io/stefanprodan/manifests/podinfo:${{ steps.prep.outputs.VERSION }} --tag latest
-      - name: Sign OCI artifacts
+      - name: Sign artifacts with Cosign
         env:
           COSIGN_EXPERIMENTAL: 1
         run: |
@@ -121,6 +121,8 @@ jobs:
           cosign sign ghcr.io/stefanprodan/podinfo:${{ steps.prep.outputs.VERSION }} --yes
           cosign sign ghcr.io/stefanprodan/charts/podinfo:${{ steps.prep.outputs.VERSION }} --yes
           cosign sign ghcr.io/stefanprodan/manifests/podinfo:${{ steps.prep.outputs.VERSION }} --yes
+      - name: Sign artifacts with Notation
+        run: |
           notation sign --signature-format cose docker.io/stefanprodan/podinfo:${{ steps.prep.outputs.VERSION }}
           notation sign --signature-format cose ghcr.io/stefanprodan/podinfo:${{ steps.prep.outputs.VERSION }}
           notation sign --signature-format cose ghcr.io/stefanprodan/charts/podinfo:${{ steps.prep.outputs.VERSION }}
