@@ -121,12 +121,6 @@ jobs:
           cosign sign ghcr.io/stefanprodan/podinfo:${{ steps.prep.outputs.VERSION }} --yes
           cosign sign ghcr.io/stefanprodan/charts/podinfo:${{ steps.prep.outputs.VERSION }} --yes
           cosign sign ghcr.io/stefanprodan/manifests/podinfo:${{ steps.prep.outputs.VERSION }} --yes
-      - name: Sign artifacts with Notation
-        run: |
-          notation sign --signature-format cose docker.io/stefanprodan/podinfo:${{ steps.prep.outputs.VERSION }}
-          notation sign --signature-format cose ghcr.io/stefanprodan/podinfo:${{ steps.prep.outputs.VERSION }}
-          notation sign --signature-format cose ghcr.io/stefanprodan/charts/podinfo:${{ steps.prep.outputs.VERSION }}
-          notation sign --signature-format cose ghcr.io/stefanprodan/manifests/podinfo:${{ steps.prep.outputs.VERSION }}
       - name: Publish base image
         uses: docker/build-push-action@v5
         with:
@@ -147,16 +141,21 @@ jobs:
             --source="${{ github.event.repository.html_url }}" \
             --revision="${GITHUB_REF_NAME}/${GITHUB_SHA}"
           flux tag artifact oci://ghcr.io/stefanprodan/podinfo-deploy:${{ steps.prep.outputs.VERSION }} --tag latest
-      - name: Sign config artifact
+      - name: Sign config artifact with cso
         run: |
           echo "$COSIGN_KEY" > /tmp/cosign.key
           cosign sign -key /tmp/cosign.key ghcr.io/stefanprodan/podinfo-deploy:${{ steps.prep.outputs.VERSION }} --yes
           cosign sign -key /tmp/cosign.key ghcr.io/stefanprodan/podinfo-deploy:latest --yes
-          notation sign --signature-format cose ghcr.io/stefanprodan/podinfo-deploy:${{ steps.prep.outputs.VERSION }}
-          notation sign --signature-format cose ghcr.io/stefanprodan/podinfo-deploy:latest
         env:
           COSIGN_PASSWORD: ${{secrets.COSIGN_PASSWORD}}
           COSIGN_KEY: ${{secrets.COSIGN_KEY}}
+      - name: Sign artifacts with Notation
+        run: |
+          notation sign --signature-format cose ghcr.io/stefanprodan/podinfo:${{ steps.prep.outputs.VERSION }}
+          notation sign --signature-format cose ghcr.io/stefanprodan/charts/podinfo:${{ steps.prep.outputs.VERSION }}
+          notation sign --signature-format cose ghcr.io/stefanprodan/manifests/podinfo:${{ steps.prep.outputs.VERSION }}
+          notation sign --signature-format cose ghcr.io/stefanprodan/podinfo-deploy:${{ steps.prep.outputs.VERSION }}
+          notation sign --signature-format cose ghcr.io/stefanprodan/podinfo-deploy:latest
       - uses: ./.github/actions/release-notes
       - name: Generate release notes
         run: |
