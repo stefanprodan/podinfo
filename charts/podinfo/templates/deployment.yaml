@@ -87,6 +87,15 @@ spec:
             {{- if .Values.h2c.enabled }}
             - --h2c
             {{- end }}
+            {{- with .Values.config.path }}
+            - --config-path={{ . }}
+            {{- end }}
+            {{- with .Values.config.name }}
+            - --config={{ . }}
+            {{- end }}
+            {{- with .Values.extraArgs }}
+              {{- toYaml . | nindent 12 }}
+            {{- end }}
           env:
           {{- if .Values.ui.message }}
           - name: PODINFO_UI_MESSAGE

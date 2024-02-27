@@ -80,6 +80,9 @@ The following tables lists the configurable parameters of the podinfo chart and 
 | `service.nodePort`                | `31198`                | NodePort for the HTTP endpoint                                                                                         |
 | `h2c.enabled`                     | `false`                | Allow upgrading to h2c (non-TLS version of HTTP/2)                                                                     |
 | `extraEnvs`                       | `[]`                   | Extra environment variables for the podinfo container |
+| `config.path`                     | `""`                   | config file path                                                                                                       |
+| `config.name`                     | `""`                   | config file name                                                                                                       |
+| `extraArgs`                       | `[]`                   | Additional command line arguments to pass to podinfo container                                                         |
 | `hpa.enabled`                     | `false`                | Enables the Kubernetes HPA                                                                                             |
 | `hpa.maxReplicas`                 | `10`                   | Maximum amount of pods                                                                                                 |
 | `hpa.cpu`                         | `None`                 | Target CPU usage per pod                                                                                               |
