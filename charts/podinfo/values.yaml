@@ -142,6 +142,13 @@ affinity: {}
 
 podAnnotations: {}
 
+# https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/
+topologySpreadConstraints: []
+
+# Disruption budget will be configured only when the replicaCount is greater than 1
+podDisruptionBudget: {}
+#  maxUnavailable: 1
+
 # https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes
 probes:
   readiness:
