@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 	"github.com/stefanprodan/podinfo/pkg/version"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
@@ -17,7 +18,8 @@ func randomErrorMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		rand.Seed(time.Now().Unix())
 		if rand.Int31n(3) == 0 {
-
+			logger := ctxzap.Extract(r.Context())
+			logger.Error("random error occurred")
 			errors := []int{http.StatusInternalServerError, http.StatusBadRequest, http.StatusConflict}
 			w.WriteHeader(errors[rand.Intn(len(errors))])
 			return
