@@ -88,6 +88,7 @@ redis:
   enabled: false
   repository: redis
   tag: 7.0.7
+  securityContext: {}
 
 serviceAccount:
   # Specifies whether a service account should be created

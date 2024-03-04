@@ -25,6 +25,10 @@ spec:
         - name: redis
           image: "{{ .Values.redis.repository }}:{{ .Values.redis.tag }}"
           imagePullPolicy: IfNotPresent
+          {{- if .Values.redis.securityContext }}
+          securityContext:
+            {{- toYaml .Values.redis.securityContext | nindent 12 }}
+          {{- end }}
           command:
             - redis-server
             - "/redis-master/redis.conf"

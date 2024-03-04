@@ -58,6 +58,7 @@ The following tables lists the configurable parameters of the podinfo chart and 
 | `backends`                        | `[]`                   | Array of echo backend URLs                                                                                             |
 | `cache`                           | `None`                 | Redis address in the format `tcp://<host>:<port>`                                                                      |
 | `redis.enabled`                   | `false`                | Create Redis deployment for caching purposes                                                                           |
+| `redis.securityContext`           | `{}`                   | The security context to be set on the redis container                                                                |
 | `ui.color`                        | `#34577c`              | UI color                                                                                                               |
 | `ui.message`                      | `None`                 | UI greetings message                                                                                                   |
 | `ui.logo`                         | `None`                 | UI logo                                                                                                                |
