@@ -1,0 +1,49 @@
+{{- if .Values.networkPolicies.enabled -}}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ template "podinfo.fullname" . }}-egress
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "podinfo.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: server
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "podinfo.selectorLabels" . | nindent 14 }}
+              app.kubernetes.io/component: cache
+          namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ .Release.Namespace }}
+      ports:
+        - port: redis
+          protocol: TCP
+  policyTypes:
+    - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ template "podinfo.fullname" . }}-ingress
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: cache
+      {{- include "podinfo.selectorLabels" . | nindent 6 }}
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              {{- include "podinfo.selectorLabels" . | nindent 14 }}
+              app.kubernetes.io/component: server
+          namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ .Release.Namespace }}
+      ports:
+        - port: redis
+          protocol: TCP
+  policyTypes:
+    - Ingress
+{{- end -}}

@@ -131,6 +131,9 @@ resources:
     cpu: 100m
     memory: 64Mi
 
+networkPolicies:
+  enabled: false
+
 nodeSelector: {}
 
 tolerations: []

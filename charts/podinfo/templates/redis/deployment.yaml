@@ -5,6 +5,8 @@ metadata:
   name: {{ template "podinfo.fullname" . }}-redis
   labels:
     app: {{ template "podinfo.fullname" . }}-redis
+    {{- include "podinfo.labels" . | nindent 4 }}
+    app.kubernetes.io/component: cache
 spec:
   strategy:
     type: Recreate
@@ -15,6 +17,8 @@ spec:
     metadata:
       labels:
         app: {{ template "podinfo.fullname" . }}-redis
+        {{- include "podinfo.labels" . | nindent 8 }}
+        app.kubernetes.io/component: cache
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/redis/config.yaml") . | sha256sum | quote }}
     spec:

@@ -103,6 +103,7 @@ The following tables lists the configurable parameters of the podinfo chart and 
 | `resources.requests.memory`       | `16Mi`                 | Pod memory request                                                                                                     |
 | `resources.limits.cpu`            | `None`                 | Pod CPU limit                                                                                                          |
 | `resources.limits.memory`         | `None`                 | Pod memory limit                                                                                                       |
+| `networkPolicy.enabled`           | `false`                | Whether network policies between podinfo and redis should be created                                                   |
 | `nodeSelector`                    | `{}`                   | Node labels for pod assignment                                                                                         |
 | `tolerations`                     | `[]`                   | List of node taints to tolerate                                                                                        |
 | `affinity`                        | `None`                 | Node/pod affinities                                                                                                    |
