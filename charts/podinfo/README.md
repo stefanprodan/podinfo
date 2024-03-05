@@ -60,6 +60,7 @@ The following tables lists the configurable parameters of the podinfo chart and 
 | `redis.enabled`                   | `false`                | Create Redis deployment for caching purposes                                                                           |
 | `redis.securityContext`           | `{}`                   | The security context to be set on the redis pod                                                                        |
 | `redis.containerSecurityContext`  | `{}`                   | The security context to be set on the redis container                                                                  |
+| `redis.persistence.enabled     `  | `false`                | Enabled the PVC for redis cache                                                                                        |
 | `ui.color`                        | `#34577c`              | UI color                                                                                                               |
 | `ui.message`                      | `None`                 | UI greetings message                                                                                                   |
 | `ui.logo`                         | `None`                 | UI logo                                                                                                                |
