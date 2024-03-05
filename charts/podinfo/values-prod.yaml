@@ -84,6 +84,8 @@ redis:
   enabled: true
   repository: redis
   tag: 7.0.7
+  persistence:
+    enabled: true
 
 serviceAccount:
   # Specifies whether a service account should be created
