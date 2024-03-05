@@ -22,6 +22,10 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/redis/config.yaml") . | sha256sum | quote }}
     spec:
+      {{- if .Values.redis.securityContext }}
+      securityContext:
+        {{- toYaml .Values.redis.securityContext | nindent 8 }}
+      {{- end }}
       {{- if .Values.serviceAccount.enabled }}
       serviceAccountName: {{ template "podinfo.serviceAccountName" . }}
       {{- end }}
@@ -29,9 +33,9 @@ spec:
         - name: redis
           image: "{{ .Values.redis.repository }}:{{ .Values.redis.tag }}"
           imagePullPolicy: IfNotPresent
-          {{- if .Values.redis.securityContext }}
+          {{- if .Values.redis.containerSecurityContext }}
           securityContext:
-            {{- toYaml .Values.redis.securityContext | nindent 12 }}
+            {{- toYaml .Values.redis.containerSecurityContext | nindent 12 }}
           {{- end }}
           command:
             - redis-server
@@ -61,22 +65,23 @@ spec:
               memory: 32Mi
           volumeMounts:
             - mountPath: /var/lib/redis
-              name: data
+              name: redis-system
             - mountPath: /redis-master
               name: config
+            - mountPath: /data
+              name: data
       volumes:
-        {{- if .Values.redis.persistence.enabled }}
-        - name: data
-          persistentVolumeClaim:
-            claimName: {{ template "podinfo.fullname" . }}
-        {{- else }}
-        - name: data
+        - name: redis-system
           emptyDir: {}
-        {{- end }}
         - name: config
           configMap:
             name: {{ template "podinfo.fullname" . }}-redis
             items:
               - key: redis.conf
                 path: redis.conf
-{{ end }}
+        {{- if .Values.redis.persistence.enabled }}
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ template "podinfo.fullname" . }}
+        {{- end }}
+{{- end -}}
