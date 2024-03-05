@@ -84,6 +84,7 @@ redis:
   enabled: true
   repository: redis
   tag: 7.0.7
+  securityContext: {}
   persistence:
     enabled: true
 
