@@ -84,6 +84,10 @@ redis:
   enabled: true
   repository: redis
   tag: 7.0.7
+  securityContext: {}
+  containerSecurityContext: {}
+  persistence:
+    enabled: true
 
 serviceAccount:
   # Specifies whether a service account should be created
@@ -130,6 +134,9 @@ resources:
   requests:
     cpu: 100m
     memory: 64Mi
+
+networkPolicies:
+  enabled: false
 
 nodeSelector: {}
 
