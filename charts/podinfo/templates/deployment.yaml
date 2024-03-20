@@ -104,6 +104,9 @@ spec:
           - name: PODINFO_BACKEND_URL
             value: {{ .Values.backend }}
           {{- end }}
+          {{- if .Values.extraEnvs }}
+{{ toYaml .Values.extraEnvs | indent 10 }}
+          {{- end }}
           ports:
             - name: http
               containerPort: {{ .Values.service.httpPort | default 9898 }}

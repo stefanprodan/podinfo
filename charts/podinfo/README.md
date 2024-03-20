@@ -79,6 +79,7 @@ The following tables lists the configurable parameters of the podinfo chart and 
 | `service.grpcService`             | `podinfo`              | gPRC service name                                                                                                      |
 | `service.nodePort`                | `31198`                | NodePort for the HTTP endpoint                                                                                         |
 | `h2c.enabled`                     | `false`                | Allow upgrading to h2c (non-TLS version of HTTP/2)                                                                     |
+| `extraEnvs`                       | `[]`                   | Extra environment variables for the podinfo container |
 | `hpa.enabled`                     | `false`                | Enables the Kubernetes HPA                                                                                             |
 | `hpa.maxReplicas`                 | `10`                   | Maximum amount of pods                                                                                                 |
 | `hpa.cpu`                         | `None`                 | Target CPU usage per pod                                                                                               |
