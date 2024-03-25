@@ -134,6 +134,14 @@ resources:
     cpu: 1m
     memory: 16Mi
 
+# Extra environment variables for the podinfo container
+extraEnvs: []
+# Example on how to configure extraEnvs
+#  - name: OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
+#    value: "http://otel:4317"
+#  - name: MULTIPLE_VALUES
+#    value: TEST
+
 nodeSelector: {}
 
 tolerations: []
