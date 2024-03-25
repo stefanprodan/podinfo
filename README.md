@@ -22,7 +22,7 @@ Specifications:
 * Swagger docs
 * Timoni, Helm and Kustomize installers
 * End-to-End testing with Kubernetes Kind and Helm
-* Multi-arch container image with Docker buildx and Github Actions
+* Multi-arch container image with Docker buildx and GitHub Actions
 * Container image signing with Sigstore cosign
 * SBOMs and SLSA Provenance embedded in the container image
 * CVE scanning with Trivy
