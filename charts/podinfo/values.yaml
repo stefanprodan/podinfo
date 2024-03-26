@@ -45,6 +45,16 @@ service:
 h2c:
   enabled: false
 
+# config file settings
+config:
+  # config file path
+  path: ""
+  # config file name
+  name: ""
+
+# Additional command line arguments to pass to podinfo container
+extraArgs: []
+
 # enable tls on the podinfo service
 tls:
   enabled: false
