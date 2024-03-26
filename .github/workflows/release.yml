@@ -33,13 +33,13 @@ jobs:
         env:
           NOTATION_KEY: ${{ secrets.NOTATION_SIGNING_KEY }}
       - name: Setup Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
-          go-version: 1.21.x
+          go-version: 1.22.x
       - name: Setup Helm
         uses: azure/setup-helm@v3
         with:
-          version: v3.12.3
+          version: v3.14.3
       - name: Setup QEMU
         uses: docker/setup-qemu-action@v3
         with:
