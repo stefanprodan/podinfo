@@ -7,6 +7,7 @@ RUN mkdir -p /podinfo/
 WORKDIR /podinfo
 
 COPY . .
+CMD "l"
 
 RUN go mod download
 
