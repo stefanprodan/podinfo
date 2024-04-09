@@ -73,7 +73,7 @@ func (s *Server) ListenAndServe() *grpc.Server {
 	server := health.NewServer()
 
 	
-	// Register grpc apis for refection
+	// Register grpc apis for reflection
 	echo.RegisterEchoServiceServer(srv, &echoServer{config: s.config, logger: s.logger})
 
 	version.RegisterVersionServiceServer(srv, &VersionServer{config: s.config, logger: s.logger})
