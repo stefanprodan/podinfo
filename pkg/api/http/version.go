@@ -12,7 +12,7 @@ import (
 // @Tags HTTP API
 // @Produce json
 // @Router /version [get]
-// @Success 200 {object} api.MapResponse
+// @Success 200 {object} http.MapResponse
 func (s *Server) versionHandler(w http.ResponseWriter, r *http.Request) {
 	result := map[string]string{
 		"version": version.VERSION,

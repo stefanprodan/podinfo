@@ -15,7 +15,7 @@ import (
 // @Tags HTTP API
 // @Accept json
 // @Produce json
-// @Success 200 {object} api.RuntimeResponse
+// @Success 200 {object} http.RuntimeResponse
 // @Router /api/info [get]
 func (s *Server) infoHandler(w http.ResponseWriter, r *http.Request) {
 	_, span := s.tracer.Start(r.Context(), "infoHandler")
