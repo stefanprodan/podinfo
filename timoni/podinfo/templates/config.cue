@@ -48,7 +48,7 @@ import (
 	// The securityContext allows setting the container security context.
 	securityContext?: corev1.#SecurityContext
 
-	// Pod optinal settings.
+	// Pod optional settings.
 	podAnnotations?: {[string]: string}
 	podSecurityContext?: corev1.#PodSecurityContext
 	imagePullSecrets?: [...corev1.LocalObjectReference]
