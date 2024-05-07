@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+option go_package = "./status";
+
+package status;
+
+// The greeting service definition.
+service StatusService {
+    rpc Status (StatusRequest) returns (StatusResponse) {}
+}
+
+message StatusRequest {
+    string code = 1;
+}
+
+message StatusResponse {
+    string status = 1;
+}
