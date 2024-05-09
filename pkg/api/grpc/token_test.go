@@ -25,8 +25,9 @@ func TestGrpcToken(t *testing.T) {
 	t.Cleanup(func() {
 		srv.Stop()
 	})
-
-	token.RegisterTokenServiceServer(srv, &TokenServer{})
+	config := &Config{}
+	config.JWTSecret = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"
+	token.RegisterTokenServiceServer(srv, &TokenServer{config: config})
 
 	go func() {
 		if err := srv.Serve(lis); err != nil {
@@ -51,7 +52,7 @@ func TestGrpcToken(t *testing.T) {
 	}
 
 	client := token.NewTokenServiceClient(conn)
-	res, err := client.Token(context.Background(), &token.TokenRequest{})
+	res, err := client.TokenGenerate(context.Background(), &token.TokenRequest{})
 
 	// Check the status code is what we expect.
 	if _, ok := status.FromError(err); !ok {
