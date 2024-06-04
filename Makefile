@@ -98,3 +98,9 @@ swagger:
 .PHONY: timoni-build
 timoni-build:
 	@timoni build podinfo ./timoni/podinfo -f ./timoni/podinfo/debug_values.cue
+
+.PHONY: start
+start:
+	kubectx docker-desktop 
+	devspace use namespace local
+	devspace dev
