@@ -1,0 +1,12 @@
+{"level":"info","msg":"dev:app Waiting for pod to become ready...","time":"2024-06-04T04:41:25-04:00"}
+{"level":"info","msg":"dev:app Selected pod app-podinfo-devspace-64d48bc55d-n9qz7","time":"2024-06-04T04:41:26-04:00"}
+{"level":"info","msg":"dev:app open  Opening 'http://localhost:9898' as soon as application will be started","time":"2024-06-04T04:41:26-04:00"}
+{"level":"info","msg":"dev:app ports Port forwarding started on: 2345 -\u003e 2345, 9898 -\u003e 9898","time":"2024-06-04T04:41:27-04:00"}
+{"level":"info","msg":"dev:app sync  Sync started on: ./ \u003c-\u003e ./","time":"2024-06-04T04:41:28-04:00"}
+{"level":"info","msg":"dev:app sync  Waiting for initial sync to complete","time":"2024-06-04T04:41:28-04:00"}
+{"level":"info","msg":"dev:app sync  Initial sync completed","time":"2024-06-04T04:41:31-04:00"}
+{"level":"info","msg":"dev:app ssh   Port forwarding started on: 10482 -\u003e 8022","time":"2024-06-04T04:41:31-04:00"}
+{"level":"info","msg":"dev:app proxy Port forwarding started on: 10123 \u003c- 10567","time":"2024-06-04T04:41:31-04:00"}
+{"level":"info","msg":"dev:app ssh   Use 'ssh app.backend-microservice-template.devspace' to connect via SSH","time":"2024-06-04T04:41:32-04:00"}
+{"level":"info","msg":"dev:app attach Attaching to pod:container app-podinfo-devspace-64d48bc55d-n9qz7:podinfo","time":"2024-06-04T04:41:32-04:00"}
+{"level":"info","msg":"dev:app open  Successfully opened http://localhost:9898","time":"2024-06-04T04:41:51-04:00"}

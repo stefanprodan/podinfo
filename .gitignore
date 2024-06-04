@@ -26,3 +26,6 @@ cue/go.sum
 
 .notation/podinfo.csr
 .notation/podinfo.key
+
+# ignore mod folder
+pkg/mod

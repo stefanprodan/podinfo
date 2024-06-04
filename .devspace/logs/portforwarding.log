@@ -1,0 +1,61 @@
+Forwarding from 127.0.0.1:2345 -> 2345
+Forwarding from [::1]:2345 -> 2345
+Forwarding from 127.0.0.1:9898 -> 9898
+Forwarding from [::1]:9898 -> 9898
+Handling connection for 9898
+{"level":"error","msg":"an error occurred forwarding 9898 -\u003e 9898: error forwarding port 9898 to pod da9b518d7f1155c652b042062895b7023411597cfa152eb8cc4fa689fdc14331, uid : exit status 1: 2024/06/04 08:41:27 socat[8717] E connect(11, AF=2 127.0.0.1:9898, 16): Connection refused","time":"2024-06-04T04:41:27-04:00"}
+Handling connection for 9898
+{"level":"error","msg":"an error occurred forwarding 9898 -\u003e 9898: error forwarding port 9898 to pod da9b518d7f1155c652b042062895b7023411597cfa152eb8cc4fa689fdc14331, uid : exit status 1: 2024/06/04 08:41:28 socat[8780] E connect(11, AF=2 127.0.0.1:9898, 16): Connection refused","time":"2024-06-04T04:41:28-04:00"}
+Handling connection for 9898
+{"level":"error","msg":"an error occurred forwarding 9898 -\u003e 9898: error forwarding port 9898 to pod da9b518d7f1155c652b042062895b7023411597cfa152eb8cc4fa689fdc14331, uid : exit status 1: 2024/06/04 08:41:29 socat[8862] E connect(11, AF=2 127.0.0.1:9898, 16): Connection refused","time":"2024-06-04T04:41:29-04:00"}
+Handling connection for 9898
+{"level":"error","msg":"an error occurred forwarding 9898 -\u003e 9898: error forwarding port 9898 to pod da9b518d7f1155c652b042062895b7023411597cfa152eb8cc4fa689fdc14331, uid : exit status 1: 2024/06/04 08:41:30 socat[8868] E connect(11, AF=2 127.0.0.1:9898, 16): Connection refused","time":"2024-06-04T04:41:30-04:00"}
+Handling connection for 9898
+{"level":"error","msg":"an error occurred forwarding 9898 -\u003e 9898: error forwarding port 9898 to pod da9b518d7f1155c652b042062895b7023411597cfa152eb8cc4fa689fdc14331, uid : exit status 1: 2024/06/04 08:41:31 socat[8897] E connect(11, AF=2 127.0.0.1:9898, 16): Connection refused","time":"2024-06-04T04:41:31-04:00"}
+Forwarding from 127.0.0.1:10482 -> 8022
+Forwarding from [::1]:10482 -> 8022
+Handling connection for 9898
+{"level":"error","msg":"an error occurred forwarding 9898 -\u003e 9898: error forwarding port 9898 to pod da9b518d7f1155c652b042062895b7023411597cfa152eb8cc4fa689fdc14331, uid : exit status 1: 2024/06/04 08:41:32 socat[9122] E connect(11, AF=2 127.0.0.1:9898, 16): Connection refused","time":"2024-06-04T04:41:32-04:00"}
+Handling connection for 9898
+{"level":"error","msg":"an error occurred forwarding 9898 -\u003e 9898: error forwarding port 9898 to pod da9b518d7f1155c652b042062895b7023411597cfa152eb8cc4fa689fdc14331, uid : exit status 1: 2024/06/04 08:41:33 socat[9124] E connect(11, AF=2 127.0.0.1:9898, 16): Connection refused","time":"2024-06-04T04:41:33-04:00"}
+Handling connection for 9898
+{"level":"error","msg":"an error occurred forwarding 9898 -\u003e 9898: error forwarding port 9898 to pod da9b518d7f1155c652b042062895b7023411597cfa152eb8cc4fa689fdc14331, uid : exit status 1: 2024/06/04 08:41:34 socat[9132] E connect(11, AF=2 127.0.0.1:9898, 16): Connection refused","time":"2024-06-04T04:41:34-04:00"}
+Handling connection for 9898
+{"level":"error","msg":"an error occurred forwarding 9898 -\u003e 9898: error forwarding port 9898 to pod da9b518d7f1155c652b042062895b7023411597cfa152eb8cc4fa689fdc14331, uid : exit status 1: 2024/06/04 08:41:35 socat[9134] E connect(11, AF=2 127.0.0.1:9898, 16): Connection refused","time":"2024-06-04T04:41:35-04:00"}
+Handling connection for 9898
+{"level":"error","msg":"an error occurred forwarding 9898 -\u003e 9898: error forwarding port 9898 to pod da9b518d7f1155c652b042062895b7023411597cfa152eb8cc4fa689fdc14331, uid : exit status 1: 2024/06/04 08:41:36 socat[9146] E connect(11, AF=2 127.0.0.1:9898, 16): Connection refused","time":"2024-06-04T04:41:36-04:00"}
+Handling connection for 9898
+{"level":"error","msg":"an error occurred forwarding 9898 -\u003e 9898: error forwarding port 9898 to pod da9b518d7f1155c652b042062895b7023411597cfa152eb8cc4fa689fdc14331, uid : exit status 1: 2024/06/04 08:41:37 socat[9191] E connect(11, AF=2 127.0.0.1:9898, 16): Connection refused","time":"2024-06-04T04:41:37-04:00"}
+Handling connection for 9898
+{"level":"error","msg":"an error occurred forwarding 9898 -\u003e 9898: error forwarding port 9898 to pod da9b518d7f1155c652b042062895b7023411597cfa152eb8cc4fa689fdc14331, uid : exit status 1: 2024/06/04 08:41:38 socat[9282] E connect(11, AF=2 127.0.0.1:9898, 16): Connection refused","time":"2024-06-04T04:41:38-04:00"}
+Handling connection for 9898
+{"level":"error","msg":"an error occurred forwarding 9898 -\u003e 9898: error forwarding port 9898 to pod da9b518d7f1155c652b042062895b7023411597cfa152eb8cc4fa689fdc14331, uid : exit status 1: 2024/06/04 08:41:39 socat[9283] E connect(11, AF=2 127.0.0.1:9898, 16): Connection refused","time":"2024-06-04T04:41:39-04:00"}
+Handling connection for 9898
+{"level":"error","msg":"an error occurred forwarding 9898 -\u003e 9898: error forwarding port 9898 to pod da9b518d7f1155c652b042062895b7023411597cfa152eb8cc4fa689fdc14331, uid : exit status 1: 2024/06/04 08:41:40 socat[9759] E connect(11, AF=2 127.0.0.1:9898, 16): Connection refused","time":"2024-06-04T04:41:40-04:00"}
+Handling connection for 9898
+{"level":"error","msg":"an error occurred forwarding 9898 -\u003e 9898: error forwarding port 9898 to pod da9b518d7f1155c652b042062895b7023411597cfa152eb8cc4fa689fdc14331, uid : exit status 1: 2024/06/04 08:41:41 socat[9904] E connect(11, AF=2 127.0.0.1:9898, 16): Connection refused","time":"2024-06-04T04:41:41-04:00"}
+Handling connection for 9898
+{"level":"error","msg":"an error occurred forwarding 9898 -\u003e 9898: error forwarding port 9898 to pod da9b518d7f1155c652b042062895b7023411597cfa152eb8cc4fa689fdc14331, uid : exit status 1: 2024/06/04 08:41:42 socat[10375] E connect(11, AF=2 127.0.0.1:9898, 16): Connection refused","time":"2024-06-04T04:41:42-04:00"}
+Handling connection for 9898
+{"level":"error","msg":"an error occurred forwarding 9898 -\u003e 9898: error forwarding port 9898 to pod da9b518d7f1155c652b042062895b7023411597cfa152eb8cc4fa689fdc14331, uid : exit status 1: 2024/06/04 08:41:43 socat[10806] E connect(11, AF=2 127.0.0.1:9898, 16): Connection refused","time":"2024-06-04T04:41:43-04:00"}
+Handling connection for 9898
+{"level":"error","msg":"an error occurred forwarding 9898 -\u003e 9898: error forwarding port 9898 to pod da9b518d7f1155c652b042062895b7023411597cfa152eb8cc4fa689fdc14331, uid : exit status 1: 2024/06/04 08:41:44 socat[11078] E connect(11, AF=2 127.0.0.1:9898, 16): Connection refused","time":"2024-06-04T04:41:44-04:00"}
+Handling connection for 9898
+{"level":"error","msg":"an error occurred forwarding 9898 -\u003e 9898: error forwarding port 9898 to pod da9b518d7f1155c652b042062895b7023411597cfa152eb8cc4fa689fdc14331, uid : exit status 1: 2024/06/04 08:41:45 socat[11444] E connect(11, AF=2 127.0.0.1:9898, 16): Connection refused","time":"2024-06-04T04:41:45-04:00"}
+Handling connection for 9898
+{"level":"error","msg":"an error occurred forwarding 9898 -\u003e 9898: error forwarding port 9898 to pod da9b518d7f1155c652b042062895b7023411597cfa152eb8cc4fa689fdc14331, uid : exit status 1: 2024/06/04 08:41:46 socat[11721] E connect(11, AF=2 127.0.0.1:9898, 16): Connection refused","time":"2024-06-04T04:41:46-04:00"}
+Handling connection for 9898
+{"level":"error","msg":"an error occurred forwarding 9898 -\u003e 9898: error forwarding port 9898 to pod da9b518d7f1155c652b042062895b7023411597cfa152eb8cc4fa689fdc14331, uid : exit status 1: 2024/06/04 08:41:47 socat[12019] E connect(11, AF=2 127.0.0.1:9898, 16): Connection refused","time":"2024-06-04T04:41:47-04:00"}
+Handling connection for 9898
+{"level":"error","msg":"an error occurred forwarding 9898 -\u003e 9898: error forwarding port 9898 to pod da9b518d7f1155c652b042062895b7023411597cfa152eb8cc4fa689fdc14331, uid : exit status 1: 2024/06/04 08:41:48 socat[12216] E connect(11, AF=2 127.0.0.1:9898, 16): Connection refused","time":"2024-06-04T04:41:48-04:00"}
+Handling connection for 9898
+{"level":"error","msg":"an error occurred forwarding 9898 -\u003e 9898: error forwarding port 9898 to pod da9b518d7f1155c652b042062895b7023411597cfa152eb8cc4fa689fdc14331, uid : exit status 1: 2024/06/04 08:41:49 socat[12612] E connect(11, AF=2 127.0.0.1:9898, 16): Connection refused","time":"2024-06-04T04:41:49-04:00"}
+Handling connection for 9898
+Handling connection for 9898
+Handling connection for 9898
+Handling connection for 9898
+Handling connection for 9898
+Handling connection for 9898
+Handling connection for 9898
+Handling connection for 9898
+Handling connection for 9898
