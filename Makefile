@@ -104,3 +104,7 @@ start:
 	kubectx docker-desktop 
 	devspace use namespace local
 	devspace dev
+
+.PHONY: stop
+stop:
+	devspace purge
