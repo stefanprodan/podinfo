@@ -29,3 +29,6 @@ cue/go.sum
 
 # ignore mod folder
 pkg/mod
+
+# ignore devspace folder
+.devspace/
