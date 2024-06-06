@@ -100,7 +100,7 @@ update-tag:
 
 # Targets to increment major, minor, or patch versions and update the TAG
 release-major: version_type=major
-release-major: update-tag 
+release-major: update-tag version-set 
 
 release-minor: version_type=minor
 release-minor: update-tag version-set 
