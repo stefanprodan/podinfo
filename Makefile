@@ -104,6 +104,12 @@ release:
 	git tag -s -m $(VERSION) $(VERSION)
 	git push origin $(VERSION)
 
+release-major: increment-major version-set 
+
+release-minor: increment-minor version-set 
+
+release-patch: increment-patch version-set 
+
 swagger:
 	go install github.com/swaggo/swag/cmd/swag@latest
 	go get github.com/swaggo/swag/gen@latest
