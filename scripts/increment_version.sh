@@ -56,4 +56,4 @@ else
     sed -i "s/var VERSION = \"$current_version\"/var VERSION = \"$new_version\"/" $VERSION_FILE
 fi
 
-echo "Version updated to $new_version"
+echo "$new_version"
