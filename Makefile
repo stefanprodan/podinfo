@@ -10,6 +10,21 @@ GIT_COMMIT:=$(shell git describe --dirty --always)
 VERSION:=$(shell grep 'VERSION' pkg/version/version.go | awk '{ print $$4 }' | tr -d '"')
 EXTRA_RUN_ARGS?=
 
+.PHONY: increment-major increment-minor increment-patch
+
+# Define the path to the version increment script
+SCRIPT_PATH=./scripts/increment_version.sh
+
+# Targets to increment major, minor, or patch versions
+increment-major:
+	@bash $(SCRIPT_PATH) major
+
+increment-minor:
+	@bash $(SCRIPT_PATH) minor
+
+increment-patch:
+	@bash $(SCRIPT_PATH) patch
+
 run:
 	go run -ldflags "-s -w -X github.com/stefanprodan/podinfo/pkg/version.REVISION=$(GIT_COMMIT)" cmd/podinfo/* \
 	--level=debug --grpc-port=9999 --backend-url=https://httpbin.org/status/401 --backend-url=https://httpbin.org/status/500 \
