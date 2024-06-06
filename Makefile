@@ -94,19 +94,21 @@ git-commit-version:
 
 # Function to update the TAG in the Makefile
 update-tag:
-	@new_version=`bash $(SCRIPT_PATH) $(version_type)` && \
-	sed -i.bak -e "s/^TAG\?=.*$$/TAG\?=$$new_version/" Makefile && \
-	rm Makefile.bak
+	@new_version=`bash $(SCRIPT_PATH) $(version_type)`; \
+	echo "Updating TAG to $$new_version"; \
+	sed -i.bak -e "s/^TAG\?=.*$$/TAG\?=$$new_version/" Makefile; \
+	rm Makefile.bak; \
+	$(MAKE) version-set TAG=$$new_version
 
 # Targets to increment major, minor, or patch versions and update the TAG
 release-major: version_type=major
-release-major: update-tag version-set 
+release-major: update-tag 
 
 release-minor: version_type=minor
-release-minor: update-tag version-set 
+release-minor: update-tag 
 
 release-patch: version_type=patch
-release-patch: update-tag version-set 
+release-patch: update-tag 
 
 version-set:
 	@next="$(TAG)" && \
