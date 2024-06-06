@@ -50,10 +50,10 @@ esac
 new_version="${major}.${minor}.${patch}"
 
 # Determine OS and adjust sed command accordingly
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    sed -i '' "s/var VERSION = \"$current_version\"/var VERSION = \"$new_version\"/" $VERSION_FILE
-else
-    sed -i "s/var VERSION = \"$current_version\"/var VERSION = \"$new_version\"/" $VERSION_FILE
-fi
+# if [[ "$OSTYPE" == "darwin"* ]]; then
+#     sed -i '' "s/var VERSION = \"$current_version\"/var VERSION = \"$new_version\"/" $VERSION_FILE
+# else
+#     sed -i "s/var VERSION = \"$current_version\"/var VERSION = \"$new_version\"/" $VERSION_FILE
+# fi
 
 echo "$new_version"
