@@ -2,7 +2,7 @@
 #
 # The release version is controlled from pkg/version
 
-TAG?=6.7.0
+TAG?=latest
 NAME:=podinfo
 DOCKER_REPOSITORY:=stefanprodan
 DOCKER_IMAGE_NAME:=$(DOCKER_REPOSITORY)/$(NAME)
@@ -100,7 +100,7 @@ update-tag:
 
 # Targets to increment major, minor, or patch versions and update the TAG
 release-major: version_type=major
-release-major: update-tag version-set 
+release-major: update-tag 
 
 release-minor: version_type=minor
 release-minor: update-tag version-set 
