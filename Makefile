@@ -89,7 +89,7 @@ push-container:
 git-commit-version:
 	@echo "Committing version changes to Git..."
 	git add .
-	git commit -m "chore: bump version to $(VERSION)"
+	git commit -m "chore: bump version to $(TAG)"
 	git push origin main
 
 # Function to update the version in pkg/version/version.go with the value of TAG
@@ -99,26 +99,34 @@ update-version-file:
 	@rm -f pkg/version/version.go.bak
 	@echo "Version updated to $(TAG) in version.go"
 
+release:
+	git tag -s -m $(TAG) $(TAG)
+	git push origin $(TAG)
+
 # Function to update the TAG in the Makefile
-update-tag:
+update-and-push-tag:
 	$(eval NEW_VERSION := $(shell bash $(SCRIPT_PATH) $(version_type)))
 	@echo "Updating TAG to $(NEW_VERSION)"
 	@sed -i.bak -e "s/^TAG\?=.*$$/TAG\?=$(NEW_VERSION)/" Makefile
 	@rm -f Makefile.bak
 	$(MAKE) version-set TAG=$(NEW_VERSION)
 	@$(MAKE) update-version-file TAG=$(NEW_VERSION)
+	@echo "Committing version changes to Git..."
+	@$(MAKE) git-commit-version TAG=$(NEW_VERSION)
+	@echo "Tagging version $(NEW_VERSION)..."
+	@$(MAKE) release TAG=$(NEW_VERSION)
 
 # Targets to increment major, minor, or patch versions and update the TAG
 release-major: version_type=major
-release-major: update-tag
+release-major: update-and-push-tag
 	@echo "Released version $(TAG)"
 
 release-minor: version_type=minor
-release-minor: update-tag
+release-minor: update-and-push-tag
 	@echo "Released version $(TAG)"
 
 release-patch: version_type=patch
-release-patch: update-tag
+release-patch: update-and-push-tag
 	@echo "Released version $(TAG)"
 
 version-set:
@@ -138,15 +146,12 @@ version-set:
 	echo "Version $$next set in code, deployment, module, chart and kustomize"
 
 
-release:
-	git tag -s -m $(VERSION) $(VERSION)
-	git push origin $(VERSION)
 
-# release-major: increment-major
+# # release-major: increment-major
 
-# release-minor: increment-minor
+# # release-minor: increment-minor
 
-# release-patch: increment-patch
+# # release-patch: increment-patch
 
 swagger:
 	go install github.com/swaggo/swag/cmd/swag@latest
