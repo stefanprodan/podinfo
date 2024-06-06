@@ -49,7 +49,11 @@ esac
 # Assemble the new version
 new_version="${major}.${minor}.${patch}"
 
-# Replace the old version with the new version in the file
-sed -i "s/var VERSION = \"$current_version\"/var VERSION = \"$new_version\"/" $VERSION_FILE
+# Determine OS and adjust sed command accordingly
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    sed -i '' "s/var VERSION = \"$current_version\"/var VERSION = \"$new_version\"/" $VERSION_FILE
+else
+    sed -i "s/var VERSION = \"$current_version\"/var VERSION = \"$new_version\"/" $VERSION_FILE
+fi
 
-echo "Version updated to $newoption_version"
+echo "Version updated to $new_version"
