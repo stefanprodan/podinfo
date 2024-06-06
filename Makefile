@@ -92,14 +92,6 @@ git-commit-version:
 	git commit -m "chore: bump version to $(VERSION)"
 	git push origin main
 
-# Function to update the TAG in the Makefile
-update-tag:
-	@new_version=`bash $(SCRIPT_PATH) $(version_type)`; \
-	echo "Updating TAG to $$new_version"; \
-	sed -i.bak -e "s/^TAG\?=.*$$/TAG\?=$$new_version/" Makefile; \
-	rm Makefile.bak; \
-	$(MAKE) version-set TAG=$$new_version 
-
 # Function to update the version in pkg/version/version.go with the value of TAG
 update-version-file:
 	@echo "Updating version in version.go to $(TAG)..."
@@ -107,17 +99,26 @@ update-version-file:
 	@rm -f pkg/version/version.go.bak
 	@echo "Version updated to $(TAG) in version.go"
 
+# Function to update the TAG in the Makefile
+update-tag:
+	@new_version=`bash $(SCRIPT_PATH) $(version_type)`; \
+	echo "Updating TAG to $$new_version"; \
+	sed -i.bak -e "s/^TAG\?=.*$$/TAG\?=$$new_version/" Makefile; \
+	rm Makefile.bak; \
+	$(MAKE) version-set TAG=$$new_version
+	$(MAKE) update-version-file TAG=$$new_version
+
 # Targets to increment major, minor, or patch versions and update the TAG
 release-major: version_type=major
-release-major: update-tag  update-version-file
+release-major: update-tag
 	@echo "Released version $(TAG)"
 
 release-minor: version_type=minor
-release-minor: update-tag  update-version-file
+release-minor: update-tag
 	@echo "Released version $(TAG)"
 
 release-patch: version_type=patch
-release-patch: update-tag  update-version-file
+release-patch: update-tag
 	@echo "Released version $(TAG)"
 
 version-set:
