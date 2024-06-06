@@ -103,7 +103,8 @@ release:
 	git tag -s -m $(TAG) $(TAG)
 	git push origin $(TAG)
 
-# Function to update the TAG in the Makefile
+# Function to update the TAG in the Makefile, commit the changes, and push the tag
+# to GitHub
 update-and-push-tag:
 	$(eval NEW_VERSION := $(shell bash $(SCRIPT_PATH) $(version_type)))
 	@echo "Updating TAG to $(NEW_VERSION)"
@@ -116,15 +117,20 @@ update-and-push-tag:
 	@echo "Tagging version $(NEW_VERSION)..."
 	@$(MAKE) release TAG=$(NEW_VERSION)
 
-# Targets to increment major, minor, or patch versions and update the TAG
+# Targets for releasing different versions. Each target corresponds to a different
+# version increment type: major, minor, or patch.
+
+# Target to release a new major version
 release-major: version_type=major
 release-major: update-and-push-tag
 	@echo "Released version $(TAG)"
 
+# Target to release a new minor version
 release-minor: version_type=minor
 release-minor: update-and-push-tag
 	@echo "Released version $(TAG)"
 
+# Target to release a new patch version
 release-patch: version_type=patch
 release-patch: update-and-push-tag
 	@echo "Released version $(TAG)"
@@ -144,14 +150,6 @@ version-set:
 	/usr/bin/sed -i '' "s/podinfo:$$current/podinfo:$$next/g" deploy/bases/backend/deployment.yaml && \
 	/usr/bin/sed -i '' "s/$$current/$$next/g" timoni/podinfo/values.cue && \
 	echo "Version $$next set in code, deployment, module, chart and kustomize"
-
-
-
-# # release-major: increment-major
-
-# # release-minor: increment-minor
-
-# # release-patch: increment-patch
 
 swagger:
 	go install github.com/swaggo/swag/cmd/swag@latest
