@@ -106,7 +106,7 @@ update-tag:
 	sed -i.bak -e "s/^TAG\?=.*$$/TAG\?=$$new_version/" Makefile; \
 	rm Makefile.bak; \
 	$(MAKE) version-set TAG=$$new_version
-	$(MAKE) update-version-file TAG=$$new_version
+	@$(MAKE) update-version-file TAG=$(NEW_VERSION)
 
 # Targets to increment major, minor, or patch versions and update the TAG
 release-major: version_type=major
