@@ -103,11 +103,8 @@ update-version-file:
 update-tag:
 	$(eval NEW_VERSION := $(shell bash $(SCRIPT_PATH) $(version_type)))
 	@echo "Updating TAG to $(NEW_VERSION)"
-	@new_version=`bash $(SCRIPT_PATH) $(version_type)`; \
-	echo "Updating TAG to $$new_version"; \
-	sed -i.bak -e "s/^TAG\?=.*$$/TAG\?=$$new_version/" Makefile; \
-	rm Makefile.bak; \
-	$(MAKE) version-set TAG=$$new_version
+	@sed -i.bak -e "s/^TAG\?=.*$$/TAG\?=$(NEW_VERSION)/" Makefile
+	@rm -f Makefile.bak
 	@$(MAKE) update-version-file TAG=$(NEW_VERSION)
 
 # Targets to increment major, minor, or patch versions and update the TAG
