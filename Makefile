@@ -2,7 +2,7 @@
 #
 # The release version is controlled from pkg/version
 
-TAG?=latest
+TAG?=6.7.0
 NAME:=podinfo
 DOCKER_REPOSITORY:=stefanprodan
 DOCKER_IMAGE_NAME:=$(DOCKER_REPOSITORY)/$(NAME)
@@ -84,6 +84,30 @@ push-container:
 	docker push quay.io/$(DOCKER_IMAGE_NAME):$(VERSION)
 	docker push quay.io/$(DOCKER_IMAGE_NAME):latest
 
+
+# Target to commit the version change
+git-commit-version:
+	@echo "Committing version changes to Git..."
+	git add .
+	git commit -m "chore: bump version to $(VERSION)"
+	git push origin main
+
+# Function to update the TAG in the Makefile
+update-tag:
+	@new_version=`bash $(SCRIPT_PATH) $(version_type)` && \
+	sed -i.bak -e "s/^TAG\?=.*$$/TAG\?=$$new_version/" Makefile && \
+	rm Makefile.bak
+
+# Targets to increment major, minor, or patch versions and update the TAG
+release-major: version_type=major
+release-major: update-tag version-set 
+
+release-minor: version_type=minor
+release-minor: update-tag version-set 
+
+release-patch: version_type=patch
+release-patch: update-tag version-set 
+
 version-set:
 	@next="$(TAG)" && \
 	current="$(VERSION)" && \
@@ -100,22 +124,16 @@ version-set:
 	/usr/bin/sed -i '' "s/$$current/$$next/g" timoni/podinfo/values.cue && \
 	echo "Version $$next set in code, deployment, module, chart and kustomize"
 
-# Target to commit the version change
-git-commit-version:
-	@echo "Committing version changes to Git..."
-	git add .
-	git commit -m "chore: bump version to $(VERSION)"
-	git push origin main
 
 release:
 	git tag -s -m $(VERSION) $(VERSION)
 	git push origin $(VERSION)
 
-release-major: increment-major
+# release-major: increment-major
 
-release-minor: increment-minor
+# release-minor: increment-minor
 
-release-patch: increment-patch
+# release-patch: increment-patch
 
 swagger:
 	go install github.com/swaggo/swag/cmd/swag@latest
