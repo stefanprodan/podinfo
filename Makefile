@@ -100,6 +100,13 @@ version-set:
 	/usr/bin/sed -i '' "s/$$current/$$next/g" timoni/podinfo/values.cue && \
 	echo "Version $$next set in code, deployment, module, chart and kustomize"
 
+# Target to commit the version change
+git-commit-version:
+	@echo "Committing version changes to Git..."
+	git add .
+	git commit -m "chore: bump version to $(VERSION)"
+	git push origin main
+
 release:
 	git tag -s -m $(VERSION) $(VERSION)
 	git push origin $(VERSION)
