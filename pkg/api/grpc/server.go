@@ -14,7 +14,7 @@ import (
 
 	"github.com/stefanprodan/podinfo/pkg/api/grpc/delay"
 	"github.com/stefanprodan/podinfo/pkg/api/grpc/env"
-	"github.com/stefanprodan/podinfo/pkg/api/grpc/headers"
+	header "github.com/stefanprodan/podinfo/pkg/api/grpc/headers"
 	"github.com/stefanprodan/podinfo/pkg/api/grpc/info"
 	"github.com/stefanprodan/podinfo/pkg/api/grpc/panic"
 	"github.com/stefanprodan/podinfo/pkg/api/grpc/status"
@@ -74,7 +74,7 @@ func (s *Server) ListenAndServe() *grpc.Server {
 	srv := grpc.NewServer()
 	server := health.NewServer()
 
-	// Register grpc apis for refection
+	// Register grpc apis for reflection
 	echo.RegisterEchoServiceServer(srv, &echoServer{config: s.config, logger: s.logger})
 	version.RegisterVersionServiceServer(srv, &VersionServer{config: s.config, logger: s.logger})
 	panic.RegisterPanicServiceServer(srv, &PanicServer{config: s.config, logger: s.logger})
