@@ -15,15 +15,13 @@ import (
 
 func TestGrpcInfo(t *testing.T) {
 
-	// Server initialization
-	// bufconn => uses in-memory connection instead of system network I/O
 	lis := bufconn.Listen(1024 * 1024)
 	t.Cleanup(func() {
 		lis.Close()
 	})
 
 	s := NewMockGrpcServer()
-	srv := grpc.NewServer() // replace this with Mock that return srv that has all the config, logger, etc
+	srv := grpc.NewServer()
 	t.Cleanup(func() {
 		srv.Stop()
 	})
@@ -36,7 +34,6 @@ func TestGrpcInfo(t *testing.T) {
 		}
 	}()
 
-	// - Test
 	dialer := func(context.Context, string) (net.Conn, error) {
 		return lis.Dial()
 	}
@@ -55,12 +52,10 @@ func TestGrpcInfo(t *testing.T) {
 	client := info.NewInfoServiceClient(conn)
 	res, err := client.Info(context.Background(), &info.InfoRequest{})
 
-	// Check the status code is what we expect.
 	if _, ok := status.FromError(err); !ok {
 		t.Errorf("Info returned type %T, want %T", err, status.Error)
 	}
 
-	// Check the response body is what we expect.
 	expected := ".*color.*blue.*"
 	r := regexp.MustCompile(expected)
 	if !r.MatchString(res.String()) {

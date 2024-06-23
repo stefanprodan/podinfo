@@ -15,13 +15,9 @@ type StatusServer struct {
 	logger *zap.Logger
 }
 
-// SayHello implements helloworld.GreeterServer
-
 func (s *StatusServer) Status(ctx context.Context, req *pb.StatusRequest) (*pb.StatusResponse, error) {
 	reqCode := req.GetCode()
-	// return &pb.StatusResponse{Status: reqCode}, nil
 
-	// type Code Code.code
 	grpcCodes := map[string]codes.Code{
 		"Ok":                 codes.OK,
 		"Canceled":           codes.Canceled,
@@ -42,10 +38,7 @@ func (s *StatusServer) Status(ctx context.Context, req *pb.StatusRequest) (*pb.S
 		"Unauthenticated":    codes.Unauthenticated,
 	}
 
-	// try to access the map with the request code string as key. If the key is not found, return an error
-	// if the key is found, return the grpc status code
 	code, ok := grpcCodes[reqCode]
-	//s.logger.Info(string(code))
 	if !ok {
 		return nil, status.Error(codes.Unknown, "Unknown status code for more information check https://chromium.googlesource.com/external/github.com/grpc/grpc/+/refs/tags/v1.21.4-pre1/doc/statuscodes.md")
 	}

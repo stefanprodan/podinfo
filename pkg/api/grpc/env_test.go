@@ -15,8 +15,6 @@ import (
 
 func TestGrpcEnv(t *testing.T) {
 
-	// Server initialization
-	// bufconn => uses in-memory connection instead of system network I/O
 	lis := bufconn.Listen(1024 * 1024)
 	t.Cleanup(func() {
 		lis.Close()
@@ -35,7 +33,6 @@ func TestGrpcEnv(t *testing.T) {
 		}
 	}()
 
-	// - Test
 	dialer := func(context.Context, string) (net.Conn, error) {
 		return lis.Dial()
 	}
@@ -54,12 +51,10 @@ func TestGrpcEnv(t *testing.T) {
 	client := env.NewEnvServiceClient(conn)
 	res, err := client.Env(context.Background(), &env.EnvRequest{})
 
-	// Check the status code is what we expect.
 	if _, ok := status.FromError(err); !ok {
 		t.Errorf("Env returned type %T, want %T", err, status.Error)
 	}
 
-	// Check the response body is what we expect.
 	expected := ".*PATH.*"
 	r := regexp.MustCompile(expected)
 	if !r.MatchString(res.String()) {

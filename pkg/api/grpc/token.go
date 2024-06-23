@@ -25,8 +25,6 @@ type jwtCustomClaims struct {
 	jwt.StandardClaims
 }
 
-// SayHello implements helloworld.GreeterServer
-
 func (s *TokenServer) TokenGenerate(ctx context.Context, req *pb.TokenRequest) (*pb.TokenResponse, error) {
 
 	user := "anonymous"
@@ -57,21 +55,18 @@ func (s *TokenServer) TokenGenerate(ctx context.Context, req *pb.TokenRequest) (
 	return &result, nil
 }
 
-// code to get the authorization token from the header of grpc request and validate it if it is expired or not
 func (s *TokenServer) TokenValidate(ctx context.Context, req *pb.TokenRequest) (*pb.TokenResponse, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		return nil, status.Errorf(codes.DataLoss, "UnaryEcho: failed to get metadata")
 	}
 
-	// Retrieve the bearer token from the "authorization" key in metadata
 	authorization := md.Get("authorization")
 
 	if len(authorization) == 0 {
 		return nil, status.Errorf(codes.Unauthenticated, "Authorization token not found in metadata")
 	}
 
-	// Extract the token from the value
 	token := strings.TrimSpace(strings.TrimPrefix(authorization[0], "Bearer"))
 
 	claims := jwtCustomClaims{}

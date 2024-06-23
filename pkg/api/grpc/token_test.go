@@ -14,8 +14,6 @@ import (
 
 func TestGrpcToken(t *testing.T) {
 
-	// Server initialization
-	// bufconn => uses in-memory connection instead of system network I/O
 	lis := bufconn.Listen(1024 * 1024)
 	t.Cleanup(func() {
 		lis.Close()
@@ -35,7 +33,6 @@ func TestGrpcToken(t *testing.T) {
 		}
 	}()
 
-	// - Test
 	dialer := func(context.Context, string) (net.Conn, error) {
 		return lis.Dial()
 	}
@@ -54,7 +51,6 @@ func TestGrpcToken(t *testing.T) {
 	client := token.NewTokenServiceClient(conn)
 	res, err := client.TokenGenerate(context.Background(), &token.TokenRequest{})
 
-	// Check the status code is what we expect.
 	if _, ok := status.FromError(err); !ok {
 		t.Errorf("Token Handler returned type %T, want %T", err, status.Error)
 	}

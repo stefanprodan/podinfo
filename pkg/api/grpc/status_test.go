@@ -17,8 +17,6 @@ import (
 
 func TestGrpcStatusError(t *testing.T) {
 
-	// Server initialization
-	// bufconn => uses in-memory connection instead of system network I/O
 	lis := bufconn.Listen(1024 * 1024)
 	t.Cleanup(func() {
 		lis.Close()
@@ -37,7 +35,6 @@ func TestGrpcStatusError(t *testing.T) {
 		}
 	}()
 
-	// - Test
 	dialer := func(context.Context, string) (net.Conn, error) {
 		return lis.Dial()
 	}
@@ -72,8 +69,6 @@ func TestGrpcStatusError(t *testing.T) {
 
 func TestGrpcStatusOk(t *testing.T) {
 
-	// Server initialization
-	// bufconn => uses in-memory connection instead of system network I/O
 	lis := bufconn.Listen(1024 * 1024)
 	t.Cleanup(func() {
 		lis.Close()
@@ -92,7 +87,6 @@ func TestGrpcStatusOk(t *testing.T) {
 		}
 	}()
 
-	// - Test
 	dialer := func(context.Context, string) (net.Conn, error) {
 		return lis.Dial()
 	}
