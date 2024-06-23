@@ -7,26 +7,26 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/stefanprodan/podinfo/pkg/api/grpc/echo"
+	"github.com/stefanprodan/podinfo/pkg/api/grpc/headers"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
 )
 
-func TestGrpcEcho(t *testing.T) {
+func TestGrpcHeader(t *testing.T) {
 
 	lis := bufconn.Listen(1024 * 1024)
 	t.Cleanup(func() {
 		lis.Close()
 	})
 
-	s := NewMockGrpcServer()
 	srv := grpc.NewServer()
 	t.Cleanup(func() {
 		srv.Stop()
 	})
 
-	echo.RegisterEchoServiceServer(srv, &echoServer{config: s.config, logger: s.logger})
+	header.RegisterHeaderServiceServer(srv, &HeaderServer{})
 
 	go func() {
 		if err := srv.Serve(lis); err != nil {
@@ -38,9 +38,7 @@ func TestGrpcEcho(t *testing.T) {
 		return lis.Dial()
 	}
 
-	ctx := context.Background()
-
-	conn, err := grpc.DialContext(ctx, "", grpc.WithContextDialer(dialer), grpc.WithInsecure())
+	conn, err := grpc.DialContext(context.Background(), "", grpc.WithContextDialer(dialer), grpc.WithInsecure())
 	t.Cleanup(func() {
 		conn.Close()
 	})
@@ -49,14 +47,20 @@ func TestGrpcEcho(t *testing.T) {
 		t.Fatalf("grpc.DialContext %v", err)
 	}
 
-	client := echo.NewEchoServiceClient(conn)
-	res, err := client.Echo(context.Background(), &echo.Message{Body: "test123-test"})
+	headers := metadata.New(map[string]string{
+		"X-Test": "testing",
+	})
+
+	ctx := metadata.NewOutgoingContext(context.Background(), headers)
+
+	client := header.NewHeaderServiceClient(conn)
+	res, err := client.Header(ctx, &header.HeaderRequest{})
 
 	if _, ok := status.FromError(err); !ok {
-		t.Errorf("Echo returned type %T, want %T", err, status.Error)
+		t.Errorf("Header returned type %T, want %T", err, status.Error)
 	}
 
-	expected := ".*body.*test123-test.*"
+	expected := ".*testing.*"
 	r := regexp.MustCompile(expected)
 	if !r.MatchString(res.String()) {
 		t.Fatalf("Returned unexpected body:\ngot \n%v \nwant \n%s",

@@ -4,29 +4,28 @@ import (
 	"context"
 	"log"
 	"net"
-	"regexp"
 	"testing"
 
-	"github.com/stefanprodan/podinfo/pkg/api/grpc/echo"
+	"github.com/stefanprodan/podinfo/pkg/api/grpc/token"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
 )
 
-func TestGrpcEcho(t *testing.T) {
+func TestGrpcToken(t *testing.T) {
 
 	lis := bufconn.Listen(1024 * 1024)
 	t.Cleanup(func() {
 		lis.Close()
 	})
 
-	s := NewMockGrpcServer()
 	srv := grpc.NewServer()
 	t.Cleanup(func() {
 		srv.Stop()
 	})
-
-	echo.RegisterEchoServiceServer(srv, &echoServer{config: s.config, logger: s.logger})
+	config := &Config{}
+	config.JWTSecret = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"
+	token.RegisterTokenServiceServer(srv, &TokenServer{config: config})
 
 	go func() {
 		if err := srv.Serve(lis); err != nil {
@@ -49,17 +48,19 @@ func TestGrpcEcho(t *testing.T) {
 		t.Fatalf("grpc.DialContext %v", err)
 	}
 
-	client := echo.NewEchoServiceClient(conn)
-	res, err := client.Echo(context.Background(), &echo.Message{Body: "test123-test"})
+	client := token.NewTokenServiceClient(conn)
+	res, err := client.TokenGenerate(context.Background(), &token.TokenRequest{})
 
 	if _, ok := status.FromError(err); !ok {
-		t.Errorf("Echo returned type %T, want %T", err, status.Error)
+		t.Errorf("Token Handler returned type %T, want %T", err, status.Error)
 	}
 
-	expected := ".*body.*test123-test.*"
-	r := regexp.MustCompile(expected)
-	if !r.MatchString(res.String()) {
-		t.Fatalf("Returned unexpected body:\ngot \n%v \nwant \n%s",
-			res, expected)
+	var token = token.TokenResponse{
+		Token:     res.Token,
+		ExpiresAt: res.ExpiresAt,
+	}
+
+	if token.Token == "" {
+		t.Fatalf("Handler returned no token")
 	}
 }

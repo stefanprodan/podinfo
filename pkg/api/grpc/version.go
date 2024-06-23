@@ -12,10 +12,8 @@ type VersionServer struct {
 	pb.UnimplementedVersionServiceServer
 	config *Config
 	logger *zap.Logger
-	
 }
 
 func (s *VersionServer) Version(ctx context.Context, req *pb.VersionRequest) (*pb.VersionResponse, error) {
 	return &pb.VersionResponse{Version: version.VERSION, Commit: version.REVISION}, nil
 }
-

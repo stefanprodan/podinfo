@@ -7,26 +7,25 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/stefanprodan/podinfo/pkg/api/grpc/echo"
+	"github.com/stefanprodan/podinfo/pkg/api/grpc/env"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
 )
 
-func TestGrpcEcho(t *testing.T) {
+func TestGrpcEnv(t *testing.T) {
 
 	lis := bufconn.Listen(1024 * 1024)
 	t.Cleanup(func() {
 		lis.Close()
 	})
 
-	s := NewMockGrpcServer()
 	srv := grpc.NewServer()
 	t.Cleanup(func() {
 		srv.Stop()
 	})
 
-	echo.RegisterEchoServiceServer(srv, &echoServer{config: s.config, logger: s.logger})
+	env.RegisterEnvServiceServer(srv, &EnvServer{})
 
 	go func() {
 		if err := srv.Serve(lis); err != nil {
@@ -49,14 +48,14 @@ func TestGrpcEcho(t *testing.T) {
 		t.Fatalf("grpc.DialContext %v", err)
 	}
 
-	client := echo.NewEchoServiceClient(conn)
-	res, err := client.Echo(context.Background(), &echo.Message{Body: "test123-test"})
+	client := env.NewEnvServiceClient(conn)
+	res, err := client.Env(context.Background(), &env.EnvRequest{})
 
 	if _, ok := status.FromError(err); !ok {
-		t.Errorf("Echo returned type %T, want %T", err, status.Error)
+		t.Errorf("Env returned type %T, want %T", err, status.Error)
 	}
 
-	expected := ".*body.*test123-test.*"
+	expected := ".*PATH.*"
 	r := regexp.MustCompile(expected)
 	if !r.MatchString(res.String()) {
 		t.Fatalf("Returned unexpected body:\ngot \n%v \nwant \n%s",
