@@ -16,7 +16,7 @@ run:
 	--ui-logo=https://raw.githubusercontent.com/stefanprodan/podinfo/gh-pages/cuddle_clap.gif $(EXTRA_RUN_ARGS)
 
 .PHONY: test
-test:
+test: tidy fmt vet
 	go test ./... -coverprofile cover.out
 
 build:
@@ -30,8 +30,7 @@ vet:
 	go vet ./...
 
 fmt:
-	gofmt -l -s -w ./
-	goimports -l -w ./
+	go fmt ./...
 
 build-charts:
 	helm lint charts/*
