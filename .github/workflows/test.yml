@@ -51,7 +51,7 @@ jobs:
       - name: Verify CUE formatting
         working-directory: ./timoni/podinfo
         run: |
-          cue fmt ./..
+          cue fmt ./...
           status=$(git status . --porcelain)
           [[ -z "$status" ]] || {
             echo "CUE files are not correctly formatted"
