@@ -5,6 +5,7 @@ metadata:
   name: {{ template "podinfo.fullname" . }}
   labels:
     {{- include "podinfo.labels" . | nindent 4 }}
+    app.kubernetes.io/component: certificate
 spec:
   dnsNames:
   {{- range .Values.certificate.dnsNames }}
