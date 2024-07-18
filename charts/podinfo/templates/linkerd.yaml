@@ -4,7 +4,8 @@ kind: ServiceProfile
 metadata:
   name: {{ template "podinfo.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local
   labels:
-    {{- include "podinfo.labels" . | nindent 4 }}  
+    {{- include "podinfo.labels" . | nindent 4 }}
+    app.kubernetes.io/component: networking
 spec:
   routes:
     - condition:
