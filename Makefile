@@ -16,7 +16,7 @@ run:
 	--ui-logo=https://raw.githubusercontent.com/stefanprodan/podinfo/gh-pages/cuddle_clap.gif $(EXTRA_RUN_ARGS)
 
 .PHONY: test
-test:
+test: tidy fmt vet
 	go test ./... -coverprofile cover.out
 
 build:
@@ -24,14 +24,13 @@ build:
 	GIT_COMMIT=$$(git rev-list -1 HEAD) && CGO_ENABLED=0 go build  -ldflags "-s -w -X github.com/stefanprodan/podinfo/pkg/version.REVISION=$(GIT_COMMIT)" -a -o ./bin/podcli ./cmd/podcli/*
 
 tidy:
-	rm -f go.sum; go mod tidy -compat=1.21
+	rm -f go.sum; go mod tidy -compat=1.23
 
 vet:
 	go vet ./...
 
 fmt:
-	gofmt -l -s -w ./
-	goimports -l -w ./
+	go fmt ./...
 
 build-charts:
 	helm lint charts/*
@@ -93,7 +92,7 @@ swagger:
 	go install github.com/swaggo/swag/cmd/swag@latest
 	go get github.com/swaggo/swag/gen@latest
 	go get github.com/swaggo/swag/cmd/swag@latest
-	cd pkg/api && $$(go env GOPATH)/bin/swag init -g server.go
+	cd pkg/api/http && $$(go env GOPATH)/bin/swag init -g server.go
 
 .PHONY: timoni-build
 timoni-build:

@@ -139,7 +139,7 @@ func main() {
 	if grpcCfg.Port > 0 {
 		grpcSrv, _ := grpc.NewServer(&grpcCfg, logger)
 		//grpcinfoSrv, _ := grpc.NewInfoServer(&grpcCfg)
-		
+
 		grpcServer = grpcSrv.ListenAndServe()
 	}
 

@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+option go_package = "./header";
+
+package header;
+
+message HeaderRequest {}
+
+message HeaderResponse {
+   repeated string headers = 1;
+}
+
+service HeaderService {
+    rpc Header(HeaderRequest) returns (HeaderResponse) {}
+}

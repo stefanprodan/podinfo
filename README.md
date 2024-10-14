@@ -22,7 +22,7 @@ Specifications:
 * Swagger docs
 * Timoni, Helm and Kustomize installers
 * End-to-End testing with Kubernetes Kind and Helm
-* Multi-arch container image with Docker buildx and Github Actions
+* Multi-arch container image with Docker buildx and GitHub Actions
 * Container image signing with Sigstore cosign
 * SBOMs and SLSA Provenance embedded in the container image
 * CVE scanning with Trivy
@@ -59,6 +59,14 @@ gRPC API:
 * `/grpc.health.v1.Health/Check` health checking
 * `/grpc.EchoService/Echo` echos the received content
 * `/grpc.VersionService/Version` returns podinfo version and Git commit hash
+* `/grpc.DelayService/Delay` returns a successful response after the given seconds in the body of gRPC request
+* `/grpc.EnvService/Env` returns environment variables as a JSON array
+* `/grpc.HeaderService/Header` returns the headers present in the gRPC request. Any custom header can also be given as a part of request and that can be returned using this API
+* `/grpc.InfoService/Info` returns the runtime information
+* `/grpc.PanicService/Panic` crashes the process with gRPC status code as '1 CANCELLED'
+* `/grpc.StatusService/Status` returns the gRPC Status code given in the request body
+* `/grpc.TokenService/TokenGenerate` issues a JWT token valid for one minute
+* `/grpc.TokenService/TokenValidate` validates the JWT token
 
 Web UI:
 

@@ -1,10 +1,10 @@
 basePath: /
 definitions:
-  api.MapResponse:
+  http.MapResponse:
     additionalProperties:
       type: string
     type: object
-  api.RuntimeResponse:
+  http.RuntimeResponse:
     properties:
       color:
         type: string
@@ -29,21 +29,20 @@ definitions:
       version:
         type: string
     type: object
-  api.TokenResponse:
+  http.TokenResponse:
     properties:
       expires_at:
         type: string
       token:
         type: string
     type: object
-  api.TokenValidationResponse:
+  http.TokenValidationResponse:
     properties:
       expires_at:
         type: string
       token_name:
         type: string
     type: object
-host: localhost:9898
 info:
   contact:
     name: Source Code
@@ -79,7 +78,7 @@ paths:
         "202":
           description: Accepted
           schema:
-            $ref: '#/definitions/api.MapResponse'
+            $ref: '#/definitions/http.MapResponse'
       summary: Echo
       tags:
       - HTTP API
@@ -94,7 +93,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.RuntimeResponse'
+            $ref: '#/definitions/http.RuntimeResponse'
       summary: Runtime information
       tags:
       - HTTP API
@@ -173,7 +172,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.MapResponse'
+            $ref: '#/definitions/http.MapResponse'
       summary: Chunked transfer encoding
       tags:
       - HTTP API
@@ -194,7 +193,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.MapResponse'
+            $ref: '#/definitions/http.MapResponse'
       summary: Delay
       tags:
       - HTTP API
@@ -330,7 +329,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.MapResponse'
+            $ref: '#/definitions/http.MapResponse'
       summary: Status code
       tags:
       - HTTP API
@@ -346,7 +345,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.MapResponse'
+            $ref: '#/definitions/http.MapResponse'
       summary: Upload file
       tags:
       - HTTP API
@@ -382,7 +381,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.TokenResponse'
+            $ref: '#/definitions/http.TokenResponse'
       summary: Generate JWT token
       tags:
       - HTTP API
@@ -397,7 +396,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.TokenValidationResponse'
+            $ref: '#/definitions/http.TokenValidationResponse'
         "401":
           description: Unauthorized
           schema:
@@ -414,7 +413,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.MapResponse'
+            $ref: '#/definitions/http.MapResponse'
       summary: Version
       tags:
       - HTTP API
@@ -429,7 +428,7 @@ paths:
         "202":
           description: Accepted
           schema:
-            $ref: '#/definitions/api.MapResponse'
+            $ref: '#/definitions/http.MapResponse'
       summary: Echo over websockets
       tags:
       - HTTP API

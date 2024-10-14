@@ -3,6 +3,7 @@ package http
 import (
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -18,7 +19,7 @@ var wsCon = websocket.Upgrader{}
 // @Accept json
 // @Produce json
 // @Router /ws/echo [post]
-// @Success 202 {object} api.MapResponse
+// @Success 202 {object} http.MapResponse
 // Test: go run ./cmd/podcli/* ws localhost:9898/ws/echo
 func (s *Server) echoWsHandler(w http.ResponseWriter, r *http.Request) {
 	c, err := wsCon.Upgrade(w, r, nil)
@@ -28,13 +29,19 @@ func (s *Server) echoWsHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	var wg sync.WaitGroup
+	wg.Add(1)
+
 	defer c.Close()
 	done := make(chan struct{})
 	defer close(done)
 	in := make(chan interface{})
-	defer close(in)
 	go s.writeWs(c, in)
-	go s.sendHostWs(c, in, done)
+	go s.sendHostWs(c, in, done, &wg)
+	go func() {
+		defer close(in)
+		wg.Wait()
+	}()
 	for {
 		_, message, err := c.ReadMessage()
 		if err != nil {
@@ -54,7 +61,7 @@ func (s *Server) echoWsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Server) sendHostWs(ws *websocket.Conn, in chan interface{}, done chan struct{}) {
+func (s *Server) sendHostWs(ws *websocket.Conn, in chan interface{}, done chan struct{}, wg *sync.WaitGroup) {
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
 	for {
@@ -70,6 +77,7 @@ func (s *Server) sendHostWs(ws *websocket.Conn, in chan interface{}, done chan s
 			in <- status
 		case <-done:
 			s.logger.Debug("websocket exit")
+			wg.Done()
 			return
 		}
 	}

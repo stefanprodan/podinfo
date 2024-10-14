@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+option go_package = "./token";
+
+package token;
+
+
+// The greeting service definition.
+service TokenService {
+    rpc TokenGenerate (TokenRequest) returns (TokenResponse) {}
+    rpc TokenValidate (TokenRequest) returns (TokenResponse) {}
+}
+
+message TokenRequest {}
+
+message TokenResponse {
+    string token = 1;
+    string expiresAt = 2;
+    string message = 3;
+}

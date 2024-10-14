@@ -8,7 +8,7 @@ backends: []
 
 image:
   repository: ghcr.io/stefanprodan/podinfo
-  tag: 6.6.0
+  tag: 6.7.1
   pullPolicy: IfNotPresent
 
 ui:
@@ -40,6 +40,16 @@ service:
 # enable h2c protocol (non-TLS version of HTTP/2)
 h2c:
   enabled: false
+
+# config file settings
+config:
+  # config file path
+  path: ""
+  # config file name
+  name: ""
+
+# Additional command line arguments to pass to podinfo container
+extraArgs: []
 
 # enable tls on the podinfo service
 tls:
@@ -137,6 +147,13 @@ resources:
 
 networkPolicies:
   enabled: false
+# Extra environment variables for the podinfo container
+extraEnvs: []
+# Example on how to configure extraEnvs
+#  - name: OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
+#    value: "http://otel:4317"
+#  - name: MULTIPLE_VALUES
+#    value: TEST
 
 nodeSelector: {}
 

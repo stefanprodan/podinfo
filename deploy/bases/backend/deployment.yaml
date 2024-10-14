@@ -23,7 +23,7 @@ spec:
     spec:
       containers:
       - name: backend
-        image: ghcr.io/stefanprodan/podinfo:6.6.0
+        image: ghcr.io/stefanprodan/podinfo:6.7.1
         imagePullPolicy: IfNotPresent
         ports:
         - name: http
@@ -42,7 +42,7 @@ spec:
         - --grpc-port=9999
         - --grpc-service-name=backend
         - --level=info
-        - --cache-server=cache:6379
+        - --cache-server=tcp://cache:6379
         env:
         - name: PODINFO_UI_COLOR
           value: "#34577c"

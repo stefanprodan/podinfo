@@ -19,7 +19,6 @@ const docTemplate = `{
         },
         "version": "{{.Version}}"
     },
-    "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
         "/": {
@@ -59,7 +58,7 @@ const docTemplate = `{
                     "202": {
                         "description": "Accepted",
                         "schema": {
-                            "$ref": "#/definitions/api.MapResponse"
+                            "$ref": "#/definitions/http.MapResponse"
                         }
                     }
                 }
@@ -82,7 +81,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.RuntimeResponse"
+                            "$ref": "#/definitions/http.RuntimeResponse"
                         }
                     }
                 }
@@ -200,7 +199,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.MapResponse"
+                            "$ref": "#/definitions/http.MapResponse"
                         }
                     }
                 }
@@ -232,7 +231,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.MapResponse"
+                            "$ref": "#/definitions/http.MapResponse"
                         }
                     }
                 }
@@ -438,7 +437,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.MapResponse"
+                            "$ref": "#/definitions/http.MapResponse"
                         }
                     }
                 }
@@ -461,7 +460,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.MapResponse"
+                            "$ref": "#/definitions/http.MapResponse"
                         }
                     }
                 }
@@ -516,7 +515,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.TokenResponse"
+                            "$ref": "#/definitions/http.TokenResponse"
                         }
                     }
                 }
@@ -539,7 +538,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.TokenValidationResponse"
+                            "$ref": "#/definitions/http.TokenValidationResponse"
                         }
                     },
                     "401": {
@@ -565,7 +564,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.MapResponse"
+                            "$ref": "#/definitions/http.MapResponse"
                         }
                     }
                 }
@@ -588,7 +587,7 @@ const docTemplate = `{
                     "202": {
                         "description": "Accepted",
                         "schema": {
-                            "$ref": "#/definitions/api.MapResponse"
+                            "$ref": "#/definitions/http.MapResponse"
                         }
                     }
                 }
@@ -596,13 +595,13 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "api.MapResponse": {
+        "http.MapResponse": {
             "type": "object",
             "additionalProperties": {
                 "type": "string"
             }
         },
-        "api.RuntimeResponse": {
+        "http.RuntimeResponse": {
             "type": "object",
             "properties": {
                 "color": {
@@ -640,7 +639,7 @@ const docTemplate = `{
                 }
             }
         },
-        "api.TokenResponse": {
+        "http.TokenResponse": {
             "type": "object",
             "properties": {
                 "expires_at": {
@@ -651,7 +650,7 @@ const docTemplate = `{
                 }
             }
         },
-        "api.TokenValidationResponse": {
+        "http.TokenValidationResponse": {
             "type": "object",
             "properties": {
                 "expires_at": {
@@ -668,7 +667,7 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "2.0",
-	Host:             "localhost:9898",
+	Host:             "",
 	BasePath:         "/",
 	Schemes:          []string{"http", "https"},
 	Title:            "Podinfo API",

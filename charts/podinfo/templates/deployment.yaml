@@ -89,6 +89,15 @@ spec:
             {{- if .Values.h2c.enabled }}
             - --h2c
             {{- end }}
+            {{- with .Values.config.path }}
+            - --config-path={{ . }}
+            {{- end }}
+            {{- with .Values.config.name }}
+            - --config={{ . }}
+            {{- end }}
+            {{- with .Values.extraArgs }}
+              {{- toYaml . | nindent 12 }}
+            {{- end }}
           env:
           {{- if .Values.ui.message }}
           - name: PODINFO_UI_MESSAGE
@@ -105,6 +114,9 @@ spec:
           {{- if .Values.backend }}
           - name: PODINFO_BACKEND_URL
             value: {{ .Values.backend }}
+          {{- end }}
+          {{- if .Values.extraEnvs }}
+{{ toYaml .Values.extraEnvs | indent 10 }}
           {{- end }}
           ports:
             - name: http

@@ -16,7 +16,7 @@ import (
 // @Produce json
 // @Param code path int true "status code to return"
 // @Router /status/{code} [get]
-// @Success 200 {object} api.MapResponse
+// @Success 200 {object} http.MapResponse
 func (s *Server) statusHandler(w http.ResponseWriter, r *http.Request) {
 	_, span := s.tracer.Start(r.Context(), "statusHandler")
 	defer span.End()

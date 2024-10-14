@@ -19,7 +19,7 @@ import (
 // @Accept json
 // @Produce json
 // @Router /store [post]
-// @Success 200 {object} api.MapResponse
+// @Success 200 {object} http.MapResponse
 func (s *Server) storeWriteHandler(w http.ResponseWriter, r *http.Request) {
 	_, span := s.tracer.Start(r.Context(), "storeWriteHandler")
 	defer span.End()
