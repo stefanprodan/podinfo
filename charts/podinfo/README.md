@@ -79,7 +79,7 @@ The following tables lists the configurable parameters of the podinfo chart and 
 | `service.grpcService`             | `podinfo`              | gPRC service name                                                                                                      |
 | `service.nodePort`                | `31198`                | NodePort for the HTTP endpoint                                                                                         |
 | `h2c.enabled`                     | `false`                | Allow upgrading to h2c (non-TLS version of HTTP/2)                                                                     |
-| `extraEnvs`                       | `[]`                   | Extra environment variables for the podinfo container |
+| `extraEnvs`                       | `[]`                   | Extra environment variables for the podinfo container                                                                  |
 | `config.path`                     | `""`                   | config file path                                                                                                       |
 | `config.name`                     | `""`                   | config file name                                                                                                       |
 | `extraArgs`                       | `[]`                   | Additional command line arguments to pass to podinfo container                                                         |
@@ -92,12 +92,13 @@ The following tables lists the configurable parameters of the podinfo chart and 
 | `serviceAccount.name`             | `None`                 | The name of the service account to use, if not set and create is true, a name is generated using the fullname template |
 | `serviceAccount.imagePullSecrets` | `[]`                   | List of image pull secrets if pulling from private registries.                                                         |
 | `securityContext`                 | `{}`                   | The security context to be set on the podinfo container                                                                |
+| `podSecurityContext`              | `{}`                   | The security context to be set on the pod                                                                              |
 | `linkerd.profile.enabled`         | `false`                | Create Linkerd service profile                                                                                         |
 | `serviceMonitor.enabled`          | `false`                | Whether a Prometheus Operator service monitor should be created                                                        |
 | `serviceMonitor.interval`         | `15s`                  | Prometheus scraping interval                                                                                           |
 | `serviceMonitor.additionalLabels` | `{}`                   | Add additional labels to the service monitor                                                                           |
 | `ingress.enabled`                 | `false`                | Enables Ingress                                                                                                        |
-| `ingress.className `              | `""`                   | Use ingressClassName                                                                                                   |
+| `ingress.className`               | `""`                    | Use ingressClassName                                                                                                  |
 | `ingress.additionalLabels`        | `{}`                   | Add additional labels to the ingress                                                                                   |
 | `ingress.annotations`             | `{}`                   | Ingress annotations                                                                                                    |
 | `ingress.hosts`                   | `[]`                   | Ingress accepted hosts                                                                                                 |

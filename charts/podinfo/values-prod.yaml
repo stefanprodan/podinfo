@@ -107,6 +107,9 @@ serviceAccount:
 # set container security context
 securityContext: {}
 
+# set pod security context
+podSecurityContext: {}
+
 ingress:
   enabled: false
   className: ""
