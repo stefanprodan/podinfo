@@ -16,6 +16,10 @@ ui:
   message: ""
   logo: ""
 
+# -- Labels to be added to all other resources.
+additionalLabels: {}
+  # app: podinfo
+
 # failure conditions
 faults:
   delay: false
