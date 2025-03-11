@@ -162,9 +162,9 @@ jobs:
           echo 'CHANGELOG' > /tmp/release.txt
           github-release-notes -org stefanprodan -repo podinfo -since-latest-release >> /tmp/release.txt
       - name: Publish release
-        uses: goreleaser/goreleaser-action@v5
+        uses: goreleaser/goreleaser-action@v6
         with:
           version: latest
-          args: release --release-notes=/tmp/release.txt --skip-validate
+          args: release --release-notes=/tmp/release.txt --skip=validate
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
