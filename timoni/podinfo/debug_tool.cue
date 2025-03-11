@@ -1,12 +1,13 @@
 package main
 
 import (
+	"list"
 	"tool/cli"
 	"encoding/yaml"
 	"text/tabwriter"
 )
 
-_resources: timoni.apply.app + timoni.apply.test
+_resources: list.Concat([timoni.apply.app, timoni.apply.test])
 
 // The build command generates the Kubernetes manifests and prints the multi-docs YAML to stdout.
 // Example 'cue cmd -t debug -t name=podinfo -t namespace=test -t mv=1.0.0 -t kv=1.28.0 build'.
