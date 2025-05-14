@@ -37,7 +37,7 @@ jobs:
         with:
           go-version: 1.24.x
       - name: Setup Helm
-        uses: azure/setup-helm@v3
+        uses: azure/setup-helm@v4
         with:
           version: v3.17.3
       - name: Setup QEMU
@@ -79,7 +79,7 @@ jobs:
             type=raw,value=${{ steps.prep.outputs.VERSION }}
             type=raw,value=latest
       - name: Publish multi-arch image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           sbom: true
           provenance: true
@@ -122,7 +122,7 @@ jobs:
           cosign sign ghcr.io/stefanprodan/charts/podinfo:${{ steps.prep.outputs.VERSION }} --yes
           cosign sign ghcr.io/stefanprodan/manifests/podinfo:${{ steps.prep.outputs.VERSION }} --yes
       - name: Publish base image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           push: true
           builder: ${{ steps.buildx.outputs.name }}
