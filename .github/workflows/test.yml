@@ -11,6 +11,7 @@ permissions:
 
 env:
   KUBERNETES_VERSION: 1.31.0
+  HELM_VERSION: 3.17.3
 
 jobs:
   test:
@@ -34,11 +35,11 @@ jobs:
       - name: Setup Helm
         uses: azure/setup-helm@v3
         with:
-          version: v3.16.1
+          version: v${{ env.HELM_VERSION }}
       - name: Setup CUE
         uses: cue-lang/setup-cue@v1.0.0
       - name: Setup Timoni
-        uses: stefanprodan/timoni/actions/setup@main
+        uses: stefanprodan/timoni/actions/setup@v0.24.0
       - name: Run unit tests
         run: make test
       - name: Validate Helm chart
