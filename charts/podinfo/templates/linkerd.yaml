@@ -2,7 +2,8 @@
 apiVersion: linkerd.io/v1alpha2
 kind: ServiceProfile
 metadata:
-  name: {{ template "podinfo.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local
+  name: {{ template "podinfo.fullname" . }}.{{ include "podinfo.namespace" . }}.svc.cluster.local
+  namespace: {{ include "podinfo.namespace" . }}
   labels:
     {{- include "podinfo.labels" . | nindent 4 }}  
 spec:
