@@ -27,17 +27,17 @@ jobs:
             **/go.sum
             **/go.mod
       - name: Setup kubectl
-        uses: azure/setup-kubectl@v3
+        uses: azure/setup-kubectl@v4
         with:
           version: v${{ env.KUBERNETES_VERSION }}
       - name: Setup kubeconform
         uses: ./.github/actions/kubeconform
       - name: Setup Helm
-        uses: azure/setup-helm@v3
+        uses: azure/setup-helm@v4
         with:
           version: v${{ env.HELM_VERSION }}
       - name: Setup CUE
-        uses: cue-lang/setup-cue@v1.0.0
+        uses: cue-lang/setup-cue@v1.0.1
       - name: Setup Timoni
         uses: stefanprodan/timoni/actions/setup@v0.24.0
       - name: Run unit tests
