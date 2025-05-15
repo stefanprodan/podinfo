@@ -25,7 +25,7 @@ Specifications:
 * Multi-arch container image with Docker buildx and GitHub Actions
 * Container image signing with Sigstore cosign
 * SBOMs and SLSA Provenance embedded in the container image
-* CVE scanning with Trivy
+* CVE scanning with govulncheck
 
 Web API:
 
