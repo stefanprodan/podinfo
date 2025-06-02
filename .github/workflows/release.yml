@@ -18,8 +18,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: sigstore/cosign-installer@v3
-      - uses: fluxcd/flux2/action@v2.5.1
-      - uses: stefanprodan/timoni/actions/setup@v0.24.0
+      - uses: fluxcd/flux2/action@v2.6.1
+      - uses: stefanprodan/timoni/actions/setup@v0.25.0
       - name: Setup Notation CLI
         uses: notaryproject/notation-action/setup@v1
         with:
