@@ -5,6 +5,7 @@ metadata:
   namespace: {{ include "podinfo.namespace" . }}
   labels:
     {{- include "podinfo.labels" . | nindent 4 }}
+    app.kubernetes.io/component: application
 spec:
   {{- if not .Values.hpa.enabled }}
   replicas: {{ .Values.replicaCount }}
@@ -19,7 +20,8 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "podinfo.selectorLabels" . | nindent 8 }}
+        {{- include "podinfo.labels" . | nindent 8 }}
+        app.kubernetes.io/component: application
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: "{{ .Values.service.httpPort }}"
