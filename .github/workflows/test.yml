@@ -39,7 +39,7 @@ jobs:
       - name: Setup CUE
         uses: cue-lang/setup-cue@v1.0.1
       - name: Setup Timoni
-        uses: stefanprodan/timoni/actions/setup@v0.25.0
+        uses: stefanprodan/timoni/actions/setup@v0.25.1
       - name: Run unit tests
         run: make test
       - name: Validate Helm chart
