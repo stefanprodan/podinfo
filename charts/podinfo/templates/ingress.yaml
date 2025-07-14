@@ -8,6 +8,7 @@ metadata:
   namespace: {{ include "podinfo.namespace" . }}
   labels:
     {{- include "podinfo.labels" . | nindent 4 }}
+    app.kubernetes.io/component: networking
     {{- with .Values.ingress.additionalLabels }}
     {{- toYaml . | nindent 4 }}
     {{- end }}
