@@ -98,6 +98,10 @@ redis:
   enabled: false
   repository: redis
   tag: 7.0.7
+  securityContext: {}
+  containerSecurityContext: {}
+  persistence:
+    enabled: false
 
 serviceAccount:
   # Specifies whether a service account should be created
@@ -146,6 +150,9 @@ resources:
   requests:
     cpu: 1m
     memory: 16Mi
+
+networkPolicies:
+  enabled: false
 
 # Extra environment variables for the podinfo container
 extraEnvs: []
