@@ -28,9 +28,7 @@ spec:
         {{- end }}
     spec:
       terminationGracePeriodSeconds: 30
-      {{- if .Values.serviceAccount.enabled }}
       serviceAccountName: {{ template "podinfo.serviceAccountName" . }}
-      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
