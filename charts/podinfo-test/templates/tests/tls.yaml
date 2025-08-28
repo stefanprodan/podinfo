@@ -1,0 +1,28 @@
+{{- if .Values.tls.enabled -}}
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ template "podinfo.fullname" . }}-tls-test-{{ randAlphaNum 5 | lower }}
+  namespace: {{ include "podinfo.namespace" . }}
+  labels:
+    {{- include "podinfo.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test-success
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+    sidecar.istio.io/inject: "false"
+    linkerd.io/inject: disabled
+    appmesh.k8s.aws/sidecarInjectorWebhook: disabled
+spec:
+  containers:
+    - name: curl
+      image: curlimages/curl:7.69.0
+      command:
+        - sh
+        - -c
+        - |
+          curl -sk ${PODINFO_SVC}/api/info | grep version
+      env:
+        - name: PODINFO_SVC
+          value: "https://{{ template "podinfo.fullname" . }}.{{ include "podinfo.namespace" . }}:{{ .Values.tls.port }}"
+  restartPolicy: Never
+{{- end }}

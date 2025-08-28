@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ template "podinfo.fullname" . }}-jwt-test-{{ randAlphaNum 5 | lower }}
+  namespace: {{ include "podinfo.namespace" . }}
+  labels:
+    {{- include "podinfo.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test-success
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+    sidecar.istio.io/inject: "false"
+    linkerd.io/inject: disabled
+    appmesh.k8s.aws/sidecarInjectorWebhook: disabled
+spec:
+  containers:
+    - name: tools
+      image: giantswarm/tiny-tools
+      command:
+        - sh
+        - -c
+        - |
+          TOKEN=$(curl -sd 'test' ${PODINFO_SVC}/token | jq -r .token) &&
+          curl -sH "Authorization: Bearer ${TOKEN}" ${PODINFO_SVC}/token/validate | grep test
+      env:
+      - name: PODINFO_SVC
+        value: "{{ template "podinfo.fullname" . }}.{{ include "podinfo.namespace" . }}:{{ .Values.service.externalPort }}"
+  restartPolicy: Never

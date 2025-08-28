@@ -9,7 +9,7 @@ on:
     paths-ignore: ["**.md", "LICENSE", "charts/**"]
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 env:
@@ -146,3 +146,30 @@ jobs:
           CF_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # liest PR-Infos aus GitHub
           CF_JIRA_PROJECT_PREFIX: MBA
           CF_JIRA_MESSAGE: ${{ steps.jira.outputs.message }}
+
+      # Update chart image.tag with yq only when we actually pushed an image
+      - name: Update Helm values.yaml image.tag (yq)
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+        uses: mikefarah/yq@v4
+        env:
+          TAG: sha-${{ steps.prep.outputs.short }}
+        with:
+          cmd: yq -i '.image.tag = strenv(TAG)' charts/podinfo/values.yaml
+
+      - name: Commit and push values.yaml change
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          file="charts/podinfo/values.yaml"
+          tag="sha-${{ steps.prep.outputs.short }}"
+          echo "Updated ${file} image.tag -> ${tag}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "$file"
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(chart): update image.tag to ${tag}"
+            git push
+          else
+            echo "No changes to commit"
+          fi

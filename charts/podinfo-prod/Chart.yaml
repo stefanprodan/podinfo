@@ -1,0 +1,13 @@
+apiVersion: v1
+version: 6.9.1
+appVersion: 6.9.1
+name: podinfo
+engine: gotpl
+description: Podinfo Helm chart for Kubernetes
+home: https://github.com/dfl-aeb/podinfo
+maintainers:
+  - email: dfl-aeb@users.noreply.github.com
+    name: dfl-aeb
+sources:
+  - https://github.com/dfl-aeb/podinfo
+kubeVersion: ">=1.23.0-0"

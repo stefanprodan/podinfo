@@ -1,0 +1,37 @@
+{{- if .Values.service.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "podinfo.fullname" . }}
+  namespace: {{ include "podinfo.namespace" . }}
+  labels:
+    {{- include "podinfo.labels" . | nindent 4 }}
+{{- with .Values.service.annotations }}
+  annotations:
+{{ toYaml . | indent 4 }}
+{{- end }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.externalPort }}
+      targetPort: http
+      protocol: TCP
+      name: http
+      {{- if (and (eq .Values.service.type "NodePort") (not (empty .Values.service.nodePort))) }}
+      nodePort: {{ .Values.service.nodePort }}
+      {{- end }}
+    {{- if .Values.tls.enabled }}
+    - port: {{ .Values.tls.port | default 9899 }}
+      targetPort: https
+      protocol: TCP
+      name: https
+    {{- end }}
+    {{- if .Values.service.grpcPort }}
+    - port: {{ .Values.service.grpcPort }}
+      targetPort: grpc
+      protocol: TCP
+      name: grpc
+    {{- end }}
+  selector:
+    {{- include "podinfo.selectorLabels" . | nindent 4 }}
+{{- end }}

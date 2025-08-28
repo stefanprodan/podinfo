@@ -1,0 +1,23 @@
+{{- if .Values.serviceMonitor.enabled -}}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ template "podinfo.fullname" . }}
+  namespace: {{ include "podinfo.namespace" . }}
+  labels:
+    {{- include "podinfo.labels" . | nindent 4 }}
+    {{- with .Values.serviceMonitor.additionalLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  endpoints:
+    - path: /metrics
+      port: http
+      interval: {{ .Values.serviceMonitor.interval }}
+  namespaceSelector:
+    matchNames:
+      - {{ include "podinfo.namespace" . }}
+  selector:
+    matchLabels:
+      {{- include "podinfo.selectorLabels" . | nindent 6 }}
+{{- end }}

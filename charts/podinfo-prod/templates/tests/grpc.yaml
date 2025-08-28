@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ template "podinfo.fullname" . }}-grpc-test-{{ randAlphaNum 5 | lower }}
+  namespace: {{ include "podinfo.namespace" . }}
+  labels:
+    {{- include "podinfo.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test-success
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+    sidecar.istio.io/inject: "false"
+    linkerd.io/inject: disabled
+    appmesh.k8s.aws/sidecarInjectorWebhook: disabled
+spec:
+  containers:
+    - name: grpc-health-probe
+      image: stefanprodan/grpc_health_probe:v0.3.0
+      command: ['grpc_health_probe']
+      args:  ['-addr={{ template "podinfo.fullname" . }}.{{ include "podinfo.namespace" . }}:{{ .Values.service.grpcPort }}']
+  restartPolicy: Never
