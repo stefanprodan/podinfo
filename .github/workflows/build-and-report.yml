@@ -87,12 +87,24 @@ jobs:
       - name: Compute Jira message
         id: jira
         shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          HEAD_MSG: ${{ github.event.head_commit.message }}
+          REF_NAME: ${{ github.ref_name }}
         run: |
-          msg="${{ github.event.head_commit.message }}"
-          if [ -z "${msg}" ]; then
-            msg="${{ github.ref_name }}"
+          msg="${HEAD_MSG}"
+          if [ "${EVENT_NAME}" = "pull_request" ] && [ -n "${PR_TITLE}" ]; then
+            msg="${PR_TITLE}"
           fi
-          echo "message=${msg}" >> "$GITHUB_OUTPUT"
+          if [ -z "${msg}" ]; then
+            msg="${REF_NAME}"
+          fi
+          {
+            echo "message<<EOF"
+            echo "${msg}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Report to Codefresh (enrich image)
         if: ${{ github.event_name != 'pull_request' }}
