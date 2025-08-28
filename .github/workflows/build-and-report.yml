@@ -123,12 +123,13 @@ jobs:
           CF_API_KEY: ${{ secrets.CODEFRESH_API_KEY }}
           CF_RUNTIME_NAME: codefresh
           CF_CONTAINER_REGISTRY_INTEGRATION: ghcr-dfl-aeb # IntegrationsNAME in Codefresh
-          CF_ISSUE_TRACKING_INTEGRATION: jira-dfl-test # IntegrationsNAME in Codefresh
           CF_IMAGE: ${{ steps.imageref.outputs.value }}
           CF_GIT_BRANCH: ${{ github.ref_name }}
           CF_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CF_JIRA_PROJECT_PREFIX: MBA
-          CF_JIRA_MESSAGE: ${{ steps.jira.outputs.message }}
+          # CF_JIRA_PROJECT_PREFIX: MBA
+          # CF_JIRA_MESSAGE: ${{ steps.jira.outputs.message }}
+          # CF_ISSUE_TRACKING_INTEGRATION: jira-dfl-test # IntegrationsNAME in Codefresh
+
           # CF_DOCKERFILE_CONTENT kann optional ergänzt werden:
           # CF_DOCKERFILE_CONTENT: ${{ steps.df.outputs.content }}
 
@@ -140,12 +141,12 @@ jobs:
           CF_API_KEY: ${{ secrets.CODEFRESH_API_KEY }}
           CF_RUNTIME_NAME: codefresh
           CF_CONTAINER_REGISTRY_INTEGRATION: ghcr-dfl-aeb
-          CF_ISSUE_TRACKING_INTEGRATION: jira-dfl-test
           CF_IMAGE: ${{ steps.imageref.outputs.value }}
           CF_GIT_BRANCH: ${{ github.head_ref }} # wichtig für PR-Zuordnung
           CF_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # liest PR-Infos aus GitHub
-          CF_JIRA_PROJECT_PREFIX: MBA
-          CF_JIRA_MESSAGE: ${{ steps.jira.outputs.message }}
+          # CF_ISSUE_TRACKING_INTEGRATION: jira-dfl-test
+          # CF_JIRA_PROJECT_PREFIX: MBA
+          # CF_JIRA_MESSAGE: ${{ steps.jira.outputs.message }}
 
       # Update chart image.tag with yq only when we actually pushed an image
       - name: Update Helm values.yaml image.tag (yq)
