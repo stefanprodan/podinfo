@@ -10,27 +10,27 @@ for end-to-end testing and workshops.
 ## Installing the Chart
 
 The Podinfo charts are published to
-[GitHub Container Registry](https://github.com/stefanprodan/podinfo/pkgs/container/charts%2Fpodinfo)
+[GitHub Container Registry](https://github.com/dfl-aeb/podinfo/pkgs/container/charts%2Fpodinfo)
 and signed with [Cosign](https://github.com/sigstore/cosign) & GitHub Actions OIDC.
 
 To install the chart with the release name `my-release` from GHCR:
 
 ```console
-$ helm upgrade -i my-release oci://ghcr.io/stefanprodan/charts/podinfo
+helm upgrade -i my-release oci://ghcr.io/dfl-aeb/charts/podinfo
 ```
 
 To verify a chart with Cosign:
 
 ```console
-$ cosign verify ghcr.io/stefanprodan/charts/podinfo:<VERSION>
+cosign verify ghcr.io/dfl-aeb/charts/podinfo:<VERSION>
 ```
 
 Alternatively, you can install the chart from GitHub pages:
 
 ```console
-$ helm repo add podinfo https://stefanprodan.github.io/podinfo
+helm repo add podinfo https://dfl-aeb.github.io/podinfo
 
-$ helm upgrade -i my-release podinfo/podinfo
+helm upgrade -i my-release podinfo/podinfo
 ```
 
 The command deploys podinfo on the Kubernetes cluster in the default namespace.
@@ -41,7 +41,7 @@ The [configuration](#configuration) section lists the parameters that can be con
 To uninstall/delete the `my-release` deployment:
 
 ```console
-$ helm delete my-release
+helm delete my-release
 ```
 
 The command removes all the Kubernetes components associated with the chart and deletes the release.
@@ -67,7 +67,7 @@ The following tables lists the configurable parameters of the podinfo chart and 
 | `faults.unready`                  | `false`                | When set, the ready state is never reached                                                                             |
 | `faults.testFail`                 | `false`                | When set, a helm test is included which always fails                                                                   |
 | `faults.testTimeout`              | `false`                | When set, a helm test is included which always times out                                                               |
-| `image.repository`                | `stefanprodan/podinfo` | Image repository                                                                                                       |
+| `image.repository`                | `dfl-aeb/podinfo` | Image repository                                                                                                       |
 | `image.tag`                       | `<VERSION>`            | Image tag                                                                                                              |
 | `image.pullPolicy`                | `IfNotPresent`         | Image pull policy                                                                                                      |
 | `service.enabled`                 | `true`                 | Create a Kubernetes Service, should be disabled when using [Flagger](https://flagger.app)                              |
@@ -129,7 +129,7 @@ $ helm upgrade -i my-release podinfo/podinfo \
 Alternatively, a YAML file that specifies the values for the above parameters can be provided while installing the chart. For example,
 
 ```console
-$ helm install my-release podinfo/podinfo -f values.yaml
+helm install my-release podinfo/podinfo -f values.yaml
 ```
 
 > **Tip**: You can use the default [values.yaml](values.yaml)
