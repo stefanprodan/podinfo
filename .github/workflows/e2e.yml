@@ -1,10 +1,9 @@
-name: e2e
+name: e2e (disabled)
 
 on:
-  pull_request:
-  push:
-    branches:
-      - 'master'
+  workflow_dispatch:
+
+# Disabled: removed push/pull_request triggers to prevent automatic runs.
 
 permissions:
   contents: read

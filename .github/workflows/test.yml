@@ -1,10 +1,9 @@
-name: test
+name: test (disabled)
 
 on:
-  pull_request:
-  push:
-    branches:
-      - 'master'
+  workflow_dispatch:
+
+# Disabled: removed push/pull_request triggers to prevent automatic runs.
 
 permissions:
   contents: read
