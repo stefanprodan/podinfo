@@ -111,7 +111,7 @@ securityContext: {}
 podSecurityContext: {}
 
 ingress:
-  enabled: false
+  enabled: true
   className: ""
   additionalLabels: {}
   annotations:
@@ -119,7 +119,7 @@ ingress:
     # kubernetes.io/ingress.class: nginx
     # kubernetes.io/tls-acme: "true"
   hosts:
-    - host: podinfo.local
+    - host: podinfo.k8s.localhost
       paths:
         - path: /
           pathType: ImplementationSpecific
