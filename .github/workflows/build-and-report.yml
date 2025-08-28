@@ -3,16 +3,10 @@ name: Build, Push (GHCR) and Report to Codefresh
 on:
   push:
     branches: [master, main]
-    paths-ignore:
-      - "**.md"
-      - "LICENSE"
-      - "charts/**"
+    paths-ignore: ["**.md", "LICENSE", "charts/**"]
   pull_request:
     branches: [master, main]
-    paths-ignore:
-      - "**.md"
-      - "LICENSE"
-      - "charts/**"
+    paths-ignore: ["**.md", "LICENSE", "charts/**"]
 
 permissions:
   contents: read
@@ -47,37 +41,47 @@ jobs:
 
       - name: Prepare
         id: prep
-        run: |
-          echo "short=${GITHUB_SHA::8}" >> $GITHUB_OUTPUT
+        run: echo "short=${GITHUB_SHA::8}" >> $GITHUB_OUTPUT
 
       - name: Docker metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: |
-            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
           tags: |
+            # kurzer Commit-Tag
             type=raw,value=sha-${{ steps.prep.outputs.short }}
+            # PR-Tag nur bei PR-Events
+            type=raw,value=pr-${{ github.event.pull_request.number }}-sha-${{ steps.prep.outputs.short }},enable=${{ github.event_name == 'pull_request' }}
+            # Branch-/Tag-Labels
             type=ref,event=branch
             type=ref,event=tag
+            # latest nur auf default-Branches
             type=raw,value=latest,enable=${{ github.ref_name == 'master' || github.ref_name == 'main' }}
 
-      - name: Build and push
+      - name: Build & push (push + PR aus gleichem Repo)
         id: build
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile.xx
-          push: ${{ github.event_name != 'pull_request' }}
-          platforms: linux/amd64
+          # Pushe auf Push-Events ODER PRs aus demselben Repo (keine Forks)
+          push: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+          platforms: linux/amd64,linux/arm64/v8
           build-args: |
             REVISION=${{ github.sha }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-      - name: Compute image ref (sha tag)
+      - name: Compute image ref (used for Codefresh report)
         id: imageref
-        run: echo "value=${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:sha-${{ steps.prep.outputs.short }}" >> "$GITHUB_OUTPUT"
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "value=${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:pr-${{ github.event.pull_request.number }}-sha-${{ steps.prep.outputs.short }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:sha-${{ steps.prep.outputs.short }}" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Base64 Dockerfile (optional)
         id: df
@@ -111,16 +115,34 @@ jobs:
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Report to Codefresh (enrich image)
+      # --- Reporten bei Push (main/master) ---
+      - name: Report to Codefresh (push)
         if: ${{ github.event_name != 'pull_request' }}
         uses: codefresh-io/codefresh-report-image@latest
         with:
           CF_API_KEY: ${{ secrets.CODEFRESH_API_KEY }}
-          CF_RUNTIME_NAME: juu-wsl-codefresh
-          CF_CONTAINER_REGISTRY_INTEGRATION: ghcr-dfl-aeb
-          CF_ISSUE_TRACKING_INTEGRATION: jira-dfl-test
-          CF_JIRA_MESSAGE: ${{ steps.jira.outputs.message }}
-          CF_JIRA_PROJECT_PREFIX: codefresh-poc
+          CF_RUNTIME_NAME: codefresh
+          CF_CONTAINER_REGISTRY_INTEGRATION: ghcr-dfl-aeb # IntegrationsNAME in Codefresh
+          CF_ISSUE_TRACKING_INTEGRATION: jira-dfl-test # IntegrationsNAME in Codefresh
           CF_IMAGE: ${{ steps.imageref.outputs.value }}
           CF_GIT_BRANCH: ${{ github.ref_name }}
-          # CF_DOCKERFILE_CONTENT is optional and may not be supported by this action version
+          CF_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CF_JIRA_PROJECT_PREFIX: MBA
+          CF_JIRA_MESSAGE: ${{ steps.jira.outputs.message }}
+          # CF_DOCKERFILE_CONTENT kann optional ergänzt werden:
+          # CF_DOCKERFILE_CONTENT: ${{ steps.df.outputs.content }}
+
+      # --- Reporten bei PR (zeigt PR<->Image in Codefresh) ---
+      - name: Report to Codefresh (pull_request)
+        if: ${{ github.event_name == 'pull_request' && (github.event.pull_request.head.repo.full_name == github.repository) }}
+        uses: codefresh-io/codefresh-report-image@latest
+        with:
+          CF_API_KEY: ${{ secrets.CODEFRESH_API_KEY }}
+          CF_RUNTIME_NAME: codefresh
+          CF_CONTAINER_REGISTRY_INTEGRATION: ghcr-dfl-aeb
+          CF_ISSUE_TRACKING_INTEGRATION: jira-dfl-test
+          CF_IMAGE: ${{ steps.imageref.outputs.value }}
+          CF_GIT_BRANCH: ${{ github.head_ref }} # wichtig für PR-Zuordnung
+          CF_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # liest PR-Infos aus GitHub
+          CF_JIRA_PROJECT_PREFIX: MBA
+          CF_JIRA_MESSAGE: ${{ steps.jira.outputs.message }}
