@@ -7,7 +7,7 @@ backend: #http://backend-podinfo:9898/echo
 backends: []
 
 image:
-  repository: ghcr.io/stefanprodan/podinfo
+  repository: ghcr.io/dfl-aeb/podinfo
   tag: 6.9.1
   pullPolicy: IfNotPresent
 
@@ -118,7 +118,8 @@ ingress:
   enabled: false
   className: ""
   additionalLabels: {}
-  annotations: {}
+  annotations:
+    {}
     # kubernetes.io/ingress.class: nginx
     # kubernetes.io/tls-acme: "true"
   hosts:

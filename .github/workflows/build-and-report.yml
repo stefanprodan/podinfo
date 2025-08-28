@@ -6,8 +6,13 @@ on:
     paths-ignore:
       - "**.md"
       - "LICENSE"
+      - "charts/**"
   pull_request:
     branches: [master, main]
+    paths-ignore:
+      - "**.md"
+      - "LICENSE"
+      - "charts/**"
 
 permissions:
   contents: read
