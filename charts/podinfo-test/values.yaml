@@ -8,7 +8,7 @@ backends: []
 
 image:
   repository: ghcr.io/dfl-aeb/podinfo
-  tag: sha-b4123aba
+  tag: sha-c6e2c07c
   pullPolicy: IfNotPresent
 
 ui:
