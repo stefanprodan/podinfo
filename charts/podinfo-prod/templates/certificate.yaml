@@ -1,0 +1,17 @@
+{{- if .Values.certificate.create -}}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ template "podinfo.fullname" . }}
+  namespace: {{ include "podinfo.namespace" . }}
+  labels:
+    {{- include "podinfo.labels" . | nindent 4 }}
+spec:
+  dnsNames:
+  {{- range .Values.certificate.dnsNames }}
+    - {{ . | quote }}
+  {{- end }}
+  secretName: {{ template "podinfo.tlsSecretName" . }}
+  issuerRef:
+  {{- .Values.certificate.issuerRef | toYaml | trimSuffix "\n" | nindent 4 }}
+{{- end }}

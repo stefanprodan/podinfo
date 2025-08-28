@@ -1,0 +1,30 @@
+{{- if .Values.cache }}
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ template "podinfo.fullname" . }}-cache-test-{{ randAlphaNum 5 | lower }}
+  namespace: {{ include "podinfo.namespace" . }}
+  labels:
+    {{- include "podinfo.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+    sidecar.istio.io/inject: "false"
+    linkerd.io/inject: disabled
+    appmesh.k8s.aws/sidecarInjectorWebhook: disabled
+spec:
+  containers:
+    - name: curl
+      image: curlimages/curl:7.69.0
+      command:
+        - sh
+        - -c
+        - |
+          curl -sd 'data' ${PODINFO_SVC}/cache/test &&
+          curl -s ${PODINFO_SVC}/cache/test | grep data &&
+          curl -s -XDELETE ${PODINFO_SVC}/cache/test
+      env:
+      - name: PODINFO_SVC
+        value: "{{ template "podinfo.fullname" . }}.{{ include "podinfo.namespace" . }}:{{ .Values.service.externalPort }}"
+  restartPolicy: Never
+{{- end }}

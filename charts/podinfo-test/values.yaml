@@ -1,8 +1,8 @@
-# Production values for podinfo.
-# Includes Redis deployment and memory limits.
+# Default values for podinfo.
 
 replicaCount: 1
 logLevel: info
+host: #0.0.0.0
 backend: #http://backend-podinfo:9898/echo
 backends: []
 
@@ -36,6 +36,10 @@ service:
   grpcPort: 9999
   grpcService: podinfo
   nodePort: 31198
+  # the port used to bind the http port to the host
+  # NOTE: requires privileged container with NET_BIND_SERVICE capability -- this is useful for testing
+  # in local clusters such as kind without port forwarding
+  hostPort:
 
 # enable h2c protocol (non-TLS version of HTTP/2)
 h2c:
@@ -78,10 +82,10 @@ certificate:
 
 # metrics-server add-on required
 hpa:
-  enabled: true
-  maxReplicas: 5
+  enabled: false
+  maxReplicas: 10
   # average total CPU usage per pod (1-100)
-  cpu: 99
+  cpu:
   # average memory usage per pod (100Mi-1Gi)
   memory:
   # average http requests per second per pod (k8s-prometheus-adapter)
@@ -91,7 +95,7 @@ hpa:
 cache: ""
 # Redis deployment
 redis:
-  enabled: true
+  enabled: false
   repository: redis
   tag: 7.0.7
 
@@ -119,7 +123,7 @@ ingress:
     # kubernetes.io/ingress.class: nginx
     # kubernetes.io/tls-acme: "true"
   hosts:
-    - host: podinfo.k8s.localhost
+    - host: 192.168.49.2.podinfo-test.nip.io
       paths:
         - path: /
           pathType: ImplementationSpecific
@@ -140,10 +144,9 @@ serviceMonitor:
 
 resources:
   limits:
-    memory: 256Mi
   requests:
-    cpu: 100m
-    memory: 64Mi
+    cpu: 1m
+    memory: 16Mi
 
 # Extra environment variables for the podinfo container
 extraEnvs: []
@@ -160,3 +163,32 @@ tolerations: []
 affinity: {}
 
 podAnnotations: {}
+
+# https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/
+topologySpreadConstraints: []
+
+# Disruption budget will be configured only when the replicaCount is greater than 1
+podDisruptionBudget: {}
+#  maxUnavailable: 1
+
+# https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes
+probes:
+  readiness:
+    initialDelaySeconds: 1
+    timeoutSeconds: 5
+    failureThreshold: 3
+    successThreshold: 1
+    periodSeconds: 10
+  liveness:
+    initialDelaySeconds: 1
+    timeoutSeconds: 5
+    failureThreshold: 3
+    successThreshold: 1
+    periodSeconds: 10
+  startup:
+    enable: false
+    initialDelaySeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 20
+    successThreshold: 1
+    periodSeconds: 10
