@@ -18,9 +18,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Setup Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: 1.24.x
           cache-dependency-path: |
@@ -39,7 +39,7 @@ jobs:
       - name: Setup CUE
         uses: cue-lang/setup-cue@v1.0.1
       - name: Setup Timoni
-        uses: stefanprodan/timoni/actions/setup@v0.25.1
+        uses: stefanprodan/timoni/actions/setup@v0.25.2
       - name: Run unit tests
         run: make test
       - name: Validate Helm chart
