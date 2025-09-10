@@ -4,4 +4,6 @@ resources:
   - service.yaml
   - deployment.yaml
   - hpa.yaml
-
+images:
+  - name: ghcr.io/stefanprodan/podinfo
+    newTag: 6.9.1
