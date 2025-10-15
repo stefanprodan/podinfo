@@ -35,6 +35,9 @@ spec:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if .Values.imagePullSecrets }}
+          imagePullSecrets: {{ toYaml .Values.imagePullSecrets | nindent 8 }}
+          {{- end }}
           {{- if .Values.securityContext }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
