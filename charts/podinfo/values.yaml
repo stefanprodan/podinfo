@@ -10,6 +10,7 @@ image:
   repository: ghcr.io/stefanprodan/podinfo
   tag: 6.9.2
   pullPolicy: IfNotPresent
+  pullSecrets: []
 
 ui:
   color: "#34577c"
@@ -96,8 +97,9 @@ cache: ""
 # Redis deployment
 redis:
   enabled: false
-  repository: redis
-  tag: 7.0.7
+  repository: docker.io/redis
+  tag: 8.2.2
+  imagePullSecrets: []
 
 serviceAccount:
   # Specifies whether a service account should be created
