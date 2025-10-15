@@ -51,13 +51,16 @@ The command removes all the Kubernetes components associated with the chart and 
 The following tables lists the configurable parameters of the podinfo chart and their default values.
 
 | Parameter                         | Default                | Description                                                                                                            |
-| --------------------------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+|-----------------------------------|------------------------|------------------------------------------------------------------------------------------------------------------------|
 | `replicaCount`                    | `1`                    | Desired number of pods                                                                                                 |
 | `logLevel`                        | `info`                 | Log level: `debug`, `info`, `warn`, `error`                                                                            |
 | `backend`                         | `None`                 | Echo backend URL                                                                                                       |
 | `backends`                        | `[]`                   | Array of echo backend URLs                                                                                             |
 | `cache`                           | `None`                 | Redis address in the format `tcp://<host>:<port>`                                                                      |
 | `redis.enabled`                   | `false`                | Create Redis deployment for caching purposes                                                                           |
+| `redis.repository`                | `docker.io/redis`      | Redis image repository                                                                                                 |
+| `redis.tag`                       | `<VERSION>`            | Redis image tag                                                                                                        |
+| `redis.imagePullSecrets`          | `[]`                   | Redis image pull secrets                                                                                               |
 | `ui.color`                        | `#34577c`              | UI color                                                                                                               |
 | `ui.message`                      | `None`                 | UI greetings message                                                                                                   |
 | `ui.logo`                         | `None`                 | UI logo                                                                                                                |
@@ -70,6 +73,7 @@ The following tables lists the configurable parameters of the podinfo chart and 
 | `image.repository`                | `stefanprodan/podinfo` | Image repository                                                                                                       |
 | `image.tag`                       | `<VERSION>`            | Image tag                                                                                                              |
 | `image.pullPolicy`                | `IfNotPresent`         | Image pull policy                                                                                                      |
+| `image.pullSecrets`               | `[]`                   | Image pull secrets                                                                                                     |
 | `service.enabled`                 | `true`                 | Create a Kubernetes Service, should be disabled when using [Flagger](https://flagger.app)                              |
 | `service.type`                    | `ClusterIP`            | Type of the Kubernetes Service                                                                                         |
 | `service.metricsPort`             | `9797`                 | Prometheus metrics endpoint port                                                                                       |
@@ -98,7 +102,7 @@ The following tables lists the configurable parameters of the podinfo chart and 
 | `serviceMonitor.interval`         | `15s`                  | Prometheus scraping interval                                                                                           |
 | `serviceMonitor.additionalLabels` | `{}`                   | Add additional labels to the service monitor                                                                           |
 | `ingress.enabled`                 | `false`                | Enables Ingress                                                                                                        |
-| `ingress.className`               | `""`                    | Use ingressClassName                                                                                                  |
+| `ingress.className`               | `""`                   | Use ingressClassName                                                                                                   |
 | `ingress.additionalLabels`        | `{}`                   | Add additional labels to the ingress                                                                                   |
 | `ingress.annotations`             | `{}`                   | Ingress annotations                                                                                                    |
 | `ingress.hosts`                   | `[]`                   | Ingress accepted hosts                                                                                                 |
