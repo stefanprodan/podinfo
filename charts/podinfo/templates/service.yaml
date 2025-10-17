@@ -34,4 +34,7 @@ spec:
     {{- end }}
   selector:
     {{- include "podinfo.selectorLabels" . | nindent 4 }}
+  {{- if .Values.service.trafficDistribution }}
+  trafficDistribution: {{ .Values.service.trafficDistribution }}
+  {{- end }}
 {{- end }}
