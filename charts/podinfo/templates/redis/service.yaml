@@ -14,4 +14,5 @@ spec:
       port: 6379
       protocol: TCP
       targetPort: redis
+      appProtocol: redis
 {{- end }}

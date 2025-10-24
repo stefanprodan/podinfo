@@ -56,6 +56,14 @@ config:
 # Additional command line arguments to pass to podinfo container
 extraArgs: []
 
+# Extra environment variables for the podinfo container
+extraEnvs: []
+# Example on how to configure extraEnvs
+#  - name: OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
+#    value: "http://otel:4317"
+#  - name: MULTIPLE_VALUES
+#    value: TEST
+
 # enable tls on the podinfo service
 tls:
   enabled: false
@@ -116,6 +124,9 @@ securityContext: {}
 # set pod security context
 podSecurityContext: {}
 
+# -- Expose the service via Kubernetes Ingress
+# Requires an Ingress controller
+# Docs https://kubernetes.io/docs/concepts/services-networking/ingress/
 ingress:
   enabled: false
   className: ""
@@ -133,6 +144,31 @@ ingress:
   #    hosts:
   #      - chart-example.local
 
+# -- Expose the service via Gateway HTTPRoute
+# Requires a Gateway controller
+# Docs https://gateway-api.sigs.k8s.io/guides/
+httpRoute:
+  # HTTPRoute enabled.
+  enabled: false
+  # Add additional labels to the HTTPRoute.
+  additionalLabels: {}
+  # HTTPRoute annotations.
+  annotations: {}
+  # Which Gateways this Route is attached to.
+  parentRefs:
+    - name: gateway
+      sectionName: http
+      # namespace: default
+  # Hostnames matching HTTP header.
+  hostnames:
+    - podinfo.local
+  # List of rules and filters applied.
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+
 linkerd:
   profile:
     enabled: false
@@ -148,14 +184,6 @@ resources:
   requests:
     cpu: 1m
     memory: 16Mi
-
-# Extra environment variables for the podinfo container
-extraEnvs: []
-# Example on how to configure extraEnvs
-#  - name: OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
-#    value: "http://otel:4317"
-#  - name: MULTIPLE_VALUES
-#    value: TEST
 
 nodeSelector: {}
 
