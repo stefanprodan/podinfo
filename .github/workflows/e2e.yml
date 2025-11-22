@@ -16,7 +16,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
       - name: Setup Kubernetes
-        uses: helm/kind-action@v1.12.0
+        uses: helm/kind-action@v1.13.0
         with:
           cluster_name: kind
       - name: Build container image
@@ -52,7 +52,7 @@ jobs:
       - name: Setup Timoni
         uses: stefanprodan/timoni/actions/setup@main
       - name: Setup Kubernetes
-        uses: helm/kind-action@v1.12.0
+        uses: helm/kind-action@v1.13.0
         with:
           cluster_name: kind
       - name: Build container
