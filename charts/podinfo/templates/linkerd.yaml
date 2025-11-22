@@ -5,7 +5,8 @@ metadata:
   name: {{ template "podinfo.fullname" . }}.{{ include "podinfo.namespace" . }}.svc.cluster.local
   namespace: {{ include "podinfo.namespace" . }}
   labels:
-    {{- include "podinfo.labels" . | nindent 4 }}  
+    {{- include "podinfo.labels" . | nindent 4 }}
+    app.kubernetes.io/component: networking
 spec:
   routes:
     - condition:

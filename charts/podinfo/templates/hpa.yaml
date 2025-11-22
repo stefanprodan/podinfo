@@ -5,7 +5,8 @@ metadata:
   name: {{ template "podinfo.fullname" . }}
   namespace: {{ include "podinfo.namespace" . }}
   labels:
-    {{- include "podinfo.labels" . | nindent 4 }}  
+    {{- include "podinfo.labels" . | nindent 4 }}
+    app.kubernetes.io/component: autoscaling
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
