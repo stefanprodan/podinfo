@@ -8,7 +8,7 @@ backends: []
 
 image:
   repository: ghcr.io/stefanprodan/podinfo
-  tag: 6.9.2
+  tag: 6.9.3
   pullPolicy: IfNotPresent
   pullSecrets: []
 
@@ -106,7 +106,7 @@ cache: ""
 redis:
   enabled: false
   repository: docker.io/redis
-  tag: 8.2.2
+  tag: 8.4.0
   imagePullSecrets: []
 
 serviceAccount:

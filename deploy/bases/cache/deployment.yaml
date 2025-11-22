@@ -13,7 +13,7 @@ spec:
     spec:
       containers:
         - name: redis
-          image: docker.io/redis:8.2.2
+          image: docker.io/redis:8.4.0
           imagePullPolicy: IfNotPresent
           command:
             - redis-server
