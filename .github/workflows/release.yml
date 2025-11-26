@@ -17,7 +17,9 @@ jobs:
       packages: write # needed for ghcr access
     steps:
       - uses: actions/checkout@v5
-      - uses: sigstore/cosign-installer@v3
+      - uses: sigstore/cosign-installer@v4.0.0
+        with:
+          cosign-release: v2.6.1
       - uses: fluxcd/flux2/action@v2.7.3
       - uses: stefanprodan/timoni/actions/setup@v0.25.2
       - name: Setup Notation CLI
