@@ -1,0 +1,18 @@
+name: "Run Quality Scan"
+description: "Run quality scan on the codebase"
+branding:
+  icon: "code"
+  color: "yellow"
+inputs:
+  wait:
+    default: "1"
+    description: "Wait time in seconds"
+runs:
+  using: "composite"
+  steps:
+    - run: |
+        echo "Running quality scan in ${{inputs.environment}}..."
+        echo "Your call is very important to us..."
+        sleep ${{inputs.wait}}
+      name: Run quality scan
+      shell: bash

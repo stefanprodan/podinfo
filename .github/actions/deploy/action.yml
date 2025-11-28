@@ -1,0 +1,20 @@
+name: "Deploy"
+description: "Deploy package"
+branding:
+  icon: "code"
+  color: "yellow"
+inputs:
+  environment:
+    default: "dev"
+    description: "Environment to deploy to"
+  wait:
+    default: "5"
+    description: "Wait time in seconds before running tests"
+runs:
+  using: "composite"
+  steps:
+    - run: |
+        echo "Deploying to ${{inputs.environment}}..."
+        sleep ${{inputs.wait}}
+      name: Deploy to ${{inputs.environment}}
+      shell: bash

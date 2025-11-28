@@ -1,0 +1,93 @@
+name: "Pull request"
+
+on:
+  workflow_dispatch:
+  pull_request: { }
+  
+jobs:
+
+  unit_tests:
+    name: "Run unit tests"
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        name: Checkout code
+
+#      - name: Build docker image
+#        run: ./devcli build 0.1.${{ github.run_number }}
+
+      - name: Run unit tests
+        uses: ./.github/actions/run-tests-unit
+
+      - name: Publish test report
+        uses: mikepenz/action-junit-report@v5
+        with:
+          annotate_only: true
+          report_paths: |
+            .test-results/test-results.xml
+
+
+  code_scan_security:
+    name: "Run code security scan"
+    runs-on: ubuntu-latest
+    steps:
+
+      - uses: actions/checkout@v4
+        name: Checkout code
+
+      - uses: ./.github/actions/run-scan-security
+        name: "Run code security scan"
+        with:
+          wait: 8
+
+  code_lint:
+    name: "Run code linters"
+    runs-on: ubuntu-latest
+    steps:
+
+      - uses: actions/checkout@v4
+        name: Checkout code
+
+      - uses: ./.github/actions/run-linters
+        name: "Run code linters"
+        with:
+          wait: 2
+
+  code_scan_quality:
+    name: "Run code quality scan"
+    runs-on: ubuntu-latest
+    needs: [ unit_tests ]
+    steps:
+
+      - uses: actions/checkout@v4
+        name: Checkout code
+
+      - uses: ./.github/actions/run-scan-quality
+        name: "Run code quality scan"
+        with:
+          wait: 2
+
+
+
+  deploy_dev:
+    name: "Deploy and test in DEV"
+    runs-on: ubuntu-latest
+    environment: dev
+    needs: [ code_scan_quality, code_scan_security, code_lint ]
+
+    steps:
+      - uses: actions/checkout@v4
+        name: Checkout code
+
+      - uses: ./.github/actions/deploy
+        name: "Deploy to dev"
+        with:
+          environment: dev
+          wait: 5
+
+      - uses: ./.github/actions/run-tests-integration
+        name: "Run integration tests in dev"
+        with:
+          environment: dev
+          wait: 2

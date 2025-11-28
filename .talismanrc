@@ -1,0 +1,4 @@
+fileignoreconfig:
+- filename: .github/actions/poetry/action.yml
+  checksum: a272f753fd0130975f30101ad7f312abf79c62b1057a1563a85b5cce43f939dd
+version: "1.0"

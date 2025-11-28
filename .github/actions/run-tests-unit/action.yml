@@ -1,0 +1,52 @@
+name: "Run Unit Tests"
+description: "Run unit tests"
+branding:
+  icon: "code"
+  color: "yellow"
+runs:
+  using: "composite"
+  steps:
+    - name: Install Poetry
+      uses: ./.github/actions/poetry
+      with:
+        version: 2.1.3
+
+    - name: Install dependencies
+      shell: bash
+      run: poetry install
+
+    - name: Run pytest
+      shell: bash
+      run: |
+        poetry install
+        ./devcli test unit
+
+    - name: Code Coverage Summary Report
+      uses: irongut/CodeCoverageSummary@v1.3.0
+      with:
+        filename: .test-results/coverage.xml
+        badge: true
+        fail_below_min: true
+        format: markdown
+        hide_branch_rate: false
+        hide_complexity: true
+        indicators: true
+        output: both
+        thresholds: '60 80'
+
+    - name: Publish code coverage report
+      run: |
+        cat code-coverage-results.md >> $GITHUB_STEP_SUMMARY
+      shell: bash
+
+    - name: Upload code coverage report
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: .test-results/coverage.xml
+
+    - name: Upload code coverage report
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-report
+        path: .test-results/test-results.xml

@@ -1,0 +1,151 @@
+name: "Main pipeline"
+
+on:
+  workflow_dispatch:
+  push:
+    # branches:
+      # - main
+    tags:
+      - 'v*'
+jobs:
+
+  unit_tests:
+    name: "Run unit tests"
+    runs-on: self-hoster-runner
+
+    steps:
+      - uses: actions/checkout@v4
+        name: Checkout code
+
+
+  code_scan_security:
+    name: "Run code security scan"
+    runs-on: self-hoster-runner
+    steps:
+
+      - uses: actions/checkout@v4
+        name: Checkout code
+
+      - uses: ./.github/actions/run-scan-security
+        name: "Run code security scan"
+        with:
+          wait: 8
+
+  code_lint:
+    name: "Run code linters"
+    runs-on: self-hoster-runner
+    steps:
+
+      - uses: actions/checkout@v4
+        name: Checkout code
+
+      - uses: ./.github/actions/run-linters
+        name: "Run code linters"
+        with:
+          wait: 2
+
+  code_scan_quality:
+    name: "Run code quality scan"
+    runs-on: self-hoster-runner
+    needs: [ unit_tests ]
+    steps:
+
+      - uses: actions/checkout@v4
+        name: Checkout code
+
+      - uses: ./.github/actions/run-scan-quality
+        name: "Run code quality scan"
+        with:
+          wait: 2
+
+
+
+  deploy_dev:
+    name: "Deploy and test in DEV"
+    runs-on: self-hoster-runner
+    environment: dev
+    needs: [ code_scan_quality, code_scan_security, code_lint ]
+
+    steps:
+      - uses: actions/checkout@v4
+        name: Checkout code
+
+      - uses: ./.github/actions/deploy
+        name: "Deploy to dev"
+        with:
+          environment: dev
+          wait: 5
+
+      - uses: ./.github/actions/run-tests-integration
+        name: "Run integration tests in dev"
+        with:
+          environment: dev
+          wait: 2
+
+
+  deploy_preq:
+    name: "Deploy and test in PREQ"
+    runs-on: self-hoster-runner
+    environment: preq
+    needs: [ deploy_dev ]
+
+    steps:
+      - uses: actions/checkout@v4
+        name: Checkout code
+
+      - uses: ./.github/actions/deploy
+        name: "Deploy to preq"
+        with:
+          environment: preq
+          wait: 5
+
+      - uses: ./.github/actions/run-tests-integration
+        name: "Run integration tests in preq"
+        with:
+          environment: preq
+          wait: 2
+
+  deploy_qa:
+    name: "Deploy and test in QA"
+    runs-on: self-hoster-runner
+    environment: qa
+    needs: [ deploy_preq ]
+
+    steps:
+      - uses: actions/checkout@v4
+        name: Checkout code
+
+      - uses: ./.github/actions/deploy
+        name: "Deploy to qa"
+        with:
+          environment: qa
+          wait: 3
+
+      - uses: ./.github/actions/run-tests-integration
+        name: "Run integration tests in qa"
+        with:
+          environment: qa
+          wait: 1
+
+
+  deploy_prod:
+    name: "Deploy and test in PROD"
+    runs-on: self-hoster-runner
+    environment: prod
+    needs: [ deploy_qa ]
+
+    steps:
+      - uses: actions/checkout@v4
+        name: Checkout code
+
+      - uses: ./.github/actions/deploy
+        name: "Deploy to prod"
+        with:
+          environment: prod
+          wait: 3
+
+      - uses: ./.github/actions/run-tests-integration
+        name: "Run integration tests in prod"
+        with:
+          environment: prod
+          wait: 2

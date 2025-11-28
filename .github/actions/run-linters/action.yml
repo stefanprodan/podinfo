@@ -1,0 +1,18 @@
+name: "Run Code Linters"
+description: "Run code linters"
+branding:
+  icon: "code"
+  color: "yellow"
+inputs:
+  wait:
+    default: "1"
+    description: "Wait time in seconds"
+runs:
+  using: "composite"
+  steps:
+    - run: |
+        echo "Running code linter in ${{inputs.environment}}..."
+        echo "Your call is very important to us..."
+        sleep ${{inputs.wait}}
+      name: Run code linter
+      shell: bash

@@ -1,0 +1,20 @@
+name: "Run Integration Tests"
+description: "Run integration tests"
+branding:
+  icon: "code"
+  color: "yellow"
+inputs:
+  environment:
+    default: "dev"
+    description: "Environment to deploy to"
+  wait:
+    default: "1"
+    description: "Wait time in seconds before running tests"
+runs:
+  using: "composite"
+  steps:
+    - run: |
+        echo "Running integration tests in ${{inputs.environment}}..."
+        sleep ${{inputs.wait}}
+      name: Deploy to ${{inputs.environment}}
+      shell: bash
