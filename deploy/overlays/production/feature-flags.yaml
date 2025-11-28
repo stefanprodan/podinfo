@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: podinfo-feature-flags
+  labels:
+    app.kubernetes.io/name: podinfo
+    app.kubernetes.io/instance: production
+    app.kubernetes.io/component: feature-flags
+data:
+  enableCanaryBanner: "false"
+  enableExtraMetrics: "true"
+  uiTheme: "prod"

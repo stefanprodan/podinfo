@@ -6,5 +6,8 @@ resources:
   - ../../bases/frontend
   - ../../bases/cache
   - namespace.yaml
+  - feature-flags.yaml
 transformers:
   - labels.yaml
+patchesStrategicMerge:
+  - feature-flag-env.yaml

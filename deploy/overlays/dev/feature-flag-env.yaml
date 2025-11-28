@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+spec:
+  template:
+    spec:
+      containers:
+      - name: backend
+        envFrom:
+        - configMapRef:
+            name: podinfo-feature-flags
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+spec:
+  template:
+    spec:
+      containers:
+      - name: frontend
+        envFrom:
+        - configMapRef:
+            name: podinfo-feature-flags

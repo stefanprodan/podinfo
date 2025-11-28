@@ -1,0 +1,197 @@
+name: podinfo-applicationset-cicd
+
+on:
+  push:
+    branches:
+      - main
+      - 'feature/**'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      promote_to_prod:
+        description: 'Promote the current trunk image to prod'
+        required: false
+        default: 'false'
+      image_tag:
+        description: 'Container tag to promote (defaults to the triggering commit SHA)'
+        required: false
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AWS_REGION: us-west-2
+  ECR_REPOSITORY: podinfo
+  IMAGE_NAME: podinfo
+  DEFAULT_BRANCH: main
+  KUSTOMIZE_BASE: deploy/overlays
+
+jobs:
+  validate:
+    name: Validate code and manifests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - environment: dev
+            overlay: dev
+          - environment: qa
+            overlay: qa
+          - environment: prod
+            overlay: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.22'
+
+      - name: Run unit tests
+        run: go test ./...
+
+      - name: Render ${{ matrix.environment }} manifest
+        uses: azure/setup-kubectl@v4
+        with:
+          version: v1.31.0
+      - name: Kustomize ${{ matrix.environment }}
+        run: kubectl kustomize "${{ env.KUSTOMIZE_BASE }}/${{ matrix.overlay }}" > ./podinfo-${{ matrix.environment }}.yaml
+
+      - name: Upload rendered manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: podinfo-${{ matrix.environment }}
+          path: ./podinfo-${{ matrix.environment }}.yaml
+
+  build-and-push:
+    name: Build and push images for dev and qa
+    needs: validate
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - environment: dev
+            overlay: dev
+          - environment: qa
+            overlay: qa
+    environment: ${{ matrix.environment }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Determine image tag and feature flags
+        id: meta
+        run: |
+          SHORT_SHA="${GITHUB_SHA::7}"
+          if [[ "${GITHUB_REF}" == refs/heads/feature/* ]]; then
+            TAG="feature-${SHORT_SHA}"
+            FLAGS="enableCanaryBanner=true,enableExtraMetrics=true"
+          else
+            TAG="${{ matrix.environment }}-${SHORT_SHA}"
+            FLAGS="enableCanaryBanner=false,enableExtraMetrics=true"
+          fi
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "flags=${FLAGS}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          provenance: false
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ steps.meta.outputs.tag }}
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ matrix.environment }}
+          build-args: |
+            FEATURE_FLAGS=${{ steps.meta.outputs.flags }}
+
+      - name: Capture deployment secrets
+        env:
+          SECRET_ID: podinfo/${{ matrix.environment }}/argocd-token
+        run: |
+          # Secrets such as the Argo CD token live in AWS Secrets Manager.
+          # This command is intentionally read-only; the pipeline fails if the secret is missing.
+          aws secretsmanager get-secret-value --secret-id "$SECRET_ID" --query SecretString --output text > /tmp/argocd_token
+
+      - name: Publish manifest with image tag
+        uses: azure/setup-kubectl@v4
+        with:
+          version: v1.31.0
+      - name: Render ${{ matrix.environment }} manifest with image
+        run: |
+          kubectl kustomize "${{ env.KUSTOMIZE_BASE }}/${{ matrix.overlay }}" \
+            | sed "s#ghcr.io/stefanprodan/podinfo:6.9.3#${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ steps.meta.outputs.tag }}#" \
+            > ./deploy-${{ matrix.environment }}.yaml
+      - name: Upload deployment manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: deploy-${{ matrix.environment }}
+          path: ./deploy-${{ matrix.environment }}.yaml
+
+  promote-prod:
+    name: Promote image to prod
+    needs:
+      - validate
+      - build-and-push
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.promote_to_prod == 'true'
+    runs-on: ubuntu-latest
+    environment: prod
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Install Argo CD CLI
+        run: |
+          curl -sSL -o /usr/local/bin/argocd https://github.com/argoproj/argo-cd/releases/download/v2.11.2/argocd-linux-amd64
+          chmod +x /usr/local/bin/argocd
+
+      - name: Prepare release manifest for Argo CD sync
+        uses: azure/setup-kubectl@v4
+        with:
+          version: v1.31.0
+      - name: Render production manifest
+        run: |
+          IMAGE_TAG="${{ github.event.inputs.image_tag }}"
+          if [[ -z "$IMAGE_TAG" ]]; then
+            IMAGE_TAG="${GITHUB_SHA::7}"
+          fi
+          kubectl kustomize "${{ env.KUSTOMIZE_BASE }}/production" \
+            | sed "s#ghcr.io/stefanprodan/podinfo:6.9.3#${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${IMAGE_TAG}#" \
+            > ./deploy-prod.yaml
+
+      - name: Sync ApplicationSet
+        env:
+          ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
+          ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
+        run: |
+          # argocd CLI uses the token fetched from Secrets Manager earlier in the pipeline.
+          echo "$ARGOCD_AUTH_TOKEN" > /tmp/token
+          argocd login "$ARGOCD_SERVER" --auth-token "$(cat /tmp/token)" --grpc-web
+          argocd app sync podinfo-prod --prune
+          argocd app wait podinfo-prod --health --timeout 300

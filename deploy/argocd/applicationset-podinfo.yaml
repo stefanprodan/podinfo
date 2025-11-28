@@ -1,0 +1,49 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: podinfo-applications
+  namespace: argocd
+spec:
+  generators:
+    - list:
+        elements:
+          - name: dev
+            namespace: dev
+            path: deploy/overlays/dev
+            cluster: https://kubernetes.default.svc
+          - name: qa
+            namespace: qa
+            path: deploy/overlays/qa
+            cluster: https://kubernetes.default.svc
+          - name: prod
+            namespace: production
+            path: deploy/overlays/production
+            cluster: https://kubernetes.default.svc
+  template:
+    metadata:
+      name: podinfo-{{name}}
+      labels:
+        app.kubernetes.io/managed-by: argocd
+        app.kubernetes.io/name: podinfo
+        app.kubernetes.io/instance: podinfo-{{name}}
+        environment: "{{name}}"
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/jmatias/podinfo.git
+        targetRevision: main
+        path: "{{path}}"
+        kustomize:
+          commonLabels:
+            environment: "{{name}}"
+      destination:
+        server: "{{cluster}}"
+        namespace: "{{namespace}}"
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - RespectIgnoreDifferences=true
+      revisionHistoryLimit: 3
