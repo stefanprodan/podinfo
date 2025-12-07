@@ -84,6 +84,8 @@ The following tables lists the configurable parameters of the podinfo chart and 
 | `service.grpcPort`                | `9999`                         | ClusterIP gPRC port                                                                                                    |
 | `service.grpcService`             | `podinfo`                      | gPRC service name                                                                                                      |
 | `service.nodePort`                | `31198`                        | NodePort for the HTTP endpoint                                                                                         |
+| `service.trafficDistribution`     | `""`                           | Traffic distribution strategy                                                                                          |
+| `service.additionalLabels`        | `{}`                           | Additional labels to add to the service                                                                                |
 | `h2c.enabled`                     | `false`                        | Allow upgrading to h2c (non-TLS version of HTTP/2)                                                                     |
 | `extraArgs`                       | `[]`                           | Additional command line arguments to pass to podinfo container                                                         |
 | `extraEnvs`                       | `[]`                           | Extra environment variables for the podinfo container                                                                  |

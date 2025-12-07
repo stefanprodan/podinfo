@@ -41,6 +41,9 @@ service:
   # NOTE: requires privileged container with NET_BIND_SERVICE capability -- this is useful for testing
   # in local clusters such as kind without port forwarding
   hostPort:
+  # Stable from Kubernetes v1.33+ with a value of PreferClose. Additional values are PreferSameZone and PreferSameNode from v1.34+. Empty string means it's disabled.
+  trafficDistribution: ""
+  additionalLabels: {}
 
 # enable h2c protocol (non-TLS version of HTTP/2)
 h2c:
