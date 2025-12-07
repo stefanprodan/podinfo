@@ -21,7 +21,7 @@ jobs:
       - uses: sigstore/cosign-installer@v4.0.0
         with:
           cosign-release: v2.6.1
-      - uses: fluxcd/flux2/action@v2.7.4
+      - uses: fluxcd/flux2/action@v2.7.5
       - uses: stefanprodan/timoni/actions/setup@v0.25.2
       - name: Setup Notation CLI
         uses: notaryproject/notation-action/setup@v1
