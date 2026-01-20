@@ -11,34 +11,35 @@ permissions:
 
 env:
   KUBERNETES_VERSION: 1.31.0
+  HELM_VERSION: 3.17.3
 
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/runner-cleanup
       - name: Setup Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
-          go-version: 1.23.x
+          go-version: 1.25.x
           cache-dependency-path: |
             **/go.sum
             **/go.mod
       - name: Setup kubectl
-        uses: azure/setup-kubectl@v3
+        uses: azure/setup-kubectl@v4
         with:
           version: v${{ env.KUBERNETES_VERSION }}
       - name: Setup kubeconform
         uses: ./.github/actions/kubeconform
       - name: Setup Helm
-        uses: azure/setup-helm@v3
+        uses: azure/setup-helm@v4
         with:
-          version: v3.16.1
+          version: v${{ env.HELM_VERSION }}
       - name: Setup CUE
-        uses: cue-lang/setup-cue@v1.0.0
+        uses: cue-lang/setup-cue@v1.0.1
       - name: Setup Timoni
-        uses: stefanprodan/timoni/actions/setup@main
+        uses: stefanprodan/timoni/actions/setup@v0.25.2
       - name: Run unit tests
         run: make test
       - name: Validate Helm chart

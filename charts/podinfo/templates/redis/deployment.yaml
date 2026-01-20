@@ -29,6 +29,9 @@ spec:
       {{- if .Values.serviceAccount.enabled }}
       serviceAccountName: {{ template "podinfo.serviceAccountName" . }}
       {{- end }}
+      {{- if .Values.redis.imagePullSecrets }}
+      imagePullSecrets: {{ toYaml .Values.redis.imagePullSecrets | nindent 8 }}
+      {{- end }}
       containers:
         - name: redis
           image: "{{ .Values.redis.repository }}:{{ .Values.redis.tag }}"

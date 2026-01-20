@@ -14,9 +14,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
+      - name: Disk Cleanup
+        uses: ./.github/actions/runner-cleanup
       - name: Setup Kubernetes
-        uses: helm/kind-action@v1.10.0
+        uses: helm/kind-action@v1.13.0
         with:
           cluster_name: kind
       - name: Build container image
@@ -24,9 +26,9 @@ jobs:
           ./test/build.sh
           kind load docker-image test/podinfo:latest
       - name: Setup Helm
-        uses: azure/setup-helm@v3
+        uses: azure/setup-helm@v4
         with:
-          version: v3.16.1
+          version: v3.17.3
       - name: Deploy
         run: ./test/deploy.sh
       - name: Run integration tests
@@ -47,12 +49,12 @@ jobs:
       PODINFO_MODULE_URL: "oci://localhost:5000/podinfo"
       PODINFO_VERSION: "0.0.0-devel"
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/runner-cleanup
       - name: Setup Timoni
         uses: stefanprodan/timoni/actions/setup@main
       - name: Setup Kubernetes
-        uses: helm/kind-action@v1.10.0
+        uses: helm/kind-action@v1.13.0
         with:
           cluster_name: kind
       - name: Build container

@@ -1,0 +1,24 @@
+name: Runner Cleanup
+description: A GitHub Action for removing bloat from Ubuntu GitHub Actions runner.
+author: Stefan Prodan
+branding:
+  color: blue
+  icon: command
+runs:
+  using: composite
+  steps:
+    - name: "Disk Usage Before Cleanup"
+      shell: bash
+      run: |
+        df -h
+    - name: "Remove .NET, Android and Haskell"
+      shell: bash
+      run: |
+        sudo rm -rf /usr/share/dotnet || true
+        sudo rm -rf /usr/local/lib/android || true
+        sudo rm -rf /opt/ghc || true
+        sudo rm -rf /usr/local/.ghcup || true
+    - name: "Disk Usage After Cleanup"
+      shell: bash
+      run: |
+        df -h

@@ -8,7 +8,7 @@ backends: []
 
 image:
   repository: ghcr.io/stefanprodan/podinfo
-  tag: 6.7.1
+  tag: 6.9.4
   pullPolicy: IfNotPresent
 
 ui:
@@ -93,8 +93,7 @@ cache: ""
 redis:
   enabled: true
   repository: redis
-  tag: 7.0.7
-  securityContext: {}
+  tag: 8.4.0  securityContext: {}
   containerSecurityContext: {}
   persistence:
     enabled: true
@@ -111,13 +110,19 @@ serviceAccount:
 # set container security context
 securityContext: {}
 
+# set pod security context
+podSecurityContext: {}
+
+# -- Expose the service via Kubernetes Ingress
+# Requires an Ingress controller
+# Docs https://kubernetes.io/docs/concepts/services-networking/ingress/
 ingress:
   enabled: false
   className: ""
   additionalLabels: {}
   annotations: {}
     # kubernetes.io/ingress.class: nginx
-    # kubernetes.io/tls-acme: "true"
+  # kubernetes.io/tls-acme: "true"
   hosts:
     - host: podinfo.local
       paths:
@@ -127,6 +132,31 @@ ingress:
   #  - secretName: chart-example-tls
   #    hosts:
   #      - chart-example.local
+
+# -- Expose the service via Gateway HTTPRoute
+# Requires a Gateway controller
+# Docs https://gateway-api.sigs.k8s.io/guides/
+httpRoute:
+  # HTTPRoute enabled.
+  enabled: false
+  # Add additional labels to the HTTPRoute.
+  additionalLabels: {}
+  # HTTPRoute annotations.
+  annotations: {}
+  # Which Gateways this Route is attached to.
+  parentRefs:
+    - name: gateway
+      sectionName: http
+      # namespace: default
+  # Hostnames matching HTTP header.
+  hostnames:
+    - podinfo.local
+  # List of rules and filters applied.
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
 
 linkerd:
   profile:
@@ -162,3 +192,25 @@ tolerations: []
 affinity: {}
 
 podAnnotations: {}
+
+# https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes
+probes:
+  readiness:
+    initialDelaySeconds: 1
+    timeoutSeconds: 5
+    failureThreshold: 3
+    successThreshold: 1
+    periodSeconds: 10
+  liveness:
+    initialDelaySeconds: 1
+    timeoutSeconds: 5
+    failureThreshold: 3
+    successThreshold: 1
+    periodSeconds: 10
+  startup:
+    enable: false
+    initialDelaySeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 20
+    successThreshold: 1
+    periodSeconds: 10

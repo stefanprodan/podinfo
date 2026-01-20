@@ -8,8 +8,9 @@ backends: []
 
 image:
   repository: ghcr.io/stefanprodan/podinfo
-  tag: 6.7.1
+  tag: 6.9.4
   pullPolicy: IfNotPresent
+  pullSecrets: []
 
 ui:
   color: "#34577c"
@@ -40,6 +41,9 @@ service:
   # NOTE: requires privileged container with NET_BIND_SERVICE capability -- this is useful for testing
   # in local clusters such as kind without port forwarding
   hostPort:
+  # Stable from Kubernetes v1.33+ with a value of PreferClose. Additional values are PreferSameZone and PreferSameNode from v1.34+. Empty string means it's disabled.
+  trafficDistribution: ""
+  additionalLabels: {}
 
 # enable h2c protocol (non-TLS version of HTTP/2)
 h2c:
@@ -54,6 +58,14 @@ config:
 
 # Additional command line arguments to pass to podinfo container
 extraArgs: []
+
+# Extra environment variables for the podinfo container
+extraEnvs: []
+# Example on how to configure extraEnvs
+#  - name: OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
+#    value: "http://otel:4317"
+#  - name: MULTIPLE_VALUES
+#    value: TEST
 
 # enable tls on the podinfo service
 tls:
@@ -96,8 +108,9 @@ cache: ""
 # Redis deployment
 redis:
   enabled: false
-  repository: redis
-  tag: 7.0.7
+  repository: docker.io/redis
+  tag: 8.4.0
+  imagePullSecrets: []
   securityContext: {}
   containerSecurityContext: {}
   persistence:
@@ -115,6 +128,12 @@ serviceAccount:
 # set container security context
 securityContext: {}
 
+# set pod security context
+podSecurityContext: {}
+
+# -- Expose the service via Kubernetes Ingress
+# Requires an Ingress controller
+# Docs https://kubernetes.io/docs/concepts/services-networking/ingress/
 ingress:
   enabled: false
   className: ""
@@ -131,6 +150,31 @@ ingress:
   #  - secretName: chart-example-tls
   #    hosts:
   #      - chart-example.local
+
+# -- Expose the service via Gateway HTTPRoute
+# Requires a Gateway controller
+# Docs https://gateway-api.sigs.k8s.io/guides/
+httpRoute:
+  # HTTPRoute enabled.
+  enabled: false
+  # Add additional labels to the HTTPRoute.
+  additionalLabels: {}
+  # HTTPRoute annotations.
+  annotations: {}
+  # Which Gateways this Route is attached to.
+  parentRefs:
+    - name: gateway
+      sectionName: http
+      # namespace: default
+  # Hostnames matching HTTP header.
+  hostnames:
+    - podinfo.local
+  # List of rules and filters applied.
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
 
 linkerd:
   profile:

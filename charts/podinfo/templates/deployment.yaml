@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ template "podinfo.fullname" . }}
+  namespace: {{ include "podinfo.namespace" . }}
   labels:
     {{- include "podinfo.labels" . | nindent 4 }}
     app.kubernetes.io/component: server
@@ -31,6 +32,9 @@ spec:
       terminationGracePeriodSeconds: 30
       {{- if .Values.serviceAccount.enabled }}
       serviceAccountName: {{ template "podinfo.serviceAccountName" . }}
+      {{- end }}
+      {{- if .Values.image.pullSecrets }}
+      imagePullSecrets: {{ toYaml .Values.image.pullSecrets | nindent 8 }}
       {{- end }}
       containers:
         - name: {{ .Chart.Name }}
@@ -197,6 +201,10 @@ spec:
           {{- end }}
           resources:
 {{ toYaml .Values.resources | indent 12 }}
+    {{- with .Values.podSecurityContext }}
+      securityContext:
+{{ toYaml . | indent 8 }}
+    {{- end }}
     {{- with .Values.nodeSelector }}
       nodeSelector:
 {{ toYaml . | indent 8 }}

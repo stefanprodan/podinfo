@@ -3,8 +3,12 @@ apiVersion: v1
 kind: Service
 metadata:
   name: {{ template "podinfo.fullname" . }}
+  namespace: {{ include "podinfo.namespace" . }}
   labels:
     {{- include "podinfo.labels" . | nindent 4 }}
+    {{- with .Values.service.additionalLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
 {{- with .Values.service.annotations }}
   annotations:
 {{ toYaml . | indent 4 }}
@@ -33,4 +37,7 @@ spec:
     {{- end }}
   selector:
     {{- include "podinfo.selectorLabels" . | nindent 4 }}
+  {{- if .Values.service.trafficDistribution }}
+  trafficDistribution: {{ .Values.service.trafficDistribution }}
+  {{- end }}
 {{- end }}
