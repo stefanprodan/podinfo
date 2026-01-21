@@ -93,7 +93,8 @@ cache: ""
 redis:
   enabled: true
   repository: redis
-  tag: 8.4.0  securityContext: {}
+  tag: 8.4.0
+  securityContext: {}
   containerSecurityContext: {}
   persistence:
     enabled: true
