@@ -1,0 +1,229 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "podinfo.fullname" . }}
+  namespace: {{ include "podinfo.namespace" . }}
+  labels:
+    {{- include "podinfo.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.hpa.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      {{- include "podinfo.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "podinfo.selectorLabels" . | nindent 8 }}
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "{{ .Values.service.httpPort }}"
+        {{- range $key, $value := .Values.podAnnotations }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+    spec:
+      terminationGracePeriodSeconds: 30
+      {{- if .Values.serviceAccount.enabled }}
+      serviceAccountName: {{ template "podinfo.serviceAccountName" . }}
+      {{- end }}
+      {{- if .Values.image.pullSecrets }}
+      imagePullSecrets: {{ toYaml .Values.image.pullSecrets | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if .Values.securityContext }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          {{- else if (or .Values.service.hostPort .Values.tls.hostPort) }}
+          securityContext:
+            allowPrivilegeEscalation: true
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - NET_BIND_SERVICE
+          {{- end }}
+          command:
+            - ./podinfo
+            - --port={{ .Values.service.httpPort | default 9898 }}
+            {{- if .Values.host }}
+            - --host={{ .Values.host }}
+            {{- end }}
+            {{- if .Values.tls.enabled }}
+            - --secure-port={{ .Values.tls.port }}
+            {{- end }}
+            {{- if .Values.tls.certPath }}
+            - --cert-path={{ .Values.tls.certPath }}
+            {{- end }}
+            {{- if .Values.service.metricsPort }}
+            - --port-metrics={{ .Values.service.metricsPort }}
+            {{- end }}
+            {{- if .Values.service.grpcPort }}
+            - --grpc-port={{ .Values.service.grpcPort }}
+            {{- end }}
+            {{- if .Values.service.grpcService }}
+            - --grpc-service-name={{ .Values.service.grpcService }}
+            {{- end }}
+            {{- range .Values.backends }}
+            - --backend-url={{ . }}
+            {{- end }}
+            {{- if .Values.cache }}
+            - --cache-server={{ .Values.cache }}
+            {{- else if .Values.redis.enabled }}
+            - --cache-server=tcp://{{ template "podinfo.fullname" . }}-redis:6379
+            {{- end }}
+            - --level={{ .Values.logLevel }}
+            - --random-delay={{ .Values.faults.delay }}
+            - --random-error={{ .Values.faults.error }}
+            {{- if .Values.faults.unhealthy }}
+            - --unhealthy
+            {{- end }}
+            {{- if .Values.faults.unready }}
+            - --unready
+            {{- end }}
+            {{- if .Values.h2c.enabled }}
+            - --h2c
+            {{- end }}
+            {{- with .Values.config.path }}
+            - --config-path={{ . }}
+            {{- end }}
+            {{- with .Values.config.name }}
+            - --config={{ . }}
+            {{- end }}
+            {{- with .Values.extraArgs }}
+              {{- toYaml . | nindent 12 }}
+            {{- end }}
+          env:
+          {{- if .Values.ui.message }}
+          - name: PODINFO_UI_MESSAGE
+            value: {{ quote .Values.ui.message }}
+          {{- end }}
+          {{- if .Values.ui.logo }}
+          - name: PODINFO_UI_LOGO
+            value: {{ .Values.ui.logo }}
+          {{- end }}
+          {{- if .Values.ui.color }}
+          - name: PODINFO_UI_COLOR
+            value: {{ quote .Values.ui.color }}
+          {{- end }}
+          {{- if .Values.backend }}
+          - name: PODINFO_BACKEND_URL
+            value: {{ .Values.backend }}
+          {{- end }}
+          {{- if .Values.extraEnvs }}
+{{ toYaml .Values.extraEnvs | indent 10 }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.httpPort | default 9898 }}
+              protocol: TCP
+              {{- if .Values.service.hostPort }}
+              hostPort: {{ .Values.service.hostPort }}
+              {{- end }}
+            {{- if .Values.tls.enabled }}
+            - name: https
+              containerPort: {{ .Values.tls.port | default 9899 }}
+              protocol: TCP
+              {{- if .Values.tls.hostPort }}
+              hostPort: {{ .Values.tls.hostPort }}
+              {{- end }}
+            {{- end }}
+            {{- if .Values.service.metricsPort }}
+            - name: http-metrics
+              containerPort: {{ .Values.service.metricsPort }}
+              protocol: TCP
+            {{- end }}
+            {{- if .Values.service.grpcPort }}
+            - name: grpc
+              containerPort: {{ .Values.service.grpcPort }}
+              protocol: TCP
+            {{- end }}
+          {{- if .Values.probes.startup.enable }}
+          startupProbe:
+            exec:
+              command:
+              - podcli
+              - check
+              - http
+              - localhost:{{ .Values.service.httpPort | default 9898 }}/healthz
+            {{- with .Values.probes.startup }}
+            initialDelaySeconds: {{ .initialDelaySeconds | default 1 }}
+            timeoutSeconds: {{ .timeoutSeconds | default 5 }}
+            failureThreshold: {{ .failureThreshold | default 3 }}
+            successThreshold: {{ .successThreshold | default 1 }}
+            periodSeconds: {{ .periodSeconds | default 10 }}
+            {{- end }}
+            {{- end }}
+          livenessProbe:
+            exec:
+              command:
+              - podcli
+              - check
+              - http
+              - localhost:{{ .Values.service.httpPort | default 9898 }}/healthz
+            {{- with .Values.probes.liveness }}
+            initialDelaySeconds: {{ .initialDelaySeconds | default 1 }}
+            timeoutSeconds: {{ .timeoutSeconds | default 5 }}
+            failureThreshold: {{ .failureThreshold | default 3 }}
+            successThreshold: {{ .successThreshold | default 1 }}
+            periodSeconds: {{ .periodSeconds | default 10 }}
+            {{- end }}
+          readinessProbe:
+            exec:
+              command:
+              - podcli
+              - check
+              - http
+              - localhost:{{ .Values.service.httpPort | default 9898 }}/readyz
+            {{- with .Values.probes.readiness }}
+            initialDelaySeconds: {{ .initialDelaySeconds | default 1 }}
+            timeoutSeconds: {{ .timeoutSeconds | default 5 }}
+            failureThreshold: {{ .failureThreshold | default 3 }}
+            successThreshold: {{ .successThreshold | default 1 }}
+            periodSeconds: {{ .periodSeconds | default 10 }}
+            {{- end }}
+          volumeMounts:
+          - name: data
+            mountPath: /data
+          {{- if .Values.tls.enabled }}
+          - name: tls
+            mountPath: {{ .Values.tls.certPath | default "/data/cert" }}
+            readOnly: true
+          {{- end }}
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+    {{- with .Values.podSecurityContext }}
+      securityContext:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+      volumes:
+      - name: data
+        emptyDir: {}
+      {{- if .Values.tls.enabled }}
+      - name: tls
+        secret:
+          secretName: {{ template "podinfo.tlsSecretName" . }}
+      {{- end }}
+    {{- with .Values.topologySpreadConstraints }}
+      topologySpreadConstraints:
+{{- toYaml . | nindent 8 }}
+    {{- end }}

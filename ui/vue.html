@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>{{.Title}}</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="shortcut icon" type="image/png" href="https://kubernetes.io/images/favicon.png">
+  <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Material+Icons" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
+  <style>
+	[v-cloak] {
+    display: none;
+  }
+  .v-application .v-parallax {
+    height: 100vh !important;
+  }
+  </style>
+</head>
+<body>
+ <div id="app" v-cloak>
+   <v-app dark>
+    <v-content>
+      <section>
+        <v-parallax id="parallax-hero" :style="cuddleStyle" src="https://upload.wikimedia.org/wikipedia/commons/c/ca/1x1.png">
+          <v-layout
+            column
+            align-center
+            justify-center
+            class="white--text"
+          >
+            <img :src="info.logo" height="350">
+            <h1 class="white--text mb-2 display-1 text-xs-center">${ info.message }</h1>
+            <div class="subheading mb-3 text-xs-center">Served by <b>${ info.hostname }</b></div>
+            <v-btn
+              class="red darken-2 mt-5"
+              dark
+              large
+              @click="postBackend()"
+            >
+              <v-badge left color="red">
+                <span slot="badge">${ pings }</span>
+                <v-icon left dark>touch_app</v-icon>
+              </v-badge>
+              Ping
+            </v-btn>
+
+            <template>
+              <v-timeline>
+                <v-timeline-item :color="tlColor1"><h3>${ tlName1 }</h3></v-timeline-item>
+                <v-timeline-item :color="tlColor2"><h3 slot="opposite">${ tlName2 }</h3></v-timeline-item>
+              </v-timeline>
+            </template>
+
+          </v-layout>
+        </v-parallax>
+      </section>
+      <v-footer class="blue darken-2">
+        <v-layout row wrap align-center>
+          <v-flex xs12>
+            <div class="white--text ml-3">
+              Powered
+              by <a class="white--text" href="https://github.com/stefanprodan/podinfo" target="_blank">podinfo</a>
+              version ${ info.version } revision ${ info.revision }
+              Swagger <a class="white--text" href="swagger/">docs</a>
+            </div>
+          </v-flex>
+        </v-layout>
+      </v-footer>
+    </v-content>
+  </v-app>
+ </div>
+
+ <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
+ <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
+ <script>
+   new Vue({
+    delimiters: ['${', '}'],
+    el: '#app',
+    vuetify: new Vuetify(),
+    data: function() {
+    return {
+        info: {},
+        timer: '',
+        color: '',
+        pings: 0,
+        calls: 0,
+        tlName1: '',
+        tlColor1: 'grey',
+        tlName2: '',
+        tlColor2: 'grey',
+        cuddleStyle: {
+            backgroundColor: '#34577c'
+        },
+    }
+    },
+    created: function() {
+        this.getInfo();
+        this.timer = setInterval(this.getInfo, 3000)
+    },
+    methods: {
+        getInfo: function() {
+          const xhr = new XMLHttpRequest();
+          let self = this;
+          xhr.open('GET', "api/info")
+            xhr.onload = function () {
+                data = JSON.parse(xhr.responseText)
+                if (self.info.version) {
+                    if (self.info.version != data.version) {
+                        console.log("New version", data.version)
+                    }
+                }
+                self.info = data
+                self.info.color = data.color
+                self.cuddleStyle = {
+                    backgroundColor: data.color
+                }
+                self.info.logo = data.logo
+                document.title = data.hostname
+                let verColor = (parseInt(data.version.split('.').reverse()[0], 10)  % 2 === 0)
+                        ? 'blue'
+                        : 'green'
+                if ((self.calls % 2) === 0) {
+                  self.tlColor2 += ' lighten-2'
+                  self.tlColor1 = verColor
+                  self.tlName1 = data.version
+                } else {
+                  self.tlColor1 += ' lighten-2'
+                self.tlColor2 = verColor
+                self.tlName2 = data.version
+              }
+              self.calls++
+            }
+            xhr.onerror = function() {
+                console.log(xhr.responseText || 'Network request failed')
+            }
+            xhr.send()
+        },
+        postBackend: function() {
+            var self = this
+            fetch("api/echo", {
+                method: 'post',
+                headers: {
+                "Content-type": "application/json; charset=UTF-8",
+                "X-APP": Math.random(),
+                },
+                body: JSON.stringify({random: Math.random()})
+            })
+            .then(function(response) {
+                self.pings++
+                self.color = response.headers.get('X-Color')
+                return response.json()
+            })
+            .then(function(json) {
+                console.log('Request successful', json);
+            })
+            .catch(function (error) {
+                console.log('Request failed', error);
+            });
+        }
+    }
+  })
+ </script>
+</body>
+</html>

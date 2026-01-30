@@ -1,0 +1,10 @@
+{
+    "default": "stefanprodan.com",
+    "keys": [
+        {
+            "name": "stefanprodan.com",
+            "keyPath": "/home/runner/.config/notation/localkeys/notation.key",
+            "certPath": "/home/runner/.config/notation/localkeys/notation.crt"
+        }
+    ]
+}

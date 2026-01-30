@@ -1,0 +1,71 @@
+{{- if .Values.redis.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "podinfo.fullname" . }}-redis
+  labels:
+    app: {{ template "podinfo.fullname" . }}-redis
+spec:
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: {{ template "podinfo.fullname" . }}-redis
+  template:
+    metadata:
+      labels:
+        app: {{ template "podinfo.fullname" . }}-redis
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/redis/config.yaml") . | sha256sum | quote }}
+    spec:
+      {{- if .Values.serviceAccount.enabled }}
+      serviceAccountName: {{ template "podinfo.serviceAccountName" . }}
+      {{- end }}
+      {{- if .Values.redis.imagePullSecrets }}
+      imagePullSecrets: {{ toYaml .Values.redis.imagePullSecrets | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: redis
+          image: "{{ .Values.redis.repository }}:{{ .Values.redis.tag }}"
+          imagePullPolicy: IfNotPresent
+          command:
+            - redis-server
+            - "/redis-master/redis.conf"
+          ports:
+            - name: redis
+              containerPort: 6379
+              protocol: TCP
+          livenessProbe:
+            tcpSocket:
+              port: redis
+            initialDelaySeconds: 5
+            timeoutSeconds: 5
+          readinessProbe:
+            exec:
+              command:
+                - redis-cli
+                - ping
+            initialDelaySeconds: 5
+            timeoutSeconds: 5
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 128Mi
+            requests:
+              cpu: 100m
+              memory: 32Mi
+          volumeMounts:
+            - mountPath: /var/lib/redis
+              name: data
+            - mountPath: /redis-master
+              name: config
+      volumes:
+        - name: data
+          emptyDir: {}
+        - name: config
+          configMap:
+            name: {{ template "podinfo.fullname" . }}-redis
+            items:
+              - key: redis.conf
+                path: redis.conf
+{{- end }}

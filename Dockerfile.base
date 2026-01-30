@@ -1,0 +1,10 @@
+FROM golang:1.25
+
+WORKDIR /workspace
+
+# copy modules manifests
+COPY go.mod go.mod
+COPY go.sum go.sum
+
+# cache modules
+RUN go mod download

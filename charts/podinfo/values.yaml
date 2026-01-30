@@ -1,0 +1,226 @@
+# Default values for podinfo.
+
+replicaCount: 1
+logLevel: info
+host: #0.0.0.0
+backend: #http://backend-podinfo:9898/echo
+backends: []
+
+image:
+  repository: ghcr.io/stefanprodan/podinfo
+  tag: 6.9.4
+  pullPolicy: IfNotPresent
+  pullSecrets: []
+
+ui:
+  color: "#34577c"
+  message: ""
+  logo: ""
+
+# failure conditions
+faults:
+  delay: false
+  error: false
+  unhealthy: false
+  unready: false
+  testFail: false
+  testTimeout: false
+
+# Kubernetes Service settings
+service:
+  enabled: true
+  annotations: {}
+  type: ClusterIP
+  metricsPort: 9797
+  httpPort: 9898
+  externalPort: 9898
+  grpcPort: 9999
+  grpcService: podinfo
+  nodePort: 31198
+  # the port used to bind the http port to the host
+  # NOTE: requires privileged container with NET_BIND_SERVICE capability -- this is useful for testing
+  # in local clusters such as kind without port forwarding
+  hostPort:
+  # Stable from Kubernetes v1.33+ with a value of PreferClose. Additional values are PreferSameZone and PreferSameNode from v1.34+. Empty string means it's disabled.
+  trafficDistribution: ""
+  additionalLabels: {}
+
+# enable h2c protocol (non-TLS version of HTTP/2)
+h2c:
+  enabled: false
+
+# config file settings
+config:
+  # config file path
+  path: ""
+  # config file name
+  name: ""
+
+# Additional command line arguments to pass to podinfo container
+extraArgs: []
+
+# Extra environment variables for the podinfo container
+extraEnvs: []
+# Example on how to configure extraEnvs
+#  - name: OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
+#    value: "http://otel:4317"
+#  - name: MULTIPLE_VALUES
+#    value: TEST
+
+# enable tls on the podinfo service
+tls:
+  enabled: false
+  # the name of the secret used to mount the certificate key pair
+  secretName:
+  # the path where the certificate key pair will be mounted
+  certPath: /data/cert
+  # the port used to host the tls endpoint on the service
+  port: 9899
+  # the port used to bind the tls port to the host
+  # NOTE: requires privileged container with NET_BIND_SERVICE capability -- this is useful for testing
+  # in local clusters such as kind without port forwarding
+  hostPort:
+
+# create a certificate manager certificate (cert-manager required)
+certificate:
+  create: false
+  # the issuer used to issue the certificate
+  issuerRef:
+    kind: ClusterIssuer
+    name: self-signed
+  # the hostname / subject alternative names for the certificate
+  dnsNames:
+    - podinfo
+
+# metrics-server add-on required
+hpa:
+  enabled: false
+  maxReplicas: 10
+  # average total CPU usage per pod (1-100)
+  cpu:
+  # average memory usage per pod (100Mi-1Gi)
+  memory:
+  # average http requests per second per pod (k8s-prometheus-adapter)
+  requests:
+
+# Redis address in the format tcp://<host>:<port>
+cache: ""
+# Redis deployment
+redis:
+  enabled: false
+  repository: docker.io/redis
+  tag: 8.4.0
+  imagePullSecrets: []
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  enabled: false
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name:
+  # List of image pull secrets if pulling from private registries
+  imagePullSecrets: []
+
+# set container security context
+securityContext: {}
+
+# set pod security context
+podSecurityContext: {}
+
+# -- Expose the service via Kubernetes Ingress
+# Requires an Ingress controller
+# Docs https://kubernetes.io/docs/concepts/services-networking/ingress/
+ingress:
+  enabled: false
+  className: ""
+  additionalLabels: {}
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: podinfo.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+# -- Expose the service via Gateway HTTPRoute
+# Requires a Gateway controller
+# Docs https://gateway-api.sigs.k8s.io/guides/
+httpRoute:
+  # HTTPRoute enabled.
+  enabled: false
+  # Add additional labels to the HTTPRoute.
+  additionalLabels: {}
+  # HTTPRoute annotations.
+  annotations: {}
+  # Which Gateways this Route is attached to.
+  parentRefs:
+    - name: gateway
+      sectionName: http
+      # namespace: default
+  # Hostnames matching HTTP header.
+  hostnames:
+    - podinfo.local
+  # List of rules and filters applied.
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+
+linkerd:
+  profile:
+    enabled: false
+
+# create Prometheus Operator monitor
+serviceMonitor:
+  enabled: false
+  interval: 15s
+  additionalLabels: {}
+
+resources:
+  limits:
+  requests:
+    cpu: 1m
+    memory: 16Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+podAnnotations: {}
+
+# https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/
+topologySpreadConstraints: []
+
+# Disruption budget will be configured only when the replicaCount is greater than 1
+podDisruptionBudget: {}
+#  maxUnavailable: 1
+
+# https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes
+probes:
+  readiness:
+    initialDelaySeconds: 1
+    timeoutSeconds: 5
+    failureThreshold: 3
+    successThreshold: 1
+    periodSeconds: 10
+  liveness:
+    initialDelaySeconds: 1
+    timeoutSeconds: 5
+    failureThreshold: 3
+    successThreshold: 1
+    periodSeconds: 10
+  startup:
+    enable: false
+    initialDelaySeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 20
+    successThreshold: 1
+    periodSeconds: 10

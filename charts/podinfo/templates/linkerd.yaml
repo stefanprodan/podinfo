@@ -1,0 +1,99 @@
+{{- if .Values.linkerd.profile.enabled -}}
+apiVersion: linkerd.io/v1alpha2
+kind: ServiceProfile
+metadata:
+  name: {{ template "podinfo.fullname" . }}.{{ include "podinfo.namespace" . }}.svc.cluster.local
+  namespace: {{ include "podinfo.namespace" . }}
+  labels:
+    {{- include "podinfo.labels" . | nindent 4 }}  
+spec:
+  routes:
+    - condition:
+        method: GET
+        pathRegex: /
+      name: GET /
+    - condition:
+        method: POST
+        pathRegex: /api/echo
+      name: POST /api/echo
+    - condition:
+        method: GET
+        pathRegex: /api/info
+      name: GET /api/info
+    - condition:
+        method: GET
+        pathRegex: /chunked/[^/]*
+      name: GET /chunked/{seconds}
+    - condition:
+        method: GET
+        pathRegex: /delay/[^/]*
+      name: GET /delay/{seconds}
+    - condition:
+        method: GET
+        pathRegex: /env
+      name: GET /env
+    - condition:
+        method: GET
+        pathRegex: /headers
+      name: GET /headers
+    - condition:
+        method: GET
+        pathRegex: /healthz
+      name: GET /healthz
+    - condition:
+        method: GET
+        pathRegex: /metrics
+      name: GET /metrics
+    - condition:
+        method: GET
+        pathRegex: /panic
+      name: GET /panic
+    - condition:
+        method: GET
+        pathRegex: /readyz
+      name: GET /readyz
+    - condition:
+        method: POST
+        pathRegex: /readyz/disable
+      name: POST /readyz/disable
+    - condition:
+        method: POST
+        pathRegex: /readyz/enable
+      name: POST /readyz/enable
+    - condition:
+        method: GET
+        pathRegex: /status/[^/]*
+      name: GET /status/{code}
+    - condition:
+        method: POST
+        pathRegex: /cache
+      name: POST /cache
+    - condition:
+        method: GET
+        pathRegex: /cache/[^/]*
+      name: GET /cache/{hash}
+    - condition:
+        method: POST
+        pathRegex: /store
+      name: POST /store
+    - condition:
+        method: GET
+        pathRegex: /store/[^/]*
+      name: GET /store/{hash}
+    - condition:
+        method: POST
+        pathRegex: /token
+      name: POST /token
+    - condition:
+        method: POST
+        pathRegex: /token/validate
+      name: POST /token/validate
+    - condition:
+        method: GET
+        pathRegex: /version
+      name: GET /version
+    - condition:
+        method: POST
+        pathRegex: /ws/echo
+      name: POST /ws/echo
+{{- end }}

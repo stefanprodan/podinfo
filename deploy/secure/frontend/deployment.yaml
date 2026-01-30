@@ -1,0 +1,95 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: secure
+spec:
+  minReadySeconds: 3
+  revisionHistoryLimit: 5
+  progressDeadlineSeconds: 60
+  strategy:
+    rollingUpdate:
+      maxUnavailable: 0
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9797"
+      labels:
+        app: frontend
+    spec:
+      serviceAccountName: secure
+      volumes:
+      - name: tls
+        secret:
+          secretName: podinfo-frontend-tls
+      containers:
+      - name: frontend
+        image: deavon/podinfo:secure-port
+        imagePullPolicy: IfNotPresent
+        securityContext:
+          capabilities:
+            drop:
+              - ALL
+            add:
+              - NET_BIND_SERVICE
+          allowPrivilegeEscalation: true
+        ports:
+        - name: http
+          containerPort: 9898
+          protocol: TCP
+          hostPort: 80
+        - name: https
+          containerPort: 9899
+          protocol: TCP
+          hostPort: 443
+        - name: http-metrics
+          containerPort: 9797
+          protocol: TCP
+        - name: grpc
+          containerPort: 9999
+          protocol: TCP
+        volumeMounts:
+        - name: tls
+          mountPath: /data/cert
+          readOnly: true
+        command:
+        - ./podinfo
+        - --port=9898
+        - --secure-port=9899
+        - --port-metrics=9797
+        - --level=info
+        - --cert-path=/data/cert
+        - --backend-url=http://backend:9898/echo
+        env:
+        - name: PODINFO_UI_COLOR
+          value: "#34577c"
+        livenessProbe:
+          exec:
+            command:
+            - podcli
+            - check
+            - http
+            - localhost:9898/healthz
+          initialDelaySeconds: 5
+          timeoutSeconds: 5
+        readinessProbe:
+          exec:
+            command:
+            - podcli
+            - check
+            - http
+            - localhost:9898/readyz
+          initialDelaySeconds: 5
+          timeoutSeconds: 5
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 128Mi
+          requests:
+            cpu: 100m
+            memory: 32Mi

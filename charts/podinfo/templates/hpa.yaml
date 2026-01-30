@@ -1,0 +1,42 @@
+{{- if .Values.hpa.enabled -}}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ template "podinfo.fullname" . }}
+  namespace: {{ include "podinfo.namespace" . }}
+  labels:
+    {{- include "podinfo.labels" . | nindent 4 }}  
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ template "podinfo.fullname" . }}
+  minReplicas: {{ .Values.replicaCount }}
+  maxReplicas: {{ .Values.hpa.maxReplicas }}
+  metrics:
+  {{- if .Values.hpa.cpu }}
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: {{ .Values.hpa.cpu }}
+  {{- end }}
+  {{- if .Values.hpa.memory }}
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: AverageValue
+        averageValue: {{ .Values.hpa.memory }}
+  {{- end }}
+  {{- if .Values.hpa.requests }}
+  - type: Pods
+    pods:
+      metric:
+        name: http_requests
+      target:
+        type: AverageValue
+        averageValue: {{ .Values.hpa.requests }}
+  {{- end }}
+{{- end }}

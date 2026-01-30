@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+option go_package = "./delay";
+
+package delay;
+
+message DelayRequest {
+    int64 seconds = 1;
+}
+
+message DelayResponse {
+    int64 message = 1;
+}
+
+service DelayService {
+    rpc Delay (DelayRequest) returns (DelayResponse) {}
+}

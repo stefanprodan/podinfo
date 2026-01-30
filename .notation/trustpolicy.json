@@ -1,0 +1,19 @@
+{
+    "version": "1.0",
+    "trustPolicies": [
+        {
+            "name": "stefanprodan.com",
+            "registryScopes": [
+                "ghcr.io/stefanprodan/podinfo-deploy",
+                "ghcr.io/stefanprodan/charts/podinfo"
+            ],
+            "signatureVerification": {
+                "level" : "strict"
+            },
+            "trustStores": [ "ca:stefanprodan.com" ],
+            "trustedIdentities": [
+                "x509.subject: C=RO, ST=BU, L=Bucharest, O=Notary, CN=stefanprodan.com"
+            ]
+        }
+    ]
+}

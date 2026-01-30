@@ -1,0 +1,35 @@
+version: 2
+
+# xref: https://goreleaser.com/customization/project/
+project_name: podinfo
+
+# xref: https://goreleaser.com/customization/hooks/
+before:
+  hooks:
+    - go mod download
+
+# xref: https://goreleaser.com/customization/env/
+env:
+  - CGO_ENABLED=0
+
+# xref: https://goreleaser.com/customization/build/
+builds:
+  - main: ./cmd/podcli
+    binary: podcli
+    ldflags: -s -w -X github.com/stefanprodan/podinfo/pkg/version.REVISION={{.Commit}}
+    goos:
+      - windows
+      - darwin
+      - linux
+    goarch:
+      - amd64
+
+# xref: https://goreleaser.com/customization/archive/
+archives:
+  - name_template: "{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - LICENSE
+
+# xref: https://goreleaser.com/customization/changelog/
+changelog:
+  use: github-native

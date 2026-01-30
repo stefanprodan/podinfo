@@ -1,0 +1,18 @@
+{{- if .Values.redis.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "podinfo.fullname" . }}-redis
+  labels:
+    app: {{ template "podinfo.fullname" . }}-redis
+spec:
+  type: ClusterIP
+  selector:
+    app: {{ template "podinfo.fullname" . }}-redis
+  ports:
+    - name: redis
+      port: 6379
+      protocol: TCP
+      targetPort: redis
+      appProtocol: redis
+{{- end }}
