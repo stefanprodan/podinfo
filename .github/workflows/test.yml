@@ -1,0 +1,73 @@
+name: test
+
+on:
+  pull_request:
+  push:
+    branches:
+      - 'master'
+
+permissions:
+  contents: read
+
+env:
+  KUBERNETES_VERSION: 1.31.0
+  HELM_VERSION: 3.17.3
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/runner-cleanup
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: 1.25.x
+          cache-dependency-path: |
+            **/go.sum
+            **/go.mod
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: v${{ env.KUBERNETES_VERSION }}
+      - name: Setup kubeconform
+        uses: ./.github/actions/kubeconform
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v${{ env.HELM_VERSION }}
+      - name: Setup CUE
+        uses: cue-lang/setup-cue@v1.0.1
+      - name: Setup Timoni
+        uses: stefanprodan/timoni/actions/setup@v0.25.2
+      - name: Run unit tests
+        run: make test
+      - name: Validate Helm chart
+        run: |
+          helm lint ./charts/podinfo/
+          helm template ./charts/podinfo/ | kubeconform -strict -summary -kubernetes-version ${{ env.KUBERNETES_VERSION }}
+      - name: Validate Kustomize overlay
+        run: |
+          kubectl kustomize ./kustomize/ | kubeconform -strict -summary -kubernetes-version ${{ env.KUBERNETES_VERSION }}
+      - name: Verify CUE formatting
+        working-directory: ./timoni/podinfo
+        run: |
+          cue fmt ./...
+          status=$(git status . --porcelain)
+          [[ -z "$status" ]] || {
+            echo "CUE files are not correctly formatted"
+            echo "$status"
+            git diff
+            exit 1
+          }
+      - name: Validate Timoni module
+        working-directory: ./timoni/podinfo
+        run: |
+          timoni mod lint . 
+          timoni build podinfo . -f test_values.cue | kubeconform -strict -summary -skip=ServiceMonitor -kubernetes-version ${{ env.KUBERNETES_VERSION }}
+      - name: Check if working tree is dirty
+        run: |
+          if [[ $(git diff --stat) != '' ]]; then
+            echo 'run make test and commit changes'
+            exit 1
+          fi

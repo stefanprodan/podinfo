@@ -1,0 +1,80 @@
+name: e2e
+
+on:
+  pull_request:
+  push:
+    branches:
+      - 'master'
+
+permissions:
+  contents: read
+
+jobs:
+  kind-helm:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Disk Cleanup
+        uses: ./.github/actions/runner-cleanup
+      - name: Setup Kubernetes
+        uses: helm/kind-action@v1.13.0
+        with:
+          cluster_name: kind
+      - name: Build container image
+        run: |
+          ./test/build.sh
+          kind load docker-image test/podinfo:latest
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.17.3
+      - name: Deploy
+        run: ./test/deploy.sh
+      - name: Run integration tests
+        run: ./test/test.sh
+      - name: Debug failure
+        if: failure()
+        run: |
+          kubectl logs -l app=podinfo || true
+  kind-timoni:
+    runs-on: ubuntu-latest
+    services:
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
+    env:
+      PODINFO_IMAGE_URL: "test/podinfo"
+      PODINFO_MODULE_URL: "oci://localhost:5000/podinfo"
+      PODINFO_VERSION: "0.0.0-devel"
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/runner-cleanup
+      - name: Setup Timoni
+        uses: stefanprodan/timoni/actions/setup@main
+      - name: Setup Kubernetes
+        uses: helm/kind-action@v1.13.0
+        with:
+          cluster_name: kind
+      - name: Build container
+        run: |
+          docker build -t ${PODINFO_IMAGE_URL}:${PODINFO_VERSION} --build-arg "REVISION=${GITHUB_SHA}"  -f Dockerfile.xx .
+          kind load docker-image ${PODINFO_IMAGE_URL}:${PODINFO_VERSION}
+      - name: Vet module
+        run: |
+          timoni mod vet ./timoni/podinfo --debug
+      - name: Build module
+        run: |
+          timoni mod push ./timoni/podinfo ${PODINFO_MODULE_URL} -v ${PODINFO_VERSION}
+      - name: Apply bundle
+        run: |
+          timoni bundle apply -f ./timoni/bundles/test.podinfo.cue --runtime-from-env
+      - name: Verify status
+        run: |
+          timoni -n podinfo status backend
+          timoni -n podinfo status frontend
+      - name: Debug failure
+        if: failure()
+        run: |
+          kubectl -n podinfo get all || true
