@@ -20,7 +20,7 @@ jobs:
           workload_identity_provider: 'projects/763163467346/locations/global/workloadIdentityPools/github-pool/providers/github-provider-v2'
           service_account: 'local-k8s-puller@tokyo-bird-485807-h6.iam.gserviceaccount.com'
 
-      # 构建包含 Go 编译过程的 Docker 镜像
+      # 构建包含 Go 编译过程的 Docker 镜像cd
       - name: Build and Push
         run: |
           docker build -t asia-northeast1-docker.pkg.dev/tokyo-bird-485807-h6/dev-test-repo/podinfo:v1 .
