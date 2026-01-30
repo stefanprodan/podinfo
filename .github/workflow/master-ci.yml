@@ -1,0 +1,27 @@
+name: Build and Push to GAR  # 剧本的名字
+on:
+  push:
+    branches: [ "master" ]   # 当你向 master 分支 push 时触发
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest   # 在 GitHub 提供的虚拟机上运行
+    permissions:             # 必须配置，否则无法进行 WIF 认证
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - id: 'auth'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          workload_identity_provider: 'projects/763163467346/locations/global/workloadIdentityPools/github-pool/providers/github-provider-v2'
+          service_account: 'local-k8s-puller@tokyo-bird-485807-h6.iam.gserviceaccount.com'
+
+      # 构建包含 Go 编译过程的 Docker 镜像
+      - name: Build and Push
+        run: |
+          docker build -t asia-northeast1-docker.pkg.dev/tokyo-bird-485807-h6/dev-test-repo/podinfo:v1 .
+          docker push asia-northeast1-docker.pkg.dev/tokyo-bird-485807-h6/dev-test-repo/podinfo:v1
