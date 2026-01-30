@@ -1,7 +1,7 @@
 name: Build and Push to GAR  # 剧本的名字
 on:
   push:
-    branches: [ "master" ]   # 当你向 master 分支 push 时触发
+    branches: [ "dev" ]   # 当你向 dev 分支 push 时触发
 
 jobs:
   build-and-push:
