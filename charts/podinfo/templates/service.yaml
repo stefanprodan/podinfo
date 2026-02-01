@@ -40,4 +40,7 @@ spec:
   {{- if .Values.service.trafficDistribution }}
   trafficDistribution: {{ .Values.service.trafficDistribution }}
   {{- end }}
+  {{- if ( and (.Values.service.externalTrafficPolicy) (eq .Values.service.type "LoadBalancer") ) }}
+  externalTrafficPolicy: {{ .Values.service.externalTrafficPolicy }}
+  {{- end }}
 {{- end }}

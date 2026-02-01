@@ -86,6 +86,7 @@ The following tables lists the configurable parameters of the podinfo chart and 
 | `service.nodePort`                | `31198`                        | NodePort for the HTTP endpoint                                                                                         |
 | `service.trafficDistribution`     | `""`                           | Traffic distribution strategy                                                                                          |
 | `service.additionalLabels`        | `{}`                           | Additional labels to add to the service                                                                                |
+| `externalTrafficPolicy`           | `Cluster`                      | External traffic policy for LoadBalancer and NodePort services                                                         |
 | `h2c.enabled`                     | `false`                        | Allow upgrading to h2c (non-TLS version of HTTP/2)                                                                     |
 | `extraArgs`                       | `[]`                           | Additional command line arguments to pass to podinfo container                                                         |
 | `extraEnvs`                       | `[]`                           | Extra environment variables for the podinfo container                                                                  |
