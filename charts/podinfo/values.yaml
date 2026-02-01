@@ -30,6 +30,7 @@ faults:
 service:
   enabled: true
   annotations: {}
+  additionalLabels: { }
   type: ClusterIP
   metricsPort: 9797
   httpPort: 9898
@@ -43,7 +44,6 @@ service:
   hostPort:
   # Stable from Kubernetes v1.33+ with a value of PreferClose. Additional values are PreferSameZone and PreferSameNode from v1.34+. Empty string means it's disabled.
   trafficDistribution: ""
-  additionalLabels: {}
   externalTrafficPolicy: ""
 
 # enable h2c protocol (non-TLS version of HTTP/2)
@@ -172,10 +172,6 @@ httpRoute:
         - path:
             type: PathPrefix
             value: /
-
-linkerd:
-  profile:
-    enabled: false
 
 # create Prometheus Operator monitor
 serviceMonitor:

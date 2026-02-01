@@ -29,6 +29,7 @@ faults:
 service:
   enabled: true
   annotations: {}
+  additionalLabels: { }
   type: ClusterIP
   metricsPort: 9797
   httpPort: 9898
@@ -36,6 +37,8 @@ service:
   grpcPort: 9999
   grpcService: podinfo
   nodePort: 31198
+  trafficDistribution: ""
+  externalTrafficPolicy: ""
 
 # enable h2c protocol (non-TLS version of HTTP/2)
 h2c:
@@ -154,10 +157,6 @@ httpRoute:
         - path:
             type: PathPrefix
             value: /
-
-linkerd:
-  profile:
-    enabled: false
 
 # create Prometheus Operator monitor
 serviceMonitor:
