@@ -86,7 +86,7 @@ The following tables lists the configurable parameters of the podinfo chart and 
 | `service.nodePort`                | `31198`                        | NodePort for the HTTP endpoint                                                                                         |
 | `service.trafficDistribution`     | `""`                           | Traffic distribution strategy                                                                                          |
 | `service.additionalLabels`        | `{}`                           | Additional labels to add to the service                                                                                |
-| `externalTrafficPolicy`           | `Cluster`                      | External traffic policy for LoadBalancer and NodePort services                                                         |
+| `service.externalTrafficPolicy`   | `None`                         | External traffic policy for LoadBalance service                                                                        |
 | `h2c.enabled`                     | `false`                        | Allow upgrading to h2c (non-TLS version of HTTP/2)                                                                     |
 | `extraArgs`                       | `[]`                           | Additional command line arguments to pass to podinfo container                                                         |
 | `extraEnvs`                       | `[]`                           | Extra environment variables for the podinfo container                                                                  |
@@ -118,7 +118,6 @@ The following tables lists the configurable parameters of the podinfo chart and 
 | `httpRoute.parentRefs`            | `[]`                           | Gateways that this route is attached to                                                                                |
 | `httpRoute.hostnames`             | `["podinfo.local"]`            | Hostnames matching HTTP header                                                                                         |
 | `httpRoute.rules`                 | `[]`                           | List of rules and filters applied                                                                                      |
-| `linkerd.profile.enabled`         | `false`                        | Create Linkerd service profile                                                                                         |
 | `resources.requests.cpu`          | `1m`                           | Pod CPU request                                                                                                        |
 | `resources.requests.memory`       | `16Mi`                         | Pod memory request                                                                                                     |
 | `resources.limits.cpu`            | `None`                         | Pod CPU limit                                                                                                          |
