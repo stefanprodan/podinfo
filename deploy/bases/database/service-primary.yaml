@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: database-primary
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: database-primary
+  ports:
+    - name: db
+      port: 3306
+      protocol: TCP
+      targetPort: db

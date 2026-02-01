@@ -12,14 +12,14 @@ spec:
     type: RollingUpdate
   selector:
     matchLabels:
-      app: frontend
+      app.kubernetes.io/name: frontend
   template:
     metadata:
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: "9797"
       labels:
-        app: frontend
+        app.kubernetes.io/name: frontend
     spec:
       containers:
       - name: frontend

@@ -5,11 +5,11 @@ metadata:
 spec:
   selector:
     matchLabels:
-      app: cache
+      app.kubernetes.io/name: cache
   template:
     metadata:
       labels:
-        app: cache
+        app.kubernetes.io/name: cache
     spec:
       containers:
         - name: redis
