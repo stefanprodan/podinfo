@@ -62,6 +62,9 @@ The following tables lists the configurable parameters of the podinfo chart and 
 | `redis.enabled`                   | `false`                        | Create Redis deployment for caching purposes                                                                           |
 | `redis.repository`                | `docker.io/redis`              | Redis image repository                                                                                                 |
 | `redis.tag`                       | `<VERSION>`                    | Redis image tag                                                                                                        |
+| `redis.securityContext`           | `{}`                           | The security context to be set on the redis pod                                                                        |
+| `redis.containerSecurityContext`  | `{}`                           | The security context to be set on the redis container                                                                  |
+| `redis.persistence.enabled     `  | `false`                        | Enabled the PVC for redis cache                                                                                        |
 | `redis.imagePullSecrets`          | `[]`                           | Redis image pull secrets                                                                                               |
 | `ui.color`                        | `#34577c`                      | UI color                                                                                                               |
 | `ui.message`                      | `None`                         | UI greetings message                                                                                                   |
@@ -122,6 +125,7 @@ The following tables lists the configurable parameters of the podinfo chart and 
 | `resources.requests.memory`       | `16Mi`                         | Pod memory request                                                                                                     |
 | `resources.limits.cpu`            | `None`                         | Pod CPU limit                                                                                                          |
 | `resources.limits.memory`         | `None`                         | Pod memory limit                                                                                                       |
+| `networkPolicy.enabled`           | `false`                | Whether network policies between podinfo and redis should be created                                                   |
 | `nodeSelector`                    | `{}`                           | Node labels for pod assignment                                                                                         |
 | `tolerations`                     | `[]`                           | List of node taints to tolerate                                                                                        |
 | `affinity`                        | `None`                         | Node/pod affinities                                                                                                    |

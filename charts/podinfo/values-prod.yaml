@@ -97,6 +97,10 @@ redis:
   enabled: true
   repository: redis
   tag: 8.4.0
+  securityContext: {}
+  containerSecurityContext: {}
+  persistence:
+    enabled: true
 
 serviceAccount:
   # Specifies whether a service account should be created
@@ -171,6 +175,8 @@ resources:
     cpu: 100m
     memory: 64Mi
 
+networkPolicies:
+  enabled: false
 # Extra environment variables for the podinfo container
 extraEnvs: []
 # Example on how to configure extraEnvs

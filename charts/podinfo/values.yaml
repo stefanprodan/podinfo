@@ -112,6 +112,10 @@ redis:
   repository: docker.io/redis
   tag: 8.4.0
   imagePullSecrets: []
+  securityContext: {}
+  containerSecurityContext: {}
+  persistence:
+    enabled: false
 
 serviceAccount:
   # Specifies whether a service account should be created
@@ -184,6 +188,17 @@ resources:
   requests:
     cpu: 1m
     memory: 16Mi
+
+networkPolicies:
+  enabled: false
+
+# Extra environment variables for the podinfo container
+extraEnvs: []
+# Example on how to configure extraEnvs
+#  - name: OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
+#    value: "http://otel:4317"
+#  - name: MULTIPLE_VALUES
+#    value: TEST
 
 nodeSelector: {}
 
