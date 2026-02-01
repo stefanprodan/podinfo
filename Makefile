@@ -81,6 +81,11 @@ version-set:
 	/usr/bin/sed -i '' "s/podinfo:$$current/podinfo:$$next/g" deploy/webapp/backend/deployment.yaml && \
 	/usr/bin/sed -i '' "s/podinfo:$$current/podinfo:$$next/g" deploy/bases/frontend/deployment.yaml && \
 	/usr/bin/sed -i '' "s/podinfo:$$current/podinfo:$$next/g" deploy/bases/backend/deployment.yaml && \
+	/usr/bin/sed -i '' "s/podinfo:$$current/podinfo:$$next/g" deploy/bases/database/statefulset-primary.yaml && \
+	/usr/bin/sed -i '' "s/podinfo:$$current/podinfo:$$next/g" deploy/bases/database/deployment-replica.yaml && \
+	/usr/bin/sed -i '' "s/podinfo:$$current/podinfo:$$next/g" deploy/bases/database/cronjob-rollup-daily.yaml && \
+	/usr/bin/sed -i '' "s/podinfo:$$current/podinfo:$$next/g" deploy/bases/database/cronjob-rollup-weekly.yaml && \
+	/usr/bin/sed -i '' "s/podinfo:$$current/podinfo:$$next/g" deploy/bases/database/cronjob-backup-daily.yaml && \
 	/usr/bin/sed -i '' "s/$$current/$$next/g" timoni/podinfo/values.cue && \
 	echo "Version $$next set in code, deployment, module, chart and kustomize"
 

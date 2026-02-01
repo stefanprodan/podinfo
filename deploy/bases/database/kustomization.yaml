@@ -1,0 +1,24 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - serviceaccount.yaml
+  - pvc-primary.yaml
+  - statefulset-primary.yaml
+  - deployment-replica.yaml
+  - service-primary.yaml
+  - service-replica.yaml
+  - hpa-replica.yaml
+  - cronjob-rollup-daily.yaml
+  - cronjob-rollup-weekly.yaml
+  - cronjob-backup-daily.yaml
+configMapGenerator:
+  - name: rollup-script
+    files:
+      - scripts/rollup.sh
+    options:
+      disableNameSuffixHash: true
+  - name: backup-script
+    files:
+      - scripts/backup.sh
+    options:
+      disableNameSuffixHash: true
