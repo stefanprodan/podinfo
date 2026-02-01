@@ -189,6 +189,9 @@ nodeSelector: {}
 
 tolerations: []
 
+dataDirVolume:
+  emptyDir: {}
+
 affinity: {}
 
 podAnnotations: {}
