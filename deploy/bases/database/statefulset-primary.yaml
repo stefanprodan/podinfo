@@ -22,7 +22,7 @@ spec:
       serviceAccountName: database
       containers:
       - name: database
-        image: ghcr.io/stefanprodan/podinfo:6.9.4
+        image: ghcr.io/stefanprodan/podinfo:6.10.0
         imagePullPolicy: IfNotPresent
         ports:
         - name: db

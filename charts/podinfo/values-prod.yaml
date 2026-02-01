@@ -8,7 +8,7 @@ backends: []
 
 image:
   repository: ghcr.io/stefanprodan/podinfo
-  tag: 6.9.4
+  tag: 6.10.0
   pullPolicy: IfNotPresent
 
 ui:
