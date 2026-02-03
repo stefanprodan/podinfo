@@ -93,6 +93,65 @@ certificate:
   dnsNames:
     - podinfo
 
+# Helm hooks (for testing purposes)
+hooks:
+  preInstall:
+    job:
+      enabled: false
+      hookDeletePolicy: hook-succeeded,hook-failed
+      ttlSecondsAfterFinished:
+      sleepSeconds:
+      exitCode: 0
+  postInstall:
+    job:
+      enabled: false
+      hookDeletePolicy: hook-succeeded,hook-failed
+      ttlSecondsAfterFinished:
+      sleepSeconds:
+      exitCode: 0
+  preDelete:
+    job:
+      enabled: false
+      hookDeletePolicy: hook-succeeded,hook-failed
+      ttlSecondsAfterFinished:
+      sleepSeconds:
+      exitCode: 0
+  postDelete:
+    job:
+      enabled: false
+      hookDeletePolicy: hook-succeeded,hook-failed
+      ttlSecondsAfterFinished:
+      sleepSeconds:
+      exitCode: 0
+  preUpgrade:
+    job:
+      enabled: false
+      hookDeletePolicy: hook-succeeded,hook-failed
+      ttlSecondsAfterFinished:
+      sleepSeconds:
+      exitCode: 0
+  postUpgrade:
+    job:
+      enabled: false
+      hookDeletePolicy: hook-succeeded,hook-failed
+      ttlSecondsAfterFinished:
+      sleepSeconds:
+      exitCode: 0
+  preRollback:
+    job:
+      enabled: false
+      hookDeletePolicy: hook-succeeded,hook-failed
+      ttlSecondsAfterFinished:
+      sleepSeconds:
+      exitCode: 0
+  postRollback:
+    job:
+      enabled: false
+      hookDeletePolicy: hook-succeeded,hook-failed
+      ttlSecondsAfterFinished:
+      sleepSeconds:
+      exitCode: 0
+
 # metrics-server add-on required
 hpa:
   enabled: false

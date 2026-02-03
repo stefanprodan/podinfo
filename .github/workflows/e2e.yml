@@ -28,7 +28,7 @@ jobs:
       - name: Setup Helm
         uses: azure/setup-helm@v4
         with:
-          version: v3.17.3
+          version: v4.1.0
       - name: Deploy
         run: ./test/deploy.sh
       - name: Run integration tests

@@ -52,79 +52,84 @@ The command removes all the Kubernetes components associated with the chart and 
 
 The following tables lists the configurable parameters of the podinfo chart and their default values.
 
-| Parameter                         | Default                        | Description                                                                                                            |
-|-----------------------------------|--------------------------------|------------------------------------------------------------------------------------------------------------------------|
-| `replicaCount`                    | `1`                            | Desired number of pods                                                                                                 |
-| `logLevel`                        | `info`                         | Log level: `debug`, `info`, `warn`, `error`                                                                            |
-| `backend`                         | `None`                         | Echo backend URL                                                                                                       |
-| `backends`                        | `[]`                           | Array of echo backend URLs                                                                                             |
-| `cache`                           | `None`                         | Redis address in the format `tcp://<host>:<port>`                                                                      |
-| `redis.enabled`                   | `false`                        | Create Redis deployment for caching purposes                                                                           |
-| `redis.repository`                | `docker.io/redis`              | Redis image repository                                                                                                 |
-| `redis.tag`                       | `<VERSION>`                    | Redis image tag                                                                                                        |
-| `redis.imagePullSecrets`          | `[]`                           | Redis image pull secrets                                                                                               |
-| `ui.color`                        | `#34577c`                      | UI color                                                                                                               |
-| `ui.message`                      | `None`                         | UI greetings message                                                                                                   |
-| `ui.logo`                         | `None`                         | UI logo                                                                                                                |
-| `faults.delay`                    | `false`                        | Random HTTP response delays between 0 and 5 seconds                                                                    |
-| `faults.error`                    | `false`                        | 1/3 chances of a random HTTP response error                                                                            |
-| `faults.unhealthy`                | `false`                        | When set, the healthy state is never reached                                                                           |
-| `faults.unready`                  | `false`                        | When set, the ready state is never reached                                                                             |
-| `faults.testFail`                 | `false`                        | When set, a helm test is included which always fails                                                                   |
-| `faults.testTimeout`              | `false`                        | When set, a helm test is included which always times out                                                               |
-| `image.repository`                | `ghcr.io/stefanprodan/podinfo` | Image repository                                                                                                       |
-| `image.tag`                       | `<VERSION>`                    | Image tag                                                                                                              |
-| `image.pullPolicy`                | `IfNotPresent`                 | Image pull policy                                                                                                      |
-| `image.pullSecrets`               | `[]`                           | Image pull secrets                                                                                                     |
-| `service.enabled`                 | `true`                         | Create a Kubernetes Service, should be disabled when using [Flagger](https://flagger.app)                              |
-| `service.type`                    | `ClusterIP`                    | Type of the Kubernetes Service                                                                                         |
-| `service.metricsPort`             | `9797`                         | Prometheus metrics endpoint port                                                                                       |
-| `service.httpPort`                | `9898`                         | Container HTTP port                                                                                                    |
-| `service.externalPort`            | `9898`                         | ClusterIP HTTP port                                                                                                    |
-| `service.grpcPort`                | `9999`                         | ClusterIP gPRC port                                                                                                    |
-| `service.grpcService`             | `podinfo`                      | gPRC service name                                                                                                      |
-| `service.nodePort`                | `31198`                        | NodePort for the HTTP endpoint                                                                                         |
-| `service.trafficDistribution`     | `""`                           | Traffic distribution strategy                                                                                          |
-| `service.additionalLabels`        | `{}`                           | Additional labels to add to the service                                                                                |
-| `service.externalTrafficPolicy`   | `None`                         | External traffic policy for LoadBalance service                                                                        |
-| `h2c.enabled`                     | `false`                        | Allow upgrading to h2c (non-TLS version of HTTP/2)                                                                     |
-| `extraArgs`                       | `[]`                           | Additional command line arguments to pass to podinfo container                                                         |
-| `extraEnvs`                       | `[]`                           | Extra environment variables for the podinfo container                                                                  |
-| `config.path`                     | `""`                           | config file path                                                                                                       |
-| `config.name`                     | `""`                           | config file name                                                                                                       |
-| `hpa.enabled`                     | `false`                        | Enables the Kubernetes HPA                                                                                             |
-| `hpa.maxReplicas`                 | `10`                           | Maximum amount of pods                                                                                                 |
-| `hpa.cpu`                         | `None`                         | Target CPU usage per pod                                                                                               |
-| `hpa.memory`                      | `None`                         | Target memory usage per pod                                                                                            |
-| `hpa.requests`                    | `None`                         | Target HTTP requests per second per pod                                                                                |
-| `serviceAccount.enabled`          | `false`                        | Whether a service account should be created                                                                            |
-| `serviceAccount.name`             | `None`                         | The name of the service account to use, if not set and create is true, a name is generated using the fullname template |
-| `serviceAccount.imagePullSecrets` | `[]`                           | List of image pull secrets if pulling from private registries.                                                         |
-| `securityContext`                 | `{}`                           | The security context to be set on the podinfo container                                                                |
-| `podSecurityContext`              | `{}`                           | The security context to be set on the pod                                                                              |
-| `podAnnotations`                  | `{}`                           | Pod annotations                                                                                                        |
-| `serviceMonitor.enabled`          | `false`                        | Whether a Prometheus Operator service monitor should be created                                                        |
-| `serviceMonitor.interval`         | `15s`                          | Prometheus scraping interval                                                                                           |
-| `serviceMonitor.additionalLabels` | `{}`                           | Add additional labels to the service monitor                                                                           |
-| `ingress.enabled`                 | `false`                        | Enables Ingress                                                                                                        |
-| `ingress.className`               | `""`                           | Use ingressClassName                                                                                                   |
-| `ingress.additionalLabels`        | `{}`                           | Add additional labels to the ingress                                                                                   |
-| `ingress.annotations`             | `{}`                           | Ingress annotations                                                                                                    |
-| `ingress.hosts`                   | `[]`                           | Ingress accepted hosts                                                                                                 |
-| `ingress.tls`                     | `[]`                           | Ingress TLS configuration                                                                                              |
-| `httpRoute.enabled`               | `false`                        | Enables Gateway API HTTPRoute                                                                                          |
-| `httpRoute.additionalLabels`      | `{}`                           | Add additional labels to the HTTPRoute                                                                                 |
-| `httpRoute.annotations`           | `{}`                           | HTTPRoute annotations                                                                                                  |
-| `httpRoute.parentRefs`            | `[]`                           | Gateways that this route is attached to                                                                                |
-| `httpRoute.hostnames`             | `["podinfo.local"]`            | Hostnames matching HTTP header                                                                                         |
-| `httpRoute.rules`                 | `[]`                           | List of rules and filters applied                                                                                      |
-| `resources.requests.cpu`          | `1m`                           | Pod CPU request                                                                                                        |
-| `resources.requests.memory`       | `16Mi`                         | Pod memory request                                                                                                     |
-| `resources.limits.cpu`            | `None`                         | Pod CPU limit                                                                                                          |
-| `resources.limits.memory`         | `None`                         | Pod memory limit                                                                                                       |
-| `nodeSelector`                    | `{}`                           | Node labels for pod assignment                                                                                         |
-| `tolerations`                     | `[]`                           | List of node taints to tolerate                                                                                        |
-| `affinity`                        | `None`                         | Node/pod affinities                                                                                                    |
+| Parameter                                        | Default                        | Description                                                                                       |
+|--------------------------------------------------|--------------------------------|---------------------------------------------------------------------------------------------------|
+| `replicaCount`                                   | `1`                            | Desired number of pods                                                                            |
+| `logLevel`                                       | `info`                         | Log level: `debug`, `info`, `warn`, `error`                                                       |
+| `backend`                                        | `None`                         | Echo backend URL                                                                                  |
+| `backends`                                       | `[]`                           | Array of echo backend URLs                                                                        |
+| `cache`                                          | `None`                         | Redis address in the format `tcp://<host>:<port>`                                                 |
+| `redis.enabled`                                  | `false`                        | Create Redis deployment for caching purposes                                                      |
+| `redis.repository`                               | `docker.io/redis`              | Redis image repository                                                                            |
+| `redis.tag`                                      | `<VERSION>`                    | Redis image tag                                                                                   |
+| `redis.imagePullSecrets`                         | `[]`                           | Redis image pull secrets                                                                          |
+| `ui.color`                                       | `#34577c`                      | UI color                                                                                          |
+| `ui.message`                                     | `None`                         | UI greetings message                                                                              |
+| `ui.logo`                                        | `None`                         | UI logo                                                                                           |
+| `faults.delay`                                   | `false`                        | Random HTTP response delays between 0 and 5 seconds                                               |
+| `faults.error`                                   | `false`                        | 1/3 chances of a random HTTP response error                                                       |
+| `faults.unhealthy`                               | `false`                        | When set, the healthy state is never reached                                                      |
+| `faults.unready`                                 | `false`                        | When set, the ready state is never reached                                                        |
+| `faults.testFail`                                | `false`                        | When set, a helm test is included which always fails                                              |
+| `faults.testTimeout`                             | `false`                        | When set, a helm test is included which always times out                                          |
+| `image.repository`                               | `ghcr.io/stefanprodan/podinfo` | Image repository                                                                                  |
+| `image.tag`                                      | `<VERSION>`                    | Image tag                                                                                         |
+| `image.pullPolicy`                               | `IfNotPresent`                 | Image pull policy                                                                                 |
+| `image.pullSecrets`                              | `[]`                           | Image pull secrets                                                                                |
+| `service.enabled`                                | `true`                         | Create a Kubernetes Service, should be disabled when using [Flagger](https://flagger.app)         |
+| `service.type`                                   | `ClusterIP`                    | Type of the Kubernetes Service                                                                    |
+| `service.metricsPort`                            | `9797`                         | Prometheus metrics endpoint port                                                                  |
+| `service.httpPort`                               | `9898`                         | Container HTTP port                                                                               |
+| `service.externalPort`                           | `9898`                         | ClusterIP HTTP port                                                                               |
+| `service.grpcPort`                               | `9999`                         | ClusterIP gPRC port                                                                               |
+| `service.grpcService`                            | `podinfo`                      | gPRC service name                                                                                 |
+| `service.nodePort`                               | `31198`                        | NodePort for the HTTP endpoint                                                                    |
+| `service.trafficDistribution`                    | `""`                           | Traffic distribution strategy                                                                     |
+| `service.additionalLabels`                       | `{}`                           | Additional labels to add to the service                                                           |
+| `service.externalTrafficPolicy`                  | `None`                         | External traffic policy for LoadBalance service                                                   |
+| `h2c.enabled`                                    | `false`                        | Allow upgrading to h2c (non-TLS version of HTTP/2)                                                |
+| `extraArgs`                                      | `[]`                           | Additional command line arguments to pass to podinfo container                                    |
+| `extraEnvs`                                      | `[]`                           | Extra environment variables for the podinfo container                                             |
+| `config.path`                                    | `""`                           | config file path                                                                                  |
+| `config.name`                                    | `""`                           | config file name                                                                                  |
+| `hpa.enabled`                                    | `false`                        | Enables the Kubernetes HPA                                                                        |
+| `hpa.maxReplicas`                                | `10`                           | Maximum amount of pods                                                                            |
+| `hpa.cpu`                                        | `None`                         | Target CPU usage per pod                                                                          |
+| `hpa.memory`                                     | `None`                         | Target memory usage per pod                                                                       |
+| `hpa.requests`                                   | `None`                         | Target HTTP requests per second per pod                                                           |
+| `serviceAccount.enabled`                         | `false`                        | Whether a service account should be created                                                       |
+| `serviceAccount.name`                            | `None`                         | The name of the service account to use, if not set a name is generated using the fullname template|
+| `serviceAccount.imagePullSecrets`                | `[]`                           | List of image pull secrets if pulling from private registries                                     |
+| `securityContext`                                | `{}`                           | The security context to be set on the podinfo container                                           |
+| `podSecurityContext`                             | `{}`                           | The security context to be set on the pod                                                         |
+| `podAnnotations`                                 | `{}`                           | Pod annotations                                                                                   |
+| `serviceMonitor.enabled`                         | `false`                        | Whether a Prometheus Operator service monitor should be created                                   |
+| `serviceMonitor.interval`                        | `15s`                          | Prometheus scraping interval                                                                      |
+| `serviceMonitor.additionalLabels`                | `{}`                           | Add additional labels to the service monitor                                                      |
+| `ingress.enabled`                                | `false`                        | Enables Ingress                                                                                   |
+| `ingress.className`                              | `""`                           | Use ingressClassName                                                                              |
+| `ingress.additionalLabels`                       | `{}`                           | Add additional labels to the ingress                                                              |
+| `ingress.annotations`                            | `{}`                           | Ingress annotations                                                                               |
+| `ingress.hosts`                                  | `[]`                           | Ingress accepted hosts                                                                            |
+| `ingress.tls`                                    | `[]`                           | Ingress TLS configuration                                                                         |
+| `httpRoute.enabled`                              | `false`                        | Enables Gateway API HTTPRoute                                                                     |
+| `httpRoute.additionalLabels`                     | `{}`                           | Add additional labels to the HTTPRoute                                                            |
+| `httpRoute.annotations`                          | `{}`                           | HTTPRoute annotations                                                                             |
+| `httpRoute.parentRefs`                           | `[]`                           | Gateways that this route is attached to                                                           |
+| `httpRoute.hostnames`                            | `["podinfo.local"]`            | Hostnames matching HTTP header                                                                    |
+| `httpRoute.rules`                                | `[]`                           | List of rules and filters applied                                                                 |
+| `hooks.<hookType>.job.enabled`                   | `false`                        | Create a Helm hook job for testing (hookType: see values.yaml for available hooks)                |
+| `hooks.<hookType>.job.hookDeletePolicy`          | `hook-succeeded,hook-failed`   | Helm hook delete policy                                                                           |
+| `hooks.<hookType>.job.ttlSecondsAfterFinished`   | `None`                         | Job TTL after finished                                                                            |
+| `hooks.<hookType>.job.sleepSeconds`              | `None`                         | Sleep duration before job exits                                                                   |
+| `hooks.<hookType>.job.exitCode`                  | `0`                            | Job exit code                                                                                     |
+| `resources.requests.cpu`                         | `1m`                           | Pod CPU request                                                                                   |
+| `resources.requests.memory`                      | `16Mi`                         | Pod memory request                                                                                |
+| `resources.limits.cpu`                           | `None`                         | Pod CPU limit                                                                                     |
+| `resources.limits.memory`                        | `None`                         | Pod memory limit                                                                                  |
+| `nodeSelector`                                   | `{}`                           | Node labels for pod assignment                                                                    |
+| `tolerations`                                    | `[]`                           | List of node taints to tolerate                                                                   |
+| `affinity`                                       | `None`                         | Node/pod affinities                                                                               |
 
 Specify each parameter using the `--set key=value[,key=value]` argument:
 

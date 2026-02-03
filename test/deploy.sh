@@ -26,4 +26,5 @@ helm upgrade --install podinfo ./charts/podinfo \
     --set certificate.create=true \
     --set hpa.enabled=true \
     --set hpa.cpu=95 \
+    --set hooks.postInstall.job.enabled=true \
     --namespace=default
