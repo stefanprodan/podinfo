@@ -23,7 +23,7 @@ spec:
           restartPolicy: OnFailure
           containers:
           - name: healthcheck
-            image: ghcr.io/stefanprodan/podinfo:6.10.0
+            image: ghcr.io/stefanprodan/podinfo:6.10.1
             imagePullPolicy: IfNotPresent
             command:
             - /bin/sh
