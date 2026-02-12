@@ -217,7 +217,11 @@ spec:
     {{- end }}
       volumes:
       - name: data
+        {{- if .Values.dataDirVolume }}
+        {{- toYaml .Values.dataDirVolume | nindent 8 }}
+        {{- else }}
         emptyDir: {}
+        {{- end }}
       {{- if .Values.tls.enabled }}
       - name: tls
         secret:
