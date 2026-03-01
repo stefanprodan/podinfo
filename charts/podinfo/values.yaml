@@ -169,7 +169,7 @@ cache: ""
 redis:
   enabled: false
   repository: docker.io/redis
-  tag: 8.4.0
+  tag: 8.6.1
   imagePullSecrets: []
 
 serviceAccount:
