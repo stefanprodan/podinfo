@@ -96,7 +96,7 @@ cache: ""
 redis:
   enabled: true
   repository: redis
-  tag: 8.4.0
+  tag: 8.6.1
 
 serviceAccount:
   # Specifies whether a service account should be created
