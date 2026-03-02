@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gorilla/websocket"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -63,6 +64,13 @@ var checkgRPCCmd = &cobra.Command{
 	RunE:    runCheckgPRC,
 }
 
+var checkWsCmd = &cobra.Command{
+	Use:     `ws [address]`,
+	Short:   "WebSocket round-trip health check",
+	Example: `  check ws ws://localhost:9898/ws/echo --retry=1 --delay=2s --timeout=5s`,
+	RunE:    runCheckWs,
+}
+
 func init() {
 	checkUrlCmd.Flags().StringVar(&method, "method", "GET", "HTTP method")
 	checkUrlCmd.Flags().StringVar(&body, "body", "", "HTTP POST/PUT content")
@@ -83,6 +91,11 @@ func init() {
 	checkCmd.AddCommand(checkgRPCCmd)
 
 	checkCmd.AddCommand(checkCertCmd)
+
+	checkWsCmd.Flags().IntVar(&retryCount, "retry", 0, "times to retry the WebSocket check")
+	checkWsCmd.Flags().DurationVar(&retryDelay, "delay", 1*time.Second, "wait duration between retries")
+	checkWsCmd.Flags().DurationVar(&timeout, "timeout", 5*time.Second, "timeout")
+	checkCmd.AddCommand(checkWsCmd)
 
 	rootCmd.AddCommand(checkCmd)
 }
@@ -260,6 +273,72 @@ func fmtContentLength(b int64) string {
 		exp++
 	}
 	return fmt.Sprintf("%.1f %cB", float64(b)/float64(div), "kMGTPE"[exp])
+}
+
+func runCheckWs(cmd *cobra.Command, args []string) error {
+	if retryCount < 0 {
+		return fmt.Errorf("--retry is required")
+	}
+	if len(args) < 1 {
+		return fmt.Errorf("address is required! example: check ws wss://localhost:9898/ws/echo")
+	}
+
+	address := args[0]
+	if !strings.HasPrefix(address, "ws://") && !strings.HasPrefix(address, "wss://") {
+		return fmt.Errorf("address must start with ws:// or wss://")
+	}
+
+	for n := 0; n <= retryCount; n++ {
+		if n != 0 {
+			time.Sleep(retryDelay)
+		}
+
+		dialer := websocket.Dialer{
+			HandshakeTimeout: timeout,
+		}
+
+		conn, _, err := dialer.Dial(address, nil)
+		if err != nil {
+			logger.Info("check failed",
+				zap.String("address", address),
+				zap.Error(err))
+			continue
+		}
+
+		msg := "podinfo-check"
+		start := time.Now()
+
+		conn.SetWriteDeadline(start.Add(timeout))
+		if err := conn.WriteMessage(websocket.TextMessage, []byte(msg)); err != nil {
+			conn.Close()
+			logger.Info("check failed",
+				zap.String("address", address),
+				zap.Error(err))
+			continue
+		}
+
+		conn.SetReadDeadline(time.Now().Add(timeout))
+		_, resp, err := conn.ReadMessage()
+		if err != nil {
+			conn.Close()
+			logger.Info("check failed",
+				zap.String("address", address),
+				zap.Error(err))
+			continue
+		}
+
+		rtt := time.Since(start)
+		conn.Close()
+
+		logger.Info("check succeed",
+			zap.String("address", address),
+			zap.Duration("round-trip", rtt),
+			zap.Int("response size", len(resp)))
+		os.Exit(0)
+	}
+
+	os.Exit(1)
+	return nil
 }
 
 func runCheckgPRC(cmd *cobra.Command, args []string) error {
