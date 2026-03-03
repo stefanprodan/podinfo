@@ -17,6 +17,8 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/status"
 )
@@ -28,6 +30,7 @@ var (
 	body            string
 	timeout         time.Duration
 	grpcServiceName string
+	grpcTLS         bool
 )
 
 var checkCmd = &cobra.Command{
@@ -88,6 +91,7 @@ func init() {
 	checkgRPCCmd.Flags().DurationVar(&retryDelay, "delay", 1*time.Second, "wait duration between retries")
 	checkgRPCCmd.Flags().DurationVar(&timeout, "timeout", 5*time.Second, "timeout")
 	checkgRPCCmd.Flags().StringVar(&grpcServiceName, "service", "", "gRPC service name")
+	checkgRPCCmd.Flags().BoolVar(&grpcTLS, "tls", false, "use TLS for gRPC connection")
 	checkCmd.AddCommand(checkgRPCCmd)
 
 	checkCmd.AddCommand(checkCertCmd)
@@ -350,12 +354,19 @@ func runCheckgPRC(cmd *cobra.Command, args []string) error {
 	}
 	address := args[0]
 
+	var creds grpc.DialOption
+	if grpcTLS {
+		creds = grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{}))
+	} else {
+		creds = grpc.WithTransportCredentials(insecure.NewCredentials())
+	}
+
 	for n := 0; n <= retryCount; n++ {
-		if n != 1 {
+		if n != 0 {
 			time.Sleep(retryDelay)
 		}
 
-		conn, err := grpc.Dial(address, grpc.WithInsecure())
+		conn, err := grpc.NewClient(address, creds)
 		if err != nil {
 			logger.Info("check failed",
 				zap.String("address", address),
@@ -370,13 +381,14 @@ func runCheckgPRC(cmd *cobra.Command, args []string) error {
 
 		if err != nil {
 			if stat, ok := status.FromError(err); ok && stat.Code() == codes.Unimplemented {
-				logger.Info("gPRC health protocol not implemented")
+				logger.Info("gRPC health protocol not implemented")
 				os.Exit(1)
 			} else {
 				logger.Info("check failed",
 					zap.String("address", address),
 					zap.Error(err))
 			}
+			conn.Close()
 			continue
 		}
 
@@ -384,7 +396,6 @@ func runCheckgPRC(cmd *cobra.Command, args []string) error {
 		logger.Info("check succeed",
 			zap.String("status", resp.GetStatus().String()))
 		os.Exit(0)
-
 	}
 
 	os.Exit(1)
