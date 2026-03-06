@@ -232,6 +232,28 @@ httpRoute:
             type: PathPrefix
             value: /
 
+# -- Expose the gRPC service via Gateway GRPCRoute
+# Requires a Gateway controller with GRPCRoute support
+# Docs https://gateway-api.sigs.k8s.io/guides/grpc-routing/
+grpcRoute:
+  # GRPCRoute enabled.
+  enabled: false
+  # Add additional labels to the GRPCRoute.
+  additionalLabels: {}
+  # GRPCRoute annotations.
+  annotations: {}
+  # Which Gateways this Route is attached to.
+  parentRefs:
+    - name: gateway
+      sectionName: http
+      # namespace: default
+  # Hostnames matching HTTP header.
+  hostnames:
+    - podinfo.local
+  # List of rules applied.
+  rules:
+    - {}
+
 # create Prometheus Operator monitor
 serviceMonitor:
   enabled: false

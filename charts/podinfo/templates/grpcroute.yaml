@@ -1,0 +1,42 @@
+{{- if .Values.grpcRoute.enabled -}}
+{{- $fullName := include "podinfo.fullname" . -}}
+{{- $grpcPort := .Values.service.grpcPort -}}
+apiVersion: gateway.networking.k8s.io/v1
+kind: GRPCRoute
+metadata:
+  name: {{ $fullName }}
+  namespace: {{ include "podinfo.namespace" . }}
+  labels:
+    {{- include "podinfo.labels" . | nindent 4 }}
+    {{- with .Values.grpcRoute.additionalLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- with .Values.grpcRoute.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  parentRefs:
+    {{- with .Values.grpcRoute.parentRefs }}
+      {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- with .Values.grpcRoute.hostnames }}
+  hostnames:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  rules:
+    {{- range .Values.grpcRoute.rules }}
+    - backendRefs:
+        - name: {{ $fullName }}
+          port: {{ $grpcPort }}
+          weight: 1
+    {{- with .matches }}
+      matches:
+      {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .filters }}
+      filters:
+      {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- end }}
+{{- end }}
