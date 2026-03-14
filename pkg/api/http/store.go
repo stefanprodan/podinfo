@@ -60,6 +60,9 @@ func (s *Server) storeReadHandler(w http.ResponseWriter, r *http.Request) {
 		s.ErrorResponse(w, r, span, "reading file failed", http.StatusInternalServerError)
 		return
 	}
+	w.Header().Set("Content-Type", "application/octet-stream")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("Content-Security-Policy", "default-src 'none'")
 	w.WriteHeader(http.StatusAccepted)
 	w.Write([]byte(content))
 }
