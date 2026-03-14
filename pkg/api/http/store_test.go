@@ -52,3 +52,31 @@ func TestStoreReadHandler_ContentType(t *testing.T) {
 		}
 	}
 }
+
+func TestStoreReadHandler_PathTraversal(t *testing.T) {
+	srv := NewMockServer()
+	srv.config.DataPath = t.TempDir()
+
+	traversalPaths := []string{
+		"../../../../etc/passwd",
+		"../../../etc/shadow",
+		"..%2f..%2f..%2fetc%2fpasswd",
+		"abc123",
+		"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzg", // 40 chars but not hex
+	}
+
+	for _, tp := range traversalPaths {
+		req, err := http.NewRequest("GET", "/store/"+tp, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		req = mux.SetURLVars(req, map[string]string{"hash": tp})
+
+		rr := httptest.NewRecorder()
+		http.HandlerFunc(srv.storeReadHandler).ServeHTTP(rr, req)
+
+		if !strings.Contains(rr.Body.String(), "invalid hash") {
+			t.Errorf("path %q: expected 'invalid hash' error, got %q", tp, rr.Body.String())
+		}
+	}
+}
