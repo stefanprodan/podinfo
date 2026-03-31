@@ -27,13 +27,13 @@ jobs:
             **/go.sum
             **/go.mod
       - name: Setup kubectl
-        uses: azure/setup-kubectl@776406bce94f63e41d621b960d78ee25c8b76ede # v4.0.1
+        uses: azure/setup-kubectl@15650b3ad78fff148532a140b8a4c821796b2d7b # v5.0.0
         with:
           version: v${{ env.KUBERNETES_VERSION }}
       - name: Setup kubeconform
         uses: ./.github/actions/kubeconform
       - name: Setup Helm
-        uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4.3.1
+        uses: azure/setup-helm@dda3372f752e03dde6b3237bc9431cdc2f7a02a2 # v5.0.0
         with:
           version: v${{ env.HELM_VERSION }}
       - name: Setup CUE
