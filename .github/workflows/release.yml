@@ -15,14 +15,15 @@ jobs:
       contents: write # needed to write releases
       id-token: write # needed for keyless signing
       packages: write # needed for ghcr access
+      attestations: write # needed for provenance
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/runner-cleanup
-      - uses: sigstore/cosign-installer@v4.0.0
-      - uses: fluxcd/flux2/action@v2.8.1
-      - uses: stefanprodan/timoni/actions/setup@v0.26.0
+      - uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad # v4.0.0
+      - uses: fluxcd/flux2/action@97222a775ae8e68f1e85508f356f248704255c9c # v2.8.1
+      - uses: stefanprodan/timoni/actions/setup@c68e33a34f17c7ca93c7fc6717d61a14819276dc # v0.26.0
       - name: Setup Notation CLI
-        uses: notaryproject/notation-action/setup@v1
+        uses: notaryproject/notation-action/setup@b6fee73110795d6793253c673bd723f12bcf9bbb # v1.2.2
         with:
           version: "1.1.0"
       - name: Setup Notation signing keys
@@ -34,28 +35,28 @@ jobs:
         env:
           NOTATION_KEY: ${{ secrets.NOTATION_SIGNING_KEY }}
       - name: Setup Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
         with:
           go-version: 1.26.x
       - name: Setup Helm
-        uses: azure/setup-helm@v4
+        uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4.3.1
         with:
           version: v4.1.1
       - name: Setup QEMU
-        uses: docker/setup-qemu-action@v4
+        uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # v4.0.0
         with:
           platforms: all
       - name: Setup Docker Buildx
         id: buildx
-        uses: docker/setup-buildx-action@v4
+        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v4
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4.0.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Login to Docker Hub
-        uses: docker/login-action@v4
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4.0.0
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
@@ -71,7 +72,7 @@ jobs:
           echo "REVISION=${GITHUB_SHA}" >> $GITHUB_OUTPUT
       - name: Generate images meta
         id: meta
-        uses: docker/metadata-action@v6
+        uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf # v6.0.0
         with:
           images: |
             docker.io/stefanprodan/podinfo
@@ -80,7 +81,7 @@ jobs:
             type=raw,value=${{ steps.prep.outputs.VERSION }}
             type=raw,value=latest
       - name: Publish multi-arch image
-        uses: docker/build-push-action@v7
+        uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 # v7.0.0
         with:
           sbom: true
           provenance: true
@@ -123,7 +124,7 @@ jobs:
           cosign sign ghcr.io/stefanprodan/charts/podinfo:${{ steps.prep.outputs.VERSION }} --yes
           cosign sign ghcr.io/stefanprodan/manifests/podinfo:${{ steps.prep.outputs.VERSION }} --yes
       - name: Publish base image
-        uses: docker/build-push-action@v7
+        uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 # v7.0.0
         with:
           push: true
           builder: ${{ steps.buildx.outputs.name }}
@@ -132,7 +133,7 @@ jobs:
           file: ./Dockerfile.base
           tags: docker.io/stefanprodan/podinfo-base:latest
       - name: Publish helm chart
-        uses: stefanprodan/helm-gh-pages@master
+        uses: stefanprodan/helm-gh-pages@0ad2bb377311d61ac04ad9eb6f252fb68e207260 # v1.7.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Publish config artifact
@@ -158,9 +159,13 @@ jobs:
           notation sign --signature-format cose ghcr.io/stefanprodan/podinfo-deploy:${{ steps.prep.outputs.VERSION }}
           notation sign --signature-format cose ghcr.io/stefanprodan/podinfo-deploy:latest
       - name: Publish release
-        uses: goreleaser/goreleaser-action@v7
+        uses: goreleaser/goreleaser-action@ec59f474b9834571250b370d4735c50f8e2d1e29 # v7.0.0
         with:
           version: latest
           args: release --skip=validate
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Attest release
+        uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 # v4.1.0
+        with:
+          subject-checksums: ./dist/podinfo_${{ steps.prep.outputs.VERSION }}_checksums.txt
