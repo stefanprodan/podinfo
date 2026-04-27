@@ -20,7 +20,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/runner-cleanup
       - uses: sigstore/cosign-installer@cad07c2e89fa2edd6e2d7bab4c1aa38e53f76003 # v4.1.1
-      - uses: fluxcd/flux2/action@871be9b40d53627786d3a3835a3ddba1e3234bd2 # v2.8.3
+      - uses: fluxcd/flux2/action@04acaec6161ac4fb1a82ffafa88901c03271d34f # v2.8.6
       - uses: stefanprodan/timoni/actions/setup@c68e33a34f17c7ca93c7fc6717d61a14819276dc # v0.26.0
       - name: Setup Notation CLI
         uses: notaryproject/notation-action/setup@b6fee73110795d6793253c673bd723f12bcf9bbb # v1.2.2
@@ -81,7 +81,7 @@ jobs:
             type=raw,value=${{ steps.prep.outputs.VERSION }}
             type=raw,value=latest
       - name: Publish multi-arch image
-        uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 # v7.0.0
+        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7.1.0
         with:
           sbom: true
           provenance: true
@@ -124,7 +124,7 @@ jobs:
           cosign sign ghcr.io/stefanprodan/charts/podinfo:${{ steps.prep.outputs.VERSION }} --yes
           cosign sign ghcr.io/stefanprodan/manifests/podinfo:${{ steps.prep.outputs.VERSION }} --yes
       - name: Publish base image
-        uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 # v7.0.0
+        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7.1.0
         with:
           push: true
           builder: ${{ steps.buildx.outputs.name }}
@@ -159,7 +159,7 @@ jobs:
           notation sign --signature-format cose ghcr.io/stefanprodan/podinfo-deploy:${{ steps.prep.outputs.VERSION }}
           notation sign --signature-format cose ghcr.io/stefanprodan/podinfo-deploy:latest
       - name: Publish release
-        uses: goreleaser/goreleaser-action@ec59f474b9834571250b370d4735c50f8e2d1e29 # v7.0.0
+        uses: goreleaser/goreleaser-action@1a80836c5c9d9e5755a25cb59ec6f45a3b5f41a8 # v7.2.1
         with:
           version: latest
           args: release --skip=validate
