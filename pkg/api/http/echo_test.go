@@ -46,3 +46,31 @@ func TestEchoHandler(t *testing.T) {
 		}
 	}
 }
+
+func TestEchoHandler_ContentType(t *testing.T) {
+	srv := NewMockServer()
+	handler := http.HandlerFunc(srv.echoHandler)
+
+	payload := "<html><script>alert(1)</script></html>"
+	req, err := http.NewRequest("POST", "/echo", strings.NewReader(payload))
+	if err != nil {
+		t.Fatal(err)
+	}
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusAccepted {
+		t.Fatalf("echo returned status %d, want %d", rr.Code, http.StatusAccepted)
+	}
+
+	expectedHeaders := map[string]string{
+		"Content-Type":            "application/octet-stream",
+		"X-Content-Type-Options":  "nosniff",
+		"Content-Security-Policy": "default-src 'none'",
+	}
+	for header, want := range expectedHeaders {
+		if got := rr.Header().Get(header); got != want {
+			t.Errorf("%s = %q, want %q", header, got, want)
+		}
+	}
+}
