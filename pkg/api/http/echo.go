@@ -102,6 +102,9 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 		s.JSONResponse(w, r, result)
 
 	} else {
+		w.Header().Set("Content-Type", "application/octet-stream")
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("Content-Security-Policy", "default-src 'none'")
 		w.Header().Set("X-Color", s.config.UIColor)
 		w.WriteHeader(http.StatusAccepted)
 		w.Write(body)
