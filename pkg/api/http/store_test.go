@@ -1,6 +1,7 @@
 package http
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -78,5 +79,52 @@ func TestStoreReadHandler_PathTraversal(t *testing.T) {
 		if !strings.Contains(rr.Body.String(), "invalid hash") {
 			t.Errorf("path %q: expected 'invalid hash' error, got %q", tp, rr.Body.String())
 		}
+	}
+}
+
+func TestStoreWriteHandler(t *testing.T) {
+	srv := NewMockServer()
+	srv.config.DataPath = t.TempDir()
+
+	payload := "hello world"
+	req, _ := http.NewRequest("POST", "/store", strings.NewReader(payload))
+	rr := httptest.NewRecorder()
+	http.HandlerFunc(srv.storeWriteHandler).ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusAccepted {
+		t.Fatalf("got status %d, want %d", rr.Code, http.StatusAccepted)
+	}
+
+	var result map[string]string
+	json.Unmarshal(rr.Body.Bytes(), &result)
+	if result["hash"] != hash(payload) {
+		t.Errorf("hash = %q, want %q", result["hash"], hash(payload))
+	}
+}
+
+func TestStoreWriteHandler_InvalidPath(t *testing.T) {
+	srv := NewMockServer()
+	srv.config.DataPath = "/nonexistent/path/that/does/not/exist"
+
+	req, _ := http.NewRequest("POST", "/store", strings.NewReader("data"))
+	rr := httptest.NewRecorder()
+	http.HandlerFunc(srv.storeWriteHandler).ServeHTTP(rr, req)
+
+	if !strings.Contains(rr.Body.String(), "writing file failed") {
+		t.Errorf("expected write error, got: %s", rr.Body.String())
+	}
+}
+
+func TestStoreReadHandler_NotFound(t *testing.T) {
+	srv := NewMockServer()
+	srv.config.DataPath = t.TempDir()
+	srv.router.HandleFunc("/store/{hash}", srv.storeReadHandler)
+
+	req, _ := http.NewRequest("GET", "/store/aabbccddee11223344556677889900aabbccddee", nil)
+	rr := httptest.NewRecorder()
+	srv.router.ServeHTTP(rr, req)
+
+	if !strings.Contains(rr.Body.String(), "reading file failed") {
+		t.Errorf("expected read error, got: %s", rr.Body.String())
 	}
 }

@@ -22,19 +22,19 @@ type TokenServer struct {
 
 type jwtCustomClaims struct {
 	Name string `json:"name"`
-	jwt.StandardClaims
+	jwt.RegisteredClaims
 }
 
 func (s *TokenServer) TokenGenerate(ctx context.Context, req *pb.TokenRequest) (*pb.TokenResponse, error) {
 
 	user := "anonymous"
-	expiresAt := time.Now().Add(time.Minute * 1).Unix()
+	expiresAt := time.Now().Add(time.Minute * 1)
 
 	claims := &jwtCustomClaims{
 		user,
-		jwt.StandardClaims{
+		jwt.RegisteredClaims{
 			Issuer:    "podinfo",
-			ExpiresAt: expiresAt,
+			ExpiresAt: jwt.NewNumericDate(expiresAt),
 		},
 	}
 
@@ -48,7 +48,7 @@ func (s *TokenServer) TokenGenerate(ctx context.Context, req *pb.TokenRequest) (
 
 	var result = pb.TokenResponse{
 		Token:     t,
-		ExpiresAt: time.Unix(claims.StandardClaims.ExpiresAt, 0).String(),
+		ExpiresAt: claims.ExpiresAt.Time.String(),
 		Message:   "Token generated successfully",
 	}
 
@@ -88,12 +88,12 @@ func (s *TokenServer) TokenValidate(ctx context.Context, req *pb.TokenRequest) (
 	}
 
 	if parsed_token.Valid {
-		if claims.StandardClaims.Issuer != "podinfo" {
+		if claims.Issuer != "podinfo" {
 			return nil, status.Errorf(codes.OK, "Invalid issuer")
 		} else {
 			var result = pb.TokenResponse{
 				Token:     claims.Name,
-				ExpiresAt: time.Unix(claims.StandardClaims.ExpiresAt, 0).String(),
+				ExpiresAt: claims.ExpiresAt.Time.String(),
 			}
 			return &result, nil
 		}

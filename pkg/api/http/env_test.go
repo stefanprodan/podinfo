@@ -33,3 +33,17 @@ func TestEnvHandler(t *testing.T) {
 			rr.Body.String(), expected)
 	}
 }
+
+func TestEnvHandler_Actual(t *testing.T) {
+	srv := NewMockServer()
+	req, _ := http.NewRequest("GET", "/env", nil)
+	rr := httptest.NewRecorder()
+	http.HandlerFunc(srv.envHandler).ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("got status %d, want %d", rr.Code, http.StatusOK)
+	}
+	if rr.Header().Get("Content-Type") != "application/json; charset=utf-8" {
+		t.Errorf("Content-Type = %q, want application/json", rr.Header().Get("Content-Type"))
+	}
+}
