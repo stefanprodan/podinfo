@@ -87,6 +87,13 @@ func (s *Server) ErrorResponse(w http.ResponseWriter, r *http.Request, span trac
 	w.Write(prettyJSON(body))
 }
 
+// setRawResponseHeaders prevents XSS by ensuring browsers never interpret raw responses as HTML.
+func setRawResponseHeaders(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "application/octet-stream")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("Content-Security-Policy", "default-src 'none'")
+}
+
 func prettyJSON(b []byte) []byte {
 	var out bytes.Buffer
 	json.Indent(&out, b, "", "  ")
