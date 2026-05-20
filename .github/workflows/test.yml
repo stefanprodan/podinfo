@@ -10,8 +10,7 @@ permissions:
   contents: read
 
 env:
-  KUBERNETES_VERSION: 1.35.0
-  HELM_VERSION: 4.1.1
+  HELM_VERSION: 4.2.0
 
 jobs:
   test:
@@ -26,12 +25,8 @@ jobs:
           cache-dependency-path: |
             **/go.sum
             **/go.mod
-      - name: Setup kubectl
-        uses: azure/setup-kubectl@15650b3ad78fff148532a140b8a4c821796b2d7b # v5.0.0
-        with:
-          version: v${{ env.KUBERNETES_VERSION }}
-      - name: Setup kubeconform
-        uses: ./.github/actions/kubeconform
+      - name: Setup Flux Schema CLI
+        uses: fluxcd/flux-schema/actions/setup@c90d3f83707614d21c20226183a9e714d8ba9626 # v0.3.0
       - name: Setup Helm
         uses: azure/setup-helm@dda3372f752e03dde6b3237bc9431cdc2f7a02a2 # v5.0.0
         with:
@@ -45,10 +40,10 @@ jobs:
       - name: Validate Helm chart
         run: |
           helm lint ./charts/podinfo/
-          helm template ./charts/podinfo/ | kubeconform -strict -summary -kubernetes-version ${{ env.KUBERNETES_VERSION }}
+          helm template ./charts/podinfo/ | flux-schema validate --verbose
       - name: Validate Kustomize overlay
         run: |
-          kubectl kustomize ./kustomize/ | kubeconform -strict -summary -kubernetes-version ${{ env.KUBERNETES_VERSION }}
+          kubectl kustomize ./kustomize/ | flux-schema validate --verbose
       - name: Verify CUE formatting
         working-directory: ./timoni/podinfo
         run: |
@@ -64,7 +59,7 @@ jobs:
         working-directory: ./timoni/podinfo
         run: |
           timoni mod lint . 
-          timoni build podinfo . -f test_values.cue | kubeconform -strict -summary -skip=ServiceMonitor -kubernetes-version ${{ env.KUBERNETES_VERSION }}
+          timoni build podinfo . -f debug_values.cue | flux-schema validate --skip-missing-schemas --verbose
       - name: Check if working tree is dirty
         run: |
           if [[ $(git diff --stat) != '' ]]; then
