@@ -24,3 +24,28 @@ func TestStatusHandler(t *testing.T) {
 			status, http.StatusNotFound)
 	}
 }
+
+func TestStatusHandler_Various(t *testing.T) {
+	srv := NewMockServer()
+	srv.router.HandleFunc("/status/{code}", srv.statusHandler)
+
+	cases := []struct {
+		code     string
+		expected int
+	}{
+		{"200", 200},
+		{"201", 201},
+		{"500", 500},
+		{"503", 503},
+	}
+
+	for _, c := range cases {
+		req, _ := http.NewRequest("GET", "/status/"+c.code, nil)
+		rr := httptest.NewRecorder()
+		srv.router.ServeHTTP(rr, req)
+
+		if rr.Code != c.expected {
+			t.Errorf("/status/%s: got %d, want %d", c.code, rr.Code, c.expected)
+		}
+	}
+}
