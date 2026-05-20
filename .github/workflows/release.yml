@@ -20,7 +20,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/runner-cleanup
       - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
-      - uses: fluxcd/flux2/action@04acaec6161ac4fb1a82ffafa88901c03271d34f # v2.8.6
+      - uses: fluxcd/flux2/action@54e4ba378e155ada619caafdc599e5c4d759ce5c # v2.8.7
       - uses: stefanprodan/timoni/actions/setup@c68e33a34f17c7ca93c7fc6717d61a14819276dc # v0.26.0
       - name: Setup Notation CLI
         uses: notaryproject/notation-action/setup@b6fee73110795d6793253c673bd723f12bcf9bbb # v1.2.2
@@ -159,7 +159,7 @@ jobs:
           notation sign --signature-format cose ghcr.io/stefanprodan/podinfo-deploy:${{ steps.prep.outputs.VERSION }}
           notation sign --signature-format cose ghcr.io/stefanprodan/podinfo-deploy:latest
       - name: Publish release
-        uses: goreleaser/goreleaser-action@1a80836c5c9d9e5755a25cb59ec6f45a3b5f41a8 # v7.2.1
+        uses: goreleaser/goreleaser-action@5daf1e915a5f0af01ddbcd89a43b8061ff4f1a89 # v7.2.2
         with:
           version: latest
           args: release --skip=validate
