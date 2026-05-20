@@ -13,7 +13,7 @@ import (
 
 type jwtCustomClaims struct {
 	Name string `json:"name"`
-	jwt.StandardClaims
+	jwt.RegisteredClaims
 }
 
 // Token godoc
@@ -44,9 +44,9 @@ func (s *Server) tokenGenerateHandler(w http.ResponseWriter, r *http.Request) {
 	expiresAt := time.Now().Add(time.Minute * 1)
 	claims := &jwtCustomClaims{
 		user,
-		jwt.StandardClaims{
+		jwt.RegisteredClaims{
 			Issuer:    "podinfo",
-			ExpiresAt: expiresAt.Unix(),
+			ExpiresAt: jwt.NewNumericDate(expiresAt),
 		},
 	}
 
@@ -59,7 +59,7 @@ func (s *Server) tokenGenerateHandler(w http.ResponseWriter, r *http.Request) {
 
 	var result = TokenResponse{
 		Token:     t,
-		ExpiresAt: time.Unix(claims.StandardClaims.ExpiresAt, 0),
+		ExpiresAt: claims.ExpiresAt.Time,
 	}
 
 	s.JSONResponse(w, r, result)
@@ -104,12 +104,12 @@ func (s *Server) tokenValidateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if token.Valid {
-		if claims.StandardClaims.Issuer != "podinfo" {
+		if claims.Issuer != "podinfo" {
 			s.ErrorResponse(w, r, span, "invalid issuer", http.StatusUnauthorized)
 		} else {
 			var result = TokenValidationResponse{
 				TokenName: claims.Name,
-				ExpiresAt: time.Unix(claims.StandardClaims.ExpiresAt, 0),
+				ExpiresAt: claims.ExpiresAt.Time,
 			}
 			s.JSONResponse(w, r, result)
 		}
