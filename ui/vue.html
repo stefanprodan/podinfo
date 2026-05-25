@@ -62,7 +62,7 @@
               Powered
               by <a class="white--text" href="https://github.com/stefanprodan/podinfo" target="_blank">podinfo</a>
               version ${ info.version } revision ${ info.revision }
-              Swagger <a class="white--text" href="swagger/">docs</a>
+              Swagger <a class="white--text" :href="prefix + '/swagger/'">docs</a>
             </div>
           </v-flex>
         </v-layout>
@@ -73,6 +73,9 @@
 
  <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
  <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
+ <script>
+   window.podinfoPrefix = {{ .Prefix }};
+ </script>
  <script>
    new Vue({
     delimiters: ['${', '}'],
@@ -85,6 +88,7 @@
         color: '',
         pings: 0,
         calls: 0,
+        prefix: window.podinfoPrefix === '/' ? '' : window.podinfoPrefix,
         tlName1: '',
         tlColor1: 'grey',
         tlName2: '',
@@ -102,7 +106,7 @@
         getInfo: function() {
           const xhr = new XMLHttpRequest();
           let self = this;
-          xhr.open('GET', "api/info")
+          xhr.open('GET', self.prefix + "/api/info")
             xhr.onload = function () {
                 data = JSON.parse(xhr.responseText)
                 if (self.info.version) {
@@ -138,7 +142,7 @@
         },
         postBackend: function() {
             var self = this
-            fetch("api/echo", {
+            fetch(self.prefix + "/api/echo", {
                 method: 'post',
                 headers: {
                 "Content-type": "application/json; charset=UTF-8",

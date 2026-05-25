@@ -14,7 +14,7 @@ import (
 	"github.com/gomodule/redigo/redis"
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	_ "github.com/stefanprodan/podinfo/pkg/api/http/docs"
+	"github.com/stefanprodan/podinfo/pkg/api/http/docs"
 	"github.com/stefanprodan/podinfo/pkg/fscache"
 	httpSwagger "github.com/swaggo/http-swagger"
 	"github.com/swaggo/swag"
@@ -57,6 +57,7 @@ type Config struct {
 	ConfigPath            string        `mapstructure:"config-path"`
 	CertPath              string        `mapstructure:"cert-path"`
 	Host                  string        `mapstructure:"host"`
+	Prefix                string        `mapstructure:"prefix"`
 	Port                  string        `mapstructure:"port"`
 	SecurePort            string        `mapstructure:"secure-port"`
 	PortMetrics           int           `mapstructure:"port-metrics"`
@@ -84,6 +85,9 @@ type Server struct {
 }
 
 func NewServer(config *Config, logger *zap.Logger) (*Server, error) {
+	config.Prefix = normalizePrefix(config.Prefix)
+	docs.SwaggerInfo.BasePath = config.Prefix
+
 	srv := &Server{
 		router: mux.NewRouter(),
 		logger: logger,
@@ -93,44 +97,85 @@ func NewServer(config *Config, logger *zap.Logger) (*Server, error) {
 	return srv, nil
 }
 
+func normalizePrefix(prefix string) string {
+	prefix = strings.TrimSpace(prefix)
+	if prefix == "" || prefix == "/" {
+		return "/"
+	}
+
+	if !strings.HasPrefix(prefix, "/") {
+		prefix = "/" + prefix
+	}
+
+	prefix = path.Clean(prefix)
+	if prefix == "." || prefix == "" {
+		return "/"
+	}
+
+	return prefix
+}
+
+func (s *Server) prefixedPath(route string) string {
+	prefix := s.config.Prefix
+	if prefix == "" || prefix == "/" {
+		return route
+	}
+
+	if route == "/" {
+		return prefix
+	}
+
+	if strings.HasPrefix(route, "/") {
+		return prefix + route
+	}
+
+	return prefix + "/" + route
+}
+
 func (s *Server) registerHandlers() {
-	s.router.Handle("/metrics", promhttp.Handler())
-	s.router.PathPrefix("/debug/pprof/").Handler(http.DefaultServeMux)
-	s.router.HandleFunc("/", s.indexHandler).HeadersRegexp("User-Agent", "^Mozilla.*").Methods("GET")
-	s.router.HandleFunc("/", s.infoHandler).Methods("GET")
-	s.router.HandleFunc("/version", s.versionHandler).Methods("GET")
-	s.router.HandleFunc("/echo", s.echoHandler)
-	s.router.PathPrefix("/echo/").HandlerFunc(s.echoHandler)
-	s.router.HandleFunc("/env", s.envHandler).Methods("GET", "POST")
-	s.router.HandleFunc("/headers", s.echoHeadersHandler).Methods("GET", "POST")
-	s.router.HandleFunc("/delay/{wait:[0-9]+}", s.delayHandler).Methods("GET").Name("delay")
-	s.router.HandleFunc("/healthz", s.healthzHandler).Methods("GET")
-	s.router.HandleFunc("/readyz", s.readyzHandler).Methods("GET")
-	s.router.HandleFunc("/readyz/enable", s.enableReadyHandler).Methods("POST")
-	s.router.HandleFunc("/readyz/disable", s.disableReadyHandler).Methods("POST")
-	s.router.HandleFunc("/panic", s.panicHandler).Methods("GET")
-	s.router.HandleFunc("/status/{code:[0-9]+}", s.statusHandler).Methods("GET", "POST", "PUT").Name("status")
-	s.router.HandleFunc("/store", s.storeWriteHandler).Methods("POST", "PUT")
-	s.router.HandleFunc("/store/{hash}", s.storeReadHandler).Methods("GET").Name("store")
-	s.router.HandleFunc("/cache/{key}", s.cacheWriteHandler).Methods("POST", "PUT")
-	s.router.HandleFunc("/cache/{key}", s.cacheDeleteHandler).Methods("DELETE")
-	s.router.HandleFunc("/cache/{key}", s.cacheReadHandler).Methods("GET").Name("cache")
-	s.router.HandleFunc("/configs", s.configReadHandler).Methods("GET")
-	s.router.HandleFunc("/token", s.tokenGenerateHandler).Methods("POST")
-	s.router.HandleFunc("/token/validate", s.tokenValidateHandler).Methods("GET")
-	s.router.HandleFunc("/api/info", s.infoHandler).Methods("GET")
-	s.router.HandleFunc("/api/echo", s.echoHandler)
-	s.router.PathPrefix("/api/echo/").HandlerFunc(s.echoHandler)
-	s.router.HandleFunc("/ws/echo", s.echoWsHandler)
-	s.router.HandleFunc("/chunked", s.chunkedHandler)
-	s.router.HandleFunc("/chunked/{wait:[0-9]+}", s.chunkedHandler)
-	s.router.PathPrefix("/swagger/").Handler(httpSwagger.Handler(
-		httpSwagger.URL("/swagger/doc.json"),
+	rootPath := s.prefixedPath("/")
+
+	s.router.Handle(s.prefixedPath("/metrics"), promhttp.Handler())
+	s.router.PathPrefix(s.prefixedPath("/debug/pprof/")).Handler(http.DefaultServeMux)
+	s.router.HandleFunc(rootPath, s.indexHandler).HeadersRegexp("User-Agent", "^Mozilla.*").Methods("GET")
+	s.router.HandleFunc(rootPath, s.infoHandler).Methods("GET")
+	if rootPath != "/" {
+		s.router.HandleFunc(rootPath+"/", s.indexHandler).HeadersRegexp("User-Agent", "^Mozilla.*").Methods("GET")
+		s.router.HandleFunc(rootPath+"/", s.infoHandler).Methods("GET")
+	}
+	s.router.HandleFunc(s.prefixedPath("/version"), s.versionHandler).Methods("GET")
+	s.router.HandleFunc(s.prefixedPath("/echo"), s.echoHandler)
+	s.router.PathPrefix(s.prefixedPath("/echo/")).HandlerFunc(s.echoHandler)
+	s.router.HandleFunc(s.prefixedPath("/env"), s.envHandler).Methods("GET", "POST")
+	s.router.HandleFunc(s.prefixedPath("/headers"), s.echoHeadersHandler).Methods("GET", "POST")
+	s.router.HandleFunc(s.prefixedPath("/delay/{wait:[0-9]+}"), s.delayHandler).Methods("GET").Name("delay")
+	s.router.HandleFunc(s.prefixedPath("/healthz"), s.healthzHandler).Methods("GET")
+	s.router.HandleFunc(s.prefixedPath("/readyz"), s.readyzHandler).Methods("GET")
+	s.router.HandleFunc(s.prefixedPath("/readyz/enable"), s.enableReadyHandler).Methods("POST")
+	s.router.HandleFunc(s.prefixedPath("/readyz/disable"), s.disableReadyHandler).Methods("POST")
+	s.router.HandleFunc(s.prefixedPath("/panic"), s.panicHandler).Methods("GET")
+	s.router.HandleFunc(s.prefixedPath("/status/{code:[0-9]+}"), s.statusHandler).Methods("GET", "POST", "PUT").Name("status")
+	s.router.HandleFunc(s.prefixedPath("/store"), s.storeWriteHandler).Methods("POST", "PUT")
+	s.router.HandleFunc(s.prefixedPath("/store/{hash}"), s.storeReadHandler).Methods("GET").Name("store")
+	s.router.HandleFunc(s.prefixedPath("/cache/{key}"), s.cacheWriteHandler).Methods("POST", "PUT")
+	s.router.HandleFunc(s.prefixedPath("/cache/{key}"), s.cacheDeleteHandler).Methods("DELETE")
+	s.router.HandleFunc(s.prefixedPath("/cache/{key}"), s.cacheReadHandler).Methods("GET").Name("cache")
+	s.router.HandleFunc(s.prefixedPath("/configs"), s.configReadHandler).Methods("GET")
+	s.router.HandleFunc(s.prefixedPath("/token"), s.tokenGenerateHandler).Methods("POST")
+	s.router.HandleFunc(s.prefixedPath("/token/validate"), s.tokenValidateHandler).Methods("GET")
+	s.router.HandleFunc(s.prefixedPath("/api/info"), s.infoHandler).Methods("GET")
+	s.router.HandleFunc(s.prefixedPath("/api/echo"), s.echoHandler)
+	s.router.PathPrefix(s.prefixedPath("/api/echo/")).HandlerFunc(s.echoHandler)
+	s.router.HandleFunc(s.prefixedPath("/ws/echo"), s.echoWsHandler)
+	s.router.HandleFunc(s.prefixedPath("/chunked"), s.chunkedHandler)
+	s.router.HandleFunc(s.prefixedPath("/chunked/{wait:[0-9]+}"), s.chunkedHandler)
+	s.router.PathPrefix(s.prefixedPath("/swagger/")).Handler(httpSwagger.Handler(
+		httpSwagger.URL(s.prefixedPath("/swagger/doc.json")),
 	))
-	s.router.HandleFunc("/swagger.json", func(w http.ResponseWriter, r *http.Request) {
+	s.router.HandleFunc(s.prefixedPath("/swagger.json"), func(w http.ResponseWriter, r *http.Request) {
 		doc, err := swag.ReadDoc()
 		if err != nil {
-			s.logger.Error("swagger error", zap.Error(err), zap.String("path", "/swagger.json"))
+			s.logger.Error("swagger error", zap.Error(err), zap.String("path", s.prefixedPath("/swagger.json")))
 		}
 		w.Write([]byte(doc))
 	})

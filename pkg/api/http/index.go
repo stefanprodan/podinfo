@@ -4,6 +4,7 @@ import (
 	"html/template"
 	"net/http"
 	"path"
+	"strings"
 )
 
 // Index godoc
@@ -25,11 +26,13 @@ func (s *Server) indexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := struct {
-		Title string
-		Logo  string
+		Title  string
+		Logo   string
+		Prefix string
 	}{
-		Title: s.config.Hostname,
-		Logo:  s.config.UILogo,
+		Title:  s.config.Hostname,
+		Logo:   s.config.UILogo,
+		Prefix: strings.TrimSuffix(s.config.Prefix, "/"),
 	}
 
 	if err := tmpl.Execute(w, data); err != nil {

@@ -30,6 +30,7 @@ func main() {
 	// flags definition
 	fs := pflag.NewFlagSet("default", pflag.ContinueOnError)
 	fs.String("host", "", "Host to bind service to")
+	fs.String("prefix", "/", "URL path prefix for HTTP routes")
 	fs.Int("port", 9898, "HTTP port to bind service to")
 	fs.Int("secure-port", 0, "HTTPS port")
 	fs.Int("port-metrics", 0, "metrics port")

@@ -12,6 +12,8 @@ image:
   pullPolicy: IfNotPresent
   pullSecrets: []
 
+prefix: /
+
 ui:
   color: "#34577c"
   message: ""

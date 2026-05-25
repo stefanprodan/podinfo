@@ -53,6 +53,7 @@ spec:
           command:
             - ./podinfo
             - --port={{ .Values.service.httpPort | default 9898 }}
+            - --prefix={{ .Values.prefix | default "/" }}
             {{- if .Values.host }}
             - --host={{ .Values.host }}
             {{- end }}
@@ -152,7 +153,7 @@ spec:
               - podcli
               - check
               - http
-              - localhost:{{ .Values.service.httpPort | default 9898 }}/healthz
+              - localhost:{{ .Values.service.httpPort | default 9898 }}{{ trimSuffix "/" (.Values.prefix | default "/") }}/healthz
             {{- with .Values.probes.startup }}
             initialDelaySeconds: {{ .initialDelaySeconds | default 1 }}
             timeoutSeconds: {{ .timeoutSeconds | default 5 }}
@@ -167,7 +168,7 @@ spec:
               - podcli
               - check
               - http
-              - localhost:{{ .Values.service.httpPort | default 9898 }}/healthz
+              - localhost:{{ .Values.service.httpPort | default 9898 }}{{ trimSuffix "/" (.Values.prefix | default "/") }}/healthz
             {{- with .Values.probes.liveness }}
             initialDelaySeconds: {{ .initialDelaySeconds | default 1 }}
             timeoutSeconds: {{ .timeoutSeconds | default 5 }}
@@ -181,7 +182,7 @@ spec:
               - podcli
               - check
               - http
-              - localhost:{{ .Values.service.httpPort | default 9898 }}/readyz
+              - localhost:{{ .Values.service.httpPort | default 9898 }}{{ trimSuffix "/" (.Values.prefix | default "/") }}/readyz
             {{- with .Values.probes.readiness }}
             initialDelaySeconds: {{ .initialDelaySeconds | default 1 }}
             timeoutSeconds: {{ .timeoutSeconds | default 5 }}
