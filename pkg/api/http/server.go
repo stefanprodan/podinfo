@@ -153,6 +153,9 @@ func (s *Server) registerHandlers() {
 	s.router.HandleFunc(s.prefixedPath("/readyz"), s.readyzHandler).Methods("GET")
 	s.router.HandleFunc(s.prefixedPath("/readyz/enable"), s.enableReadyHandler).Methods("POST")
 	s.router.HandleFunc(s.prefixedPath("/readyz/disable"), s.disableReadyHandler).Methods("POST")
+	s.router.HandleFunc(s.prefixedPath("/fault_injection/enable"), s.enableFaultInjectionHandler).Methods("POST")
+	s.router.HandleFunc(s.prefixedPath("/fault_injection/disable"), s.disableFaultInjectionHandler).Methods("POST")
+	s.router.HandleFunc(s.prefixedPath("/fault_injection/status"), s.faultInjectionStatusHandler).Methods("GET")
 	s.router.HandleFunc(s.prefixedPath("/panic"), s.panicHandler).Methods("GET")
 	s.router.HandleFunc(s.prefixedPath("/status/{code:[0-9]+}"), s.statusHandler).Methods("GET", "POST", "PUT").Name("status")
 	s.router.HandleFunc(s.prefixedPath("/store"), s.storeWriteHandler).Methods("POST", "PUT")
@@ -189,6 +192,7 @@ func (s *Server) registerMiddlewares() {
 	httpLogger := NewLoggingMiddleware(s.logger)
 	s.router.Use(httpLogger.Handler)
 	s.router.Use(versionMiddleware)
+	s.router.Use(s.faultInjectionMiddleware)
 	if s.config.RandomDelay {
 		randomDelayer := NewRandomDelayMiddleware(s.config.RandomDelayMin, s.config.RandomDelayMax, s.config.RandomDelayUnit)
 		s.router.Use(randomDelayer.Handler)
