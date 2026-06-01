@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: database-primary
+spec:
+  serviceName: database-primary
+  replicas: 1
+  minReadySeconds: 3
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: database-primary
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9797"
+      labels:
+        app.kubernetes.io/name: database-primary
+        app.kubernetes.io/part-of: database
+    spec:
+      serviceAccountName: database
+      containers:
+      - name: database
+        image: ghcr.io/stefanprodan/podinfo:6.12.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: db
+          containerPort: 3306
+          protocol: TCP
+        - name: http-metrics
+          containerPort: 9797
+          protocol: TCP
+        command:
+        - ./podinfo
+        - --port=3306
+        - --port-metrics=9797
+        - --level=info
+        livenessProbe:
+          exec:
+            command:
+            - podcli
+            - check
+            - http
+            - localhost:3306/healthz
+          initialDelaySeconds: 5
+          timeoutSeconds: 5
+        readinessProbe:
+          exec:
+            command:
+            - podcli
+            - check
+            - http
+            - localhost:3306/readyz
+          initialDelaySeconds: 5
+          timeoutSeconds: 5
+        resources:
+          limits:
+            cpu: 2000m
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 32Mi
+        volumeMounts:
+        - name: data
+          mountPath: /data
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: database-primary

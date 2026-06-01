@@ -1,0 +1,37 @@
+{{- $hooks := dict "preInstall" "pre-install" "postInstall" "post-install" "preDelete" "pre-delete" "postDelete" "post-delete" "preUpgrade" "pre-upgrade" "postUpgrade" "post-upgrade" "preRollback" "pre-rollback" "postRollback" "post-rollback" }}
+{{- range $hookName, $hookType := $hooks }}
+{{- $hookConfig := index $.Values.hooks $hookName }}
+{{- if and $hookConfig $hookConfig.job $hookConfig.job.enabled }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ template "podinfo.fullname" $ }}-{{ $hookType }}
+  namespace: {{ include "podinfo.namespace" $ }}
+  labels:
+    {{- include "podinfo.labels" $ | nindent 4 }}
+  annotations:
+    "helm.sh/hook": {{ $hookType }}
+    "helm.sh/hook-delete-policy": {{ $hookConfig.job.hookDeletePolicy }}
+spec:
+  {{- if kindIs "float64" $hookConfig.job.ttlSecondsAfterFinished }}
+  ttlSecondsAfterFinished: {{ $hookConfig.job.ttlSecondsAfterFinished | int }}
+  {{- end }}
+  template:
+    spec:
+      containers:
+        - name: job
+          image: "{{ $.Values.image.repository }}:{{ $.Values.image.tag }}"
+          imagePullPolicy: {{ $.Values.image.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - |
+              {{- if kindIs "float64" $hookConfig.job.sleepSeconds }}
+              sleep {{ $hookConfig.job.sleepSeconds | int }}
+              {{- end }}
+              exit {{ $hookConfig.job.exitCode | default 0 }}
+      restartPolicy: Never
+  backoffLimit: 1
+{{- end }}
+{{- end }}

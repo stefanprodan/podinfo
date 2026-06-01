@@ -120,6 +120,7 @@ func (s *Server) cacheReadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	setRawResponseHeaders(w)
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(data))
 }

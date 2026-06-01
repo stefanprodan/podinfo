@@ -8,7 +8,7 @@ backends: []
 
 image:
   repository: ghcr.io/stefanprodan/podinfo
-  tag: 6.9.4
+  tag: 6.12.0
   pullPolicy: IfNotPresent
   pullSecrets: []
 
@@ -30,6 +30,7 @@ faults:
 service:
   enabled: true
   annotations: {}
+  additionalLabels: { }
   type: ClusterIP
   metricsPort: 9797
   httpPort: 9898
@@ -43,7 +44,7 @@ service:
   hostPort:
   # Stable from Kubernetes v1.33+ with a value of PreferClose. Additional values are PreferSameZone and PreferSameNode from v1.34+. Empty string means it's disabled.
   trafficDistribution: ""
-  additionalLabels: {}
+  externalTrafficPolicy: ""
 
 # enable h2c protocol (non-TLS version of HTTP/2)
 h2c:
@@ -92,6 +93,65 @@ certificate:
   dnsNames:
     - podinfo
 
+# Helm hooks (for testing purposes)
+hooks:
+  preInstall:
+    job:
+      enabled: false
+      hookDeletePolicy: hook-succeeded,hook-failed
+      ttlSecondsAfterFinished:
+      sleepSeconds:
+      exitCode: 0
+  postInstall:
+    job:
+      enabled: false
+      hookDeletePolicy: hook-succeeded,hook-failed
+      ttlSecondsAfterFinished:
+      sleepSeconds:
+      exitCode: 0
+  preDelete:
+    job:
+      enabled: false
+      hookDeletePolicy: hook-succeeded,hook-failed
+      ttlSecondsAfterFinished:
+      sleepSeconds:
+      exitCode: 0
+  postDelete:
+    job:
+      enabled: false
+      hookDeletePolicy: hook-succeeded,hook-failed
+      ttlSecondsAfterFinished:
+      sleepSeconds:
+      exitCode: 0
+  preUpgrade:
+    job:
+      enabled: false
+      hookDeletePolicy: hook-succeeded,hook-failed
+      ttlSecondsAfterFinished:
+      sleepSeconds:
+      exitCode: 0
+  postUpgrade:
+    job:
+      enabled: false
+      hookDeletePolicy: hook-succeeded,hook-failed
+      ttlSecondsAfterFinished:
+      sleepSeconds:
+      exitCode: 0
+  preRollback:
+    job:
+      enabled: false
+      hookDeletePolicy: hook-succeeded,hook-failed
+      ttlSecondsAfterFinished:
+      sleepSeconds:
+      exitCode: 0
+  postRollback:
+    job:
+      enabled: false
+      hookDeletePolicy: hook-succeeded,hook-failed
+      ttlSecondsAfterFinished:
+      sleepSeconds:
+      exitCode: 0
+
 # metrics-server add-on required
 hpa:
   enabled: false
@@ -109,7 +169,7 @@ cache: ""
 redis:
   enabled: false
   repository: docker.io/redis
-  tag: 8.4.0
+  tag: 8.6.3
   imagePullSecrets: []
   securityContext: {}
   containerSecurityContext: {}
@@ -176,9 +236,27 @@ httpRoute:
             type: PathPrefix
             value: /
 
-linkerd:
-  profile:
-    enabled: false
+# -- Expose the gRPC service via Gateway GRPCRoute
+# Requires a Gateway controller with GRPCRoute support
+# Docs https://gateway-api.sigs.k8s.io/guides/grpc-routing/
+grpcRoute:
+  # GRPCRoute enabled.
+  enabled: false
+  # Add additional labels to the GRPCRoute.
+  additionalLabels: {}
+  # GRPCRoute annotations.
+  annotations: {}
+  # Which Gateways this Route is attached to.
+  parentRefs:
+    - name: gateway
+      sectionName: http
+      # namespace: default
+  # Hostnames matching HTTP header.
+  hostnames:
+    - podinfo.local
+  # List of rules applied.
+  rules:
+    - {}
 
 # create Prometheus Operator monitor
 serviceMonitor:
@@ -208,6 +286,8 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+priorityClassName: ""
 
 podAnnotations: {}
 

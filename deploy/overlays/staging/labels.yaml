@@ -3,8 +3,8 @@ kind: LabelTransformer
 metadata:
   name: labels
 labels:
-  env: staging
-  instance: webapp
+  app.kubernetes.io/environment: staging
+  app.kubernetes.io/instance: webapp
 fieldSpecs:
   - path: metadata/labels
     create: true

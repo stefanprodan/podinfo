@@ -5,7 +5,7 @@ metadata:
 spec:
   type: ClusterIP
   selector:
-    app: cache
+    app.kubernetes.io/name: cache
   ports:
     - name: redis
       port: 6379

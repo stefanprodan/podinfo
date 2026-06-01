@@ -5,31 +5,38 @@ services:
     build: ..
     command: ./podinfo --backend-url http://podinfo_backend:9899/status/200 --otel-service-name=podinfo_frontend
     environment:
-      - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://otel:4317
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel:4317
     ports:
       - "9898:9898"
   podinfo_backend:
     build: ..
     command: ./podinfo --port 9899 --otel-service-name=podinfo_backend
     environment:
-      - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://otel:4317
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel:4317
     ports:
       - "9899:9899"
   otel:
     command: --config otel-config.yaml
-    image: otel/opentelemetry-collector:0.41.0
+    image: otel/opentelemetry-collector-contrib:0.116.1
     ports:
       - "4317:4317"
     volumes:
       - ${PWD}/otel-config.yaml:/otel-config.yaml
-  jaeger:
-    image: jaegertracing/all-in-one:1.29.0
+  loki:
+    image: grafana/loki:3.0.0
     ports:
-      - "5775:5775/udp"
-      - "6831:6831/udp"
-      - "6832:6832/udp"
-      - "5778:5778"
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+  grafana:
+    image: grafana/grafana:10.4.0
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+    volumes:
+      - ${PWD}/grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+  jaeger:
+    image: jaegertracing/all-in-one:1.57.0
+    ports:
       - "16686:16686"
-      - "14268:14268"
-      - "14250:14250"
-      - "9411:9411"

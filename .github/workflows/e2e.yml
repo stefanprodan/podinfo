@@ -14,25 +14,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Disk Cleanup
         uses: ./.github/actions/runner-cleanup
+      - name: Setup Helm
+        uses: azure/setup-helm@dda3372f752e03dde6b3237bc9431cdc2f7a02a2 # v5.0.0
+        with:
+          version: v4.1.0
       - name: Setup Kubernetes
-        uses: helm/kind-action@v1.13.0
+        uses: helm/kind-action@ef37e7f390d99f746eb8b610417061a60e82a6cc # v1.14.0
         with:
           cluster_name: kind
-      - name: Build container image
-        run: |
-          ./test/build.sh
-          kind load docker-image test/podinfo:latest
-      - name: Setup Helm
-        uses: azure/setup-helm@v4
-        with:
-          version: v3.17.3
-      - name: Deploy
-        run: ./test/deploy.sh
       - name: Run integration tests
-        run: ./test/test.sh
+        run: ./test/e2e.sh
       - name: Debug failure
         if: failure()
         run: |
@@ -49,17 +43,17 @@ jobs:
       PODINFO_MODULE_URL: "oci://localhost:5000/podinfo"
       PODINFO_VERSION: "0.0.0-devel"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/runner-cleanup
       - name: Setup Timoni
-        uses: stefanprodan/timoni/actions/setup@main
+        uses: stefanprodan/timoni/actions/setup@c68e33a34f17c7ca93c7fc6717d61a14819276dc # v0.26.0
       - name: Setup Kubernetes
-        uses: helm/kind-action@v1.13.0
+        uses: helm/kind-action@ef37e7f390d99f746eb8b610417061a60e82a6cc # v1.14.0
         with:
           cluster_name: kind
       - name: Build container
         run: |
-          docker build -t ${PODINFO_IMAGE_URL}:${PODINFO_VERSION} --build-arg "REVISION=${GITHUB_SHA}"  -f Dockerfile.xx .
+          docker build -t ${PODINFO_IMAGE_URL}:${PODINFO_VERSION} --build-arg "REVISION=${GITHUB_SHA}"  -f Dockerfile .
           kind load docker-image ${PODINFO_IMAGE_URL}:${PODINFO_VERSION}
       - name: Vet module
         run: |

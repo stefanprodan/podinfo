@@ -102,6 +102,7 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 		s.JSONResponse(w, r, result)
 
 	} else {
+		setRawResponseHeaders(w)
 		w.Header().Set("X-Color", s.config.UIColor)
 		w.WriteHeader(http.StatusAccepted)
 		w.Write(body)

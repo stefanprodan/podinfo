@@ -2,15 +2,18 @@ receivers:
   otlp:
     protocols:
       grpc:
+        endpoint: 0.0.0.0:4317
       http:
 
 processors:
 
 exporters:
-  jaeger:
-    endpoint: jaeger:14250
+  otlp/jaeger:
+    endpoint: jaeger:4317
     tls:
       insecure: true
+  otlphttp/loki:
+    endpoint: http://loki:3100/otlp
 
 extensions:
   health_check:
@@ -23,4 +26,8 @@ service:
     traces:
       receivers: [otlp]
       processors: []
-      exporters: [jaeger]
+      exporters: [otlp/jaeger]
+    logs:
+      receivers: [otlp]
+      processors: []
+      exporters: [otlphttp/loki]

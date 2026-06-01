@@ -5,6 +5,7 @@ resources:
   - ../../bases/backend
   - ../../bases/frontend
   - ../../bases/cache
+  - ../../bases/database
   - namespace.yaml
 transformers:
   - labels.yaml
