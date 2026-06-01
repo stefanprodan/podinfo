@@ -136,7 +136,6 @@ The following tables lists the configurable parameters of the podinfo chart and 
 | `affinity`                                     | `None`                         | Node/pod affinities                                                                                |
 | `priorityClassName`                            | `""`                           | Pod priority class name                                                                            |
 
-
 Specify each parameter using the `--set key=value[,key=value]` argument:
 
 ```console
