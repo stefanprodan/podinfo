@@ -11,7 +11,7 @@ metadata:
     {{- end }}
 spec:
   endpoints:
-    - path: /metrics
+    - path: {{ trimSuffix "/" (.Values.prefix | default "/") }}/metrics
       port: http
       interval: {{ .Values.serviceMonitor.interval }}
   namespaceSelector:

@@ -19,7 +19,7 @@ spec:
         - sh
         - -c
         - |
-          curl -s ${PODINFO_SVC}/api/info | grep version
+          curl -s ${PODINFO_SVC}{{ trimSuffix "/" (.Values.prefix | default "/") }}/api/info | grep version
       env:
         - name: PODINFO_SVC
           value: "{{ template "podinfo.fullname" . }}.{{ include "podinfo.namespace" . }}:{{ .Values.service.externalPort }}"

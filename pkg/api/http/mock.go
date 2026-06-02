@@ -22,6 +22,7 @@ func NewMockServer() *Server {
 		UIPath:                ".ui",
 		UIMessage:             "Greetings",
 		Hostname:              "localhost",
+		Prefix:                "/",
 	}
 
 	logger, _ := zap.NewDevelopment()

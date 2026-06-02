@@ -66,6 +66,7 @@ The following tables lists the configurable parameters of the podinfo chart and 
 | `ui.color`                                     | `#34577c`                      | UI color                                                                                           |
 | `ui.message`                                   | `None`                         | UI greetings message                                                                               |
 | `ui.logo`                                      | `None`                         | UI logo                                                                                            |
+| `prefix`                                       | `/`                            | URL path prefix for HTTP routes (e.g. `/foo` maps `/api/info` to `/foo/api/info`)                 |
 | `faults.delay`                                 | `false`                        | Random HTTP response delays between 0 and 5 seconds                                                |
 | `faults.error`                                 | `false`                        | 1/3 chances of a random HTTP response error                                                        |
 | `faults.unhealthy`                             | `false`                        | When set, the healthy state is never reached                                                       |
