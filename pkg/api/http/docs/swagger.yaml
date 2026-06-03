@@ -214,6 +214,52 @@ paths:
       summary: Environment
       tags:
       - HTTP API
+  /fault_injection/disable:
+    post:
+      consumes:
+      - application/json
+      description: restores normal responses
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: OK
+          schema:
+            type: string
+      summary: Disable fault injection
+      tags:
+      - Fault Injection
+  /fault_injection/enable:
+    post:
+      consumes:
+      - application/json
+      description: makes the server respond with HTTP 500 for all non-probe endpoints
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: OK
+          schema:
+            type: string
+      summary: Enable fault injection
+      tags:
+      - Fault Injection
+  /fault_injection/status:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get fault injection status
+      tags:
+      - Fault Injection
   /headers:
     get:
       consumes:

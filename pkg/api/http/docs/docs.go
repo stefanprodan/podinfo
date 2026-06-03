@@ -19,6 +19,7 @@ const docTemplate = `{
         },
         "version": "{{.Version}}"
     },
+    "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
         "/": {
@@ -256,6 +257,77 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/fault_injection/disable": {
+            "post": {
+                "description": "restores normal responses",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Fault Injection"
+                ],
+                "summary": "Disable fault injection",
+                "responses": {
+                    "202": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/fault_injection/enable": {
+            "post": {
+                "description": "makes the server respond with HTTP 500 for all non-probe endpoints",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Fault Injection"
+                ],
+                "summary": "Enable fault injection",
+                "responses": {
+                    "202": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/fault_injection/status": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Fault Injection"
+                ],
+                "summary": "Get fault injection status",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
                                 "type": "string"
                             }
                         }
