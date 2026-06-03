@@ -37,6 +37,9 @@ Web API:
 * `GET /readyz` used by Kubernetes readiness probe
 * `POST /readyz/enable` signals the Kubernetes LB that this instance is ready to receive traffic
 * `POST /readyz/disable` signals the Kubernetes LB to stop sending requests to this instance
+* `POST /fault_injection/enable` makes this instance respond with HTTP 500 to all application endpoints (probes, metrics, pprof and the `/fault_injection/*` control endpoints stay healthy) — useful for testing client-side circuit breakers / outlier detection against a single "sick" replica
+* `POST /fault_injection/disable` restores normal responses
+* `GET /fault_injection/status` returns the current fault injection state (`enabled` or `disabled`)
 * `GET /status/{code}` returns the status code
 * `GET /panic` crashes the process with exit code 255
 * `POST /echo` forwards the call to the backend service and echos the posted content 
