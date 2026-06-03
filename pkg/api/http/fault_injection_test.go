@@ -18,6 +18,12 @@ func TestFaultInjection_EnableDisable(t *testing.T) {
 	if rr.Code != http.StatusAccepted {
 		t.Fatalf("enable: got %d want %d", rr.Code, http.StatusAccepted)
 	}
+	if ct := rr.Header().Get("Content-Type"); !strings.HasPrefix(ct, "application/json") {
+		t.Errorf("enable: Content-Type = %q, want application/json", ct)
+	}
+	if !strings.Contains(rr.Body.String(), `"enabled"`) {
+		t.Errorf("enable: expected enabled in body, got: %s", rr.Body.String())
+	}
 	if atomic.LoadInt32(&faultInjection) != 1 {
 		t.Fatalf("faultInjection flag not set after enable")
 	}
@@ -27,6 +33,12 @@ func TestFaultInjection_EnableDisable(t *testing.T) {
 	http.HandlerFunc(srv.disableFaultInjectionHandler).ServeHTTP(rr, req)
 	if rr.Code != http.StatusAccepted {
 		t.Fatalf("disable: got %d want %d", rr.Code, http.StatusAccepted)
+	}
+	if ct := rr.Header().Get("Content-Type"); !strings.HasPrefix(ct, "application/json") {
+		t.Errorf("disable: Content-Type = %q, want application/json", ct)
+	}
+	if !strings.Contains(rr.Body.String(), `"disabled"`) {
+		t.Errorf("disable: expected disabled in body, got: %s", rr.Body.String())
 	}
 	if atomic.LoadInt32(&faultInjection) != 0 {
 		t.Fatalf("faultInjection flag not cleared after disable")
@@ -99,16 +111,16 @@ func TestFaultInjectionMiddleware(t *testing.T) {
 
 func TestFaultInjectionExcluded(t *testing.T) {
 	cases := map[string]bool{
-		"/":                          false,
-		"/api/info":                  false,
-		"/healthz":                   true,
-		"/readyz":                    true,
-		"/metrics":                   true,
-		"/debug/pprof/":              true,
-		"/fault_injection/enable":    true,
-		"/fault_injection/disable":   true,
-		"/fault_injection/status":    true,
-		"/healthzz":                  false,
+		"/":                        false,
+		"/api/info":                false,
+		"/healthz":                 true,
+		"/readyz":                  true,
+		"/metrics":                 true,
+		"/debug/pprof/":            true,
+		"/fault_injection/enable":  true,
+		"/fault_injection/disable": true,
+		"/fault_injection/status":  true,
+		"/healthzz":                false,
 	}
 	for p, want := range cases {
 		if got := faultInjectionExcluded(p); got != want {

@@ -72,8 +72,7 @@ func (s *Server) faultInjectionMiddleware(next http.Handler) http.Handler {
 // @Success 202 {string} string "OK"
 func (s *Server) enableFaultInjectionHandler(w http.ResponseWriter, r *http.Request) {
 	atomic.StoreInt32(&faultInjection, 1)
-	w.WriteHeader(http.StatusAccepted)
-	s.JSONResponse(w, r, map[string]string{"fault_injection": "enabled"})
+	s.JSONResponseCode(w, r, map[string]string{"fault_injection": "enabled"}, http.StatusAccepted)
 }
 
 // DisableFaultInjection godoc
@@ -86,8 +85,7 @@ func (s *Server) enableFaultInjectionHandler(w http.ResponseWriter, r *http.Requ
 // @Success 202 {string} string "OK"
 func (s *Server) disableFaultInjectionHandler(w http.ResponseWriter, r *http.Request) {
 	atomic.StoreInt32(&faultInjection, 0)
-	w.WriteHeader(http.StatusAccepted)
-	s.JSONResponse(w, r, map[string]string{"fault_injection": "disabled"})
+	s.JSONResponseCode(w, r, map[string]string{"fault_injection": "disabled"}, http.StatusAccepted)
 }
 
 // FaultInjectionStatus godoc
