@@ -27,10 +27,8 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, span := s.tracer.Start(r.Context(), "echoHandler")
 	defer span.End()
 
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		s.logger.Error("reading the request body failed", zap.Error(err))
-		s.ErrorResponse(w, r, span, "invalid request body", http.StatusBadRequest)
+	body, ok := s.readLimitedBody(w, r, span)
+	if !ok {
 		return
 	}
 	defer r.Body.Close()

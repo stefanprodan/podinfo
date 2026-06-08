@@ -26,7 +26,7 @@ func (s *Server) chunkedHandler(w http.ResponseWriter, r *http.Request) {
 
 	delay, err := strconv.Atoi(vars["wait"])
 	if err != nil {
-		delay = rand.Intn(int(s.config.HttpServerTimeout*time.Second)-10) + 10
+		delay = randomDelaySeconds(s.config.HttpServerTimeout)
 	}
 
 	flusher, ok := w.(http.Flusher)
@@ -45,4 +45,16 @@ func (s *Server) chunkedHandler(w http.ResponseWriter, r *http.Request) {
 	s.JSONResponse(w, r, map[string]int{"delay": delay})
 
 	flusher.Flush()
+}
+
+// randomDelaySeconds returns a random delay in seconds within [10, timeout),
+// used when no explicit wait is provided. timeout is a time.Duration, so it is
+// converted to whole seconds; the upper bound is clamped to keep rand.Intn's
+// argument positive (it panics on a non-positive argument).
+func randomDelaySeconds(timeout time.Duration) int {
+	maxDelay := int(timeout / time.Second)
+	if maxDelay <= 11 {
+		maxDelay = 12
+	}
+	return rand.Intn(maxDelay-10) + 10
 }

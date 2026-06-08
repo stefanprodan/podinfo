@@ -2,7 +2,6 @@ package http
 
 import (
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"time"
@@ -33,15 +32,14 @@ func (s *Server) cacheWriteHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	key := mux.Vars(r)["key"]
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		s.ErrorResponse(w, r, span, "reading the request body failed", http.StatusBadRequest)
+	body, ok := s.readLimitedBody(w, r, span)
+	if !ok {
 		return
 	}
 
 	conn := s.pool.Get()
 	defer conn.Close()
-	_, err = conn.Do("SET", key, string(body))
+	_, err := conn.Do("SET", key, string(body))
 	if err != nil {
 		s.logger.Warn("cache set failed", zap.Error(err))
 		s.ErrorResponse(w, r, span, "cache set failed", http.StatusInternalServerError)

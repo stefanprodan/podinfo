@@ -3,7 +3,6 @@ package http
 import (
 	"crypto/sha1"
 	"encoding/hex"
-	"io"
 	"net/http"
 	"os"
 	"path"
@@ -27,14 +26,13 @@ func (s *Server) storeWriteHandler(w http.ResponseWriter, r *http.Request) {
 	_, span := s.tracer.Start(r.Context(), "storeWriteHandler")
 	defer span.End()
 
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		s.ErrorResponse(w, r, span, "reading the request body failed", http.StatusBadRequest)
+	body, ok := s.readLimitedBody(w, r, span)
+	if !ok {
 		return
 	}
 
 	hash := hash(string(body))
-	err = os.WriteFile(path.Join(s.config.DataPath, hash), body, 0644)
+	err := os.WriteFile(path.Join(s.config.DataPath, hash), body, 0644)
 	if err != nil {
 		s.logger.Warn("writing file failed", zap.Error(err), zap.String("file", path.Join(s.config.DataPath, hash)))
 		s.ErrorResponse(w, r, span, "writing file failed", http.StatusInternalServerError)
