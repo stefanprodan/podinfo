@@ -12,6 +12,20 @@ import (
 
 var wsCon = websocket.Upgrader{}
 
+const (
+	// wsMaxMessageSize caps a single inbound websocket message so one large
+	// frame cannot exhaust process memory.
+	wsMaxMessageSize = 1 << 20 // 1 MiB
+	// wsReadTimeout is how long the server waits for the next client message or
+	// pong before closing an idle connection.
+	wsReadTimeout = 60 * time.Second
+	// wsWriteTimeout bounds a single write so a slow reader cannot block forever.
+	wsWriteTimeout = 10 * time.Second
+	// wsPingInterval is how often the server pings the client to keep the
+	// connection alive and detect dead peers; it must be shorter than wsReadTimeout.
+	wsPingInterval = 30 * time.Second
+)
+
 // EchoWS godoc
 // @Summary Echo over websockets
 // @Description echos content via websockets
@@ -24,11 +38,18 @@ var wsCon = websocket.Upgrader{}
 func (s *Server) echoWsHandler(w http.ResponseWriter, r *http.Request) {
 	c, err := wsCon.Upgrade(w, r, nil)
 	if err != nil {
-		if err != nil {
-			s.logger.Warn("websocket upgrade error", zap.Error(err))
-			return
-		}
+		s.logger.Warn("websocket upgrade error", zap.Error(err))
+		return
 	}
+
+	// Bound per-message size and idle time; refresh the read deadline whenever
+	// the client responds to a ping so live connections stay open.
+	c.SetReadLimit(wsMaxMessageSize)
+	_ = c.SetReadDeadline(time.Now().Add(wsReadTimeout))
+	c.SetPongHandler(func(string) error {
+		return c.SetReadDeadline(time.Now().Add(wsReadTimeout))
+	})
+
 	var wg sync.WaitGroup
 	wg.Add(1)
 
@@ -84,13 +105,21 @@ func (s *Server) sendHostWs(ws *websocket.Conn, in chan interface{}, done chan s
 }
 
 func (s *Server) writeWs(ws *websocket.Conn, in chan interface{}) {
+	ping := time.NewTicker(wsPingInterval)
+	defer ping.Stop()
 	for {
 		select {
 		case msg := <-in:
+			_ = ws.SetWriteDeadline(time.Now().Add(wsWriteTimeout))
 			if err := ws.WriteJSON(msg); err != nil {
 				if !strings.Contains(err.Error(), "close") {
 					s.logger.Warn("websocket write error", zap.Error(err))
 				}
+				return
+			}
+		case <-ping.C:
+			_ = ws.SetWriteDeadline(time.Now().Add(wsWriteTimeout))
+			if err := ws.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}
 		}
