@@ -173,6 +173,10 @@ redis:
   repository: docker.io/redis
   tag: 8.6.3
   imagePullSecrets: []
+  securityContext: {}
+  containerSecurityContext: {}
+  persistence:
+    enabled: false
 
 serviceAccount:
   # Specifies whether a service account should be created
@@ -267,6 +271,9 @@ resources:
   requests:
     cpu: 1m
     memory: 16Mi
+
+networkPolicies:
+  enabled: false
 
 nodeSelector: {}
 

@@ -8,5 +8,9 @@ data:
     maxmemory 64mb
     maxmemory-policy allkeys-lru
     save ""
+    {{- if .Values.redis.persistence.enabled }}
+    appendonly yes
+    {{- else }}
     appendonly no
+    {{- end }}
 {{- end }}

@@ -1,0 +1,17 @@
+{{- if and .Values.redis.enabled .Values.redis.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ template "podinfo.fullname" . }}
+  labels:
+    {{- include "podinfo.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.redis.persistence.size | default "1Gi" }}
+  {{- if .Values.redis.persistence.storageClassName }}    
+  storageClassName: {{ .Values.redis.persistence.storageClassName }}
+  {{- end }}
+{{- end }}
