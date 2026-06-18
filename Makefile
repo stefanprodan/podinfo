@@ -67,6 +67,23 @@ version-set:
 	/usr/bin/sed -i '' "s/$$current/$$next/g" timoni/podinfo/values.cue && \
 	echo "Version $$next set in code, deployment, module, chart and kustomize"
 
+prep-release:
+	@branch="$$(git rev-parse --abbrev-ref HEAD)" && \
+	if [ "$$branch" != "master" ]; then \
+		echo "Error: prep-release must be run from the master branch (current: $$branch)"; \
+		exit 1; \
+	fi && \
+	git pull origin master && \
+	next="$(TAG)" && \
+	if [ "$$next" = "latest" ]; then \
+		next="$$(echo $(VERSION) | awk -F. '{ printf "%d.%d.%d", $$1, $$2+1, 0 }')"; \
+	fi && \
+	git checkout -b release-$$next && \
+	$(MAKE) version-set TAG=$$next && \
+	git commit -am "Release $$next" && \
+	git push origin release-$$next && \
+	gh pr create --title "Release $$next" --body "Prepare for $$next release" --base master --head release-$$next
+
 release:
 	git tag -s -m $(VERSION) $(VERSION)
 	git push origin $(VERSION)
