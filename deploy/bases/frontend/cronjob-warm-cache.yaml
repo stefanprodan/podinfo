@@ -23,7 +23,7 @@ spec:
           restartPolicy: OnFailure
           initContainers:
           - name: warm-cache-init
-            image: ghcr.io/stefanprodan/podinfo:6.13.0
+            image: ghcr.io/stefanprodan/podinfo:6.14.0
             imagePullPolicy: IfNotPresent
             command:
             - /bin/sh
@@ -43,7 +43,7 @@ spec:
               mountPath: /scripts
           containers:
           - name: warm-cache
-            image: ghcr.io/stefanprodan/podinfo:6.13.0
+            image: ghcr.io/stefanprodan/podinfo:6.14.0
             imagePullPolicy: IfNotPresent
             command:
             - /bin/sh
