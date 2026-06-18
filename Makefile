@@ -49,23 +49,31 @@ test-container:
 version-set:
 	@next="$(TAG)" && \
 	current="$(VERSION)" && \
-	/usr/bin/sed -i '' "s/$$current/$$next/g" pkg/version/version.go && \
-	/usr/bin/sed -i '' "s/tag: $$current/tag: $$next/g" charts/podinfo/values.yaml && \
-	/usr/bin/sed -i '' "s/tag: $$current/tag: $$next/g" charts/podinfo/values-prod.yaml && \
-	/usr/bin/sed -i '' "s/appVersion: $$current/appVersion: $$next/g" charts/podinfo/Chart.yaml && \
-	/usr/bin/sed -i '' "s/version: $$current/version: $$next/g" charts/podinfo/Chart.yaml && \
-	/usr/bin/sed -i '' "s/podinfo:$$current/podinfo:$$next/g" kustomize/deployment.yaml && \
-	/usr/bin/sed -i '' "s/podinfo:$$current/podinfo:$$next/g" deploy/webapp/frontend/deployment.yaml && \
-	/usr/bin/sed -i '' "s/podinfo:$$current/podinfo:$$next/g" deploy/webapp/backend/deployment.yaml && \
-	/usr/bin/sed -i '' "s/podinfo:$$current/podinfo:$$next/g" deploy/bases/frontend/deployment.yaml && \
-	/usr/bin/sed -i '' "s/podinfo:$$current/podinfo:$$next/g" deploy/bases/backend/deployment.yaml && \
-	/usr/bin/sed -i '' "s/podinfo:$$current/podinfo:$$next/g" deploy/bases/database/statefulset-primary.yaml && \
-	/usr/bin/sed -i '' "s/podinfo:$$current/podinfo:$$next/g" deploy/bases/database/deployment-replica.yaml && \
-	/usr/bin/sed -i '' "s/podinfo:$$current/podinfo:$$next/g" deploy/bases/database/cronjob-rollup-daily.yaml && \
-	/usr/bin/sed -i '' "s/podinfo:$$current/podinfo:$$next/g" deploy/bases/database/cronjob-rollup-weekly.yaml && \
-	/usr/bin/sed -i '' "s/podinfo:$$current/podinfo:$$next/g" deploy/bases/database/cronjob-backup-daily.yaml && \
-	/usr/bin/sed -i '' "s/$$current/$$next/g" timoni/podinfo/values.cue && \
+	perl -i -pe "s/\Q$$current\E/$$next/g" pkg/version/version.go && \
+	perl -i -pe "s/tag: \Q$$current\E/tag: $$next/g" charts/podinfo/values.yaml && \
+	perl -i -pe "s/tag: \Q$$current\E/tag: $$next/g" charts/podinfo/values-prod.yaml && \
+	perl -i -pe "s/appVersion: \Q$$current\E/appVersion: $$next/g" charts/podinfo/Chart.yaml && \
+	perl -i -pe "s/version: \Q$$current\E/version: $$next/g" charts/podinfo/Chart.yaml && \
+	perl -i -pe "s/\Q$$current\E/$$next/g" timoni/podinfo/values.cue && \
+	grep -rl "podinfo:$$current" deploy kustomize | xargs perl -i -pe "s/\Qpodinfo:$$current\E/podinfo:$$next/g" && \
 	echo "Version $$next set in code, deployment, module, chart and kustomize"
+
+prep-release:
+	@branch="$$(git rev-parse --abbrev-ref HEAD)" && \
+	if [ "$$branch" != "master" ]; then \
+		echo "Error: prep-release must be run from the master branch (current: $$branch)"; \
+		exit 1; \
+	fi && \
+	git pull origin master && \
+	next="$(TAG)" && \
+	if [ "$$next" = "latest" ]; then \
+		next="$$(echo $(VERSION) | awk -F. '{ printf "%d.%d.%d", $$1, $$2+1, 0 }')"; \
+	fi && \
+	git checkout -b release-$$next && \
+	$(MAKE) version-set TAG=$$next && \
+	git commit -am "Release $$next" && \
+	git push origin release-$$next && \
+	gh pr create --title "Release $$next" --body "Prepare for $$next release" --base master --head release-$$next
 
 release:
 	git tag -s -m $(VERSION) $(VERSION)
