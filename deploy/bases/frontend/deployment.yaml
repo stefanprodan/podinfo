@@ -21,6 +21,7 @@ spec:
       labels:
         app.kubernetes.io/name: frontend
     spec:
+      serviceAccountName: frontend
       containers:
       - name: frontend
         image: ghcr.io/stefanprodan/podinfo:6.13.0
@@ -39,7 +40,7 @@ spec:
         - ./podinfo
         - --port=9898
         - --port-metrics=9797
-        - --level=info
+        - --level=debug
         - --backend-url=http://backend:9898/echo
         - --cache-server=tcp://cache:6379
         env:

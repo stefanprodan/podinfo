@@ -1,0 +1,68 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: warm-cache
+spec:
+  # Runs every 5 minutes
+  schedule: "*/5 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      # Cleanup after 1 hour
+      ttlSecondsAfterFinished: 3600
+      backoffLimit: 3
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: warm-cache
+            app.kubernetes.io/part-of: frontend
+        spec:
+          serviceAccountName: frontend
+          restartPolicy: OnFailure
+          initContainers:
+          - name: warm-cache-init
+            image: ghcr.io/stefanprodan/podinfo:6.13.0
+            imagePullPolicy: IfNotPresent
+            command:
+            - /bin/sh
+            - /scripts/warm-cache-init.sh
+            env:
+            - name: FRONTEND_URL
+              value: "http://frontend"
+            resources:
+              limits:
+                cpu: 100m
+                memory: 32Mi
+              requests:
+                cpu: 10m
+                memory: 16Mi
+            volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+          containers:
+          - name: warm-cache
+            image: ghcr.io/stefanprodan/podinfo:6.13.0
+            imagePullPolicy: IfNotPresent
+            command:
+            - /bin/sh
+            - /scripts/warm-cache.sh
+            env:
+            - name: FRONTEND_URL
+              value: "http://frontend"
+            resources:
+              limits:
+                cpu: 100m
+                memory: 32Mi
+              requests:
+                cpu: 10m
+                memory: 16Mi
+            volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+          volumes:
+          - name: scripts
+            configMap:
+              name: warm-cache-script
+              defaultMode: 0755

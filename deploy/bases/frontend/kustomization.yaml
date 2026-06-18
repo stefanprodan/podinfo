@@ -1,7 +1,15 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
+  - serviceaccount.yaml
   - service.yaml
   - deployment.yaml
   - hpa.yaml
-
+  - cronjob-warm-cache.yaml
+configMapGenerator:
+  - name: warm-cache-script
+    files:
+      - scripts/warm-cache.sh
+      - scripts/warm-cache-init.sh
+    options:
+      disableNameSuffixHash: true
