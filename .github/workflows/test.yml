@@ -26,7 +26,7 @@ jobs:
             **/go.sum
             **/go.mod
       - name: Setup Flux Schema CLI
-        uses: fluxcd/flux-schema/actions/setup@57f8dc73de6e689cd661a55a74ca94542843480a # v0.7.2
+        uses: fluxcd/flux-schema/actions/setup@d802c91e082416f3cc57260d4e97586b8f0731c6 # v0.10.1
       - name: Setup Helm
         uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
         with:
