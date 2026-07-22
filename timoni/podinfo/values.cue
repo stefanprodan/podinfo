@@ -9,7 +9,7 @@ package main
 values: {
 	image: {
 		repository: "ghcr.io/stefanprodan/podinfo"
-		tag:        "6.14.0"
+		tag:        "6.14.1"
 		digest:     ""
 	}
 	test: image: {

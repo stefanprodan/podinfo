@@ -23,7 +23,7 @@ spec:
           restartPolicy: Never
           containers:
           - name: backup
-            image: ghcr.io/stefanprodan/podinfo:6.14.0
+            image: ghcr.io/stefanprodan/podinfo:6.14.1
             imagePullPolicy: IfNotPresent
             command:
             - /bin/sh
