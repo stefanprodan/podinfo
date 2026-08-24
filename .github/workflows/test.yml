@@ -26,7 +26,7 @@ jobs:
             **/go.sum
             **/go.mod
       - name: Setup Flux Schema CLI
-        uses: fluxcd/flux-schema/actions/setup@9946a7cd4487b6d47cc9cd27d19ec8a274941af6 # v0.11.0
+        uses: fluxcd/flux-schema/actions/setup@3c02b4fbed04797116e127ac4ed4fd5b654c2dc4 # v0.12.1
       - name: Setup Helm
         uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
         with:
@@ -34,7 +34,7 @@ jobs:
       - name: Setup CUE
         uses: cue-lang/setup-cue@a93fa358375740cd8b0078f76355512b9208acb1 # v1.0.1
       - name: Setup Timoni
-        uses: stefanprodan/timoni/actions/setup@69e421aebbed979ded721df0da2a54428c5b4b9c # v0.27.0
+        uses: stefanprodan/timoni/actions/setup@32ee094d4ce5dad6a4c52627088932c4fde39617 # v0.32.0
       - name: Run unit tests
         run: make test
       - name: Validate Helm chart
