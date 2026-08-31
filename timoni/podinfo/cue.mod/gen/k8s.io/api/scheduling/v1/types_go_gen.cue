@@ -21,7 +21,8 @@ import (
 
 	// value represents the integer value of this priority class. This is the actual priority that pods
 	// receive when they have the name of this class in their pod spec.
-	value: int32 @go(Value) @protobuf(2,bytes,opt)
+	// +optional
+	value?: int32 @go(Value) @protobuf(2,bytes,opt)
 
 	// globalDefault specifies whether this PriorityClass should be considered as
 	// the default priority for pods that do not have any priority class.
@@ -40,7 +41,7 @@ import (
 	// One of Never, PreemptLowerPriority.
 	// Defaults to PreemptLowerPriority if unset.
 	// +optional
-	preemptionPolicy?: null | apiv1.#PreemptionPolicy @go(PreemptionPolicy,*apiv1.PreemptionPolicy) @protobuf(5,bytes,opt)
+	preemptionPolicy?: apiv1.#PreemptionPolicy @go(PreemptionPolicy,*apiv1.PreemptionPolicy) @protobuf(5,bytes,opt)
 }
 
 // PriorityClassList is a collection of priority classes.

@@ -9,19 +9,19 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 // Rule is a tuple of APIGroups, APIVersion, and Resources.It is recommended
 // to make sure that all the tuple expansions are valid.
 #Rule: {
-	// APIGroups is the API groups the resources belong to. '*' is all groups.
+	// apiGroups is the API groups the resources belong to. '*' is all groups.
 	// If '*' is present, the length of the slice must be one.
 	// Required.
 	// +listType=atomic
 	apiGroups?: [...string] @go(APIGroups,[]string) @protobuf(1,bytes,rep)
 
-	// APIVersions is the API versions the resources belong to. '*' is all versions.
+	// apiVersions is the API versions the resources belong to. '*' is all versions.
 	// If '*' is present, the length of the slice must be one.
 	// Required.
 	// +listType=atomic
 	apiVersions?: [...string] @go(APIVersions,[]string) @protobuf(2,bytes,rep)
 
-	// Resources is a list of resources this rule applies to.
+	// resources is a list of resources this rule applies to.
 	//
 	// For example:
 	// 'pods' means pods.
@@ -49,7 +49,7 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	// Default is "*".
 	//
 	// +optional
-	scope?: null | #ScopeType @go(Scope,*ScopeType) @protobuf(4,bytes,rep)
+	scope?: #ScopeType @go(Scope,*ScopeType) @protobuf(4,bytes,rep)
 }
 
 // ScopeType specifies a scope for a Rule.
@@ -84,6 +84,21 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 // Fail means that an error calling the webhook causes the admission to fail.
 #Fail: #FailurePolicyType & "Fail"
+
+// ParameterNotFoundActionType specifies a failure policy that defines how a binding
+// is evaluated when the param referred by its perNamespaceParamRef is not found.
+#ParameterNotFoundActionType: string // #enumParameterNotFoundActionType
+
+#enumParameterNotFoundActionType:
+	#AllowAction |
+	#DenyAction
+
+// Allow means all requests will be admitted if no param resources
+// could be found.
+#AllowAction: #ParameterNotFoundActionType & "Allow"
+
+// Deny means all requests will be denied if no param resources are found.
+#DenyAction: #ParameterNotFoundActionType & "Deny"
 
 // MatchPolicyType specifies the type of match policy.
 // +enum
@@ -124,18 +139,612 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 // request being reviewed has the dry-run attribute, the side effects will be suppressed.
 #SideEffectClassNoneOnDryRun: #SideEffectClass & "NoneOnDryRun"
 
+// ValidatingAdmissionPolicy describes the definition of an admission validation policy that accepts or rejects an object without changing it.
+#ValidatingAdmissionPolicy: {
+	metav1.#TypeMeta
+
+	// metadata is the standard object metadata; More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata.
+	// +optional
+	metadata?: metav1.#ObjectMeta @go(ObjectMeta) @protobuf(1,bytes,opt)
+
+	// spec defines the desired behavior of the ValidatingAdmissionPolicy.
+	spec?: #ValidatingAdmissionPolicySpec @go(Spec) @protobuf(2,bytes,opt)
+
+	// status represents the current status of the ValidatingAdmissionPolicy, including warnings that are useful to determine if the policy
+	// behaves in the expected way.
+	// Populated by the system.
+	// Read-only.
+	// +optional
+	status?: #ValidatingAdmissionPolicyStatus @go(Status) @protobuf(3,bytes,opt)
+}
+
+// ValidatingAdmissionPolicyStatus represents the status of an admission validation policy.
+#ValidatingAdmissionPolicyStatus: {
+	// observedGeneration is the generation observed by the controller.
+	// +optional
+	observedGeneration?: int64 @go(ObservedGeneration) @protobuf(1,varint,opt)
+
+	// typeChecking contains the results of type checking for each expression.
+	// Presence of this field indicates the completion of the type checking.
+	// +optional
+	typeChecking?: #TypeChecking @go(TypeChecking,*TypeChecking) @protobuf(2,bytes,opt)
+
+	// conditions represent the latest available observations of a policy's current state.
+	// +optional
+	// +listType=map
+	// +listMapKey=type
+	conditions?: [...metav1.#Condition] @go(Conditions,[]metav1.Condition) @protobuf(3,bytes,rep)
+}
+
+// ValidatingAdmissionPolicyConditionType is the condition type of admission validation policy.
+#ValidatingAdmissionPolicyConditionType: string
+
+// TypeChecking contains results of type checking the expressions in the
+// ValidatingAdmissionPolicy
+#TypeChecking: {
+	// expressionWarnings contains the type checking warnings for each expression.
+	// +optional
+	// +listType=atomic
+	expressionWarnings?: [...#ExpressionWarning] @go(ExpressionWarnings,[]ExpressionWarning) @protobuf(1,bytes,rep)
+}
+
+// ExpressionWarning is a warning information that targets a specific expression.
+#ExpressionWarning: {
+	// fieldRef is the path to the field that refers to the expression.
+	// For example, the reference to the expression of the first item of
+	// validations is "spec.validations[0].expression"
+	fieldRef: string @go(FieldRef) @protobuf(2,bytes,opt)
+
+	// warning contains the content of type checking information in a human-readable form.
+	// Each line of the warning contains the type that the expression is checked
+	// against, followed by the type check error from the compiler.
+	warning: string @go(Warning) @protobuf(3,bytes,opt)
+}
+
+// ValidatingAdmissionPolicyList is a list of ValidatingAdmissionPolicy.
+#ValidatingAdmissionPolicyList: {
+	metav1.#TypeMeta
+
+	// metadata is the standard list metadata.
+	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+	// +optional
+	metadata?: metav1.#ListMeta @go(ListMeta) @protobuf(1,bytes,opt)
+
+	// List of ValidatingAdmissionPolicy.
+	items: [...#ValidatingAdmissionPolicy] @go(Items,[]ValidatingAdmissionPolicy) @protobuf(2,bytes,rep)
+}
+
+// ValidatingAdmissionPolicySpec is the specification of the desired behavior of the AdmissionPolicy.
+#ValidatingAdmissionPolicySpec: {
+	// paramKind specifies the kind of resources used to parameterize this policy.
+	// If absent, there are no parameters for this policy and the param CEL variable will not be provided to validation expressions.
+	// If ParamKind refers to a non-existent kind, this policy definition is mis-configured and the FailurePolicy is applied.
+	// If paramKind is specified but paramRef is unset in ValidatingAdmissionPolicyBinding, the params variable will be null.
+	// +optional
+	paramKind?: #ParamKind @go(ParamKind,*ParamKind) @protobuf(1,bytes,rep)
+
+	// matchConstraints specifies what resources this policy is designed to validate.
+	// The AdmissionPolicy cares about a request if it matches _all_ Constraints.
+	// However, in order to prevent clusters from being put into an unstable state that cannot be recovered from via the API
+	// ValidatingAdmissionPolicy cannot match ValidatingAdmissionPolicy and ValidatingAdmissionPolicyBinding.
+	// Required.
+	matchConstraints?: #MatchResources @go(MatchConstraints,*MatchResources) @protobuf(2,bytes,rep)
+
+	// validations contain CEL expressions which is used to apply the validation.
+	// Validations and AuditAnnotations may not both be empty; a minimum of one Validations or AuditAnnotations is
+	// required.
+	// +listType=atomic
+	// +optional
+	validations?: [...#Validation] @go(Validations,[]Validation) @protobuf(3,bytes,rep)
+
+	// failurePolicy defines how to handle failures for the admission policy. Failures can
+	// occur from CEL expression parse errors, type check errors, runtime errors and invalid
+	// or mis-configured policy definitions or bindings.
+	//
+	// A policy is invalid if spec.paramKind refers to a non-existent Kind.
+	// A binding is invalid if spec.paramRef.name refers to a non-existent resource.
+	//
+	// failurePolicy does not define how validations that evaluate to false are handled.
+	//
+	// When failurePolicy is set to Fail, ValidatingAdmissionPolicyBinding validationActions
+	// define how failures are enforced.
+	//
+	// Allowed values are Ignore or Fail. Defaults to Fail.
+	// +optional
+	failurePolicy?: #FailurePolicyType @go(FailurePolicy,*FailurePolicyType) @protobuf(4,bytes,opt,casttype=FailurePolicyType)
+
+	// auditAnnotations contains CEL expressions which are used to produce audit
+	// annotations for the audit event of the API request.
+	// validations and auditAnnotations may not both be empty; a least one of validations or auditAnnotations is
+	// required.
+	// +listType=atomic
+	// +optional
+	auditAnnotations?: [...#AuditAnnotation] @go(AuditAnnotations,[]AuditAnnotation) @protobuf(5,bytes,rep)
+
+	// matchConditions is a list of conditions that must be met for a request to be validated.
+	// Match conditions filter requests that have already been matched by the rules,
+	// namespaceSelector, and objectSelector. An empty list of matchConditions matches all requests.
+	// There are a maximum of 64 match conditions allowed.
+	//
+	// If a parameter object is provided, it can be accessed via the `params` handle in the same
+	// manner as validation expressions.
+	//
+	// The exact matching logic is (in order):
+	//   1. If ANY matchCondition evaluates to FALSE, the policy is skipped.
+	//   2. If ALL matchConditions evaluate to TRUE, the policy is evaluated.
+	//   3. If any matchCondition evaluates to an error (but none are FALSE):
+	//      - If failurePolicy=Fail, reject the request
+	//      - If failurePolicy=Ignore, the policy is skipped
+	//
+	// +patchMergeKey=name
+	// +patchStrategy=merge
+	// +listType=map
+	// +listMapKey=name
+	// +optional
+	matchConditions?: [...#MatchCondition] @go(MatchConditions,[]MatchCondition) @protobuf(6,bytes,rep)
+
+	// variables contain definitions of variables that can be used in composition of other expressions.
+	// Each variable is defined as a named CEL expression.
+	// The variables defined here will be available under `variables` in other expressions of the policy
+	// except MatchConditions because MatchConditions are evaluated before the rest of the policy.
+	//
+	// The expression of a variable can refer to other variables defined earlier in the list but not those after.
+	// Thus, Variables must be sorted by the order of first appearance and acyclic.
+	// +patchMergeKey=name
+	// +patchStrategy=merge
+	// +listType=map
+	// +listMapKey=name
+	// +optional
+	variables?: [...#Variable] @go(Variables,[]Variable) @protobuf(7,bytes,rep)
+}
+
+// ParamKind is a tuple of Group Kind and Version.
+// +structType=atomic
+#ParamKind: {
+	// apiVersion is the API group version the resources belong to.
+	// In format of "group/version".
+	// Required.
+	apiVersion?: string @go(APIVersion) @protobuf(1,bytes,rep)
+
+	// kind is the API kind the resources belong to.
+	// Required.
+	kind?: string @go(Kind) @protobuf(2,bytes,rep)
+}
+
+// Validation specifies the CEL expression which is used to apply the validation.
+#Validation: {
+	// expression represents the expression which will be evaluated by CEL.
+	// ref: https://github.com/google/cel-spec
+	// CEL expressions have access to the contents of the API request/response, organized into CEL variables as well as some other useful variables:
+	//
+	// - 'object' - The object from the incoming request. The value is null for DELETE requests.
+	// - 'oldObject' - The existing object. The value is null for CREATE requests.
+	// - 'request' - Attributes of the API request([ref](/pkg/apis/admission/types.go#AdmissionRequest)).
+	// - 'params' - Parameter resource referred to by the policy binding being evaluated. Only populated if the policy has a ParamKind.
+	// - 'namespaceObject' - The namespace object that the incoming object belongs to. The value is null for cluster-scoped resources.
+	// - 'variables' - Map of composited variables, from its name to its lazily evaluated value.
+	//   For example, a variable named 'foo' can be accessed as 'variables.foo'.
+	// - 'authorizer' - A CEL Authorizer. May be used to perform authorization checks for the principal (user or service account) of the request.
+	//   See https://pkg.go.dev/k8s.io/apiserver/pkg/cel/library#Authz
+	// - 'authorizer.requestResource' - A CEL ResourceCheck constructed from the 'authorizer' and configured with the
+	//   request resource.
+	//
+	// The `apiVersion`, `kind`, `metadata.name` and `metadata.generateName` are always accessible from the root of the
+	// object. No other metadata properties are accessible.
+	//
+	// Only property names of the form `[a-zA-Z_.-/][a-zA-Z0-9_.-/]*` are accessible.
+	// Accessible property names are escaped according to the following rules when accessed in the expression:
+	// - '__' escapes to '__underscores__'
+	// - '.' escapes to '__dot__'
+	// - '-' escapes to '__dash__'
+	// - '/' escapes to '__slash__'
+	// - Property names that exactly match a CEL RESERVED keyword escape to '__{keyword}__'. The keywords are:
+	//	  "true", "false", "null", "in", "as", "break", "const", "continue", "else", "for", "function", "if",
+	//	  "import", "let", "loop", "package", "namespace", "return".
+	// Examples:
+	//   - Expression accessing a property named "namespace": {"Expression": "object.__namespace__ > 0"}
+	//   - Expression accessing a property named "x-prop": {"Expression": "object.x__dash__prop > 0"}
+	//   - Expression accessing a property named "redact__d": {"Expression": "object.redact__underscores__d > 0"}
+	//
+	// Equality on arrays with list type of 'set' or 'map' ignores element order, i.e. [1, 2] == [2, 1].
+	// Concatenation on arrays with x-kubernetes-list-type use the semantics of the list type:
+	//   - 'set': `X + Y` performs a union where the array positions of all elements in `X` are preserved and
+	//     non-intersecting elements in `Y` are appended, retaining their partial order.
+	//   - 'map': `X + Y` performs a merge where the array positions of all keys in `X` are preserved but the values
+	//     are overwritten by values in `Y` when the key sets of `X` and `Y` intersect. Elements in `Y` with
+	//     non-intersecting keys are appended, retaining their partial order.
+	// Required.
+	expression: string @go(Expression) @protobuf(1,bytes,opt,name=Expression)
+
+	// message represents the message displayed when validation fails. The message is required if the Expression contains
+	// line breaks. The message must not contain line breaks.
+	// If unset, the message is "failed rule: {Rule}".
+	// e.g. "must be a URL with the host matching spec.host"
+	// If the Expression contains line breaks. Message is required.
+	// The message must not contain line breaks.
+	// If unset, the message is "failed Expression: {Expression}".
+	// +optional
+	message?: string @go(Message) @protobuf(2,bytes,opt)
+
+	// reason represents a machine-readable description of why this validation failed.
+	// If this is the first validation in the list to fail, this reason, as well as the
+	// corresponding HTTP response code, are used in the
+	// HTTP response to the client.
+	// The currently supported reasons are: "Unauthorized", "Forbidden", "Invalid", "RequestEntityTooLarge".
+	// If not set, StatusReasonInvalid is used in the response to the client.
+	// +optional
+	reason?: metav1.#StatusReason @go(Reason,*metav1.StatusReason) @protobuf(3,bytes,opt)
+
+	// messageExpression declares a CEL expression that evaluates to the validation failure message that is returned when this rule fails.
+	// Since messageExpression is used as a failure message, it must evaluate to a string.
+	// If both message and messageExpression are present on a validation, then messageExpression will be used if validation fails.
+	// If messageExpression results in a runtime error, the runtime error is logged, and the validation failure message is produced
+	// as if the messageExpression field were unset. If messageExpression evaluates to an empty string, a string with only spaces, or a string
+	// that contains line breaks, then the validation failure message will also be produced as if the messageExpression field were unset, and
+	// the fact that messageExpression produced an empty string/string with only spaces/string with line breaks will be logged.
+	// messageExpression has access to all the same variables as the `expression` except for 'authorizer' and 'authorizer.requestResource'.
+	// Example:
+	// "object.x must be less than max ("+string(params.max)+")"
+	// +optional
+	messageExpression?: string @go(MessageExpression) @protobuf(4,bytes,opt)
+}
+
+// Variable is the definition of a variable that is used for composition. A variable is defined as a named expression.
+// +structType=atomic
+#Variable: {
+	// name is the name of the variable. The name must be a valid CEL identifier and unique among all variables.
+	// The variable can be accessed in other expressions through `variables`
+	// For example, if name is "foo", the variable will be available as `variables.foo`
+	name: string @go(Name) @protobuf(1,bytes,opt,name=Name)
+
+	// expression is the expression that will be evaluated as the value of the variable.
+	// The CEL expression has access to the same identifiers as the CEL expressions in Validation.
+	expression: string @go(Expression) @protobuf(2,bytes,opt,name=Expression)
+}
+
+// AuditAnnotation describes how to produce an audit annotation for an API request.
+#AuditAnnotation: {
+	// key specifies the audit annotation key. The audit annotation keys of
+	// a ValidatingAdmissionPolicy must be unique. The key must be a qualified
+	// name ([A-Za-z0-9][-A-Za-z0-9_.]*) no more than 63 bytes in length.
+	//
+	// The key is combined with the resource name of the
+	// ValidatingAdmissionPolicy to construct an audit annotation key:
+	// "{ValidatingAdmissionPolicy name}/{key}".
+	//
+	// If an admission webhook uses the same resource name as this ValidatingAdmissionPolicy
+	// and the same audit annotation key, the annotation key will be identical.
+	// In this case, the first annotation written with the key will be included
+	// in the audit event and all subsequent annotations with the same key
+	// will be discarded.
+	//
+	// Required.
+	key: string @go(Key) @protobuf(1,bytes,opt)
+
+	// valueExpression represents the expression which is evaluated by CEL to
+	// produce an audit annotation value. The expression must evaluate to either
+	// a string or null value. If the expression evaluates to a string, the
+	// audit annotation is included with the string value. If the expression
+	// evaluates to null or empty string the audit annotation will be omitted.
+	// The valueExpression may be no longer than 5kb in length.
+	// If the result of the valueExpression is more than 10kb in length, it
+	// will be truncated to 10kb.
+	//
+	// If multiple ValidatingAdmissionPolicyBinding resources match an
+	// API request, then the valueExpression will be evaluated for
+	// each binding. All unique values produced by the valueExpressions
+	// will be joined together in a comma-separated list.
+	//
+	// Required.
+	valueExpression: string @go(ValueExpression) @protobuf(2,bytes,opt)
+}
+
+// ValidatingAdmissionPolicyBinding binds the ValidatingAdmissionPolicy with paramerized resources.
+// ValidatingAdmissionPolicyBinding and parameter CRDs together define how cluster administrators configure policies for clusters.
+//
+// For a given admission request, each binding will cause its policy to be
+// evaluated N times, where N is 1 for policies/bindings that don't use
+// params, otherwise N is the number of parameters selected by the binding.
+//
+// The CEL expressions of a policy must have a computed CEL cost below the maximum
+// CEL budget. Each evaluation of the policy is given an independent CEL cost budget.
+// Adding/removing policies, bindings, or params can not affect whether a
+// given (policy, binding, param) combination is within its own CEL budget.
+#ValidatingAdmissionPolicyBinding: {
+	metav1.#TypeMeta
+
+	// metadata is the standard object metadata; More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata.
+	// +optional
+	metadata?: metav1.#ObjectMeta @go(ObjectMeta) @protobuf(1,bytes,opt)
+
+	// spec defines the desired behavior of the ValidatingAdmissionPolicyBinding.
+	// +required
+	spec: #ValidatingAdmissionPolicyBindingSpec @go(Spec) @protobuf(2,bytes,opt)
+}
+
+// ValidatingAdmissionPolicyBindingList is a list of ValidatingAdmissionPolicyBinding.
+#ValidatingAdmissionPolicyBindingList: {
+	metav1.#TypeMeta
+
+	// metadata is the standard list metadata.
+	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+	// +optional
+	metadata?: metav1.#ListMeta @go(ListMeta) @protobuf(1,bytes,opt)
+
+	// List of PolicyBinding.
+	items: [...#ValidatingAdmissionPolicyBinding] @go(Items,[]ValidatingAdmissionPolicyBinding) @protobuf(2,bytes,rep)
+}
+
+// ValidatingAdmissionPolicyBindingSpec is the specification of the ValidatingAdmissionPolicyBinding.
+#ValidatingAdmissionPolicyBindingSpec: {
+	// policyName references a ValidatingAdmissionPolicy name which the ValidatingAdmissionPolicyBinding binds to.
+	// If the referenced resource does not exist, this binding is considered invalid and will be ignored
+	// Required.
+	// +required
+	// +k8s:alpha(since: "1.36")=+k8s:required
+	policyName: string @go(PolicyName) @protobuf(1,bytes,rep)
+
+	// paramRef specifies the parameter resource used to configure the admission control policy.
+	// It should point to a resource of the type specified in ParamKind of the bound ValidatingAdmissionPolicy.
+	// If the policy specifies a ParamKind and the resource referred to by ParamRef does not exist, this binding is considered mis-configured and the FailurePolicy of the ValidatingAdmissionPolicy applied.
+	// If the policy does not specify a ParamKind then this field is ignored, and the rules are evaluated without a param.
+	// +optional
+	paramRef?: #ParamRef @go(ParamRef,*ParamRef) @protobuf(2,bytes,rep)
+
+	// matchResources declares what resources match this binding and will be validated by it.
+	// Note that this is intersected with the policy's matchConstraints, so only requests that are matched by the policy can be selected by this.
+	// If this is unset, all resources matched by the policy are validated by this binding
+	// When resourceRules is unset, it does not constrain resource matching. If a resource is matched by the other fields of this object, it will be validated.
+	// Note that this is differs from ValidatingAdmissionPolicy matchConstraints, where resourceRules are required.
+	// +optional
+	matchResources?: #MatchResources @go(MatchResources,*MatchResources) @protobuf(3,bytes,rep)
+
+	// validationActions declares how Validations of the referenced ValidatingAdmissionPolicy are enforced.
+	// If a validation evaluates to false it is always enforced according to these actions.
+	//
+	// Failures defined by the ValidatingAdmissionPolicy's FailurePolicy are enforced according
+	// to these actions only if the FailurePolicy is set to Fail, otherwise the failures are
+	// ignored. This includes compilation errors, runtime errors and misconfigurations of the policy.
+	//
+	// validationActions is declared as a set of action values. Order does
+	// not matter. validationActions may not contain duplicates of the same action.
+	//
+	// The supported actions values are:
+	//
+	// "Deny" specifies that a validation failure results in a denied request.
+	//
+	// "Warn" specifies that a validation failure is reported to the request client
+	// in HTTP Warning headers, with a warning code of 299. Warnings can be sent
+	// both for allowed or denied admission responses.
+	//
+	// "Audit" specifies that a validation failure is included in the published
+	// audit event for the request. The audit event will contain a
+	// `validation.policy.admission.k8s.io/validation_failure` audit annotation
+	// with a value containing the details of the validation failures, formatted as
+	// a JSON list of objects, each with the following fields:
+	// - message: The validation failure message string
+	// - policy: The resource name of the ValidatingAdmissionPolicy
+	// - binding: The resource name of the ValidatingAdmissionPolicyBinding
+	// - expressionIndex: The index of the failed validations in the ValidatingAdmissionPolicy
+	// - validationActions: The enforcement actions enacted for the validation failure
+	// Example audit annotation:
+	// `"validation.policy.admission.k8s.io/validation_failure": "[{\"message\": \"Invalid value\", {\"policy\": \"policy.example.com\", {\"binding\": \"policybinding.example.com\", {\"expressionIndex\": \"1\", {\"validationActions\": [\"Audit\"]}]"`
+	//
+	// Clients should expect to handle additional values by ignoring
+	// any values not recognized.
+	//
+	// "Deny" and "Warn" may not be used together since this combination
+	// needlessly duplicates the validation failure both in the
+	// API response body and the HTTP warning headers.
+	//
+	// Required.
+	// +listType=set
+	// +required
+	// +k8s:alpha(since: "1.36")=+k8s:required
+	validationActions: [...#ValidationAction] @go(ValidationActions,[]ValidationAction) @protobuf(4,bytes,rep)
+}
+
+// ParamRef describes how to locate the params to be used as input to
+// expressions of rules applied by a policy binding.
+// +structType=atomic
+#ParamRef: {
+	// name is the name of the resource being referenced.
+	//
+	// One of `name` or `selector` must be set, but `name` and `selector` are
+	// mutually exclusive properties. If one is set, the other must be unset.
+	//
+	// A single parameter used for all admission requests can be configured
+	// by setting the `name` field, leaving `selector` blank, and setting namespace
+	// if `paramKind` is namespace-scoped.
+	//
+	name?: string @go(Name) @protobuf(1,bytes,rep)
+
+	// namespace is the namespace of the referenced resource. Allows limiting
+	// the search for params to a specific namespace. Applies to both `name` and
+	// `selector` fields.
+	//
+	// A per-namespace parameter may be used by specifying a namespace-scoped
+	// `paramKind` in the policy and leaving this field empty.
+	//
+	// - If `paramKind` is cluster-scoped, this field MUST be unset. Setting this
+	// field results in a configuration error.
+	//
+	// - If `paramKind` is namespace-scoped, the namespace of the object being
+	// evaluated for admission will be used when this field is left unset. Take
+	// care that if this is left empty the binding must not match any cluster-scoped
+	// resources, which will result in an error.
+	//
+	// +optional
+	namespace?: string @go(Namespace) @protobuf(2,bytes,rep)
+
+	// selector can be used to match multiple param objects based on their labels.
+	// Supply selector: {} to match all resources of the ParamKind.
+	//
+	// If multiple params are found, they are all evaluated with the policy expressions
+	// and the results are ANDed together.
+	//
+	// One of `name` or `selector` must be set, but `name` and `selector` are
+	// mutually exclusive properties. If one is set, the other must be unset.
+	//
+	// +optional
+	selector?: metav1.#LabelSelector @go(Selector,*metav1.LabelSelector) @protobuf(3,bytes,rep)
+
+	// parameterNotFoundAction controls the behavior of the binding when the resource
+	// exists, and name or selector is valid, but there are no parameters
+	// matched by the binding. If the value is set to `Allow`, then no
+	// matched parameters will be treated as successful validation by the binding.
+	// If set to `Deny`, then no matched parameters will be subject to the
+	// `failurePolicy` of the policy.
+	//
+	// Allowed values are `Allow` or `Deny`
+	//
+	// Required
+	parameterNotFoundAction?: #ParameterNotFoundActionType @go(ParameterNotFoundAction,*ParameterNotFoundActionType) @protobuf(4,bytes,rep)
+}
+
+// MatchResources decides whether to run the admission control policy on an object based
+// on whether it meets the match criteria.
+// The exclude rules take precedence over include rules (if a resource matches both, it is excluded)
+// +structType=atomic
+#MatchResources: {
+	// namespaceSelector decides whether to run the admission control policy on an object based
+	// on whether the namespace for that object matches the selector. If the
+	// object itself is a namespace, the matching is performed on
+	// object.metadata.labels. If the object is another cluster scoped resource,
+	// it never skips the policy.
+	//
+	// For example, to run the webhook on any objects whose namespace is not
+	// associated with "runlevel" of "0" or "1";  you will set the selector as
+	// follows:
+	// "namespaceSelector": {
+	//   "matchExpressions": [
+	//     {
+	//       "key": "runlevel",
+	//       "operator": "NotIn",
+	//       "values": [
+	//         "0",
+	//         "1"
+	//       ]
+	//     }
+	//   ]
+	// }
+	//
+	// If instead you want to only run the policy on any objects whose
+	// namespace is associated with the "environment" of "prod" or "staging";
+	// you will set the selector as follows:
+	// "namespaceSelector": {
+	//   "matchExpressions": [
+	//     {
+	//       "key": "environment",
+	//       "operator": "In",
+	//       "values": [
+	//         "prod",
+	//         "staging"
+	//       ]
+	//     }
+	//   ]
+	// }
+	//
+	// See
+	// https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+	// for more examples of label selectors.
+	//
+	// Default to the empty LabelSelector, which matches everything.
+	// +optional
+	namespaceSelector?: metav1.#LabelSelector @go(NamespaceSelector,*metav1.LabelSelector) @protobuf(1,bytes,opt)
+
+	// objectSelector decides whether to run the validation based on if the
+	// object has matching labels. objectSelector is evaluated against both
+	// the oldObject and newObject that would be sent to the cel validation, and
+	// is considered to match if either object matches the selector. A null
+	// object (oldObject in the case of create, or newObject in the case of
+	// delete) or an object that cannot have labels (like a
+	// DeploymentRollback or a PodProxyOptions object) is not considered to
+	// match.
+	// Use the object selector only if the webhook is opt-in, because end
+	// users may skip the admission webhook by setting the labels.
+	// Default to the empty LabelSelector, which matches everything.
+	// +optional
+	objectSelector?: metav1.#LabelSelector @go(ObjectSelector,*metav1.LabelSelector) @protobuf(2,bytes,opt)
+
+	// resourceRules describes what operations on what resources/subresources the ValidatingAdmissionPolicy matches.
+	// The policy cares about an operation if it matches _any_ Rule.
+	// +listType=atomic
+	// +optional
+	resourceRules?: [...#NamedRuleWithOperations] @go(ResourceRules,[]NamedRuleWithOperations) @protobuf(3,bytes,rep)
+
+	// excludeResourceRules describes what operations on what resources/subresources the ValidatingAdmissionPolicy should not care about.
+	// The exclude rules take precedence over include rules (if a resource matches both, it is excluded)
+	// +listType=atomic
+	// +optional
+	excludeResourceRules?: [...#NamedRuleWithOperations] @go(ExcludeResourceRules,[]NamedRuleWithOperations) @protobuf(4,bytes,rep)
+
+	// matchPolicy defines how the "MatchResources" list is used to match incoming requests.
+	// Allowed values are "Exact" or "Equivalent".
+	//
+	// - Exact: match a request only if it exactly matches a specified rule.
+	// For example, if deployments can be modified via apps/v1, apps/v1beta1, and extensions/v1beta1,
+	// but "rules" only included `apiGroups:["apps"], apiVersions:["v1"], resources: ["deployments"]`,
+	// a request to apps/v1beta1 or extensions/v1beta1 would not be sent to the ValidatingAdmissionPolicy.
+	//
+	// - Equivalent: match a request if modifies a resource listed in rules, even via another API group or version.
+	// For example, if deployments can be modified via apps/v1, apps/v1beta1, and extensions/v1beta1,
+	// and "rules" only included `apiGroups:["apps"], apiVersions:["v1"], resources: ["deployments"]`,
+	// a request to apps/v1beta1 or extensions/v1beta1 would be converted to apps/v1 and sent to the ValidatingAdmissionPolicy.
+	//
+	// Defaults to "Equivalent"
+	// +optional
+	matchPolicy?: #MatchPolicyType @go(MatchPolicy,*MatchPolicyType) @protobuf(7,bytes,opt,casttype=MatchPolicyType)
+}
+
+// ValidationAction specifies a policy enforcement action.
+// +enum
+#ValidationAction: string // #enumValidationAction
+
+#enumValidationAction:
+	#Deny |
+	#Warn |
+	#Audit
+
+// Deny specifies that a validation failure results in a denied request.
+#Deny: #ValidationAction & "Deny"
+
+// Warn specifies that a validation failure is reported to the request client
+// in HTTP Warning headers, with a warning code of 299. Warnings can be sent
+// both for allowed or denied admission responses.
+#Warn: #ValidationAction & "Warn"
+
+// Audit specifies that a validation failure is included in the published
+// audit event for the request. The audit event will contain a
+// `validation.policy.admission.k8s.io/validation_failure` audit annotation
+// with a value containing the details of the validation failure.
+#Audit: #ValidationAction & "Audit"
+
+// NamedRuleWithOperations is a tuple of Operations and Resources with ResourceNames.
+// +structType=atomic
+#NamedRuleWithOperations: {
+	// resourceNames is an optional white list of names that the rule applies to.  An empty set means that everything is allowed.
+	// +listType=atomic
+	// +optional
+	resourceNames?: [...string] @go(ResourceNames,[]string) @protobuf(1,bytes,rep)
+
+	#RuleWithOperations
+}
+
 // ValidatingWebhookConfiguration describes the configuration of and admission webhook that accept or reject and object without changing it.
 #ValidatingWebhookConfiguration: {
 	metav1.#TypeMeta
 
-	// Standard object metadata; More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata.
+	// metadata is the standard object metadata; More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata.
 	// +optional
 	metadata?: metav1.#ObjectMeta @go(ObjectMeta) @protobuf(1,bytes,opt)
 
-	// Webhooks is a list of webhooks and the affected resources and operations.
+	// webhooks is a list of webhooks and the affected resources and operations.
 	// +optional
 	// +patchMergeKey=name
 	// +patchStrategy=merge
+	// +listType=map
+	// +listMapKey=name
 	webhooks?: [...#ValidatingWebhook] @go(Webhooks,[]ValidatingWebhook) @protobuf(2,bytes,rep,name=Webhooks)
 }
 
@@ -143,7 +752,7 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 #ValidatingWebhookConfigurationList: {
 	metav1.#TypeMeta
 
-	// Standard list metadata.
+	// metadata is the standard list metadata.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
 	// +optional
 	metadata?: metav1.#ListMeta @go(ListMeta) @protobuf(1,bytes,opt)
@@ -156,14 +765,16 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 #MutatingWebhookConfiguration: {
 	metav1.#TypeMeta
 
-	// Standard object metadata; More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata.
+	// metadata is the standard object metadata; More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata.
 	// +optional
 	metadata?: metav1.#ObjectMeta @go(ObjectMeta) @protobuf(1,bytes,opt)
 
-	// Webhooks is a list of webhooks and the affected resources and operations.
+	// webhooks is a list of webhooks and the affected resources and operations.
 	// +optional
 	// +patchMergeKey=name
 	// +patchStrategy=merge
+	// +listType=map
+	// +listMapKey=name
 	webhooks?: [...#MutatingWebhook] @go(Webhooks,[]MutatingWebhook) @protobuf(2,bytes,rep,name=Webhooks)
 }
 
@@ -171,7 +782,7 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 #MutatingWebhookConfigurationList: {
 	metav1.#TypeMeta
 
-	// Standard list metadata.
+	// metadata is the standard list metadata.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
 	// +optional
 	metadata?: metav1.#ListMeta @go(ListMeta) @protobuf(1,bytes,opt)
@@ -182,29 +793,30 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 // ValidatingWebhook describes an admission webhook and the resources and operations it applies to.
 #ValidatingWebhook: {
-	// The name of the admission webhook.
+	// name is the name of the admission webhook.
 	// Name should be fully qualified, e.g., imagepolicy.kubernetes.io, where
 	// "imagepolicy" is the name of the webhook, and kubernetes.io is the name
 	// of the organization.
 	// Required.
 	name: string @go(Name) @protobuf(1,bytes,opt)
 
-	// ClientConfig defines how to communicate with the hook.
+	// clientConfig defines how to communicate with the hook.
 	// Required
 	clientConfig: #WebhookClientConfig @go(ClientConfig) @protobuf(2,bytes,opt)
 
-	// Rules describes what operations on what resources/subresources the webhook cares about.
+	// rules describes what operations on what resources/subresources the webhook cares about.
 	// The webhook cares about an operation if it matches _any_ Rule.
 	// However, in order to prevent ValidatingAdmissionWebhooks and MutatingAdmissionWebhooks
 	// from putting the cluster in a state which cannot be recovered from without completely
 	// disabling the plugin, ValidatingAdmissionWebhooks and MutatingAdmissionWebhooks are never called
 	// on admission requests for ValidatingWebhookConfiguration and MutatingWebhookConfiguration objects.
+	// +listType=atomic
 	rules?: [...#RuleWithOperations] @go(Rules,[]RuleWithOperations) @protobuf(3,bytes,rep)
 
-	// FailurePolicy defines how unrecognized errors from the admission endpoint are handled -
+	// failurePolicy defines how unrecognized errors from the admission endpoint are handled -
 	// allowed values are Ignore or Fail. Defaults to Fail.
 	// +optional
-	failurePolicy?: null | #FailurePolicyType @go(FailurePolicy,*FailurePolicyType) @protobuf(4,bytes,opt,casttype=FailurePolicyType)
+	failurePolicy?: #FailurePolicyType @go(FailurePolicy,*FailurePolicyType) @protobuf(4,bytes,opt,casttype=FailurePolicyType)
 
 	// matchPolicy defines how the "rules" list is used to match incoming requests.
 	// Allowed values are "Exact" or "Equivalent".
@@ -221,9 +833,9 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	//
 	// Defaults to "Equivalent"
 	// +optional
-	matchPolicy?: null | #MatchPolicyType @go(MatchPolicy,*MatchPolicyType) @protobuf(9,bytes,opt,casttype=MatchPolicyType)
+	matchPolicy?: #MatchPolicyType @go(MatchPolicy,*MatchPolicyType) @protobuf(9,bytes,opt,casttype=MatchPolicyType)
 
-	// NamespaceSelector decides whether to run the webhook on an object based
+	// namespaceSelector decides whether to run the webhook on an object based
 	// on whether the namespace for that object matches the selector. If the
 	// object itself is a namespace, the matching is performed on
 	// object.metadata.labels. If the object is another cluster scoped resource,
@@ -267,9 +879,9 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	//
 	// Default to the empty LabelSelector, which matches everything.
 	// +optional
-	namespaceSelector?: null | metav1.#LabelSelector @go(NamespaceSelector,*metav1.LabelSelector) @protobuf(5,bytes,opt)
+	namespaceSelector?: metav1.#LabelSelector @go(NamespaceSelector,*metav1.LabelSelector) @protobuf(5,bytes,opt)
 
-	// ObjectSelector decides whether to run the webhook based on if the
+	// objectSelector decides whether to run the webhook based on if the
 	// object has matching labels. objectSelector is evaluated against both
 	// the oldObject and newObject that would be sent to the webhook, and
 	// is considered to match if either object matches the selector. A null
@@ -281,34 +893,35 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	// users may skip the admission webhook by setting the labels.
 	// Default to the empty LabelSelector, which matches everything.
 	// +optional
-	objectSelector?: null | metav1.#LabelSelector @go(ObjectSelector,*metav1.LabelSelector) @protobuf(10,bytes,opt)
+	objectSelector?: metav1.#LabelSelector @go(ObjectSelector,*metav1.LabelSelector) @protobuf(10,bytes,opt)
 
-	// SideEffects states whether this webhook has side effects.
+	// sideEffects states whether this webhook has side effects.
 	// Acceptable values are: None, NoneOnDryRun (webhooks created via v1beta1 may also specify Some or Unknown).
 	// Webhooks with side effects MUST implement a reconciliation system, since a request may be
 	// rejected by a future step in the admission chain and the side effects therefore need to be undone.
 	// Requests with the dryRun attribute will be auto-rejected if they match a webhook with
 	// sideEffects == Unknown or Some.
-	sideEffects?: null | #SideEffectClass @go(SideEffects,*SideEffectClass) @protobuf(6,bytes,opt,casttype=SideEffectClass)
+	sideEffects?: #SideEffectClass @go(SideEffects,*SideEffectClass) @protobuf(6,bytes,opt,casttype=SideEffectClass)
 
-	// TimeoutSeconds specifies the timeout for this webhook. After the timeout passes,
+	// timeoutSeconds specifies the timeout for this webhook. After the timeout passes,
 	// the webhook call will be ignored or the API call will fail based on the
 	// failure policy.
 	// The timeout value must be between 1 and 30 seconds.
 	// Default to 10 seconds.
 	// +optional
-	timeoutSeconds?: null | int32 @go(TimeoutSeconds,*int32) @protobuf(7,varint,opt)
+	timeoutSeconds?: int32 @go(TimeoutSeconds,*int32) @protobuf(7,varint,opt)
 
-	// AdmissionReviewVersions is an ordered list of preferred `AdmissionReview`
+	// admissionReviewVersions is an ordered list of preferred `AdmissionReview`
 	// versions the Webhook expects. API server will try to use first version in
 	// the list which it supports. If none of the versions specified in this list
 	// supported by API server, validation will fail for this object.
 	// If a persisted webhook configuration specifies allowed versions and does not
 	// include any versions known to the API Server, calls to the webhook will fail
 	// and be subject to the failure policy.
+	// +listType=atomic
 	admissionReviewVersions: [...string] @go(AdmissionReviewVersions,[]string) @protobuf(8,bytes,rep)
 
-	// MatchConditions is a list of conditions that must be met for a request to be sent to this
+	// matchConditions is a list of conditions that must be met for a request to be sent to this
 	// webhook. Match conditions filter requests that have already been matched by the rules,
 	// namespaceSelector, and objectSelector. An empty list of matchConditions matches all requests.
 	// There are a maximum of 64 match conditions allowed.
@@ -320,42 +933,40 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	//      - If failurePolicy=Fail, reject the request
 	//      - If failurePolicy=Ignore, the error is ignored and the webhook is skipped
 	//
-	// This is a beta feature and managed by the AdmissionWebhookMatchConditions feature gate.
-	//
 	// +patchMergeKey=name
 	// +patchStrategy=merge
 	// +listType=map
 	// +listMapKey=name
-	// +featureGate=AdmissionWebhookMatchConditions
 	// +optional
 	matchConditions?: [...#MatchCondition] @go(MatchConditions,[]MatchCondition) @protobuf(11,bytes,opt)
 }
 
 // MutatingWebhook describes an admission webhook and the resources and operations it applies to.
 #MutatingWebhook: {
-	// The name of the admission webhook.
+	// name is the name of the admission webhook.
 	// Name should be fully qualified, e.g., imagepolicy.kubernetes.io, where
 	// "imagepolicy" is the name of the webhook, and kubernetes.io is the name
 	// of the organization.
 	// Required.
 	name: string @go(Name) @protobuf(1,bytes,opt)
 
-	// ClientConfig defines how to communicate with the hook.
+	// clientConfig defines how to communicate with the hook.
 	// Required
 	clientConfig: #WebhookClientConfig @go(ClientConfig) @protobuf(2,bytes,opt)
 
-	// Rules describes what operations on what resources/subresources the webhook cares about.
+	// rules describes what operations on what resources/subresources the webhook cares about.
 	// The webhook cares about an operation if it matches _any_ Rule.
 	// However, in order to prevent ValidatingAdmissionWebhooks and MutatingAdmissionWebhooks
 	// from putting the cluster in a state which cannot be recovered from without completely
 	// disabling the plugin, ValidatingAdmissionWebhooks and MutatingAdmissionWebhooks are never called
 	// on admission requests for ValidatingWebhookConfiguration and MutatingWebhookConfiguration objects.
+	// +listType=atomic
 	rules?: [...#RuleWithOperations] @go(Rules,[]RuleWithOperations) @protobuf(3,bytes,rep)
 
-	// FailurePolicy defines how unrecognized errors from the admission endpoint are handled -
+	// failurePolicy defines how unrecognized errors from the admission endpoint are handled -
 	// allowed values are Ignore or Fail. Defaults to Fail.
 	// +optional
-	failurePolicy?: null | #FailurePolicyType @go(FailurePolicy,*FailurePolicyType) @protobuf(4,bytes,opt,casttype=FailurePolicyType)
+	failurePolicy?: #FailurePolicyType @go(FailurePolicy,*FailurePolicyType) @protobuf(4,bytes,opt,casttype=FailurePolicyType)
 
 	// matchPolicy defines how the "rules" list is used to match incoming requests.
 	// Allowed values are "Exact" or "Equivalent".
@@ -372,9 +983,9 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	//
 	// Defaults to "Equivalent"
 	// +optional
-	matchPolicy?: null | #MatchPolicyType @go(MatchPolicy,*MatchPolicyType) @protobuf(9,bytes,opt,casttype=MatchPolicyType)
+	matchPolicy?: #MatchPolicyType @go(MatchPolicy,*MatchPolicyType) @protobuf(9,bytes,opt,casttype=MatchPolicyType)
 
-	// NamespaceSelector decides whether to run the webhook on an object based
+	// namespaceSelector decides whether to run the webhook on an object based
 	// on whether the namespace for that object matches the selector. If the
 	// object itself is a namespace, the matching is performed on
 	// object.metadata.labels. If the object is another cluster scoped resource,
@@ -418,9 +1029,9 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	//
 	// Default to the empty LabelSelector, which matches everything.
 	// +optional
-	namespaceSelector?: null | metav1.#LabelSelector @go(NamespaceSelector,*metav1.LabelSelector) @protobuf(5,bytes,opt)
+	namespaceSelector?: metav1.#LabelSelector @go(NamespaceSelector,*metav1.LabelSelector) @protobuf(5,bytes,opt)
 
-	// ObjectSelector decides whether to run the webhook based on if the
+	// objectSelector decides whether to run the webhook based on if the
 	// object has matching labels. objectSelector is evaluated against both
 	// the oldObject and newObject that would be sent to the webhook, and
 	// is considered to match if either object matches the selector. A null
@@ -432,31 +1043,32 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	// users may skip the admission webhook by setting the labels.
 	// Default to the empty LabelSelector, which matches everything.
 	// +optional
-	objectSelector?: null | metav1.#LabelSelector @go(ObjectSelector,*metav1.LabelSelector) @protobuf(11,bytes,opt)
+	objectSelector?: metav1.#LabelSelector @go(ObjectSelector,*metav1.LabelSelector) @protobuf(11,bytes,opt)
 
-	// SideEffects states whether this webhook has side effects.
+	// sideEffects states whether this webhook has side effects.
 	// Acceptable values are: None, NoneOnDryRun (webhooks created via v1beta1 may also specify Some or Unknown).
 	// Webhooks with side effects MUST implement a reconciliation system, since a request may be
 	// rejected by a future step in the admission chain and the side effects therefore need to be undone.
 	// Requests with the dryRun attribute will be auto-rejected if they match a webhook with
 	// sideEffects == Unknown or Some.
-	sideEffects?: null | #SideEffectClass @go(SideEffects,*SideEffectClass) @protobuf(6,bytes,opt,casttype=SideEffectClass)
+	sideEffects?: #SideEffectClass @go(SideEffects,*SideEffectClass) @protobuf(6,bytes,opt,casttype=SideEffectClass)
 
-	// TimeoutSeconds specifies the timeout for this webhook. After the timeout passes,
+	// timeoutSeconds specifies the timeout for this webhook. After the timeout passes,
 	// the webhook call will be ignored or the API call will fail based on the
 	// failure policy.
 	// The timeout value must be between 1 and 30 seconds.
 	// Default to 10 seconds.
 	// +optional
-	timeoutSeconds?: null | int32 @go(TimeoutSeconds,*int32) @protobuf(7,varint,opt)
+	timeoutSeconds?: int32 @go(TimeoutSeconds,*int32) @protobuf(7,varint,opt)
 
-	// AdmissionReviewVersions is an ordered list of preferred `AdmissionReview`
+	// admissionReviewVersions is an ordered list of preferred `AdmissionReview`
 	// versions the Webhook expects. API server will try to use first version in
 	// the list which it supports. If none of the versions specified in this list
 	// supported by API server, validation will fail for this object.
 	// If a persisted webhook configuration specifies allowed versions and does not
 	// include any versions known to the API Server, calls to the webhook will fail
 	// and be subject to the failure policy.
+	// +listType=atomic
 	admissionReviewVersions: [...string] @go(AdmissionReviewVersions,[]string) @protobuf(8,bytes,rep)
 
 	// reinvocationPolicy indicates whether this webhook should be called multiple times as part of a single admission evaluation.
@@ -475,9 +1087,9 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	//
 	// Defaults to "Never".
 	// +optional
-	reinvocationPolicy?: null | #ReinvocationPolicyType @go(ReinvocationPolicy,*ReinvocationPolicyType) @protobuf(10,bytes,opt,casttype=ReinvocationPolicyType)
+	reinvocationPolicy?: #ReinvocationPolicyType @go(ReinvocationPolicy,*ReinvocationPolicyType) @protobuf(10,bytes,opt,casttype=ReinvocationPolicyType)
 
-	// MatchConditions is a list of conditions that must be met for a request to be sent to this
+	// matchConditions is a list of conditions that must be met for a request to be sent to this
 	// webhook. Match conditions filter requests that have already been matched by the rules,
 	// namespaceSelector, and objectSelector. An empty list of matchConditions matches all requests.
 	// There are a maximum of 64 match conditions allowed.
@@ -489,18 +1101,340 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	//      - If failurePolicy=Fail, reject the request
 	//      - If failurePolicy=Ignore, the error is ignored and the webhook is skipped
 	//
-	// This is a beta feature and managed by the AdmissionWebhookMatchConditions feature gate.
+	// +patchMergeKey=name
+	// +patchStrategy=merge
+	// +listType=map
+	// +listMapKey=name
+	// +optional
+	matchConditions?: [...#MatchCondition] @go(MatchConditions,[]MatchCondition) @protobuf(12,bytes,opt)
+}
+
+// MutatingAdmissionPolicy describes the definition of an admission mutation policy that mutates the object coming into admission chain.
+#MutatingAdmissionPolicy: {
+	metav1.#TypeMeta
+
+	// metadata is the standard object metadata; More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata.
+	// +optional
+	metadata?: metav1.#ObjectMeta @go(ObjectMeta) @protobuf(1,bytes,opt)
+
+	// spec defines the desired behavior of the MutatingAdmissionPolicy.
+	spec?: #MutatingAdmissionPolicySpec @go(Spec) @protobuf(2,bytes,opt)
+}
+
+// MutatingAdmissionPolicyList is a list of MutatingAdmissionPolicy.
+#MutatingAdmissionPolicyList: {
+	metav1.#TypeMeta
+
+	// metadata is the standard list metadata.
+	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+	// +optional
+	metadata?: metav1.#ListMeta @go(ListMeta) @protobuf(1,bytes,opt)
+
+	// List of ValidatingAdmissionPolicy.
+	items: [...#MutatingAdmissionPolicy] @go(Items,[]MutatingAdmissionPolicy) @protobuf(2,bytes,rep)
+}
+
+// MutatingAdmissionPolicySpec defines the desired behavior of the admission policy.
+#MutatingAdmissionPolicySpec: {
+	// paramKind specifies the kind of resources used to parameterize this policy.
+	// If absent, there are no parameters for this policy and the param CEL variable will not be provided to validation expressions.
+	// If paramKind refers to a non-existent kind, this policy definition is mis-configured and the FailurePolicy is applied.
+	// If paramKind is specified but paramRef is unset in MutatingAdmissionPolicyBinding, the params variable will be null.
+	// +optional
+	paramKind?: #ParamKind @go(ParamKind,*ParamKind) @protobuf(1,bytes,rep)
+
+	// matchConstraints specifies what resources this policy is designed to validate.
+	// The MutatingAdmissionPolicy cares about a request if it matches _all_ Constraints.
+	// However, in order to prevent clusters from being put into an unstable state that cannot be recovered from via the API
+	// MutatingAdmissionPolicy cannot match MutatingAdmissionPolicy and MutatingAdmissionPolicyBinding.
+	// The CREATE, UPDATE and CONNECT operations are allowed.  The DELETE operation may not be matched.
+	// '*' matches CREATE, UPDATE and CONNECT.
+	// Required.
+	matchConstraints?: #MatchResources @go(MatchConstraints,*MatchResources) @protobuf(2,bytes,rep)
+
+	// variables contain definitions of variables that can be used in composition of other expressions.
+	// Each variable is defined as a named CEL expression.
+	// The variables defined here will be available under `variables` in other expressions of the policy
+	// except matchConditions because matchConditions are evaluated before the rest of the policy.
+	//
+	// The expression of a variable can refer to other variables defined earlier in the list but not those after.
+	// Thus, variables must be sorted by the order of first appearance and acyclic.
+	// +listType=atomic
+	// +optional
+	variables?: [...#Variable] @go(Variables,[]Variable) @protobuf(3,bytes,rep)
+
+	// mutations contain operations to perform on matching objects.
+	// mutations may not be empty; a minimum of one mutation is required.
+	// mutations are evaluated in order, and are reinvoked according to
+	// the reinvocationPolicy.
+	// The mutations of a policy are invoked for each binding of this policy
+	// and reinvocation of mutations occurs on a per binding basis.
+	//
+	// +listType=atomic
+	// +optional
+	mutations?: [...#Mutation] @go(Mutations,[]Mutation) @protobuf(4,bytes,rep)
+
+	// failurePolicy defines how to handle failures for the admission policy. Failures can
+	// occur from CEL expression parse errors, type check errors, runtime errors and invalid
+	// or mis-configured policy definitions or bindings.
+	//
+	// A policy is invalid if paramKind refers to a non-existent Kind.
+	// A binding is invalid if paramRef.name refers to a non-existent resource.
+	//
+	// failurePolicy does not define how validations that evaluate to false are handled.
+	//
+	// Allowed values are Ignore or Fail. Defaults to Fail.
+	// +optional
+	failurePolicy?: #FailurePolicyType @go(FailurePolicy,*FailurePolicyType) @protobuf(5,bytes,opt,casttype=FailurePolicyType)
+
+	// matchConditions is a list of conditions that must be met for a request to be validated.
+	// Match conditions filter requests that have already been matched by the matchConstraints.
+	// An empty list of matchConditions matches all requests.
+	// There are a maximum of 64 match conditions allowed.
+	//
+	// If a parameter object is provided, it can be accessed via the `params` handle in the same
+	// manner as validation expressions.
+	//
+	// The exact matching logic is (in order):
+	//   1. If ANY matchCondition evaluates to FALSE, the policy is skipped.
+	//   2. If ALL matchConditions evaluate to TRUE, the policy is evaluated.
+	//   3. If any matchCondition evaluates to an error (but none are FALSE):
+	//      - If failurePolicy=Fail, reject the request
+	//      - If failurePolicy=Ignore, the policy is skipped
 	//
 	// +patchMergeKey=name
 	// +patchStrategy=merge
 	// +listType=map
 	// +listMapKey=name
-	// +featureGate=AdmissionWebhookMatchConditions
 	// +optional
-	matchConditions?: [...#MatchCondition] @go(MatchConditions,[]MatchCondition) @protobuf(12,bytes,opt)
+	matchConditions?: [...#MatchCondition] @go(MatchConditions,[]MatchCondition) @protobuf(6,bytes,rep)
+
+	// reinvocationPolicy indicates whether mutations may be called multiple times per MutatingAdmissionPolicyBinding
+	// as part of a single admission evaluation.
+	// Allowed values are "Never" and "IfNeeded".
+	//
+	// Never: These mutations will not be called more than once per binding in a single admission evaluation.
+	//
+	// IfNeeded: These mutations may be invoked more than once per binding for a single admission request and there is no guarantee of
+	// order with respect to other admission plugins, admission webhooks, bindings of this policy and admission policies.  Mutations are only
+	// reinvoked when mutations change the object after this mutation is invoked.
+	// Required.
+	reinvocationPolicy?: #ReinvocationPolicyType @go(ReinvocationPolicy) @protobuf(7,bytes,opt,casttype=ReinvocationPolicyType)
 }
 
-// ReinvocationPolicyType specifies what type of policy the admission hook uses.
+// Mutation specifies the CEL expression which is used to apply the Mutation.
+#Mutation: {
+	// patchType indicates the patch strategy used.
+	// Allowed values are "ApplyConfiguration" and "JSONPatch".
+	// Required.
+	//
+	// +unionDiscriminator
+	patchType: #PatchType @go(PatchType) @protobuf(2,bytes,opt,casttype=PatchType)
+
+	// applyConfiguration defines the desired configuration values of an object.
+	// The configuration is applied to the admission object using
+	// [structured merge diff](https://github.com/kubernetes-sigs/structured-merge-diff).
+	// A CEL expression is used to create apply configuration.
+	applyConfiguration?: #ApplyConfiguration @go(ApplyConfiguration,*ApplyConfiguration) @protobuf(3,bytes,opt)
+
+	// jsonPatch defines a [JSON patch](https://jsonpatch.com/) operation to perform a mutation to the object.
+	// A CEL expression is used to create the JSON patch.
+	jsonPatch?: #JSONPatch @go(JSONPatch,*JSONPatch) @protobuf(4,bytes,opt)
+}
+
+// PatchType specifies the type of patch operation for a mutation.
+// +enum
+#PatchType: string // #enumPatchType
+
+#enumPatchType:
+	#PatchTypeApplyConfiguration |
+	#PatchTypeJSONPatch
+
+// ApplyConfiguration indicates that the mutation is using apply configuration to mutate the object.
+#PatchTypeApplyConfiguration: #PatchType & "ApplyConfiguration"
+
+// JSONPatch indicates that the object is mutated through JSON Patch.
+#PatchTypeJSONPatch: #PatchType & "JSONPatch"
+
+// ApplyConfiguration defines the desired configuration values of an object.
+#ApplyConfiguration: {
+	// expression will be evaluated by CEL to create an apply configuration.
+	// ref: https://github.com/google/cel-spec
+	//
+	// Apply configurations are declared in CEL using object initialization. For example, this CEL expression
+	// returns an apply configuration to set a single field:
+	//
+	//	Object{
+	//	  spec: Object.spec{
+	//	    serviceAccountName: "example"
+	//	  }
+	//	}
+	//
+	// Apply configurations may not modify atomic structs, maps or arrays due to the risk of accidental deletion of
+	// values not included in the apply configuration.
+	//
+	// CEL expressions have access to the object types needed to create apply configurations:
+	//
+	// - 'Object' - CEL type of the resource object.
+	// - 'Object.<fieldName>' - CEL type of object field (such as 'Object.spec')
+	// - 'Object.<fieldName1>.<fieldName2>...<fieldNameN>` - CEL type of nested field (such as 'Object.spec.containers')
+	//
+	// CEL expressions have access to the contents of the API request, organized into CEL variables as well as some other useful variables:
+	//
+	// - 'object' - The object from the incoming request. The value is null for DELETE requests.
+	// - 'oldObject' - The existing object. The value is null for CREATE requests.
+	// - 'request' - Attributes of the API request([ref](/pkg/apis/admission/types.go#AdmissionRequest)).
+	// - 'params' - Parameter resource referred to by the policy binding being evaluated. Only populated if the policy has a ParamKind.
+	// - 'namespaceObject' - The namespace object that the incoming object belongs to. The value is null for cluster-scoped resources.
+	// - 'variables' - Map of composited variables, from its name to its lazily evaluated value.
+	//   For example, a variable named 'foo' can be accessed as 'variables.foo'.
+	// - 'authorizer' - A CEL Authorizer. May be used to perform authorization checks for the principal (user or service account) of the request.
+	//   See https://pkg.go.dev/k8s.io/apiserver/pkg/cel/library#Authz
+	// - 'authorizer.requestResource' - A CEL ResourceCheck constructed from the 'authorizer' and configured with the
+	//   request resource.
+	//
+	// The `apiVersion`, `kind`, `metadata.name` and `metadata.generateName` are always accessible from the root of the
+	// object. No other metadata properties are accessible.
+	//
+	// Only property names of the form `[a-zA-Z_.-/][a-zA-Z0-9_.-/]*` are accessible.
+	// Required.
+	expression?: string @go(Expression) @protobuf(1,bytes,opt)
+}
+
+// JSONPatch defines a JSON Patch.
+#JSONPatch: {
+	// expression will be evaluated by CEL to create a [JSON patch](https://jsonpatch.com/).
+	// ref: https://github.com/google/cel-spec
+	//
+	// expression must return an array of JSONPatch values.
+	//
+	// For example, this CEL expression returns a JSON patch to conditionally modify a value:
+	//
+	//	  [
+	//	    JSONPatch{op: "test", path: "/spec/example", value: "Red"},
+	//	    JSONPatch{op: "replace", path: "/spec/example", value: "Green"}
+	//	  ]
+	//
+	// To define an object for the patch value, use Object types. For example:
+	//
+	//	  [
+	//	    JSONPatch{
+	//	      op: "add",
+	//	      path: "/spec/selector",
+	//	      value: Object.spec.selector{matchLabels: {"environment": "test"}}
+	//	    }
+	//	  ]
+	//
+	// To use strings containing '/' and '~' as JSONPatch path keys, use "jsonpatch.escapeKey". For example:
+	//
+	//	  [
+	//	    JSONPatch{
+	//	      op: "add",
+	//	      path: "/metadata/labels/" + jsonpatch.escapeKey("example.com/environment"),
+	//	      value: "test"
+	//	    },
+	//	  ]
+	//
+	// CEL expressions have access to the types needed to create JSON patches and objects:
+	//
+	// - 'JSONPatch' - CEL type of JSON Patch operations. JSONPatch has the fields 'op', 'from', 'path' and 'value'.
+	//   See [JSON patch](https://jsonpatch.com/) for more details. The 'value' field may be set to any of: string,
+	//   integer, array, map or object.  If set, the 'path' and 'from' fields must be set to a
+	//   [JSON pointer](https://datatracker.ietf.org/doc/html/rfc6901/) string, where the 'jsonpatch.escapeKey()' CEL
+	//   function may be used to escape path keys containing '/' and '~'.
+	// - 'Object' - CEL type of the resource object.
+	// - 'Object.<fieldName>' - CEL type of object field (such as 'Object.spec')
+	// - 'Object.<fieldName1>.<fieldName2>...<fieldNameN>` - CEL type of nested field (such as 'Object.spec.containers')
+	//
+	// CEL expressions have access to the contents of the API request, organized into CEL variables as well as some other useful variables:
+	//
+	// - 'object' - The object from the incoming request. The value is null for DELETE requests.
+	// - 'oldObject' - The existing object. The value is null for CREATE requests.
+	// - 'request' - Attributes of the API request([ref](/pkg/apis/admission/types.go#AdmissionRequest)).
+	// - 'params' - Parameter resource referred to by the policy binding being evaluated. Only populated if the policy has a ParamKind.
+	// - 'namespaceObject' - The namespace object that the incoming object belongs to. The value is null for cluster-scoped resources.
+	// - 'variables' - Map of composited variables, from its name to its lazily evaluated value.
+	//   For example, a variable named 'foo' can be accessed as 'variables.foo'.
+	// - 'authorizer' - A CEL Authorizer. May be used to perform authorization checks for the principal (user or service account) of the request.
+	//   See https://pkg.go.dev/k8s.io/apiserver/pkg/cel/library#Authz
+	// - 'authorizer.requestResource' - A CEL ResourceCheck constructed from the 'authorizer' and configured with the
+	//   request resource.
+	//
+	// CEL expressions have access to [Kubernetes CEL function libraries](https://kubernetes.io/docs/reference/using-api/cel/#cel-options-language-features-and-libraries)
+	// as well as:
+	//
+	// - 'jsonpatch.escapeKey' - Performs JSONPatch key escaping. '~' and  '/' are escaped as '~0' and `~1' respectively).
+	//
+	//
+	// Only property names of the form `[a-zA-Z_.-/][a-zA-Z0-9_.-/]*` are accessible.
+	// Required.
+	expression?: string @go(Expression) @protobuf(1,bytes,opt)
+}
+
+// MutatingAdmissionPolicyBinding binds the MutatingAdmissionPolicy with parametrized resources.
+// MutatingAdmissionPolicyBinding and the optional parameter resource together define how cluster administrators
+// configure policies for clusters.
+//
+// For a given admission request, each binding will cause its policy to be
+// evaluated N times, where N is 1 for policies/bindings that don't use
+// params, otherwise N is the number of parameters selected by the binding.
+// Each evaluation is constrained by a [runtime cost budget](https://kubernetes.io/docs/reference/using-api/cel/#runtime-cost-budget).
+//
+// Adding/removing policies, bindings, or params can not affect whether a
+// given (policy, binding, param) combination is within its own CEL budget.
+#MutatingAdmissionPolicyBinding: {
+	metav1.#TypeMeta
+
+	// metadata is the standard object metadata; More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata.
+	// +optional
+	metadata?: metav1.#ObjectMeta @go(ObjectMeta) @protobuf(1,bytes,opt)
+
+	// spec defines the desired behavior of the MutatingAdmissionPolicyBinding.
+	spec?: #MutatingAdmissionPolicyBindingSpec @go(Spec) @protobuf(2,bytes,opt)
+}
+
+// MutatingAdmissionPolicyBindingList is a list of MutatingAdmissionPolicyBinding.
+#MutatingAdmissionPolicyBindingList: {
+	metav1.#TypeMeta
+
+	// metadata is the standard list metadata.
+	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+	// +optional
+	metadata?: metav1.#ListMeta @go(ListMeta) @protobuf(1,bytes,opt)
+
+	// List of PolicyBinding.
+	items: [...#MutatingAdmissionPolicyBinding] @go(Items,[]MutatingAdmissionPolicyBinding) @protobuf(2,bytes,rep)
+}
+
+// MutatingAdmissionPolicyBindingSpec defines the specification of the MutatingAdmissionPolicyBinding.
+#MutatingAdmissionPolicyBindingSpec: {
+	// policyName references a MutatingAdmissionPolicy name which the MutatingAdmissionPolicyBinding binds to.
+	// If the referenced resource does not exist, this binding is considered invalid and will be ignored
+	// Required.
+	policyName?: string @go(PolicyName) @protobuf(1,bytes,rep)
+
+	// paramRef specifies the parameter resource used to configure the admission control policy.
+	// It should point to a resource of the type specified in spec.ParamKind of the bound MutatingAdmissionPolicy.
+	// If the policy specifies a ParamKind and the resource referred to by ParamRef does not exist, this binding is considered mis-configured and the FailurePolicy of the MutatingAdmissionPolicy applied.
+	// If the policy does not specify a ParamKind then this field is ignored, and the rules are evaluated without a param.
+	// +optional
+	paramRef?: #ParamRef @go(ParamRef,*ParamRef) @protobuf(2,bytes,rep)
+
+	// matchResources limits what resources match this binding and may be mutated by it.
+	// Note that if matchResources matches a resource, the resource must also match a policy's matchConstraints and
+	// matchConditions before the resource may be mutated.
+	// When matchResources is unset, it does not constrain resource matching, and only the policy's matchConstraints
+	// and matchConditions must match for the resource to be mutated.
+	// Additionally, matchResources.resourceRules are optional and do not constraint matching when unset.
+	// Note that this is differs from MutatingAdmissionPolicy matchConstraints, where resourceRules are required.
+	// The CREATE, UPDATE and CONNECT operations are allowed.  The DELETE operation may not be matched.
+	// '*' matches CREATE, UPDATE and CONNECT.
+	// +optional
+	matchResources?: #MatchResources @go(MatchResources,*MatchResources) @protobuf(3,bytes,rep)
+}
+
+// ReinvocationPolicyType specifies what type of policy is used when other admission plugins also perform
+// modifications.
 // +enum
 #ReinvocationPolicyType: string // #enumReinvocationPolicyType
 
@@ -508,19 +1442,19 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	#NeverReinvocationPolicy |
 	#IfNeededReinvocationPolicy
 
-// NeverReinvocationPolicy indicates that the webhook must not be called more than once in a
+// NeverReinvocationPolicy indicates that the mutation must not be called more than once in a
 // single admission evaluation.
 #NeverReinvocationPolicy: #ReinvocationPolicyType & "Never"
 
-// IfNeededReinvocationPolicy indicates that the webhook may be called at least one
+// IfNeededReinvocationPolicy indicates that the mutation may be called at least one
 // additional time as part of the admission evaluation if the object being admitted is
-// modified by other admission plugins after the initial webhook call.
+// modified by other admission plugins after the initial mutation call.
 #IfNeededReinvocationPolicy: #ReinvocationPolicyType & "IfNeeded"
 
 // RuleWithOperations is a tuple of Operations and Resources. It is recommended to make
 // sure that all the tuple expansions are valid.
 #RuleWithOperations: {
-	// Operations is the operations the admission hook cares about - CREATE, UPDATE, DELETE, CONNECT or *
+	// operations is the operations the admission hook cares about - CREATE, UPDATE, DELETE, CONNECT or *
 	// for all of those operations and any future admission operations that are added.
 	// If '*' is present, the length of the slice must be one.
 	// Required.
@@ -550,7 +1484,7 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 // WebhookClientConfig contains the information to make a TLS
 // connection with the webhook
 #WebhookClientConfig: {
-	// `url` gives the location of the webhook, in standard URL form
+	// url gives the location of the webhook, in standard URL form
 	// (`scheme://host:port/path`). Exactly one of `url` or `service`
 	// must be specified.
 	//
@@ -577,17 +1511,17 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	// allowed, either.
 	//
 	// +optional
-	url?: null | string @go(URL,*string) @protobuf(3,bytes,opt)
+	url?: string @go(URL,*string) @protobuf(3,bytes,opt)
 
-	// `service` is a reference to the service for this webhook. Either
+	// service is a reference to the service for this webhook. Either
 	// `service` or `url` must be specified.
 	//
 	// If the webhook is running within the cluster, then you should use `service`.
 	//
 	// +optional
-	service?: null | #ServiceReference @go(Service,*ServiceReference) @protobuf(1,bytes,opt)
+	service?: #ServiceReference @go(Service,*ServiceReference) @protobuf(1,bytes,opt)
 
-	// `caBundle` is a PEM encoded CA bundle which will be used to validate the webhook's server certificate.
+	// caBundle is a PEM encoded CA bundle which will be used to validate the webhook's server certificate.
 	// If unspecified, system trust roots on the apiserver are used.
 	// +optional
 	caBundle?: bytes @go(CABundle,[]byte) @protobuf(2,bytes,opt)
@@ -595,29 +1529,29 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 // ServiceReference holds a reference to Service.legacy.k8s.io
 #ServiceReference: {
-	// `namespace` is the namespace of the service.
+	// namespace is the namespace of the service.
 	// Required
 	namespace: string @go(Namespace) @protobuf(1,bytes,opt)
 
-	// `name` is the name of the service.
+	// name is the name of the service.
 	// Required
 	name: string @go(Name) @protobuf(2,bytes,opt)
 
-	// `path` is an optional URL path which will be sent in any request to
+	// path is an optional URL path which will be sent in any request to
 	// this service.
 	// +optional
-	path?: null | string @go(Path,*string) @protobuf(3,bytes,opt)
+	path?: string @go(Path,*string) @protobuf(3,bytes,opt)
 
-	// If specified, the port on the service that hosting webhook.
+	// port is the port on the service that hosts the webhook.
 	// Default to 443 for backward compatibility.
 	// `port` should be a valid port number (1-65535, inclusive).
 	// +optional
-	port?: null | int32 @go(Port,*int32) @protobuf(4,varint,opt)
+	port?: int32 @go(Port,*int32) @protobuf(4,varint,opt)
 }
 
 // MatchCondition represents a condition which must by fulfilled for a request to be sent to a webhook.
 #MatchCondition: {
-	// Name is an identifier for this match condition, used for strategic merging of MatchConditions,
+	// name is an identifier for this match condition, used for strategic merging of MatchConditions,
 	// as well as providing an identifier for logging purposes. A good name should be descriptive of
 	// the associated expression.
 	// Name must be a qualified name consisting of alphanumeric characters, '-', '_' or '.', and
@@ -628,7 +1562,7 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	// Required.
 	name: string @go(Name) @protobuf(1,bytes,opt)
 
-	// Expression represents the expression which will be evaluated by CEL. Must evaluate to bool.
+	// expression represents the expression which will be evaluated by CEL. Must evaluate to bool.
 	// CEL expressions have access to the contents of the AdmissionRequest and Authorizer, organized into CEL variables:
 	//
 	// 'object' - The object from the incoming request. The value is null for DELETE requests.

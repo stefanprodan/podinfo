@@ -42,6 +42,8 @@ import "k8s.io/apimachinery/pkg/runtime"
 	Object: runtime.#Object
 }
 
+#FakeOptions: ChannelSize: int
+
 // RaceFreeFakeWatcher lets you test anything that consumes a watch.Interface; threadsafe.
 #RaceFreeFakeWatcher: {
 	Stopped: bool

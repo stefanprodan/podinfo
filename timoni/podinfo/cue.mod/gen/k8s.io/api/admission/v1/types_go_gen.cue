@@ -15,34 +15,37 @@ import (
 #AdmissionReview: {
 	metav1.#TypeMeta
 
-	// Request describes the attributes for the admission request.
+	// request describes the attributes for the admission request.
 	// +optional
 	request?: null | #AdmissionRequest @go(Request,*AdmissionRequest) @protobuf(1,bytes,opt)
 
-	// Response describes the attributes for the admission response.
+	// response describes the attributes for the admission response.
 	// +optional
 	response?: null | #AdmissionResponse @go(Response,*AdmissionResponse) @protobuf(2,bytes,opt)
 }
 
 // AdmissionRequest describes the admission.Attributes for the admission request.
 #AdmissionRequest: {
-	// UID is an identifier for the individual request/response. It allows us to distinguish instances of requests which are
+	// uid is an identifier for the individual request/response. It allows us to distinguish instances of requests which are
 	// otherwise identical (parallel requests, requests when earlier requests did not modify etc)
 	// The UID is meant to track the round trip (request/response) between the KAS and the WebHook, not the user request.
 	// It is suitable for correlating log entries between the webhook and apiserver, for either auditing or debugging.
-	uid: types.#UID @go(UID) @protobuf(1,bytes,opt)
+	// +optional
+	uid?: types.#UID @go(UID) @protobuf(1,bytes,opt)
 
-	// Kind is the fully-qualified type of object being submitted (for example, v1.Pod or autoscaling.v1.Scale)
-	kind: metav1.#GroupVersionKind @go(Kind) @protobuf(2,bytes,opt)
+	// kind is the fully-qualified type of object being submitted (for example, v1.Pod or autoscaling.v1.Scale)
+	// +optional
+	kind?: metav1.#GroupVersionKind @go(Kind) @protobuf(2,bytes,opt)
 
-	// Resource is the fully-qualified resource being requested (for example, v1.pods)
-	resource: metav1.#GroupVersionResource @go(Resource) @protobuf(3,bytes,opt)
+	// resource is the fully-qualified resource being requested (for example, v1.pods)
+	// +optional
+	resource?: metav1.#GroupVersionResource @go(Resource) @protobuf(3,bytes,opt)
 
-	// SubResource is the subresource being requested, if any (for example, "status" or "scale")
+	// subResource is the subresource being requested, if any (for example, "status" or "scale")
 	// +optional
 	subResource?: string @go(SubResource) @protobuf(4,bytes,opt)
 
-	// RequestKind is the fully-qualified type of the original API request (for example, v1.Pod or autoscaling.v1.Scale).
+	// requestKind is the fully-qualified type of the original API request (for example, v1.Pod or autoscaling.v1.Scale).
 	// If this is specified and differs from the value in "kind", an equivalent match and conversion was performed.
 	//
 	// For example, if deployments can be modified via apps/v1 and apps/v1beta1, and a webhook registered a rule of
@@ -55,7 +58,7 @@ import (
 	// +optional
 	requestKind?: null | metav1.#GroupVersionKind @go(RequestKind,*metav1.GroupVersionKind) @protobuf(13,bytes,opt)
 
-	// RequestResource is the fully-qualified resource of the original API request (for example, v1.pods).
+	// requestResource is the fully-qualified resource of the original API request (for example, v1.pods).
 	// If this is specified and differs from the value in "resource", an equivalent match and conversion was performed.
 	//
 	// For example, if deployments can be modified via apps/v1 and apps/v1beta1, and a webhook registered a rule of
@@ -68,42 +71,44 @@ import (
 	// +optional
 	requestResource?: null | metav1.#GroupVersionResource @go(RequestResource,*metav1.GroupVersionResource) @protobuf(14,bytes,opt)
 
-	// RequestSubResource is the name of the subresource of the original API request, if any (for example, "status" or "scale")
+	// requestSubResource is the name of the subresource of the original API request, if any (for example, "status" or "scale")
 	// If this is specified and differs from the value in "subResource", an equivalent match and conversion was performed.
 	// See documentation for the "matchPolicy" field in the webhook configuration type.
 	// +optional
 	requestSubResource?: string @go(RequestSubResource) @protobuf(15,bytes,opt)
 
-	// Name is the name of the object as presented in the request.  On a CREATE operation, the client may omit name and
+	// name is the name of the object as presented in the request.  On a CREATE operation, the client may omit name and
 	// rely on the server to generate the name.  If that is the case, this field will contain an empty string.
 	// +optional
 	name?: string @go(Name) @protobuf(5,bytes,opt)
 
-	// Namespace is the namespace associated with the request (if any).
+	// namespace is the namespace associated with the request (if any).
 	// +optional
 	namespace?: string @go(Namespace) @protobuf(6,bytes,opt)
 
-	// Operation is the operation being performed. This may be different than the operation
+	// operation is the operation being performed. This may be different than the operation
 	// requested. e.g. a patch can result in either a CREATE or UPDATE Operation.
-	operation: #Operation @go(Operation) @protobuf(7,bytes,opt)
+	// +optional
+	operation?: #Operation @go(Operation) @protobuf(7,bytes,opt)
 
-	// UserInfo is information about the requesting user
-	userInfo: authenticationv1.#UserInfo @go(UserInfo) @protobuf(8,bytes,opt)
+	// userInfo is information about the requesting user
+	// +optional
+	userInfo?: authenticationv1.#UserInfo @go(UserInfo) @protobuf(8,bytes,opt)
 
-	// Object is the object from the incoming request.
+	// object is the object from the incoming request.
 	// +optional
 	object?: runtime.#RawExtension @go(Object) @protobuf(9,bytes,opt)
 
-	// OldObject is the existing object. Only populated for DELETE and UPDATE requests.
+	// oldObject is the existing object. Only populated for DELETE and UPDATE requests.
 	// +optional
 	oldObject?: runtime.#RawExtension @go(OldObject) @protobuf(10,bytes,opt)
 
-	// DryRun indicates that modifications will definitely not be persisted for this request.
+	// dryRun indicates that modifications will definitely not be persisted for this request.
 	// Defaults to false.
 	// +optional
 	dryRun?: null | bool @go(DryRun,*bool) @protobuf(11,varint,opt)
 
-	// Options is the operation option structure of the operation being performed.
+	// options is the operation option structure of the operation being performed.
 	// e.g. `meta.k8s.io/v1.DeleteOptions` or `meta.k8s.io/v1.CreateOptions`. This may be
 	// different than the options the caller provided. e.g. for a patch request the performed
 	// Operation might be a CREATE, in which case the Options will a
@@ -114,27 +119,29 @@ import (
 
 // AdmissionResponse describes an admission response.
 #AdmissionResponse: {
-	// UID is an identifier for the individual request/response.
+	// uid is an identifier for the individual request/response.
 	// This must be copied over from the corresponding AdmissionRequest.
-	uid: types.#UID @go(UID) @protobuf(1,bytes,opt)
+	// +optional
+	uid?: types.#UID @go(UID) @protobuf(1,bytes,opt)
 
-	// Allowed indicates whether or not the admission request was permitted.
-	allowed: bool @go(Allowed) @protobuf(2,varint,opt)
+	// allowed indicates whether or not the admission request was permitted.
+	// +optional
+	allowed?: bool @go(Allowed) @protobuf(2,varint,opt)
 
-	// Result contains extra details into why an admission request was denied.
+	// status is the result contains extra details into why an admission request was denied.
 	// This field IS NOT consulted in any way if "Allowed" is "true".
 	// +optional
 	status?: null | metav1.#Status @go(Result,*metav1.Status) @protobuf(3,bytes,opt)
 
-	// The patch body. Currently we only support "JSONPatch" which implements RFC 6902.
+	// patch is the patch body. Currently we only support "JSONPatch" which implements RFC 6902.
 	// +optional
 	patch?: bytes @go(Patch,[]byte) @protobuf(4,bytes,opt)
 
-	// The type of Patch. Currently we only allow "JSONPatch".
+	// patchType is the type of Patch. Currently we only allow "JSONPatch".
 	// +optional
 	patchType?: null | #PatchType @go(PatchType,*PatchType) @protobuf(5,bytes,opt)
 
-	// AuditAnnotations is an unstructured key value map set by remote admission controller (e.g. error=image-blacklisted).
+	// auditAnnotations is an unstructured key value map set by remote admission controller (e.g. error=image-blacklisted).
 	// MutatingAdmissionWebhook and ValidatingAdmissionWebhook admission controller will prefix the keys with
 	// admission webhook name (e.g. imagepolicy.example.com/error=image-blacklisted). AuditAnnotations will be provided by
 	// the admission webhook to add additional context to the audit log for this request.
@@ -146,6 +153,7 @@ import (
 	// Limit warnings to 120 characters if possible.
 	// Warnings over 256 characters and large numbers of warnings may be truncated.
 	// +optional
+	// +listType=atomic
 	warnings?: [...string] @go(Warnings,[]string) @protobuf(7,bytes,rep)
 }
 

@@ -4,6 +4,16 @@
 
 package runtime
 
+// ProtobufReverseMarshaller can precompute size, and marshals to the start of the provided data buffer.
 #ProtobufMarshaller: _
 
+// ProtobufReverseMarshaller can precompute size, and marshals to the end of the provided data buffer.
 #ProtobufReverseMarshaller: _
+
+_#typeMetaTag:        0xa
+_#rawTag:             0x12
+_#contentEncodingTag: 0x1a
+_#contentTypeTag:     0x22
+
+// max length of a varint for a uint64
+_#maxUint64VarIntLength: 10
