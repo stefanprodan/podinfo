@@ -14,7 +14,6 @@ metadata:
 spec:
   containers:
     - name: grpc-health-probe
-      image: stefanprodan/grpc_health_probe:v0.3.0
-      command: ['grpc_health_probe']
+      image: ghcr.io/grpc-ecosystem/grpc-health-probe:v0.4.56
       args:  ['-addr={{ template "podinfo.fullname" . }}.{{ include "podinfo.namespace" . }}:{{ .Values.service.grpcPort }}']
   restartPolicy: Never
