@@ -50,9 +50,6 @@ spec:
         - name: http-metrics
           containerPort: 9797
           protocol: TCP
-        - name: grpc
-          containerPort: 9999
-          protocol: TCP
         volumeMounts:
         - name: tls
           mountPath: /data/cert
