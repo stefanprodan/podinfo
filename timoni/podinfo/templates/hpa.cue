@@ -1,10 +1,10 @@
 package templates
 
 import (
-	autoscaling "k8s.io/api/autoscaling/v2"
+	autoscalingv2 "k8s.io/api/autoscaling/v2"
 )
 
-#HorizontalPodAutoscaler: autoscaling.#HorizontalPodAutoscaler & {
+#HorizontalPodAutoscaler: autoscalingv2.#HorizontalPodAutoscaler & {
 	_config:    #Config
 	apiVersion: "autoscaling/v2"
 	kind:       "HorizontalPodAutoscaler"
@@ -15,33 +15,37 @@ import (
 			kind:       "Deployment"
 			name:       _config.metadata.name
 		}
-		minReplicas: _config.autoscaling.minReplicas
-		maxReplicas: _config.autoscaling.maxReplicas
+		minReplicas: _config.hpa.minReplicas
+		maxReplicas: _config.hpa.maxReplicas
 		metrics: [
-			if _config.autoscaling.cpu > 0 {
+			if _config.hpa.cpu > 0 {
 				{
 					type: "Resource"
 					resource: {
 						name: "cpu"
 						target: {
 							type:               "Utilization"
-							averageUtilization: _config.autoscaling.cpu
+							averageUtilization: _config.hpa.cpu
 						}
 					}
 				}
 			},
-			if _config.autoscaling.memory != "" {
+			if _config.hpa.memory != "" {
 				{
 					type: "Resource"
 					resource: {
 						name: "memory"
 						target: {
 							type:         "AverageValue"
-							averageValue: _config.autoscaling.memory
+							averageValue: _config.hpa.memory
 						}
 					}
 				}
 			},
+			for m in _config.hpa.metrics {m},
 		]
+		if _config.hpa.behavior != _|_ {
+			behavior: _config.hpa.behavior
+		}
 	}
 }

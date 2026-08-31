@@ -8,5 +8,19 @@ import (
 	_config:    #Config
 	apiVersion: "v1"
 	kind:       "ServiceAccount"
-	metadata:   _config.metadata
+	metadata: {
+		name:      _config.serviceAccount.name
+		namespace: _config.metadata.namespace
+		labels:    _config.metadata.labels
+		if _config.serviceAccount.labels != _|_ {
+			labels: _config.serviceAccount.labels
+		}
+		if _config.metadata.annotations != _|_ {
+			annotations: _config.metadata.annotations
+		}
+		if _config.serviceAccount.annotations != _|_ {
+			annotations: _config.serviceAccount.annotations
+		}
+	}
+	automountServiceAccountToken: _config.serviceAccount.automountServiceAccountToken
 }
