@@ -4,7 +4,7 @@ package main
 values: {
 	image: {
 		repository: *"ghcr.io/stefanprodan/podinfo" | string
-		tag:        *"6.14.1" | string
+		tag:        *"6.15.0" | string
 		digest:     *"" | string
 	}
 	test: {
