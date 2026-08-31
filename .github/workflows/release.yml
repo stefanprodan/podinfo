@@ -21,7 +21,7 @@ jobs:
       - uses: ./.github/actions/runner-cleanup
       - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
       - uses: fluxcd/flux2/action@6a650dba1b4ae9945185c4bb3cc3f386aaf71b3d # v2.9.2
-      - uses: stefanprodan/timoni/actions/setup@69e421aebbed979ded721df0da2a54428c5b4b9c # v0.27.0
+      - uses: stefanprodan/timoni/actions/setup@bb0f07cc4f586e91d5076e63e632cab8398fef41 # v0.34.0
       - name: Setup Notation CLI
         uses: notaryproject/notation-action/setup@b6fee73110795d6793253c673bd723f12bcf9bbb # v1.2.2
         with:

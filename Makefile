@@ -54,7 +54,7 @@ version-set:
 	perl -i -pe "s/tag: \Q$$current\E/tag: $$next/g" charts/podinfo/values-prod.yaml && \
 	perl -i -pe "s/appVersion: \Q$$current\E/appVersion: $$next/g" charts/podinfo/Chart.yaml && \
 	perl -i -pe "s/version: \Q$$current\E/version: $$next/g" charts/podinfo/Chart.yaml && \
-	perl -i -pe "s/\Q$$current\E/$$next/g" timoni/podinfo/values.cue && \
+	perl -i -pe "s/\Q$$current\E/$$next/g" timoni/podinfo/images.cue && \
 	grep -rl "podinfo:$$current" deploy kustomize | xargs perl -i -pe "s/\Qpodinfo:$$current\E/podinfo:$$next/g" && \
 	echo "Version $$next set in code, deployment, module, chart and kustomize"
 
