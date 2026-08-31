@@ -34,9 +34,6 @@ spec:
         - name: http-metrics
           containerPort: 9797
           protocol: TCP
-        - name: grpc
-          containerPort: 9999
-          protocol: TCP
         command:
         - ./podinfo
         - --port=9898
