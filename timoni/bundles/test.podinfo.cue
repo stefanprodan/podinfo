@@ -19,7 +19,7 @@ bundle: {
 					cpu:    "100m"
 					memory: "128Mi"
 				}
-				autoscaling: {
+				hpa: {
 					enabled:     true
 					minReplicas: 1
 					maxReplicas: 10
@@ -38,28 +38,16 @@ bundle: {
 				}
 				ui: backend: "http://backend.podinfo.svc.cluster.local/echo"
 				replicas: 2
-				podSecurityContext: {
-					runAsUser:  100
-					runAsGroup: 101
-					fsGroup:    101
-				}
-				securityContext: {
-					allowPrivilegeEscalation: false
-					readOnlyRootFilesystem:   true
-					runAsNonRoot:             true
-					capabilities: drop: ["ALL"]
-					seccompProfile: type: "RuntimeDefault"
-				}
+				podDisruptionBudget: enabled: true
+				// The e2e cluster runs no ingress controller; the Ingress
+				// exercises the template with a controller-agnostic config.
 				ingress: {
-					enabled:   true
-					className: "nginx"
-					host:      "podinfo.local"
-					tls:       true
-					annotations: {
-						"nginx.ingress.kubernetes.io/ssl-redirect":       "false"
-						"nginx.ingress.kubernetes.io/force-ssl-redirect": "false"
-						"cert-manager.io/cluster-issuer":                 "self-signed"
-					}
+					enabled: true
+					hosts: [{host: "podinfo.local"}]
+					tls: [{
+						secretName: "podinfo-cert"
+						hosts: ["podinfo.local"]
+					}]
 				}
 				test: enabled: true
 			}

@@ -73,6 +73,7 @@ package resource
 // +protobuf.options.(gogoproto.goproto_stringer)=false
 // +k8s:deepcopy-gen=true
 // +k8s:openapi-gen=true
+// +k8s:openapi-model-package=io.k8s.apimachinery.pkg.api.resource
 #Quantity: _
 
 // CanonicalValue allows a quantity amount to be converted to a string.
@@ -104,4 +105,5 @@ _#int64QuantityExpectedBytes: 18
 // +protobuf.options.marshal=false
 // +protobuf.options.(gogoproto.goproto_stringer)=false
 // +k8s:deepcopy-gen=true
+// +k8s:openapi-model-package=io.k8s.apimachinery.pkg.api.resource
 #QuantityValue: _

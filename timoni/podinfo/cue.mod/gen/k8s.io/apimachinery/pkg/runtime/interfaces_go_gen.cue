@@ -23,6 +23,10 @@ package runtime
 // Encoder writes objects to a serialized form
 #Encoder: _
 
+// NondeterministicEncoder is implemented by Encoders that can serialize objects more efficiently in
+// cases where the output does not need to be deterministic.
+#NondeterministicEncoder: _
+
 // MemoryAllocator is responsible for allocating memory.
 // By encapsulating memory allocation into its own interface, we can reuse the memory
 // across many operations in places we know it can significantly improve the performance.
@@ -78,7 +82,7 @@ package runtime
 
 	// StreamSerializer, if set, describes the streaming serialization format
 	// for this media type.
-	StreamSerializer?: null | #StreamSerializerInfo @go(,*StreamSerializerInfo)
+	StreamSerializer?: #StreamSerializerInfo @go(,*StreamSerializerInfo)
 }
 
 // StreamSerializerInfo contains information about a specific stream serialization format
@@ -163,3 +167,6 @@ package runtime
 // Unstructured objects store values as map[string]interface{}, with only values that can be serialized
 // to JSON allowed.
 #Unstructured: _
+
+// ApplyConfiguration is an interface that root apply configuration types implement.
+#ApplyConfiguration: _

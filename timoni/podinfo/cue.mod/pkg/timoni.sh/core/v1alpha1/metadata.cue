@@ -43,15 +43,20 @@ import "strings"
 
 	// Standard Kubernetes labels: app name, version and managed-by.
 	labels: {
-		"\(#StdLabelName)":      name
-		"\(#StdLabelVersion)":   #Version
-		"\(#StdLabelManagedBy)": "timoni"
+		(#StdLabelName):      name
+		(#StdLabelVersion):   #Version
+		(#StdLabelManagedBy): "timoni"
 	}
 
 	// LabelSelector selects Pods based on the app.kubernetes.io/name label.
 	#LabelSelector: #Labels & {
-		"\(#StdLabelName)": name
+		(#StdLabelName): name
 	}
+
+	// Finalizers are namespaced keys that tell Kubernetes to wait until specific conditions
+	// are met before it fully deletes resources marked for deletion.
+	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/finalizers/
+	finalizers?: [...string]
 }
 
 // MetaComponent generates the Kubernetes object metadata for a module namespaced component.
@@ -69,7 +74,7 @@ import "strings"
 	namespace: #Meta.namespace
 
 	labels: #Meta.labels
-	labels: "\(#StdLabelComponent)": #Component
+	labels: (#StdLabelComponent): #Component
 
 	annotations?: #Annotations
 	if #Meta.annotations != _|_ {
@@ -79,8 +84,8 @@ import "strings"
 	// LabelSelector selects Pods based on the app.kubernetes.io/name
 	// and app.kubernetes.io/component labels.
 	#LabelSelector: #Labels & {
-		"\(#StdLabelComponent)": #Component
-		"\(#StdLabelName)":      #Meta.name
+		(#StdLabelComponent): #Component
+		(#StdLabelName):      #Meta.name
 	}
 }
 
@@ -99,7 +104,7 @@ import "strings"
 	name: #Meta.name + "-" + #Component
 
 	labels: #Meta.labels
-	labels: "\(#StdLabelComponent)": #Component
+	labels: (#StdLabelComponent): #Component
 
 	annotations?: #Annotations
 	if #Meta.annotations != _|_ {
@@ -109,7 +114,7 @@ import "strings"
 	// LabelSelector selects Pods based on the app.kubernetes.io/name
 	// and app.kubernetes.io/component labels.
 	#LabelSelector: #Labels & {
-		"\(#StdLabelComponent)": #Component
-		"\(#StdLabelName)":      #Meta.name
+		(#StdLabelComponent): #Component
+		(#StdLabelName):      #Meta.name
 	}
 }

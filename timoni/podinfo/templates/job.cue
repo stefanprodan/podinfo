@@ -9,50 +9,97 @@ import (
 	timoniv1 "timoni.sh/core/v1alpha1"
 )
 
+// The test Job verifying that the podinfo http Service port is
+// reachable from inside the cluster. The Job is recreated by Timoni
+// when the module version or values change.
 #TestJob: batchv1.#Job & {
-	_config:    #Config
+	_config: #Config
+	let cfg = _config
+
 	apiVersion: "batch/v1"
 	kind:       "Job"
 	metadata: timoniv1.#MetaComponent & {
-		#Meta:      _config.metadata
+		#Meta:      cfg.metadata
 		#Component: "test"
 	}
 	metadata: annotations: timoniv1.Action.Force
 	spec: batchv1.#JobSpec & {
 		template: corev1.#PodTemplateSpec & {
-			let _checksum = uuid.SHA1(uuid.ns.DNS, yaml.Marshal(_config))
+			let _checksum = uuid.SHA1(uuid.ns.DNS, yaml.Marshal(cfg))
 			metadata: annotations: "timoni.sh/checksum": "\(_checksum)"
-			spec: {
+			spec: #TestPodSpec & {
+				#config: cfg
 				containers: [{
 					name:            "curl"
-					image:           _config.test.image.reference
-					imagePullPolicy: _config.test.image.pullPolicy
+					image:           cfg.test.image.reference
+					imagePullPolicy: cfg.test.image.pullPolicy
+					securityContext: corev1.#SecurityContext & timoniv1.#ContainerSecurityContext
 					command: [
 						"curl",
 						"-v",
 						"-m",
 						"5",
-						"\(_config.metadata.name):\(_config.service.port)",
+						"\(cfg.metadata.name):\(cfg.service.port)",
 					]
 				}]
-				restartPolicy: "Never"
-				if _config.podSecurityContext != _|_ {
-					securityContext: _config.podSecurityContext
-				}
-				if _config.topologySpreadConstraints != _|_ {
-					topologySpreadConstraints: _config.topologySpreadConstraints
-				}
-				if _config.affinity != _|_ {
-					affinity: _config.affinity
-				}
-				if _config.tolerations != _|_ {
-					tolerations: _config.tolerations
-				}
-				if _config.imagePullSecrets != _|_ {
-					imagePullSecrets: _config.imagePullSecrets
-				}
 			}
 		}
 		backoffLimit: 1
+	}
+}
+
+// The test Job verifying the podinfo gRPC health service through
+// the grpc Service port, using grpc-health-probe.
+#TestGRPCJob: batchv1.#Job & {
+	_config: #Config
+	let cfg = _config
+
+	apiVersion: "batch/v1"
+	kind:       "Job"
+	metadata: timoniv1.#MetaComponent & {
+		#Meta:      cfg.metadata
+		#Component: "test-grpc"
+	}
+	metadata: annotations: timoniv1.Action.Force
+	spec: batchv1.#JobSpec & {
+		template: corev1.#PodTemplateSpec & {
+			let _checksum = uuid.SHA1(uuid.ns.DNS, yaml.Marshal(cfg))
+			metadata: annotations: "timoni.sh/checksum": "\(_checksum)"
+			spec: #TestPodSpec & {
+				#config: cfg
+				containers: [{
+					name:            "grpc-health-probe"
+					image:           cfg.test.grpcImage.reference
+					imagePullPolicy: cfg.test.grpcImage.pullPolicy
+					securityContext: corev1.#SecurityContext & timoniv1.#ContainerSecurityContext
+					args: [
+						"-addr=\(cfg.metadata.name):\(cfg.service.grpcPort)",
+						"-connect-timeout=5s",
+						"-rpc-timeout=5s",
+					]
+				}]
+			}
+		}
+		backoffLimit: 1
+	}
+}
+
+// The pod spec shared by the test Jobs: the pods run once with the
+// hardened pod security context and follow the instance placement
+// settings (node selector, node affinity, tolerations, pull secrets).
+#TestPodSpec: corev1.#PodSpec & {
+	#config: #Config
+
+	restartPolicy:   "Never"
+	securityContext: #config.podSecurityContext
+	nodeSelector:    #config.nodeSelector
+	if #config.affinity.nodeAffinity != _|_ {
+		affinity: nodeAffinity: #config.affinity.nodeAffinity
+	}
+	if #config.tolerations != _|_ {
+		tolerations: #config.tolerations
+	}
+	if #config.imagePullSecrets != _|_ {
+		imagePullSecrets: #config.imagePullSecrets
 	}
 }

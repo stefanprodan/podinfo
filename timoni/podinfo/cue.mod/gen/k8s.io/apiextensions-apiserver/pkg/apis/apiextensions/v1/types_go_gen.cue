@@ -50,11 +50,12 @@ import (
 	// by GA > beta > alpha (where GA is a version with no suffix such as beta or alpha), and then by comparing
 	// major version, then minor version. An example sorted list of versions:
 	// v10, v2, v1, v11beta2, v10beta3, v3beta1, v12alpha1, v11alpha2, foo1, foo10.
+	// +listType=atomic
 	versions: [...#CustomResourceDefinitionVersion] @go(Versions,[]CustomResourceDefinitionVersion) @protobuf(7,bytes,rep)
 
 	// conversion defines conversion settings for the CRD.
 	// +optional
-	conversion?: null | #CustomResourceConversion @go(Conversion,*CustomResourceConversion) @protobuf(9,bytes,opt)
+	conversion?: #CustomResourceConversion @go(Conversion,*CustomResourceConversion) @protobuf(9,bytes,opt)
 
 	// preserveUnknownFields indicates that object fields which are not specified
 	// in the OpenAPI schema should be preserved when persisting to storage.
@@ -75,14 +76,14 @@ import (
 
 	// webhook describes how to call the conversion webhook. Required when `strategy` is set to `"Webhook"`.
 	// +optional
-	webhook?: null | #WebhookConversion @go(Webhook,*WebhookConversion) @protobuf(2,bytes,opt)
+	webhook?: #WebhookConversion @go(Webhook,*WebhookConversion) @protobuf(2,bytes,opt)
 }
 
 // WebhookConversion describes how to call a conversion webhook
 #WebhookConversion: {
 	// clientConfig is the instructions for how to call the webhook if strategy is `Webhook`.
 	// +optional
-	clientConfig?: null | #WebhookClientConfig @go(ClientConfig,*WebhookClientConfig) @protobuf(2,bytes)
+	clientConfig?: #WebhookClientConfig @go(ClientConfig,*WebhookClientConfig) @protobuf(2,bytes)
 
 	// conversionReviewVersions is an ordered list of preferred `ConversionReview`
 	// versions the Webhook expects. The API server will use the first version in
@@ -90,6 +91,7 @@ import (
 	// are supported by API server, conversion will fail for the custom resource.
 	// If a persisted Webhook configuration specifies allowed versions and does not
 	// include any versions known to the API Server, calls to the webhook will fail.
+	// +listType=atomic
 	conversionReviewVersions: [...string] @go(ConversionReviewVersions,[]string) @protobuf(3,bytes,rep)
 }
 
@@ -122,7 +124,7 @@ import (
 	// allowed, either.
 	//
 	// +optional
-	url?: null | string @go(URL,*string) @protobuf(3,bytes,opt)
+	url?: string @go(URL,*string) @protobuf(3,bytes,opt)
 
 	// service is a reference to the service for this webhook. Either
 	// service or url must be specified.
@@ -130,7 +132,7 @@ import (
 	// If the webhook is running within the cluster, then you should use `service`.
 	//
 	// +optional
-	service?: null | #ServiceReference @go(Service,*ServiceReference) @protobuf(1,bytes,opt)
+	service?: #ServiceReference @go(Service,*ServiceReference) @protobuf(1,bytes,opt)
 
 	// caBundle is a PEM encoded CA bundle which will be used to validate the webhook's server certificate.
 	// If unspecified, system trust roots on the apiserver are used.
@@ -150,13 +152,13 @@ import (
 
 	// path is an optional URL path at which the webhook will be contacted.
 	// +optional
-	path?: null | string @go(Path,*string) @protobuf(3,bytes,opt)
+	path?: string @go(Path,*string) @protobuf(3,bytes,opt)
 
 	// port is an optional service port at which the webhook will be contacted.
 	// `port` should be a valid port number (1-65535, inclusive).
 	// Defaults to 443 for backward compatibility.
 	// +optional
-	port?: null | int32 @go(Port,*int32) @protobuf(4,varint,opt)
+	port?: int32 @go(Port,*int32) @protobuf(4,varint,opt)
 }
 
 // CustomResourceDefinitionVersion describes a version for CRD.
@@ -183,21 +185,44 @@ import (
 	// The default warning indicates this version is deprecated and recommends use
 	// of the newest served version of equal or greater stability, if one exists.
 	// +optional
-	deprecationWarning?: null | string @go(DeprecationWarning,*string) @protobuf(8,bytes,opt)
+	deprecationWarning?: string @go(DeprecationWarning,*string) @protobuf(8,bytes,opt)
 
 	// schema describes the schema used for validation, pruning, and defaulting of this version of the custom resource.
 	// +optional
-	schema?: null | #CustomResourceValidation @go(Schema,*CustomResourceValidation) @protobuf(4,bytes,opt)
+	schema?: #CustomResourceValidation @go(Schema,*CustomResourceValidation) @protobuf(4,bytes,opt)
 
 	// subresources specify what subresources this version of the defined custom resource have.
 	// +optional
-	subresources?: null | #CustomResourceSubresources @go(Subresources,*CustomResourceSubresources) @protobuf(5,bytes,opt)
+	subresources?: #CustomResourceSubresources @go(Subresources,*CustomResourceSubresources) @protobuf(5,bytes,opt)
 
 	// additionalPrinterColumns specifies additional columns returned in Table output.
 	// See https://kubernetes.io/docs/reference/using-api/api-concepts/#receiving-resources-as-tables for details.
 	// If no columns are specified, a single column displaying the age of the custom resource is used.
 	// +optional
+	// +listType=atomic
 	additionalPrinterColumns?: [...#CustomResourceColumnDefinition] @go(AdditionalPrinterColumns,[]CustomResourceColumnDefinition) @protobuf(6,bytes,rep)
+
+	// selectableFields specifies paths to fields that may be used as field selectors.
+	// A maximum of 8 selectable fields are allowed.
+	// See https://kubernetes.io/docs/concepts/overview/working-with-objects/field-selectors
+	//
+	// +featureGate=CustomResourceFieldSelectors
+	// +optional
+	// +listType=atomic
+	selectableFields?: [...#SelectableField] @go(SelectableFields,[]SelectableField) @protobuf(9,bytes,rep)
+}
+
+// SelectableField specifies the JSON path of a field that may be used with field selectors.
+#SelectableField: {
+	// jsonPath is a simple JSON path which is evaluated against each custom resource to produce a
+	// field selector value.
+	// Only JSON paths without the array notation are allowed.
+	// Must point to a field of type string, boolean or integer. Types with enum values
+	// and strings with formats are allowed.
+	// If jsonPath refers to absent field in a resource, the jsonPath evaluates to an empty string.
+	// Must not point to metdata fields.
+	// Required.
+	jsonPath: string @go(JSONPath) @protobuf(1,bytes,opt)
 }
 
 // CustomResourceColumnDefinition specifies a column for server side printing.
@@ -246,6 +271,7 @@ import (
 	// and used by clients to support invocations like `kubectl get <shortname>`.
 	// It must be all lowercase.
 	// +optional
+	// +listType=atomic
 	shortNames?: [...string] @go(ShortNames,[]string) @protobuf(3,bytes,opt)
 
 	// kind is the serialized kind of the resource. It is normally CamelCase and singular.
@@ -260,6 +286,7 @@ import (
 	// This is published in API discovery documents, and used by clients to support invocations like
 	// `kubectl get all`.
 	// +optional
+	// +listType=atomic
 	categories?: [...string] @go(Categories,[]string) @protobuf(6,bytes,rep)
 }
 
@@ -292,7 +319,8 @@ import (
 	#NamesAccepted |
 	#NonStructuralSchema |
 	#Terminating |
-	#KubernetesAPIApprovalPolicyConformant
+	#KubernetesAPIApprovalPolicyConformant |
+	#StorageMigrating
 
 // Established means that the resource has become active. A resource is established when all names are
 // accepted without a conflict for the first time. A resource stays established until deleted, even during
@@ -329,6 +357,10 @@ import (
 // See https://github.com/kubernetes/enhancements/pull/1111 for more details.
 #KubernetesAPIApprovalPolicyConformant: #CustomResourceDefinitionConditionType & "KubernetesAPIApprovalPolicyConformant"
 
+// StorageMigrating indicates that the underlying storage version of the CRD
+// is undergoing migration.
+#StorageMigrating: #CustomResourceDefinitionConditionType & "StorageMigrating"
+
 // CustomResourceDefinitionCondition contains details for the current condition of this pod.
 #CustomResourceDefinitionCondition: {
 	// type is the type of the condition. Types include Established, NamesAccepted and Terminating.
@@ -349,6 +381,13 @@ import (
 	// message is a human-readable message indicating details about last transition.
 	// +optional
 	message?: string @go(Message) @protobuf(5,bytes,opt)
+
+	// observedGeneration represents the .metadata.generation that the condition was set based upon.
+	// For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+	// with respect to the current state of the instance.
+	// +featureGate=CRDObservedGenerationTracking
+	// +optional
+	observedGeneration?: int64 @go(ObservedGeneration) @protobuf(6,varint,opt)
 }
 
 // CustomResourceDefinitionStatus indicates the state of the CustomResourceDefinition
@@ -357,12 +396,12 @@ import (
 	// +optional
 	// +listType=map
 	// +listMapKey=type
-	conditions: [...#CustomResourceDefinitionCondition] @go(Conditions,[]CustomResourceDefinitionCondition) @protobuf(1,bytes,opt)
+	conditions?: [...#CustomResourceDefinitionCondition] @go(Conditions,[]CustomResourceDefinitionCondition) @protobuf(1,bytes,opt)
 
 	// acceptedNames are the names that are actually being used to serve discovery.
 	// They may be different than the names in spec.
 	// +optional
-	acceptedNames: #CustomResourceDefinitionNames @go(AcceptedNames) @protobuf(2,bytes,opt)
+	acceptedNames?: #CustomResourceDefinitionNames @go(AcceptedNames) @protobuf(2,bytes,opt)
 
 	// storedVersions lists all versions of CustomResources that were ever persisted. Tracking these
 	// versions allows a migration path for stored versions in etcd. The field is mutable
@@ -371,7 +410,13 @@ import (
 	// versions from this list.
 	// Versions may not be removed from `spec.versions` while they exist in this list.
 	// +optional
-	storedVersions: [...string] @go(StoredVersions,[]string) @protobuf(3,bytes,rep)
+	// +listType=atomic
+	storedVersions?: [...string] @go(StoredVersions,[]string) @protobuf(3,bytes,rep)
+
+	// The generation observed by the CRD controller.
+	// +featureGate=CRDObservedGenerationTracking
+	// +optional
+	observedGeneration?: int64 @go(ObservedGeneration) @protobuf(4,varint,opt)
 }
 
 #CustomResourceCleanupFinalizer: "customresourcecleanup.apiextensions.k8s.io"
@@ -411,7 +456,7 @@ import (
 #CustomResourceValidation: {
 	// openAPIV3Schema is the OpenAPI v3 schema to use for validation and pruning.
 	// +optional
-	openAPIV3Schema?: null | #JSONSchemaProps @go(OpenAPIV3Schema,*JSONSchemaProps) @protobuf(1,bytes,opt)
+	openAPIV3Schema?: #JSONSchemaProps @go(OpenAPIV3Schema,*JSONSchemaProps) @protobuf(1,bytes,opt)
 }
 
 // CustomResourceSubresources defines the status and scale subresources for CustomResources.
@@ -421,11 +466,11 @@ import (
 	// 1. requests to the custom resource primary endpoint ignore changes to the `status` stanza of the object.
 	// 2. requests to the custom resource `/status` subresource ignore changes to anything other than the `status` stanza of the object.
 	// +optional
-	status?: null | #CustomResourceSubresourceStatus @go(Status,*CustomResourceSubresourceStatus) @protobuf(1,bytes,opt)
+	status?: #CustomResourceSubresourceStatus @go(Status,*CustomResourceSubresourceStatus) @protobuf(1,bytes,opt)
 
 	// scale indicates the custom resource should serve a `/scale` subresource that returns an `autoscaling/v1` Scale object.
 	// +optional
-	scale?: null | #CustomResourceSubresourceScale @go(Scale,*CustomResourceSubresourceScale) @protobuf(2,bytes,opt)
+	scale?: #CustomResourceSubresourceScale @go(Scale,*CustomResourceSubresourceScale) @protobuf(2,bytes,opt)
 }
 
 // CustomResourceSubresourceStatus defines how to serve the status subresource for CustomResources.
@@ -433,8 +478,7 @@ import (
 // * exposes a /status subresource for the custom resource
 // * PUT requests to the /status subresource take a custom resource object, and ignore changes to anything except the status stanza
 // * PUT/POST/PATCH requests to the custom resource ignore changes to the status stanza
-#CustomResourceSubresourceStatus: {
-}
+#CustomResourceSubresourceStatus: {}
 
 // CustomResourceSubresourceScale defines how to serve the scale subresource for CustomResources.
 #CustomResourceSubresourceScale: {
@@ -461,7 +505,7 @@ import (
 	// If there is no value under the given path in the custom resource, the `status.selector` value in the `/scale`
 	// subresource will default to the empty string.
 	// +optional
-	labelSelectorPath?: null | string @go(LabelSelectorPath,*string) @protobuf(3,bytes,opt)
+	labelSelectorPath?: string @go(LabelSelectorPath,*string) @protobuf(3,bytes,opt)
 }
 
 // ConversionReview describes a conversion request/response.
@@ -470,11 +514,11 @@ import (
 
 	// request describes the attributes for the conversion request.
 	// +optional
-	request?: null | #ConversionRequest @go(Request,*ConversionRequest) @protobuf(1,bytes,opt)
+	request?: #ConversionRequest @go(Request,*ConversionRequest) @protobuf(1,bytes,opt)
 
 	// response describes the attributes for the conversion response.
 	// +optional
-	response?: null | #ConversionResponse @go(Response,*ConversionResponse) @protobuf(2,bytes,opt)
+	response?: #ConversionResponse @go(Response,*ConversionResponse) @protobuf(2,bytes,opt)
 }
 
 // ConversionRequest describes the conversion request parameters.
@@ -489,6 +533,7 @@ import (
 	desiredAPIVersion: string @go(DesiredAPIVersion) @protobuf(2,bytes)
 
 	// objects is the list of custom resource objects to be converted.
+	// +listType=atomic
 	objects: [...runtime.#RawExtension] @go(Objects,[]runtime.RawExtension) @protobuf(3,bytes,rep)
 }
 
@@ -502,6 +547,7 @@ import (
 	// The webhook is expected to set `apiVersion` of these objects to the `request.desiredAPIVersion`. The list
 	// must also have the same size as the input list with the same objects in the same order (equal kind, metadata.uid, metadata.name and metadata.namespace).
 	// The webhook is allowed to mutate labels and annotations. Any other change to the metadata is silently ignored.
+	// +listType=atomic
 	convertedObjects: [...runtime.#RawExtension] @go(ConvertedObjects,[]runtime.RawExtension) @protobuf(2,bytes,rep)
 
 	// result contains the result of conversion with extra details if the conversion failed. `result.status` determines if

@@ -19,6 +19,8 @@ import (
 // This API can be used to request client certificates to authenticate to kube-apiserver
 // (with the "kubernetes.io/kube-apiserver-client" signerName),
 // or to obtain certificates from custom non-Kubernetes signers.
+// +k8s:supportsSubresource="/status"
+// +k8s:supportsSubresource="/approval"
 #CertificateSigningRequest: {
 	metav1.#TypeMeta
 
@@ -40,7 +42,6 @@ import (
 #CertificateSigningRequestSpec: {
 	// request contains an x509 certificate signing request encoded in a "CERTIFICATE REQUEST" PEM block.
 	// When serialized as JSON or YAML, the data is additionally base64-encoded.
-	// +listType=atomic
 	request: bytes @go(Request,[]byte) @protobuf(1,bytes,opt)
 
 	// signerName indicates the requested signer, and is a qualified name.
@@ -86,7 +87,7 @@ import (
 	// The minimum valid value for expirationSeconds is 600, i.e. 10 minutes.
 	//
 	// +optional
-	expirationSeconds?: null | int32 @go(ExpirationSeconds,*int32) @protobuf(8,varint,opt)
+	expirationSeconds?: int32 @go(ExpirationSeconds,*int32) @protobuf(8,varint,opt)
 
 	// usages specifies a set of key usages requested in the issued certificate.
 	//
@@ -155,6 +156,12 @@ import (
 	// +listType=map
 	// +listMapKey=type
 	// +optional
+	// +k8s:alpha(since: "1.36")=+k8s:listType=map
+	// +k8s:alpha(since: "1.36")=+k8s:listMapKey=type
+	// +k8s:alpha(since: "1.36")=+k8s:customUnique
+	// +k8s:alpha(since: "1.36")=+k8s:optional
+	// +k8s:alpha(since: "1.36")=+k8s:item(type: "Approved")=+k8s:zeroOrOneOfMember
+	// +k8s:alpha(since: "1.36")=+k8s:item(type: "Denied")=+k8s:zeroOrOneOfMember
 	conditions?: [...#CertificateSigningRequestCondition] @go(Conditions,[]CertificateSigningRequestCondition) @protobuf(1,bytes,rep)
 
 	// certificate is populated with an issued certificate by the signer after an Approved condition is present.
@@ -184,7 +191,6 @@ import (
 	//     -----END CERTIFICATE-----
 	//     )
 	//
-	// +listType=atomic
 	// +optional
 	certificate?: bytes @go(Certificate,[]byte) @protobuf(2,bytes,opt)
 }

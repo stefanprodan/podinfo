@@ -31,10 +31,8 @@ jobs:
         uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
         with:
           version: v${{ env.HELM_VERSION }}
-      - name: Setup CUE
-        uses: cue-lang/setup-cue@a93fa358375740cd8b0078f76355512b9208acb1 # v1.0.1
       - name: Setup Timoni
-        uses: stefanprodan/timoni/actions/setup@69e421aebbed979ded721df0da2a54428c5b4b9c # v0.27.0
+        uses: stefanprodan/timoni/actions/setup@bb0f07cc4f586e91d5076e63e632cab8398fef41 # v0.34.0
       - name: Run unit tests
         run: make test
       - name: Validate Helm chart
@@ -46,19 +44,11 @@ jobs:
           kubectl kustomize ./kustomize/ | flux-schema validate -s ecosystem --verbose
       - name: Verify CUE formatting
         working-directory: ./timoni/podinfo
-        run: |
-          cue fmt ./...
-          status=$(git status . --porcelain)
-          [[ -z "$status" ]] || {
-            echo "CUE files are not correctly formatted"
-            echo "$status"
-            git diff
-            exit 1
-          }
+        run: timoni fmt --diff
       - name: Validate Timoni module
         working-directory: ./timoni/podinfo
         run: |
-          timoni mod lint . 
+          timoni mod vet .
           timoni build podinfo . -f debug_values.cue | flux-schema validate -s ecosystem --verbose
       - name: Check if working tree is dirty
         run: |

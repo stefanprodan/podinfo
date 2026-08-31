@@ -6,6 +6,7 @@ package main
 
 import (
 	templates "timoni.sh/podinfo/templates"
+	timoniv1 "timoni.sh/core/v1alpha1"
 )
 
 // Define the schema for the user-supplied values.
@@ -44,4 +45,8 @@ timoni: {
 	if instance.config.test.enabled {
 		apply: test: [for obj in instance.tests {obj}]
 	}
+
+	// Enable the readiness evaluation of custom resources,
+	// e.g. waiting for the HTTPRoute to be accepted by its Gateways.
+	healthChecks: timoniv1.#HealthCheckLibrary.all
 }

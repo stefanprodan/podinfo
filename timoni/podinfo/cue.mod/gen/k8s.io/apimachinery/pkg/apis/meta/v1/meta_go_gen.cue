@@ -28,6 +28,10 @@ package v1
 // TODO: move this, and TypeMeta and ListMeta, to a different package
 #ListInterface: _
 
+// ShardedListInterface can be implemented by list types to indicate that they
+// represent a sharded subset of the full collection rather than the complete list.
+#ShardedListInterface: _
+
 // Type exposes the type and APIVersion of versioned or internal API objects.
 // TODO: move this, and TypeMeta and ListMeta, to a different package
 #Type: _

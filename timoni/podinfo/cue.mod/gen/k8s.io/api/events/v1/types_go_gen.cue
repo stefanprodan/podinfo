@@ -21,14 +21,14 @@ import (
 	// Standard object's metadata.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	// +optional
-	metadata: metav1.#ObjectMeta @go(ObjectMeta) @protobuf(1,bytes,opt)
+	metadata?: metav1.#ObjectMeta @go(ObjectMeta) @protobuf(1,bytes,opt)
 
 	// eventTime is the time when this Event was first observed. It is required.
 	eventTime: metav1.#MicroTime @go(EventTime) @protobuf(2,bytes,opt)
 
 	// series is data about the Event series this event represents or nil if it's a singleton Event.
 	// +optional
-	series?: null | #EventSeries @go(Series,*EventSeries) @protobuf(3,bytes,opt)
+	series?: #EventSeries @go(Series,*EventSeries) @protobuf(3,bytes,opt)
 
 	// reportingController is the name of the controller that emitted this Event, e.g. `kubernetes.io/kubelet`.
 	// This field cannot be empty for new Events.
@@ -55,7 +55,7 @@ import (
 	// related is the optional secondary object for more complex actions. E.g. when regarding object triggers
 	// a creation or deletion of related object.
 	// +optional
-	related?: null | corev1.#ObjectReference @go(Related,*corev1.ObjectReference) @protobuf(9,bytes,opt)
+	related?: corev1.#ObjectReference @go(Related,*corev1.ObjectReference) @protobuf(9,bytes,opt)
 
 	// note is a human-readable description of the status of this operation.
 	// Maximal length of the note is 1kB, but libraries should be prepared to

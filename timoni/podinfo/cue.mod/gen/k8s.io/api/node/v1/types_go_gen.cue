@@ -33,20 +33,24 @@ import (
 	// in a pod.
 	// The Handler must be lowercase, conform to the DNS Label (RFC 1123) requirements,
 	// and is immutable.
+	// +required
+	// +k8s:alpha(since: "1.36")=+k8s:format="k8s-short-name"
+	// +k8s:alpha(since: "1.36")=+k8s:immutable
+	// +k8s:alpha(since: "1.36")=+k8s:required
 	handler: string @go(Handler) @protobuf(2,bytes,opt)
 
 	// overhead represents the resource overhead associated with running a pod for a
 	// given RuntimeClass. For more details, see
 	//  https://kubernetes.io/docs/concepts/scheduling-eviction/pod-overhead/
 	// +optional
-	overhead?: null | #Overhead @go(Overhead,*Overhead) @protobuf(3,bytes,opt)
+	overhead?: #Overhead @go(Overhead,*Overhead) @protobuf(3,bytes,opt)
 
 	// scheduling holds the scheduling constraints to ensure that pods running
 	// with this RuntimeClass are scheduled to nodes that support it.
 	// If scheduling is nil, this RuntimeClass is assumed to be supported by all
 	// nodes.
 	// +optional
-	scheduling?: null | #Scheduling @go(Scheduling,*Scheduling) @protobuf(4,bytes,opt)
+	scheduling?: #Scheduling @go(Scheduling,*Scheduling) @protobuf(4,bytes,opt)
 }
 
 // Overhead structure represents the resource overhead associated with running a pod.

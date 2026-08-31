@@ -18,7 +18,7 @@ import (
 	// absence of the evicted pod.  So for example you can prevent all voluntary
 	// evictions by specifying "100%".
 	// +optional
-	minAvailable?: null | intstr.#IntOrString @go(MinAvailable,*intstr.IntOrString) @protobuf(1,bytes,opt)
+	minAvailable?: intstr.#IntOrString @go(MinAvailable,*intstr.IntOrString) @protobuf(1,bytes,opt)
 
 	// Label query over pods whose evictions are managed by the disruption
 	// budget.
@@ -26,14 +26,14 @@ import (
 	// all pods within the namespace.
 	// +patchStrategy=replace
 	// +optional
-	selector?: null | metav1.#LabelSelector @go(Selector,*metav1.LabelSelector) @protobuf(2,bytes,opt)
+	selector?: metav1.#LabelSelector @go(Selector,*metav1.LabelSelector) @protobuf(2,bytes,opt)
 
 	// An eviction is allowed if at most "maxUnavailable" pods selected by
 	// "selector" are unavailable after the eviction, i.e. even in absence of
 	// the evicted pod. For example, one can prevent all voluntary evictions
 	// by specifying 0. This is a mutually exclusive setting with "minAvailable".
 	// +optional
-	maxUnavailable?: null | intstr.#IntOrString @go(MaxUnavailable,*intstr.IntOrString) @protobuf(3,bytes,opt)
+	maxUnavailable?: intstr.#IntOrString @go(MaxUnavailable,*intstr.IntOrString) @protobuf(3,bytes,opt)
 
 	// UnhealthyPodEvictionPolicy defines the criteria for when unhealthy pods
 	// should be considered for eviction. Current implementation considers healthy pods,
@@ -57,11 +57,8 @@ import (
 	// Additional policies may be added in the future.
 	// Clients making eviction decisions should disallow eviction of unhealthy pods
 	// if they encounter an unrecognized policy in this field.
-	//
-	// This field is beta-level. The eviction API uses this field when
-	// the feature gate PDBUnhealthyPodEvictionPolicy is enabled (enabled by default).
 	// +optional
-	unhealthyPodEvictionPolicy?: null | #UnhealthyPodEvictionPolicyType @go(UnhealthyPodEvictionPolicy,*UnhealthyPodEvictionPolicyType) @protobuf(4,bytes,opt)
+	unhealthyPodEvictionPolicy?: #UnhealthyPodEvictionPolicyType @go(UnhealthyPodEvictionPolicy,*UnhealthyPodEvictionPolicyType) @protobuf(4,bytes,opt)
 }
 
 // UnhealthyPodEvictionPolicyType defines the criteria for when unhealthy pods
@@ -109,16 +106,20 @@ import (
 	disruptedPods?: {[string]: metav1.#Time} @go(DisruptedPods,map[string]metav1.Time) @protobuf(2,bytes,rep)
 
 	// Number of pod disruptions that are currently allowed.
-	disruptionsAllowed: int32 @go(DisruptionsAllowed) @protobuf(3,varint,opt)
+	// +optional
+	disruptionsAllowed?: int32 @go(DisruptionsAllowed) @protobuf(3,varint,opt)
 
 	// current number of healthy pods
-	currentHealthy: int32 @go(CurrentHealthy) @protobuf(4,varint,opt)
+	// +optional
+	currentHealthy?: int32 @go(CurrentHealthy) @protobuf(4,varint,opt)
 
 	// minimum desired number of healthy pods
-	desiredHealthy: int32 @go(DesiredHealthy) @protobuf(5,varint,opt)
+	// +optional
+	desiredHealthy?: int32 @go(DesiredHealthy) @protobuf(5,varint,opt)
 
 	// total number of pods counted by this disruption budget
-	expectedPods: int32 @go(ExpectedPods) @protobuf(6,varint,opt)
+	// +optional
+	expectedPods?: int32 @go(ExpectedPods) @protobuf(6,varint,opt)
 
 	// Conditions contain conditions for PDB. The disruption controller sets the
 	// DisruptionAllowed condition. The following are known values for the reason field
@@ -200,5 +201,5 @@ import (
 
 	// DeleteOptions may be provided
 	// +optional
-	deleteOptions?: null | metav1.#DeleteOptions @go(DeleteOptions,*metav1.DeleteOptions) @protobuf(2,bytes,opt)
+	deleteOptions?: metav1.#DeleteOptions @go(DeleteOptions,*metav1.DeleteOptions) @protobuf(2,bytes,opt)
 }

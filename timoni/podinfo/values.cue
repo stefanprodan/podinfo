@@ -5,16 +5,5 @@
 
 package main
 
-// Defaults
-values: {
-	image: {
-		repository: "ghcr.io/stefanprodan/podinfo"
-		tag:        "6.14.1"
-		digest:     ""
-	}
-	test: image: {
-		repository: "ghcr.io/curl/curl-container/curl-multi"
-		tag:        "master"
-		digest:     ""
-	}
-}
+// Placeholder for user-supplied values.
+values: {}

@@ -6,8 +6,8 @@ package v2
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/api/core/v1"
 )
 
 // HorizontalPodAutoscaler is the configuration for a horizontal pod
@@ -23,8 +23,8 @@ import (
 
 	// spec is the specification for the behaviour of the autoscaler.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status.
-	// +optional
-	spec?: #HorizontalPodAutoscalerSpec @go(Spec) @protobuf(2,bytes,opt)
+	// +required
+	spec: #HorizontalPodAutoscalerSpec @go(Spec) @protobuf(2,bytes,opt)
 
 	// status is the current information about the autoscaler.
 	// +optional
@@ -43,10 +43,16 @@ import (
 	// metric is configured.  Scaling is active as long as at least one metric value is
 	// available.
 	// +optional
-	minReplicas?: null | int32 @go(MinReplicas,*int32) @protobuf(2,varint,opt)
+	// +k8s:alpha(since: "1.36")=+k8s:optional
+	// +k8s:alpha(since: "1.36")=+k8s:ifEnabled(HPAScaleToZero)=+k8s:minimum=0
+	// +k8s:alpha(since: "1.36")=+k8s:ifDisabled(HPAScaleToZero)=+k8s:minimum=1
+	minReplicas?: int32 @go(MinReplicas,*int32) @protobuf(2,varint,opt)
 
 	// maxReplicas is the upper limit for the number of replicas to which the autoscaler can scale up.
 	// It cannot be less that minReplicas.
+	// +required
+	// +k8s:alpha(since: "1.36")=+k8s:required
+	// +k8s:alpha(since: "1.36")=+k8s:minimum=1
 	maxReplicas: int32 @go(MaxReplicas) @protobuf(3,varint,opt)
 
 	// metrics contains the specifications for which to use to calculate the
@@ -65,7 +71,7 @@ import (
 	// in both Up and Down directions (scaleUp and scaleDown fields respectively).
 	// If not set, the default HPAScalingRules for scale up and scale down are used.
 	// +optional
-	behavior?: null | #HorizontalPodAutoscalerBehavior @go(Behavior,*HorizontalPodAutoscalerBehavior) @protobuf(5,bytes,opt)
+	behavior?: #HorizontalPodAutoscalerBehavior @go(Behavior,*HorizontalPodAutoscalerBehavior) @protobuf(5,bytes,opt)
 }
 
 // CrossVersionObjectReference contains enough information to let you identify the referred resource.
@@ -86,20 +92,18 @@ import (
 #MetricSpec: {
 	// type is the type of metric source.  It should be one of "ContainerResource", "External",
 	// "Object", "Pods" or "Resource", each mapping to a matching field in the object.
-	// Note: "ContainerResource" type is available on when the feature-gate
-	// HPAContainerMetrics is enabled
 	type: #MetricSourceType @go(Type) @protobuf(1,bytes)
 
 	// object refers to a metric describing a single kubernetes object
 	// (for example, hits-per-second on an Ingress object).
 	// +optional
-	object?: null | #ObjectMetricSource @go(Object,*ObjectMetricSource) @protobuf(2,bytes,opt)
+	object?: #ObjectMetricSource @go(Object,*ObjectMetricSource) @protobuf(2,bytes,opt)
 
 	// pods refers to a metric describing each pod in the current scale target
 	// (for example, transactions-processed-per-second).  The values will be
 	// averaged together before being compared to the target value.
 	// +optional
-	pods?: null | #PodsMetricSource @go(Pods,*PodsMetricSource) @protobuf(3,bytes,opt)
+	pods?: #PodsMetricSource @go(Pods,*PodsMetricSource) @protobuf(3,bytes,opt)
 
 	// resource refers to a resource metric (such as those specified in
 	// requests and limits) known to Kubernetes describing each pod in the
@@ -107,16 +111,15 @@ import (
 	// Kubernetes, and have special scaling options on top of those available
 	// to normal per-pod metrics using the "pods" source.
 	// +optional
-	resource?: null | #ResourceMetricSource @go(Resource,*ResourceMetricSource) @protobuf(4,bytes,opt)
+	resource?: #ResourceMetricSource @go(Resource,*ResourceMetricSource) @protobuf(4,bytes,opt)
 
 	// containerResource refers to a resource metric (such as those specified in
 	// requests and limits) known to Kubernetes describing a single container in
 	// each pod of the current scale target (e.g. CPU or memory). Such metrics are
 	// built in to Kubernetes, and have special scaling options on top of those
 	// available to normal per-pod metrics using the "pods" source.
-	// This is an alpha feature and can be enabled by the HPAContainerMetrics feature flag.
 	// +optional
-	containerResource?: null | #ContainerResourceMetricSource @go(ContainerResource,*ContainerResourceMetricSource) @protobuf(7,bytes,opt)
+	containerResource?: #ContainerResourceMetricSource @go(ContainerResource,*ContainerResourceMetricSource) @protobuf(7,bytes,opt)
 
 	// external refers to a global metric that is not associated
 	// with any Kubernetes object. It allows autoscaling based on information
@@ -124,7 +127,7 @@ import (
 	// (for example length of queue in cloud messaging service, or
 	// QPS from loadbalancer running outside of cluster).
 	// +optional
-	external?: null | #ExternalMetricSource @go(External,*ExternalMetricSource) @protobuf(5,bytes,opt)
+	external?: #ExternalMetricSource @go(External,*ExternalMetricSource) @protobuf(5,bytes,opt)
 }
 
 // HorizontalPodAutoscalerBehavior configures the scaling behavior of the target
@@ -136,14 +139,14 @@ import (
 	//   * double the number of pods per 60 seconds
 	// No stabilization is used.
 	// +optional
-	scaleUp?: null | #HPAScalingRules @go(ScaleUp,*HPAScalingRules) @protobuf(1,bytes,opt)
+	scaleUp?: #HPAScalingRules @go(ScaleUp,*HPAScalingRules) @protobuf(1,bytes,opt)
 
 	// scaleDown is scaling policy for scaling Down.
 	// If not set, the default value is to allow to scale down to minReplicas pods, with a
 	// 300 second stabilization window (i.e., the highest recommendation for
 	// the last 300sec is used).
 	// +optional
-	scaleDown?: null | #HPAScalingRules @go(ScaleDown,*HPAScalingRules) @protobuf(2,bytes,opt)
+	scaleDown?: #HPAScalingRules @go(ScaleDown,*HPAScalingRules) @protobuf(2,bytes,opt)
 }
 
 // ScalingPolicySelect is used to specify which policy should be used while scaling in a certain direction
@@ -163,12 +166,18 @@ import (
 // DisabledPolicySelect disables the scaling in this direction.
 #DisabledPolicySelect: #ScalingPolicySelect & "Disabled"
 
-// HPAScalingRules configures the scaling behavior for one direction.
-// These Rules are applied after calculating DesiredReplicas from metrics for the HPA.
+// HPAScalingRules configures the scaling behavior for one direction via
+// scaling Policy Rules and a configurable metric tolerance.
+//
+// Scaling Policy Rules are applied after calculating DesiredReplicas from metrics for the HPA.
 // They can limit the scaling velocity by specifying scaling policies.
 // They can prevent flapping by specifying the stabilization window, so that the
 // number of replicas is not set instantly, instead, the safest value from the stabilization
 // window is chosen.
+//
+// The tolerance is applied to the metric values and prevents scaling too
+// eagerly for small metric variations. (Note that setting a tolerance requires
+// the beta HPAConfigurableTolerance feature gate to be enabled.)
 #HPAScalingRules: {
 	// stabilizationWindowSeconds is the number of seconds for which past recommendations should be
 	// considered while scaling up or scaling down.
@@ -177,18 +186,36 @@ import (
 	// - For scale up: 0 (i.e. no stabilization is done).
 	// - For scale down: 300 (i.e. the stabilization window is 300 seconds long).
 	// +optional
-	stabilizationWindowSeconds?: null | int32 @go(StabilizationWindowSeconds,*int32) @protobuf(3,varint,opt)
+	stabilizationWindowSeconds?: int32 @go(StabilizationWindowSeconds,*int32) @protobuf(3,varint,opt)
 
 	// selectPolicy is used to specify which policy should be used.
 	// If not set, the default value Max is used.
 	// +optional
-	selectPolicy?: null | #ScalingPolicySelect @go(SelectPolicy,*ScalingPolicySelect) @protobuf(1,bytes,opt)
+	selectPolicy?: #ScalingPolicySelect @go(SelectPolicy,*ScalingPolicySelect) @protobuf(1,bytes,opt)
 
 	// policies is a list of potential scaling polices which can be used during scaling.
-	// At least one policy must be specified, otherwise the HPAScalingRules will be discarded as invalid
+	// If not set, use the default values:
+	// - For scale up: allow doubling the number of pods, or an absolute change of 4 pods in a 15s window.
+	// - For scale down: allow all pods to be removed in a 15s window.
 	// +listType=atomic
 	// +optional
 	policies?: [...#HPAScalingPolicy] @go(Policies,[]HPAScalingPolicy) @protobuf(2,bytes,rep)
+
+	// tolerance is the tolerance on the ratio between the current and desired
+	// metric value under which no updates are made to the desired number of
+	// replicas (e.g. 0.01 for 1%). Must be greater than or equal to zero. If not
+	// set, the default cluster-wide tolerance is applied (by default 10%).
+	//
+	// For example, if autoscaling is configured with a memory consumption target of 100Mi,
+	// and scale-down and scale-up tolerances of 5% and 1% respectively, scaling will be
+	// triggered when the actual consumption falls below 95Mi or exceeds 101Mi.
+	//
+	// This is an beta field and requires the HPAConfigurableTolerance feature
+	// gate to be enabled.
+	//
+	// +featureGate=HPAConfigurableTolerance
+	// +optional
+	tolerance?: resource.#Quantity @go(Tolerance,*resource.Quantity) @protobuf(4,bytes,opt)
 }
 
 // HPAScalingPolicyType is the type of the policy which could be used while making scaling decisions.
@@ -337,7 +364,7 @@ import (
 	// When set, it is passed as an additional parameter to the metrics server for more specific metrics scoping.
 	// When unset, just the metricName will be used to gather metrics.
 	// +optional
-	selector?: null | metav1.#LabelSelector @go(Selector,*metav1.LabelSelector) @protobuf(2,bytes)
+	selector?: metav1.#LabelSelector @go(Selector,*metav1.LabelSelector) @protobuf(2,bytes)
 }
 
 // MetricTarget defines the target value, average value, or average utilization of a specific metric
@@ -347,19 +374,19 @@ import (
 
 	// value is the target value of the metric (as a quantity).
 	// +optional
-	value?: null | resource.#Quantity @go(Value,*resource.Quantity) @protobuf(2,bytes,opt)
+	value?: resource.#Quantity @go(Value,*resource.Quantity) @protobuf(2,bytes,opt)
 
 	// averageValue is the target value of the average of the
 	// metric across all relevant pods (as a quantity)
 	// +optional
-	averageValue?: null | resource.#Quantity @go(AverageValue,*resource.Quantity) @protobuf(3,bytes,opt)
+	averageValue?: resource.#Quantity @go(AverageValue,*resource.Quantity) @protobuf(3,bytes,opt)
 
 	// averageUtilization is the target value of the average of the
 	// resource metric across all relevant pods, represented as a percentage of
 	// the requested value of the resource for the pods.
 	// Currently only valid for Resource metric source type
 	// +optional
-	averageUtilization?: null | int32 @go(AverageUtilization,*int32) @protobuf(4,bytes,opt)
+	averageUtilization?: int32 @go(AverageUtilization,*int32) @protobuf(4,bytes,opt)
 }
 
 // MetricTargetType specifies the type of metric being targeted, and should be either
@@ -384,12 +411,12 @@ import (
 #HorizontalPodAutoscalerStatus: {
 	// observedGeneration is the most recent generation observed by this autoscaler.
 	// +optional
-	observedGeneration?: null | int64 @go(ObservedGeneration,*int64) @protobuf(1,varint,opt)
+	observedGeneration?: int64 @go(ObservedGeneration,*int64) @protobuf(1,varint,opt)
 
 	// lastScaleTime is the last time the HorizontalPodAutoscaler scaled the number of pods,
 	// used by the autoscaler to control how often the number of pods is changed.
 	// +optional
-	lastScaleTime?: null | metav1.#Time @go(LastScaleTime,*metav1.Time) @protobuf(2,bytes,opt)
+	lastScaleTime?: metav1.#Time @go(LastScaleTime,*metav1.Time) @protobuf(2,bytes,opt)
 
 	// currentReplicas is current number of replicas of pods managed by this autoscaler,
 	// as last seen by the autoscaler.
@@ -403,7 +430,7 @@ import (
 	// currentMetrics is the last read state of the metrics used by this autoscaler.
 	// +listType=atomic
 	// +optional
-	currentMetrics: [...#MetricStatus] @go(CurrentMetrics,[]MetricStatus) @protobuf(5,bytes,rep)
+	currentMetrics?: [...#MetricStatus] @go(CurrentMetrics,[]MetricStatus) @protobuf(5,bytes,rep)
 
 	// conditions is the set of conditions required for this autoscaler to scale its target,
 	// and indicates whether or not those conditions are met.
@@ -422,7 +449,8 @@ import (
 #enumHorizontalPodAutoscalerConditionType:
 	#ScalingActive |
 	#AbleToScale |
-	#ScalingLimited
+	#ScalingLimited |
+	#ScaledToZero
 
 // ScalingActive indicates that the HPA controller is able to scale if necessary:
 // it's correctly configured, can fetch the desired metrics, and isn't disabled.
@@ -435,6 +463,9 @@ import (
 // ScalingLimited indicates that the calculated scale based on metrics would be above or
 // below the range for the HPA, and has thus been capped.
 #ScalingLimited: #HorizontalPodAutoscalerConditionType & "ScalingLimited"
+
+// ScaledToZero indicates that the HPA controller scaled the workload to zero.
+#ScaledToZero: #HorizontalPodAutoscalerConditionType & "ScaledToZero"
 
 // HorizontalPodAutoscalerCondition describes the state of
 // a HorizontalPodAutoscaler at a certain point.
@@ -464,20 +495,18 @@ import (
 #MetricStatus: {
 	// type is the type of metric source.  It will be one of "ContainerResource", "External",
 	// "Object", "Pods" or "Resource", each corresponds to a matching field in the object.
-	// Note: "ContainerResource" type is available on when the feature-gate
-	// HPAContainerMetrics is enabled
 	type: #MetricSourceType @go(Type) @protobuf(1,bytes)
 
 	// object refers to a metric describing a single kubernetes object
 	// (for example, hits-per-second on an Ingress object).
 	// +optional
-	object?: null | #ObjectMetricStatus @go(Object,*ObjectMetricStatus) @protobuf(2,bytes,opt)
+	object?: #ObjectMetricStatus @go(Object,*ObjectMetricStatus) @protobuf(2,bytes,opt)
 
 	// pods refers to a metric describing each pod in the current scale target
 	// (for example, transactions-processed-per-second).  The values will be
 	// averaged together before being compared to the target value.
 	// +optional
-	pods?: null | #PodsMetricStatus @go(Pods,*PodsMetricStatus) @protobuf(3,bytes,opt)
+	pods?: #PodsMetricStatus @go(Pods,*PodsMetricStatus) @protobuf(3,bytes,opt)
 
 	// resource refers to a resource metric (such as those specified in
 	// requests and limits) known to Kubernetes describing each pod in the
@@ -485,7 +514,7 @@ import (
 	// Kubernetes, and have special scaling options on top of those available
 	// to normal per-pod metrics using the "pods" source.
 	// +optional
-	resource?: null | #ResourceMetricStatus @go(Resource,*ResourceMetricStatus) @protobuf(4,bytes,opt)
+	resource?: #ResourceMetricStatus @go(Resource,*ResourceMetricStatus) @protobuf(4,bytes,opt)
 
 	// container resource refers to a resource metric (such as those specified in
 	// requests and limits) known to Kubernetes describing a single container in each pod in the
@@ -493,7 +522,7 @@ import (
 	// Kubernetes, and have special scaling options on top of those available
 	// to normal per-pod metrics using the "pods" source.
 	// +optional
-	containerResource?: null | #ContainerResourceMetricStatus @go(ContainerResource,*ContainerResourceMetricStatus) @protobuf(7,bytes,opt)
+	containerResource?: #ContainerResourceMetricStatus @go(ContainerResource,*ContainerResourceMetricStatus) @protobuf(7,bytes,opt)
 
 	// external refers to a global metric that is not associated
 	// with any Kubernetes object. It allows autoscaling based on information
@@ -501,7 +530,7 @@ import (
 	// (for example length of queue in cloud messaging service, or
 	// QPS from loadbalancer running outside of cluster).
 	// +optional
-	external?: null | #ExternalMetricStatus @go(External,*ExternalMetricStatus) @protobuf(5,bytes,opt)
+	external?: #ExternalMetricStatus @go(External,*ExternalMetricStatus) @protobuf(5,bytes,opt)
 }
 
 // ObjectMetricStatus indicates the current value of a metric describing a
@@ -570,18 +599,18 @@ import (
 #MetricValueStatus: {
 	// value is the current value of the metric (as a quantity).
 	// +optional
-	value?: null | resource.#Quantity @go(Value,*resource.Quantity) @protobuf(1,bytes,opt)
+	value?: resource.#Quantity @go(Value,*resource.Quantity) @protobuf(1,bytes,opt)
 
 	// averageValue is the current value of the average of the
 	// metric across all relevant pods (as a quantity)
 	// +optional
-	averageValue?: null | resource.#Quantity @go(AverageValue,*resource.Quantity) @protobuf(2,bytes,opt)
+	averageValue?: resource.#Quantity @go(AverageValue,*resource.Quantity) @protobuf(2,bytes,opt)
 
 	// currentAverageUtilization is the current value of the average of the
 	// resource metric across all relevant pods, represented as a percentage of
 	// the requested value of the resource for the pods.
 	// +optional
-	averageUtilization?: null | int32 @go(AverageUtilization,*int32) @protobuf(3,bytes,opt)
+	averageUtilization?: int32 @go(AverageUtilization,*int32) @protobuf(3,bytes,opt)
 }
 
 // HorizontalPodAutoscalerList is a list of horizontal pod autoscaler objects.

@@ -30,8 +30,6 @@ _#base64Serializer: {
 _#internalGroupVersionerIdentifier: "internal"
 _#disabledGroupVersionerIdentifier: "disabled"
 
-_#internalGroupVersioner: {
-}
+_#internalGroupVersioner: {}
 
-_#disabledGroupVersioner: {
-}
+_#disabledGroupVersioner: {}

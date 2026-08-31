@@ -3,6 +3,6 @@
 //cue:generate cue get go k8s.io/api/policy/v1
 
 // Package policy is for any kind of policy object.  Suitable examples, even if
-// they aren't all here, are PodDisruptionBudget, PodSecurityPolicy,
+// they aren't all here, are PodDisruptionBudget,
 // NetworkPolicy, etc.
 package v1

@@ -18,6 +18,10 @@ Action: {
 	Keep: {
 		"action.timoni.sh/prune": ActionStatus.Disabled
 	}
+	// DisableWaiting annotation is for excluding resouces from Timoni's readiness check.
+	DisableWaiting: {
+		"action.timoni.sh/wait": ActionStatus.Disabled
+	}
 }
 
 ActionStatus: {

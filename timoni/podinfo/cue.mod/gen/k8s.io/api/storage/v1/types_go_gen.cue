@@ -24,33 +24,43 @@ import (
 	metadata?: metav1.#ObjectMeta @go(ObjectMeta) @protobuf(1,bytes,opt)
 
 	// provisioner indicates the type of the provisioner.
+	// +required
+	// +k8s:alpha(since: "1.36")=+k8s:required
+	// +k8s:alpha(since: "1.36")=+k8s:immutable
 	provisioner: string @go(Provisioner) @protobuf(2,bytes,opt)
 
 	// parameters holds the parameters for the provisioner that should
 	// create volumes of this storage class.
 	// +optional
+	// +k8s:alpha(since: "1.36")=+k8s:immutable
+	// +k8s:alpha(since: "1.36")=+k8s:optional
 	parameters?: {[string]: string} @go(Parameters,map[string]string) @protobuf(3,bytes,rep)
 
 	// reclaimPolicy controls the reclaimPolicy for dynamically provisioned PersistentVolumes of this storage class.
 	// Defaults to Delete.
 	// +optional
-	reclaimPolicy?: null | v1.#PersistentVolumeReclaimPolicy @go(ReclaimPolicy,*v1.PersistentVolumeReclaimPolicy) @protobuf(4,bytes,opt,casttype=k8s.io/api/core/v1.PersistentVolumeReclaimPolicy)
+	// +k8s:alpha(since: "1.36")=+k8s:immutable
+	// +k8s:alpha(since: "1.36")=+k8s:optional
+	reclaimPolicy?: v1.#PersistentVolumeReclaimPolicy @go(ReclaimPolicy,*v1.PersistentVolumeReclaimPolicy) @protobuf(4,bytes,opt,casttype=k8s.io/api/core/v1.PersistentVolumeReclaimPolicy)
 
 	// mountOptions controls the mountOptions for dynamically provisioned PersistentVolumes of this storage class.
 	// e.g. ["ro", "soft"]. Not validated -
 	// mount of the PVs will simply fail if one is invalid.
 	// +optional
+	// +listType=atomic
 	mountOptions?: [...string] @go(MountOptions,[]string) @protobuf(5,bytes,opt)
 
 	// allowVolumeExpansion shows whether the storage class allow volume expand.
 	// +optional
-	allowVolumeExpansion?: null | bool @go(AllowVolumeExpansion,*bool) @protobuf(6,varint,opt)
+	allowVolumeExpansion?: bool @go(AllowVolumeExpansion,*bool) @protobuf(6,varint,opt)
 
 	// volumeBindingMode indicates how PersistentVolumeClaims should be
 	// provisioned and bound.  When unset, VolumeBindingImmediate is used.
 	// This field is only honored by servers that enable the VolumeScheduling feature.
 	// +optional
-	volumeBindingMode?: null | #VolumeBindingMode @go(VolumeBindingMode,*VolumeBindingMode) @protobuf(7,bytes,opt)
+	// +k8s:alpha(since: "1.36")=+k8s:immutable
+	// +k8s:alpha(since: "1.36")=+k8s:optional
+	volumeBindingMode?: #VolumeBindingMode @go(VolumeBindingMode,*VolumeBindingMode) @protobuf(7,bytes,opt)
 
 	// allowedTopologies restrict the node topologies where volumes can be dynamically provisioned.
 	// Each volume plugin defines its own supported topology specifications.
@@ -106,6 +116,8 @@ import (
 
 	// spec represents specification of the desired attach/detach volume behavior.
 	// Populated by the Kubernetes system.
+	// +k8s:alpha(since: "1.36")=+k8s:immutable
+	// +required
 	spec: #VolumeAttachmentSpec @go(Spec) @protobuf(2,bytes,opt)
 
 	// status represents status of the VolumeAttachment request.
@@ -132,6 +144,10 @@ import (
 #VolumeAttachmentSpec: {
 	// attacher indicates the name of the volume driver that MUST handle this
 	// request. This is the name returned by GetPluginName().
+	// +required
+	// +k8s:alpha(since: "1.36")=+k8s:required
+	// +k8s:alpha(since: "1.36")=+k8s:format="k8s-long-name-caseless"
+	// +k8s:alpha(since: "1.36")=+k8s:maxLength=63
 	attacher: string @go(Attacher) @protobuf(1,bytes,opt)
 
 	// source represents the volume that should be attached.
@@ -142,13 +158,13 @@ import (
 }
 
 // VolumeAttachmentSource represents a volume that should be attached.
-// Right now only PersistenVolumes can be attached via external attacher,
-// in future we may allow also inline volumes in pods.
+// Right now only PersistentVolumes can be attached via external attacher,
+// in the future we may allow also inline volumes in pods.
 // Exactly one member can be set.
 #VolumeAttachmentSource: {
 	// persistentVolumeName represents the name of the persistent volume to attach.
 	// +optional
-	persistentVolumeName?: null | string @go(PersistentVolumeName,*string) @protobuf(1,bytes,opt)
+	persistentVolumeName?: string @go(PersistentVolumeName,*string) @protobuf(1,bytes,opt)
 
 	// inlineVolumeSpec contains all the information necessary to attach
 	// a persistent volume defined by a pod's inline VolumeSource. This field
@@ -157,7 +173,7 @@ import (
 	// PersistentVolumeSpec. This field is beta-level and is only
 	// honored by servers that enabled the CSIMigration feature.
 	// +optional
-	inlineVolumeSpec?: null | v1.#PersistentVolumeSpec @go(InlineVolumeSpec,*v1.PersistentVolumeSpec) @protobuf(2,bytes,opt)
+	inlineVolumeSpec?: v1.#PersistentVolumeSpec @go(InlineVolumeSpec,*v1.PersistentVolumeSpec) @protobuf(2,bytes,opt)
 }
 
 // VolumeAttachmentStatus is the status of a VolumeAttachment request.
@@ -179,13 +195,13 @@ import (
 	// This field must only be set by the entity completing the attach
 	// operation, i.e. the external-attacher.
 	// +optional
-	attachError?: null | #VolumeError @go(AttachError,*VolumeError) @protobuf(3,bytes,opt,casttype=VolumeError)
+	attachError?: #VolumeError @go(AttachError,*VolumeError) @protobuf(3,bytes,opt,casttype=VolumeError)
 
 	// detachError represents the last error encountered during detach operation, if any.
 	// This field must only be set by the entity completing the detach
 	// operation, i.e. the external-attacher.
 	// +optional
-	detachError?: null | #VolumeError @go(DetachError,*VolumeError) @protobuf(4,bytes,opt,casttype=VolumeError)
+	detachError?: #VolumeError @go(DetachError,*VolumeError) @protobuf(4,bytes,opt,casttype=VolumeError)
 }
 
 // VolumeError captures an error encountered during a volume operation.
@@ -199,6 +215,14 @@ import (
 	// information.
 	// +optional
 	message?: string @go(Message) @protobuf(2,bytes,opt)
+
+	// errorCode is a numeric gRPC code representing the error encountered during Attach or Detach operations.
+	//
+	// This field requires the MutableCSINodeAllocatableCount feature gate being enabled to be set.
+	//
+	// +featureGate=MutableCSINodeAllocatableCount
+	// +optional
+	errorCode?: int32 @go(ErrorCode,*int32) @protobuf(3,varint,opt)
 }
 
 // CSIDriver captures information about a Container Storage Interface (CSI)
@@ -245,14 +269,13 @@ import (
 	// and waits until the volume is attached before proceeding to mounting.
 	// The CSI external-attacher coordinates with CSI volume driver and updates
 	// the volumeattachment status when the attach operation is complete.
-	// If the CSIDriverRegistry feature gate is enabled and the value is
-	// specified to false, the attach operation will be skipped.
+	// If the value is specified to false, the attach operation will be skipped.
 	// Otherwise the attach operation will be called.
 	//
 	// This field is immutable.
 	//
 	// +optional
-	attachRequired?: null | bool @go(AttachRequired,*bool) @protobuf(1,varint,opt)
+	attachRequired?: bool @go(AttachRequired,*bool) @protobuf(1,varint,opt)
 
 	// podInfoOnMount indicates this CSI volume driver requires additional pod information (like podName, podUID, etc.)
 	// during mount operations, if set to true.
@@ -263,7 +286,7 @@ import (
 	// If true, Kubelet will pass pod information as VolumeContext in the CSI NodePublishVolume() calls.
 	// The CSI driver is responsible for parsing and validating the information passed in as VolumeContext.
 	//
-	// The following VolumeConext will be passed if podInfoOnMount is set to true.
+	// The following VolumeContext will be passed if podInfoOnMount is set to true.
 	// This list might grow, but the prefix will be used.
 	// "csi.storage.k8s.io/pod.name": pod.Name
 	// "csi.storage.k8s.io/pod.namespace": pod.Namespace
@@ -278,10 +301,10 @@ import (
 	// deployed on such a cluster and the deployment determines which mode that is, for example
 	// via a command line parameter of the driver.
 	//
-	// This field is immutable.
+	// This field was immutable in Kubernetes < 1.29 and now is mutable.
 	//
 	// +optional
-	podInfoOnMount?: null | bool @go(PodInfoOnMount,*bool) @protobuf(2,bytes,opt)
+	podInfoOnMount?: bool @go(PodInfoOnMount,*bool) @protobuf(2,bytes,opt)
 
 	// volumeLifecycleModes defines what kind of volumes this CSI volume driver supports.
 	// The default if the list is empty is "Persistent", which is the usage defined by the
@@ -319,13 +342,13 @@ import (
 	//
 	// +optional
 	// +featureGate=CSIStorageCapacity
-	storageCapacity?: null | bool @go(StorageCapacity,*bool) @protobuf(4,bytes,opt)
+	storageCapacity?: bool @go(StorageCapacity,*bool) @protobuf(4,bytes,opt)
 
 	// fsGroupPolicy defines if the underlying volume supports changing ownership and
 	// permission of the volume before being mounted.
 	// Refer to the specific FSGroupPolicy values for additional details.
 	//
-	// This field is immutable.
+	// This field was immutable in Kubernetes < 1.29 and now is mutable.
 	//
 	// Defaults to ReadWriteOnceWithFSType, which will examine each volume
 	// to determine if Kubernetes should modify ownership and permissions of the volume.
@@ -333,7 +356,7 @@ import (
 	// if a fstype is defined and the volume's access mode contains ReadWriteOnce.
 	//
 	// +optional
-	fsGroupPolicy?: null | #FSGroupPolicy @go(FSGroupPolicy,*FSGroupPolicy) @protobuf(5,bytes,opt)
+	fsGroupPolicy?: #FSGroupPolicy @go(FSGroupPolicy,*FSGroupPolicy) @protobuf(5,bytes,opt)
 
 	// tokenRequests indicates the CSI driver needs pods' service account
 	// tokens it is mounting volume for to do necessary authentication. Kubelet
@@ -364,7 +387,7 @@ import (
 	// mount points will not be seen by a running container.
 	//
 	// +optional
-	requiresRepublish?: null | bool @go(RequiresRepublish,*bool) @protobuf(7,varint,opt)
+	requiresRepublish?: bool @go(RequiresRepublish,*bool) @protobuf(7,varint,opt)
 
 	// seLinuxMount specifies if the CSI driver supports "-o context"
 	// mount option.
@@ -386,7 +409,66 @@ import (
 	//
 	// +featureGate=SELinuxMountReadWriteOncePod
 	// +optional
-	seLinuxMount?: null | bool @go(SELinuxMount,*bool) @protobuf(8,varint,opt)
+	seLinuxMount?: bool @go(SELinuxMount,*bool) @protobuf(8,varint,opt)
+
+	// nodeAllocatableUpdatePeriodSeconds specifies the interval between periodic updates of
+	// the CSINode allocatable capacity for this driver. When set, both periodic updates and
+	// updates triggered by capacity-related failures are enabled. If not set, no updates
+	// occur (neither periodic nor upon detecting capacity-related failures), and the
+	// allocatable.count remains static. The minimum allowed value for this field is 10 seconds.
+	//
+	// This feature requires the MutableCSINodeAllocatableCount feature gate to be enabled.
+	//
+	// This field is mutable.
+	//
+	// +featureGate=MutableCSINodeAllocatableCount
+	// +optional
+	nodeAllocatableUpdatePeriodSeconds?: int64 @go(NodeAllocatableUpdatePeriodSeconds,*int64) @protobuf(9,varint,opt)
+
+	// serviceAccountTokenInSecrets is an opt-in for CSI drivers to indicate that
+	// service account tokens should be passed via the Secrets field in NodePublishVolumeRequest
+	// instead of the VolumeContext field. The CSI specification provides a dedicated Secrets
+	// field for sensitive information like tokens, which is the appropriate mechanism for
+	// handling credentials. This addresses security concerns where sensitive tokens were being
+	// logged as part of volume context.
+	//
+	// When "true", kubelet will pass the tokens only in the Secrets field with the key
+	// "csi.storage.k8s.io/serviceAccount.tokens". The CSI driver must be updated to read
+	// tokens from the Secrets field instead of VolumeContext.
+	//
+	// When "false" or not set, kubelet will pass the tokens in VolumeContext with the key
+	// "csi.storage.k8s.io/serviceAccount.tokens" (existing behavior). This maintains backward
+	// compatibility with existing CSI drivers.
+	//
+	// This field can only be set when TokenRequests is configured. The API server will reject
+	// CSIDriver specs that set this field without TokenRequests.
+	//
+	// Default behavior if unset is to pass tokens in the VolumeContext field.
+	//
+	// +featureGate=CSIServiceAccountTokenSecrets
+	// +optional
+	serviceAccountTokenInSecrets?: bool @go(ServiceAccountTokenInSecrets,*bool) @protobuf(10,varint,opt)
+
+	// PreventPodSchedulingIfMissing indicates that the CSI driver wants to prevent pod
+	// scheduling if the CSI driver on the node is missing.
+	//
+	// Enabling this option will prevent the scheduler (or any other
+	// component which embeds default scheduler such as cluster-autoscaler) from
+	// scheduling pods to nodes where CSI driver is not installed.
+	//
+	// For components(such as cluster-autoscaler) that embed the scheduler and run
+	// pod placement simulations using scheduler plugins, they MUST be aware of
+	// CSI driver registration information via CSINode object. They must create simulated
+	// CSINode objects in addition to Node objects during scheduling simulation, otherwise
+	// if PreventPodSchedulingIfMissing is enabled globally for CSIDriver object, any
+	// newly created node may be rejected by the scheduler because of missing CSI driver
+	// information from the node.
+	//
+	// This is an alpha feature and requires the VolumeLimitScaling feature gate to be enabled.
+	// Default is "false".
+	// +featureGate=VolumeLimitScaling
+	// +optional
+	preventPodSchedulingIfMissing?: bool @go(PreventPodSchedulingIfMissing,*bool) @protobuf(11,varint,opt)
 }
 
 // FSGroupPolicy specifies if a CSI Driver supports modifying
@@ -402,7 +484,7 @@ import (
 // ReadWriteOnceWithFSTypeFSGroupPolicy indicates that each volume will be examined
 // to determine if the volume ownership and permissions
 // should be modified. If a fstype is defined and the volume's access mode
-// contains ReadWriteOnce, then the defined fsGroup will be applied.
+// contains ReadWriteOnce or ReadWriteOncePod, then the defined fsGroup will be applied.
 // This mode should be defined if it's expected that the
 // fsGroup may need to be modified depending on the pod's SecurityPolicy.
 // This is the default behavior if no other FSGroupPolicy is defined.
@@ -442,7 +524,7 @@ import (
 	// It has the same default value of "ExpirationSeconds" in "TokenRequestSpec".
 	//
 	// +optional
-	expirationSeconds?: null | int64 @go(ExpirationSeconds,*int64) @protobuf(2,varint,opt)
+	expirationSeconds?: int64 @go(ExpirationSeconds,*int64) @protobuf(2,varint,opt)
 }
 
 // VolumeLifecyclePersistent explicitly confirms that the driver implements
@@ -490,6 +572,8 @@ import (
 	// If all drivers in the list are uninstalled, this can become empty.
 	// +patchMergeKey=name
 	// +patchStrategy=merge
+	// +listType=map
+	// +listMapKey=name
 	drivers: [...#CSINodeDriver] @go(Drivers,[]CSINodeDriver) @protobuf(1,bytes,rep)
 }
 
@@ -522,12 +606,13 @@ import (
 	// It is possible for different nodes to use different topology keys.
 	// This can be empty if driver does not support topology.
 	// +optional
-	topologyKeys: [...string] @go(TopologyKeys,[]string) @protobuf(3,bytes,rep)
+	// +listType=atomic
+	topologyKeys?: [...string] @go(TopologyKeys,[]string) @protobuf(3,bytes,rep)
 
 	// allocatable represents the volume resources of a node that are available for scheduling.
 	// This field is beta.
 	// +optional
-	allocatable?: null | #VolumeNodeResources @go(Allocatable,*VolumeNodeResources) @protobuf(4,bytes,opt)
+	allocatable?: #VolumeNodeResources @go(Allocatable,*VolumeNodeResources) @protobuf(4,bytes,opt)
 }
 
 // VolumeNodeResources is a set of resource limits for scheduling of volumes.
@@ -537,7 +622,7 @@ import (
 	// The same rule applies for a unique volume that is shared among multiple pods on the same node.
 	// If this field is not specified, then the supported number of volumes on this node is unbounded.
 	// +optional
-	count?: null | int32 @go(Count,*int32) @protobuf(1,varint,opt)
+	count?: int32 @go(Count,*int32) @protobuf(1,varint,opt)
 }
 
 // CSINodeList is a collection of CSINode objects.
@@ -599,7 +684,7 @@ import (
 	// immutable.
 	//
 	// +optional
-	nodeTopology?: null | metav1.#LabelSelector @go(NodeTopology,*metav1.LabelSelector) @protobuf(2,bytes,opt)
+	nodeTopology?: metav1.#LabelSelector @go(NodeTopology,*metav1.LabelSelector) @protobuf(2,bytes,opt)
 
 	// storageClassName represents the name of the StorageClass that the reported capacity applies to.
 	// It must meet the same requirements as the name of a StorageClass
@@ -619,7 +704,7 @@ import (
 	// unavailable.
 	//
 	// +optional
-	capacity?: null | resource.#Quantity @go(Capacity,*resource.Quantity) @protobuf(4,bytes,opt)
+	capacity?: resource.#Quantity @go(Capacity,*resource.Quantity) @protobuf(4,bytes,opt)
 
 	// maximumVolumeSize is the value reported by the CSI driver in its GetCapacityResponse
 	// for a GetCapacityRequest with topology and parameters that match the
@@ -633,7 +718,7 @@ import (
 	// API is ResourceRequirements.Requests in a volume claim.
 	//
 	// +optional
-	maximumVolumeSize?: null | resource.#Quantity @go(MaximumVolumeSize,*resource.Quantity) @protobuf(5,bytes,opt)
+	maximumVolumeSize?: resource.#Quantity @go(MaximumVolumeSize,*resource.Quantity) @protobuf(5,bytes,opt)
 }
 
 // CSIStorageCapacityList is a collection of CSIStorageCapacity objects.
@@ -646,7 +731,49 @@ import (
 	metadata?: metav1.#ListMeta @go(ListMeta) @protobuf(1,bytes,opt)
 
 	// items is the list of CSIStorageCapacity objects.
-	// +listType=map
-	// +listMapKey=name
 	items: [...#CSIStorageCapacity] @go(Items,[]CSIStorageCapacity) @protobuf(2,bytes,rep)
+}
+
+// VolumeAttributesClass represents a specification of mutable volume attributes
+// defined by the CSI driver. The class can be specified during dynamic provisioning
+// of PersistentVolumeClaims, and changed in the PersistentVolumeClaim spec after provisioning.
+#VolumeAttributesClass: {
+	metav1.#TypeMeta
+
+	// Standard object's metadata.
+	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+	// +optional
+	metadata?: metav1.#ObjectMeta @go(ObjectMeta) @protobuf(1,bytes,opt)
+
+	// Name of the CSI driver
+	// This field is immutable.
+	driverName: string @go(DriverName) @protobuf(2,bytes,opt)
+
+	// parameters hold volume attributes defined by the CSI driver. These values
+	// are opaque to the Kubernetes and are passed directly to the CSI driver.
+	// The underlying storage provider supports changing these attributes on an
+	// existing volume, however the parameters field itself is immutable. To
+	// invoke a volume update, a new VolumeAttributesClass should be created with
+	// new parameters, and the PersistentVolumeClaim should be updated to reference
+	// the new VolumeAttributesClass.
+	//
+	// This field is required and must contain at least one key/value pair.
+	// The keys cannot be empty, and the maximum number of parameters is 512, with
+	// a cumulative max size of 256K. If the CSI driver rejects invalid parameters,
+	// the target PersistentVolumeClaim will be set to an "Infeasible" state in the
+	// modifyVolumeStatus field.
+	parameters?: {[string]: string} @go(Parameters,map[string]string) @protobuf(3,bytes,rep)
+}
+
+// VolumeAttributesClassList is a collection of VolumeAttributesClass objects.
+#VolumeAttributesClassList: {
+	metav1.#TypeMeta
+
+	// Standard list metadata
+	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+	// +optional
+	metadata?: metav1.#ListMeta @go(ListMeta) @protobuf(1,bytes,opt)
+
+	// items is the list of VolumeAttributesClass objects.
+	items: [...#VolumeAttributesClass] @go(Items,[]VolumeAttributesClass) @protobuf(2,bytes,rep)
 }

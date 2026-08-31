@@ -28,9 +28,11 @@ package runtime
 	kind?: string @go(Kind) @protobuf(2,bytes,opt)
 }
 
-#ContentTypeJSON:     "application/json"
-#ContentTypeYAML:     "application/yaml"
-#ContentTypeProtobuf: "application/vnd.kubernetes.protobuf"
+#ContentTypeJSON:         "application/json"
+#ContentTypeYAML:         "application/yaml"
+#ContentTypeProtobuf:     "application/vnd.kubernetes.protobuf"
+#ContentTypeCBOR:         "application/cbor"
+#ContentTypeCBORSequence: "application/cbor-seq"
 
 // RawExtension is used to hold extensions in external versions.
 //
