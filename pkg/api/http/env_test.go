@@ -1,13 +1,17 @@
 package http
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"regexp"
+	"os"
 	"testing"
 )
 
 func TestEnvHandler(t *testing.T) {
+	const marker = "PODINFO_ENV_TEST_MARKER=podinfo-env-test"
+	t.Setenv("PODINFO_ENV_TEST_MARKER", "podinfo-env-test")
+
 	req, err := http.NewRequest("GET", "/api/env", nil)
 	if err != nil {
 		t.Fatal(err)
@@ -15,35 +19,34 @@ func TestEnvHandler(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 	srv := NewMockServer()
-	handler := http.HandlerFunc(srv.infoHandler)
+	handler := http.HandlerFunc(srv.envHandler)
 
 	handler.ServeHTTP(rr, req)
 
-	// Check the status code is what we expect.
 	if status := rr.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v",
 			status, http.StatusOK)
 	}
 
-	// Check the response body is what we expect.
-	expected := ".*hostname.*"
-	r := regexp.MustCompile(expected)
-	if !r.MatchString(rr.Body.String()) {
-		t.Fatalf("handler returned unexpected body:\ngot \n%v \nwant \n%s",
-			rr.Body.String(), expected)
+	if ct := rr.Header().Get("Content-Type"); ct != "application/json; charset=utf-8" {
+		t.Errorf("Content-Type = %q, want application/json; charset=utf-8", ct)
 	}
-}
 
-func TestEnvHandler_Actual(t *testing.T) {
-	srv := NewMockServer()
-	req, _ := http.NewRequest("GET", "/env", nil)
-	rr := httptest.NewRecorder()
-	http.HandlerFunc(srv.envHandler).ServeHTTP(rr, req)
-
-	if rr.Code != http.StatusOK {
-		t.Fatalf("got status %d, want %d", rr.Code, http.StatusOK)
+	var envs []string
+	if err := json.Unmarshal(rr.Body.Bytes(), &envs); err != nil {
+		t.Fatalf("handler returned non-JSON array body: %v\nbody: %s", err, rr.Body.String())
 	}
-	if rr.Header().Get("Content-Type") != "application/json; charset=utf-8" {
-		t.Errorf("Content-Type = %q, want application/json", rr.Header().Get("Content-Type"))
+
+	found := false
+	for _, e := range envs {
+		if e == marker {
+			found = true
+			break
+		}
+	}
+	if !found {
+		// Fall back to os.Environ shape for the error message.
+		t.Fatalf("handler body missing %q; got %d env entries (sample os.Environ len=%d)",
+			marker, len(envs), len(os.Environ()))
 	}
 }
