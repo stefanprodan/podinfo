@@ -1,6 +1,12 @@
 {{- if and .Values.spiffe.enabled (not .Values.tls.enabled) }}
 {{- fail "spiffe.enabled requires tls.enabled" }}
 {{- end }}
+{{- if and .Values.spiffe.backendMTLS (not .Values.spiffe.enabled) }}
+{{- fail "spiffe.backendMTLS requires spiffe.enabled" }}
+{{- end }}
+{{- if and .Values.spiffe.backendIDs (not .Values.spiffe.backendMTLS) }}
+{{- fail "spiffe.backendIDs requires spiffe.backendMTLS" }}
+{{- end }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -67,6 +73,12 @@ spec:
             - --spiffe-endpoint-socket={{ .Values.spiffe.endpointSocket }}
             {{- range .Values.spiffe.authorizedIDs }}
             - --spiffe-authorized-ids={{ . }}
+            {{- end }}
+            {{- if .Values.spiffe.backendMTLS }}
+            - --spiffe-backend-mtls
+            {{- range .Values.spiffe.backendIDs }}
+            - --spiffe-backend-ids={{ . }}
+            {{- end }}
             {{- end }}
             {{- else if .Values.tls.certPath }}
             - --cert-path={{ .Values.tls.certPath }}

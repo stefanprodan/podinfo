@@ -145,14 +145,34 @@ Podinfo can serve its HTTPS port with [SPIFFE](https://spiffe.io) mTLS. The serv
 from the SPIFFE Workload API (e.g. a [SPIRE](https://spiffe.io/docs/latest/spire-about/) agent),
 rotates it automatically, and only accepts clients that present an SVID from the same trust bundle.
 
-| Flag                       | Description                                                                                        |
-|----------------------------|----------------------------------------------------------------------------------------------------|
-| `--spiffe-endpoint-socket` | Workload API address, e.g. `unix:///spiffe-workload-api/spire-agent.sock`, requires `--secure-port` |
-| `--spiffe-authorized-ids`  | Client SPIFFE IDs allowed to connect, when empty any ID in podinfo's trust domain is allowed       |
+| Flag                       | Description                                                                                                                                 |
+|----------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|
+| `--spiffe-endpoint-socket` | Workload API address, e.g. `unix:///spiffe-workload-api/spire-agent.sock`, requires `--secure-port`                                         |
+| `--spiffe-authorized-ids`  | Client SPIFFE IDs allowed to connect, when empty any ID in podinfo's trust domain is allowed                                                |
+| `--spiffe-backend-mtls`    | Call the `https` backends with SPIFFE mTLS, requires `--spiffe-endpoint-socket`                                                             |
+| `--spiffe-backend-ids`     | Server SPIFFE IDs accepted from `https` backends, when empty any ID in podinfo's trust domain is accepted, requires `--spiffe-backend-mtls` |
 
 Podinfo starts the HTTP port and passes the liveness probe right away, and keeps retrying the Workload API
 until the SVID is issued. The readiness probe fails until the HTTPS port is serving with the SVID.
 The request log includes the `spiffe_id` of the client at debug level.
+
+With `--spiffe-backend-mtls`, `/api/echo` calls the `https://` backends set with `--backend-url` over SPIFFE mTLS,
+presenting the same SVID and verifying the backend against `--spiffe-backend-ids`.
+All `https://` backends must then be SPIFFE workloads, calls to `http://` backends are unchanged.
+Without the flag, backends are called with the default TLS settings. To chain two podinfo instances,
+point the frontend at the backend's HTTPS port and authorize the frontend's ID on the backend:
+
+```shell
+# backend
+podinfo --secure-port=9899 --spiffe-endpoint-socket=unix:///spiffe-workload-api/spire-agent.sock \
+  --spiffe-authorized-ids=spiffe://example.org/ns/demo/sa/frontend
+
+# frontend
+podinfo --secure-port=9899 --spiffe-endpoint-socket=unix:///spiffe-workload-api/spire-agent.sock \
+  --backend-url=https://backend:9899/api/echo \
+  --spiffe-backend-mtls \
+  --spiffe-backend-ids=spiffe://example.org/ns/demo/sa/backend
+```
 
 On a cluster with SPIRE and the [SPIFFE CSI driver](https://github.com/spiffe/spiffe-csi),
 register the podinfo pods with the SPIRE controller manager:

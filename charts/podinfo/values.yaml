@@ -96,6 +96,11 @@ spiffe:
   # the client SPIFFE IDs allowed to connect, when empty any ID in podinfo's trust domain is allowed
   # NOTE: the Helm test client runs with podinfo's service account, include its ID when setting this list
   authorizedIDs: []
+  # call the https backends with SPIFFE mTLS, presenting podinfo's SVID
+  backendMTLS: false
+  # the server SPIFFE IDs accepted from https backends, when empty any ID in podinfo's trust domain is accepted
+  # requires backendMTLS
+  backendIDs: []
 
 # create a certificate manager certificate (cert-manager required)
 certificate:

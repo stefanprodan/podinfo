@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -23,6 +24,13 @@ type spiffeState struct {
 	// When empty, any ID in the server's own trust domain is allowed.
 	authorizedIDs []spiffeid.ID
 
+	// backendMTLS enables SPIFFE mTLS for calls to https backends.
+	backendMTLS bool
+
+	// backendIDs are the server IDs accepted from https backends.
+	// When empty, any ID in the server's own trust domain is accepted.
+	backendIDs []spiffeid.ID
+
 	// clientOptions are extra Workload API client options (used by tests).
 	clientOptions []workloadapi.ClientOption
 
@@ -32,6 +40,10 @@ type spiffeState struct {
 
 	mu     sync.Mutex
 	source *workloadapi.X509Source
+	// backendTransport presents the SVID to https backends.
+	backendTransport *http.Transport
+	// closed is set by Close, after which backend mTLS calls fail.
+	closed bool
 
 	// started is set when the secure server goroutine is launched,
 	// waited is closed when that goroutine stops waiting for the SVID.
@@ -41,6 +53,12 @@ type spiffeState struct {
 
 // newSPIFFEState validates the SPIFFE flags and returns nil when SPIFFE is disabled.
 func newSPIFFEState(config *Config) (*spiffeState, error) {
+	if config.SPIFFEBackendMTLS && config.SPIFFEEndpointSocket == "" {
+		return nil, fmt.Errorf("--spiffe-backend-mtls requires --spiffe-endpoint-socket")
+	}
+	if len(config.SPIFFEBackendIDs) > 0 && !config.SPIFFEBackendMTLS {
+		return nil, fmt.Errorf("--spiffe-backend-ids requires --spiffe-backend-mtls")
+	}
 	if config.SPIFFEEndpointSocket == "" {
 		return nil, nil
 	}
@@ -49,7 +67,12 @@ func newSPIFFEState(config *Config) (*spiffeState, error) {
 		return nil, fmt.Errorf("--spiffe-endpoint-socket requires --secure-port")
 	}
 
-	ids, err := parseSPIFFEIDs(config.SPIFFEAuthorizedIDs)
+	ids, err := parseSPIFFEIDs("--spiffe-authorized-ids", config.SPIFFEAuthorizedIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	backendIDs, err := parseSPIFFEIDs("--spiffe-backend-ids", config.SPIFFEBackendIDs)
 	if err != nil {
 		return nil, err
 	}
@@ -57,13 +80,15 @@ func newSPIFFEState(config *Config) (*spiffeState, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &spiffeState{
 		authorizedIDs: ids,
+		backendMTLS:   config.SPIFFEBackendMTLS,
+		backendIDs:    backendIDs,
 		ctx:           ctx,
 		cancel:        cancel,
 		waited:        make(chan struct{}),
 	}, nil
 }
 
-func parseSPIFFEIDs(values []string) ([]spiffeid.ID, error) {
+func parseSPIFFEIDs(flag string, values []string) ([]spiffeid.ID, error) {
 	var ids []spiffeid.ID
 	for _, v := range values {
 		v = strings.TrimSpace(v)
@@ -72,14 +97,14 @@ func parseSPIFFEIDs(values []string) ([]spiffeid.ID, error) {
 		}
 		id, err := spiffeid.FromString(v)
 		if err != nil {
-			return nil, fmt.Errorf("invalid SPIFFE ID %q in --spiffe-authorized-ids: %w", v, err)
+			return nil, fmt.Errorf("invalid SPIFFE ID %q in %s: %w", v, flag, err)
 		}
 		ids = append(ids, id)
 	}
 	return ids, nil
 }
 
-// spiffeAuthorizer allows the given client IDs, or any ID in the
+// spiffeAuthorizer allows the given peer IDs, or any ID in the
 // server's own trust domain when the list is empty.
 func spiffeAuthorizer(ids []spiffeid.ID, own spiffeid.ID) tlsconfig.Authorizer {
 	if len(ids) > 0 {
@@ -110,14 +135,24 @@ func (s *Server) spiffeTLSConfig() (*tls.Config, spiffeid.ID, error) {
 	}
 	log.ready.Store(true)
 
-	st.mu.Lock()
-	st.source = source
-	st.mu.Unlock()
-
 	svid, err := source.GetX509SVID()
 	if err != nil {
+		_ = source.Close()
 		return nil, spiffeid.ID{}, err
 	}
+
+	// The client config reads the SVID and the bundle from the source on
+	// every handshake, so rotation applies to backend calls too.
+	var transport *http.Transport
+	if st.backendMTLS {
+		transport = newHTTPTransport()
+		transport.TLSClientConfig = tlsconfig.MTLSClientConfig(source, source, spiffeAuthorizer(st.backendIDs, svid.ID))
+	}
+
+	st.mu.Lock()
+	st.source = source
+	st.backendTransport = transport
+	st.mu.Unlock()
 
 	return tlsconfig.MTLSServerConfig(source, source, spiffeAuthorizer(st.authorizedIDs, svid.ID)), svid.ID, nil
 }
@@ -193,12 +228,56 @@ func (s *Server) Close() error {
 	st.mu.Lock()
 	source := st.source
 	st.source = nil
+	transport := st.backendTransport
+	st.backendTransport = nil
+	st.closed = true
 	st.mu.Unlock()
 
+	if transport != nil {
+		transport.CloseIdleConnections()
+	}
 	if source != nil {
 		return source.Close()
 	}
 	return nil
+}
+
+// newHTTPTransport clones the default transport, or builds one with the
+// same proxy and HTTP/2 settings when http.DefaultTransport was replaced.
+func newHTTPTransport() *http.Transport {
+	if t, ok := http.DefaultTransport.(*http.Transport); ok {
+		return t.Clone()
+	}
+	return &http.Transport{
+		Proxy:             http.ProxyFromEnvironment,
+		ForceAttemptHTTP2: true,
+	}
+}
+
+// backendTransport returns the transport for a backend call. With
+// --spiffe-backend-mtls, https backends are called with SPIFFE mTLS, which
+// fails until the SVID is issued. Other backends use the default transport.
+func (s *Server) backendTransport(backendURL string) (http.RoundTripper, error) {
+	if s.spiffe == nil || !s.spiffe.backendMTLS {
+		return http.DefaultTransport, nil
+	}
+	u, err := url.Parse(backendURL)
+	if err != nil {
+		return nil, err
+	}
+	if !strings.EqualFold(u.Scheme, "https") {
+		return http.DefaultTransport, nil
+	}
+
+	s.spiffe.mu.Lock()
+	defer s.spiffe.mu.Unlock()
+	if s.spiffe.closed {
+		return nil, fmt.Errorf("SPIFFE Workload API source closed")
+	}
+	if s.spiffe.backendTransport == nil {
+		return nil, fmt.Errorf("SPIFFE X.509 SVID not issued yet")
+	}
+	return s.spiffe.backendTransport, nil
 }
 
 // peerSPIFFEID returns the SPIFFE ID of the TLS client certificate, if any.

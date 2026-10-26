@@ -74,6 +74,8 @@ type Config struct {
 	CacheServer           string        `mapstructure:"cache-server"`
 	SPIFFEEndpointSocket  string        `mapstructure:"spiffe-endpoint-socket"`
 	SPIFFEAuthorizedIDs   []string      `mapstructure:"spiffe-authorized-ids"`
+	SPIFFEBackendMTLS     bool          `mapstructure:"spiffe-backend-mtls"`
+	SPIFFEBackendIDs      []string      `mapstructure:"spiffe-backend-ids"`
 	ArtifactPath          string        `mapstructure:"artifact-path"`
 }
 

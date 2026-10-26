@@ -46,6 +46,8 @@ func main() {
 	fs.String("cert-path", "/data/cert", "certificate path for HTTPS port")
 	fs.String("spiffe-endpoint-socket", "", "SPIFFE Workload API address, e.g. unix:///spiffe-workload-api/spire-agent.sock; when set, the HTTPS port uses SPIFFE mTLS instead of --cert-path")
 	fs.StringSlice("spiffe-authorized-ids", []string{}, "SPIFFE IDs allowed to connect to the HTTPS port; when empty, any ID in the server's trust domain is allowed")
+	fs.Bool("spiffe-backend-mtls", false, "call https backends with SPIFFE mTLS; requires --spiffe-endpoint-socket")
+	fs.StringSlice("spiffe-backend-ids", []string{}, "SPIFFE IDs accepted from https backends; requires --spiffe-backend-mtls; when empty, any ID in the server's trust domain is accepted")
 	fs.String("artifact-path", "./kustomize", "directory served as a tar.gz at /artifact; empty disables the route")
 	fs.String("config", "config.yaml", "config file name")
 	fs.String("ui-path", "./ui", "UI local path")
