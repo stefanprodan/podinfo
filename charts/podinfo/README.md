@@ -89,6 +89,10 @@ The following tables lists the configurable parameters of the podinfo chart and 
 | `service.additionalLabels`                     | `{}`                           | Additional labels to add to the service                                                            |
 | `service.externalTrafficPolicy`                | `None`                         | External traffic policy for LoadBalance service                                                    |
 | `h2c.enabled`                                  | `false`                        | Allow upgrading to h2c (non-TLS version of HTTP/2)                                                 |
+| `spiffe.enabled`                               | `false`                        | Serve the TLS port with SPIFFE mTLS, requires `tls.enabled`, SPIRE and the SPIFFE CSI driver       |
+| `spiffe.endpointSocket`                        | `unix:///spiffe-workload-api/spire-agent.sock` | SPIFFE Workload API socket                                                                         |
+| `spiffe.csiDriver`                             | `csi.spiffe.io`                | CSI driver that mounts the Workload API socket                                                     |
+| `spiffe.authorizedIDs`                         | `[]`                           | Client SPIFFE IDs allowed to connect, when empty any ID in the trust domain is allowed             |
 | `extraArgs`                                    | `[]`                           | Additional command line arguments to pass to podinfo container                                     |
 | `extraEnvs`                                    | `[]`                           | Extra environment variables for the podinfo container                                              |
 | `config.path`                                  | `""`                           | config file path                                                                                   |

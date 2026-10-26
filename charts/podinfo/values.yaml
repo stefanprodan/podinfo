@@ -84,6 +84,19 @@ tls:
   # in local clusters such as kind without port forwarding
   hostPort:
 
+# serve the tls port with SPIFFE mTLS (SPIRE and the SPIFFE CSI driver required)
+# the X.509 SVID is fetched from the SPIFFE Workload API instead of the tls secret
+# requires tls.enabled for the port and service
+spiffe:
+  enabled: false
+  # the SPIFFE Workload API socket, the socket dir is mounted from the CSI driver
+  endpointSocket: unix:///spiffe-workload-api/spire-agent.sock
+  # the CSI driver that mounts the Workload API socket
+  csiDriver: csi.spiffe.io
+  # the client SPIFFE IDs allowed to connect, when empty any ID in podinfo's trust domain is allowed
+  # NOTE: the Helm test client runs with podinfo's service account, include its ID when setting this list
+  authorizedIDs: []
+
 # create a certificate manager certificate (cert-manager required)
 certificate:
   create: false

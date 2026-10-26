@@ -31,6 +31,23 @@ jobs:
         if: failure()
         run: |
           kubectl logs -l app=podinfo || true
+  kind-spiffe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Disk Cleanup
+        uses: ./.github/actions/runner-cleanup
+      - name: Setup Helm
+        uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
+        with:
+          version: v4.2.4
+      - name: Setup Kubernetes
+        uses: helm/kind-action@1544676c07bb3570fcb70166beaa07c4528fd4aa # v1.15.1
+        with:
+          cluster_name: kind
+      - name: Run SPIFFE integration tests
+        run: ./test/e2e-spiffe.sh
   kind-timoni:
     runs-on: ubuntu-latest
     services:
