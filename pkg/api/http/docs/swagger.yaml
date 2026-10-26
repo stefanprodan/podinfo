@@ -97,6 +97,24 @@ paths:
       summary: Runtime information
       tags:
       - HTTP API
+  /artifact:
+    get:
+      description: returns the files from the artifact path as a tar.gz, the digest
+        is set in the X-Artifact-Digest header
+      produces:
+      - application/gzip
+      responses:
+        "200":
+          description: tar.gz archive
+          schema:
+            type: file
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/http.MapResponse'
+      summary: Download artifact
+      tags:
+      - HTTP API
   /cache/{key}:
     delete:
       consumes:
@@ -264,7 +282,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: returns a JSON array with the request HTTP headers
+      description: returns a JSON array with the request HTTP headers, plus X-Spiffe-Id
+        when the client presented a SPIFFE X.509 SVID
       produces:
       - application/json
       responses:

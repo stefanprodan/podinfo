@@ -20,10 +20,17 @@ type Shutdown struct {
 	tracerProvider        *sdktrace.TracerProvider
 	loggerProvider        *sdklog.LoggerProvider
 	serverShutdownTimeout time.Duration
+	beforeShutdown        func()
 }
 
 func (s *Shutdown) SetLoggerProvider(lp *sdklog.LoggerProvider) {
 	s.loggerProvider = lp
+}
+
+// SetBeforeShutdown registers a function that runs as soon as the stop
+// signal is received, before the health and ready states are cleared.
+func (s *Shutdown) SetBeforeShutdown(fn func()) {
+	s.beforeShutdown = fn
 }
 
 func NewShutdown(serverShutdownTimeout time.Duration, logger *zap.Logger) (*Shutdown, error) {
@@ -42,6 +49,10 @@ func (s *Shutdown) Graceful(stopCh <-chan struct{}, httpServer *http.Server, htt
 	<-stopCh
 	ctx, cancel := context.WithTimeout(ctx, s.serverShutdownTimeout)
 	defer cancel()
+
+	if s.beforeShutdown != nil {
+		s.beforeShutdown()
+	}
 
 	// all calls to /healthz and /readyz will fail from now on
 	atomic.StoreInt32(healthy, 0)

@@ -72,6 +72,9 @@ type Config struct {
 	Unready               bool          `mapstructure:"unready"`
 	JWTSecret             string        `mapstructure:"jwt-secret"`
 	CacheServer           string        `mapstructure:"cache-server"`
+	SPIFFEEndpointSocket  string        `mapstructure:"spiffe-endpoint-socket"`
+	SPIFFEAuthorizedIDs   []string      `mapstructure:"spiffe-authorized-ids"`
+	ArtifactPath          string        `mapstructure:"artifact-path"`
 }
 
 type Server struct {
@@ -82,16 +85,24 @@ type Server struct {
 	handler        http.Handler
 	tracer         trace.Tracer
 	tracerProvider *sdktrace.TracerProvider
+	spiffe         *spiffeState
+	artifact       *artifact
 }
 
 func NewServer(config *Config, logger *zap.Logger) (*Server, error) {
 	config.Prefix = normalizePrefix(config.Prefix)
 	docs.SwaggerInfo.BasePath = config.Prefix
 
+	spiffe, err := newSPIFFEState(config)
+	if err != nil {
+		return nil, err
+	}
+
 	srv := &Server{
 		router: mux.NewRouter(),
 		logger: logger,
 		config: config,
+		spiffe: spiffe,
 	}
 
 	return srv, nil
@@ -164,6 +175,9 @@ func (s *Server) registerHandlers() {
 	s.router.HandleFunc(s.prefixedPath("/cache/{key}"), s.cacheDeleteHandler).Methods("DELETE")
 	s.router.HandleFunc(s.prefixedPath("/cache/{key}"), s.cacheReadHandler).Methods("GET").Name("cache")
 	s.router.HandleFunc(s.prefixedPath("/configs"), s.configReadHandler).Methods("GET")
+	if s.config.ArtifactPath != "" {
+		s.router.HandleFunc(s.prefixedPath("/artifact"), s.artifactHandler).Methods("GET", "HEAD")
+	}
 	s.router.HandleFunc(s.prefixedPath("/token"), s.tokenGenerateHandler).Methods("POST")
 	s.router.HandleFunc(s.prefixedPath("/token/validate"), s.tokenValidateHandler).Methods("GET")
 	s.router.HandleFunc(s.prefixedPath("/api/info"), s.infoHandler).Methods("GET")
@@ -208,6 +222,7 @@ func (s *Server) ListenAndServe() (*http.Server, *http.Server, *int32, *int32) {
 	go s.startMetricsServer()
 
 	s.initTracer(ctx)
+	s.loadArtifact()
 	s.registerHandlers()
 	s.registerMiddlewares()
 
@@ -244,7 +259,8 @@ func (s *Server) ListenAndServe() (*http.Server, *http.Server, *int32, *int32) {
 	if !s.config.Unhealthy {
 		atomic.StoreInt32(&healthy, 1)
 	}
-	if !s.config.Unready {
+	// with SPIFFE, the secure server sets ready once it has an SVID
+	if !s.config.Unready && s.spiffe == nil {
 		atomic.StoreInt32(&ready, 1)
 	}
 
@@ -295,6 +311,12 @@ func (s *Server) startSecureServer() *http.Server {
 		ReadTimeout:  s.config.HttpServerTimeout,
 		IdleTimeout:  2 * s.config.HttpServerTimeout,
 		Handler:      s.handler,
+	}
+
+	if s.spiffe != nil {
+		s.spiffe.started.Store(true)
+		go s.serveSPIFFE(srv)
+		return srv
 	}
 
 	cert := path.Join(s.config.CertPath, "tls.crt")

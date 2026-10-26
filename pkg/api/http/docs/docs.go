@@ -88,6 +88,32 @@ const docTemplate = `{
                 }
             }
         },
+        "/artifact": {
+            "get": {
+                "description": "returns the files from the artifact path as a tar.gz, the digest is set in the X-Artifact-Digest header",
+                "produces": [
+                    "application/gzip"
+                ],
+                "tags": [
+                    "HTTP API"
+                ],
+                "summary": "Download artifact",
+                "responses": {
+                    "200": {
+                        "description": "tar.gz archive",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/http.MapResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/cache/{key}": {
             "get": {
                 "description": "returns the content from cache if key exists",
@@ -337,7 +363,7 @@ const docTemplate = `{
         },
         "/headers": {
             "get": {
-                "description": "returns a JSON array with the request HTTP headers",
+                "description": "returns a JSON array with the request HTTP headers, plus X-Spiffe-Id when the client presented a SPIFFE X.509 SVID",
                 "consumes": [
                     "application/json"
                 ],
