@@ -1,4 +1,4 @@
-{{- if .Values.tls.enabled -}}
+{{- if and .Values.tls.enabled (not .Values.spiffe.enabled) -}}
 apiVersion: v1
 kind: Pod
 metadata:

@@ -1,0 +1,77 @@
+{{- if .Values.spiffe.enabled -}}
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ template "podinfo.fullname" . }}-spiffe-test-{{ randAlphaNum 5 | lower }}
+  namespace: {{ include "podinfo.namespace" . }}
+  labels:
+    helm.sh/chart: {{ include "podinfo.chart" . }}
+    app.kubernetes.io/name: {{ template "podinfo.fullname" . }}-spiffe-test
+  annotations:
+    "helm.sh/hook": test-success
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+    sidecar.istio.io/inject: "false"
+    linkerd.io/inject: disabled
+    appmesh.k8s.aws/sidecarInjectorWebhook: disabled
+spec:
+  # The test client gets its SVID with podinfo's service account.
+  serviceAccountName: {{ template "podinfo.serviceAccountName" . }}
+  # The agent returns PermissionDenied until it has synced the pod's
+  # registration entry, so the fetch is retried by restarting the init
+  # container. The deadline fails the test instead of retrying forever.
+  restartPolicy: OnFailure
+  activeDeadlineSeconds: 180
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+    runAsNonRoot: true
+  initContainers:
+    - name: fetch-svid
+      image: ghcr.io/spiffe/spire-agent:1.15.3
+      command:
+        - /opt/spire/bin/spire-agent
+        - api
+        - fetch
+        - x509
+        - -socketPath
+        - {{ trimPrefix "unix://" .Values.spiffe.endpointSocket }}
+        - -write
+        - /svid
+      volumeMounts:
+        - name: spiffe-workload-api
+          mountPath: {{ include "podinfo.spiffeSocketDir" . }}
+          readOnly: true
+        - name: svid
+          mountPath: /svid
+  containers:
+    - name: curl
+      image: curlimages/curl:7.69.0
+      command:
+        - sh
+        - -c
+        - |
+          set -e
+          # the SVID has only a URI SAN, so the hostname can't be verified (-k)
+          if curl -sk --max-time 10 ${PODINFO_SVC}/api/info >/dev/null 2>&1; then
+            echo "FAIL: client without an SVID was accepted"
+            exit 1
+          fi
+          echo "client without an SVID was rejected"
+          curl -sSk --max-time 10 --cert /svid/svid.0.pem --key /svid/svid.0.key \
+            ${PODINFO_SVC}/headers | grep X-Spiffe-Id
+          echo "client with an SVID was accepted"
+      env:
+        - name: PODINFO_SVC
+          value: "https://{{ template "podinfo.fullname" . }}.{{ include "podinfo.namespace" . }}:{{ .Values.tls.port }}{{ trimSuffix "/" (.Values.prefix | default "/") }}"
+      volumeMounts:
+        - name: svid
+          mountPath: /svid
+          readOnly: true
+  volumes:
+    - name: spiffe-workload-api
+      csi:
+        driver: {{ .Values.spiffe.csiDriver }}
+        readOnly: true
+    - name: svid
+      emptyDir: {}
+{{- end }}

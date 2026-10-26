@@ -74,3 +74,10 @@ Create the name of the tls secret for secure port
 {{- $fullname := include "podinfo.fullname" . -}}
 {{- default (printf "%s-tls" $fullname) .Values.tls.secretName }}
 {{- end }}
+
+{{/*
+The directory of the SPIFFE Workload API socket, where the CSI volume is mounted.
+*/}}
+{{- define "podinfo.spiffeSocketDir" -}}
+{{- dir (trimPrefix "unix://" .Values.spiffe.endpointSocket) }}
+{{- end }}

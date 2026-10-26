@@ -1,3 +1,6 @@
+{{- if and .Values.spiffe.enabled (not .Values.tls.enabled) }}
+{{- fail "spiffe.enabled requires tls.enabled" }}
+{{- end }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -60,7 +63,12 @@ spec:
             {{- if .Values.tls.enabled }}
             - --secure-port={{ .Values.tls.port }}
             {{- end }}
-            {{- if .Values.tls.certPath }}
+            {{- if .Values.spiffe.enabled }}
+            - --spiffe-endpoint-socket={{ .Values.spiffe.endpointSocket }}
+            {{- range .Values.spiffe.authorizedIDs }}
+            - --spiffe-authorized-ids={{ . }}
+            {{- end }}
+            {{- else if .Values.tls.certPath }}
             - --cert-path={{ .Values.tls.certPath }}
             {{- end }}
             {{- if .Values.service.metricsPort }}
@@ -193,7 +201,11 @@ spec:
           volumeMounts:
           - name: data
             mountPath: /data
-          {{- if .Values.tls.enabled }}
+          {{- if .Values.spiffe.enabled }}
+          - name: spiffe-workload-api
+            mountPath: {{ include "podinfo.spiffeSocketDir" . }}
+            readOnly: true
+          {{- else if .Values.tls.enabled }}
           - name: tls
             mountPath: {{ .Values.tls.certPath | default "/data/cert" }}
             readOnly: true
@@ -222,7 +234,12 @@ spec:
       volumes:
       - name: data
         emptyDir: {}
-      {{- if .Values.tls.enabled }}
+      {{- if .Values.spiffe.enabled }}
+      - name: spiffe-workload-api
+        csi:
+          driver: {{ .Values.spiffe.csiDriver }}
+          readOnly: true
+      {{- else if .Values.tls.enabled }}
       - name: tls
         secret:
           secretName: {{ template "podinfo.tlsSecretName" . }}

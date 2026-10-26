@@ -44,6 +44,9 @@ func main() {
 	fs.String("data-path", "/data", "data local path")
 	fs.String("config-path", "", "config dir path")
 	fs.String("cert-path", "/data/cert", "certificate path for HTTPS port")
+	fs.String("spiffe-endpoint-socket", "", "SPIFFE Workload API address, e.g. unix:///spiffe-workload-api/spire-agent.sock; when set, the HTTPS port uses SPIFFE mTLS instead of --cert-path")
+	fs.StringSlice("spiffe-authorized-ids", []string{}, "SPIFFE IDs allowed to connect to the HTTPS port; when empty, any ID in the server's trust domain is allowed")
+	fs.String("artifact-path", "./kustomize", "directory served as a tar.gz at /artifact; empty disables the route")
 	fs.String("config", "config.yaml", "config file name")
 	fs.String("ui-path", "./ui", "UI local path")
 	fs.String("ui-logo", "", "UI logo")
@@ -174,14 +177,21 @@ func main() {
 	)
 
 	// start HTTP server
-	srv, _ := http.NewServer(&srvCfg, logger)
+	srv, err := http.NewServer(&srvCfg, logger)
+	if err != nil {
+		logger.Fatal("invalid HTTP server config", zap.Error(err))
+	}
 	httpServer, httpsServer, healthy, ready := srv.ListenAndServe()
 
 	// graceful shutdown
 	stopCh := signals.SetupSignalHandler()
 	sd, _ := signals.NewShutdown(srvCfg.ServerShutdownTimeout, logger)
 	sd.SetLoggerProvider(loggerProvider)
+	sd.SetBeforeShutdown(srv.Stop)
 	sd.Graceful(stopCh, httpServer, httpsServer, grpcServer, healthy, ready)
+	if err := srv.Close(); err != nil {
+		logger.Warn("closing the SPIFFE Workload API source failed", zap.Error(err))
+	}
 }
 
 func initLoggerProvider(ctx context.Context, serviceName string) (*sdklog.LoggerProvider, error) {

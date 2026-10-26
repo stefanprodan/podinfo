@@ -1,10 +1,16 @@
 package http
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
+
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func TestEchoHandler(t *testing.T) {
@@ -181,5 +187,67 @@ func TestEchoHandler_MultipleBackends(t *testing.T) {
 	}
 	if !strings.Contains(rr.Body.String(), "resp1") || !strings.Contains(rr.Body.String(), "resp2") {
 		t.Errorf("expected both backend responses, got: %s", rr.Body.String())
+	}
+}
+
+func TestEchoHandler_LogPayload(t *testing.T) {
+	cases := []struct {
+		name    string
+		body    string
+		payload any
+	}{
+		{
+			name:    "JSON",
+			body:    `{"reportingController":"source-controller","involvedObject":{"kind":"GitRepository"}}`,
+			payload: map[string]any{"reportingController": "source-controller", "involvedObject": map[string]any{"kind": "GitRepository"}},
+		},
+		{name: "text", body: "hello", payload: "hello"},
+		{name: "too large", body: strings.Repeat("a", maxLoggedPayloadSize+1)},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			core, logs := observer.New(zap.DebugLevel)
+			srv := NewMockServer()
+			srv.logger = zap.New(core)
+
+			req := httptest.NewRequest("POST", "/api/echo", strings.NewReader(c.body))
+			http.HandlerFunc(srv.echoHandler).ServeHTTP(httptest.NewRecorder(), req)
+
+			entries := logs.FilterMessage("payload received").All()
+			if len(entries) != 1 {
+				t.Fatalf("got %d payload log entries, want 1", len(entries))
+			}
+
+			// encode the entry as JSON the way podinfo logs it
+			enc := zapcore.NewJSONEncoder(zapcore.EncoderConfig{MessageKey: "msg"})
+			buf, err := enc.EncodeEntry(entries[0].Entry, entries[0].Context)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var line map[string]any
+			if err := json.Unmarshal(buf.Bytes(), &line); err != nil {
+				t.Fatalf("log line is not valid JSON: %v\n%s", err, buf.String())
+			}
+			if line["size"] != float64(len(c.body)) {
+				t.Errorf("size = %v, want %d", line["size"], len(c.body))
+			}
+			if !reflect.DeepEqual(line["payload"], c.payload) {
+				t.Errorf("payload = %#v, want %#v", line["payload"], c.payload)
+			}
+		})
+	}
+}
+
+func TestEchoHandler_LogPayloadInfoLevel(t *testing.T) {
+	core, logs := observer.New(zap.InfoLevel)
+	srv := NewMockServer()
+	srv.logger = zap.New(core)
+
+	req := httptest.NewRequest("POST", "/api/echo", strings.NewReader(`{"a":1}`))
+	http.HandlerFunc(srv.echoHandler).ServeHTTP(httptest.NewRecorder(), req)
+
+	if n := logs.FilterMessage("payload received").Len(); n != 0 {
+		t.Fatalf("payload logged at info level")
 	}
 }

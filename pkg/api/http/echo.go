@@ -3,6 +3,7 @@ package http
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -43,7 +44,7 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 			go func(index int, backend string) {
 				defer wg.Done()
 
-				ctx = httptrace.WithClientTrace(ctx, otelhttptrace.NewClientTrace(ctx))
+				ctx := httptrace.WithClientTrace(ctx, otelhttptrace.NewClientTrace(ctx))
 				ctx, cancel := context.WithTimeout(ctx, s.config.HttpClientTimeout)
 				defer cancel()
 
@@ -100,10 +101,31 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 		s.JSONResponse(w, r, result)
 
 	} else {
+		s.logPayload(body)
 		setRawResponseHeaders(w)
 		w.Header().Set("X-Color", s.config.UIColor)
 		w.WriteHeader(http.StatusAccepted)
 		w.Write(body)
+	}
+}
+
+// maxLoggedPayloadSize is the largest request body logged by logPayload.
+const maxLoggedPayloadSize = 64 << 10 // 64 KiB
+
+// logPayload logs the request body at debug level. JSON bodies are embedded
+// as JSON objects in the log line, other bodies as strings. Bodies over
+// maxLoggedPayloadSize are logged with their size only.
+func (s *Server) logPayload(body []byte) {
+	if ce := s.logger.Check(zap.DebugLevel, "payload received"); ce != nil {
+		fields := []zap.Field{zap.Int("size", len(body))}
+		switch {
+		case len(body) > maxLoggedPayloadSize:
+		case json.Valid(body):
+			fields = append(fields, zap.Reflect("payload", json.RawMessage(body)))
+		default:
+			fields = append(fields, zap.String("payload", string(body)))
+		}
+		ce.Write(fields...)
 	}
 }
 

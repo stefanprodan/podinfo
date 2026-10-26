@@ -27,6 +27,10 @@ func (m *LoggingMiddleware) Handler(next http.Handler) http.Handler {
 			zap.String("user-agent", r.UserAgent()),
 		}
 
+		if id, ok := peerSPIFFEID(r); ok {
+			fields = append(fields, zap.String("spiffe_id", id.String()))
+		}
+
 		spanCtx := trace.SpanContextFromContext(r.Context())
 		if spanCtx.HasTraceID() {
 			fields = append(fields, zap.String("trace_id", spanCtx.TraceID().String()))

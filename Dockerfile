@@ -36,6 +36,7 @@ WORKDIR /home/app
 COPY --from=builder /podinfo/bin/podinfo .
 COPY --from=builder /podinfo/bin/podcli /usr/local/bin/podcli
 COPY ./ui ./ui
+COPY ./kustomize ./kustomize
 RUN chown -R app:app ./
 
 USER app

@@ -20,6 +20,7 @@ Specifications:
 * Structured logging with zap 
 * 12-factor app with viper
 * Fault injection (random errors and latency)
+* SPIFFE mTLS with X.509 SVIDs from the SPIFFE Workload API
 * Swagger docs
 * Timoni, Helm and Kustomize installers
 * End-to-End testing with Kubernetes Kind and Helm
@@ -42,9 +43,9 @@ Web API:
 * `GET /fault_injection/status` returns the current fault injection state (`enabled` or `disabled`)
 * `GET /status/{code}` returns the status code
 * `GET /panic` crashes the process with exit code 255
-* `POST /echo` forwards the call to the backend service and echos the posted content 
+* `POST /echo` forwards the call to the backend service and echos the posted content, without backends the content is logged at debug level
 * `GET /env` returns the environment variables as a JSON array
-* `GET /headers` returns a JSON with the request HTTP headers
+* `GET /headers` returns a JSON with the request HTTP headers, plus `X-Spiffe-Id` for SPIFFE mTLS clients
 * `GET /delay/{seconds}` waits for the specified period
 * `POST /token` issues a JWT token valid for one minute `JWT=$(curl -sd 'anon' podinfo:9898/token | jq -r .token)`
 * `GET /token/validate` validates the JWT token `curl -H "Authorization: Bearer $JWT" podinfo:9898/token/validate`
@@ -54,6 +55,7 @@ Web API:
 * `DELETE /cache/{key}` deletes the key from Redis if exists
 * `POST /store` writes the posted content to disk at /data/hash and returns the SHA1 hash of the content
 * `GET /store/{hash}` returns the content of the file /data/hash if exists
+* `GET/HEAD /artifact` returns the files from `--artifact-path` (default `./kustomize`) as a tar.gz, with the sha256 digest in the `X-Artifact-Digest` header
 * `GET /ws/echo` echos content via websockets `podcli ws ws://localhost:9898/ws/echo`
 * `GET /chunked/{seconds}` uses `transfer-encoding` type `chunked` to give a partial response and then waits for the specified period
 * `GET /swagger.json` returns the API Swagger docs, used for Linkerd service profiling and Gloo routes discovery
@@ -136,6 +138,52 @@ kubectl apply -k github.com/stefanprodan/podinfo//kustomize
 ```bash
 docker run -dp 9898:9898 stefanprodan/podinfo
 ```
+
+### SPIFFE mTLS
+
+Podinfo can serve its HTTPS port with [SPIFFE](https://spiffe.io) mTLS. The server gets its X.509 SVID
+from the SPIFFE Workload API (e.g. a [SPIRE](https://spiffe.io/docs/latest/spire-about/) agent),
+rotates it automatically, and only accepts clients that present an SVID from the same trust bundle.
+
+| Flag                       | Description                                                                                        |
+|----------------------------|----------------------------------------------------------------------------------------------------|
+| `--spiffe-endpoint-socket` | Workload API address, e.g. `unix:///spiffe-workload-api/spire-agent.sock`, requires `--secure-port` |
+| `--spiffe-authorized-ids`  | Client SPIFFE IDs allowed to connect, when empty any ID in podinfo's trust domain is allowed       |
+
+Podinfo starts the HTTP port and passes the liveness probe right away, and keeps retrying the Workload API
+until the SVID is issued. The readiness probe fails until the HTTPS port is serving with the SVID.
+The request log includes the `spiffe_id` of the client at debug level.
+
+On a cluster with SPIRE and the [SPIFFE CSI driver](https://github.com/spiffe/spiffe-csi),
+register the podinfo pods with the SPIRE controller manager:
+
+```yaml
+apiVersion: spire.spiffe.io/v1alpha1
+kind: ClusterSPIFFEID
+metadata:
+  name: podinfo
+spec:
+  # the SPIRE controller manager class, for the SPIRE Helm chart: <namespace>-<release>
+  className: spire-system-spire
+  spiffeIDTemplate: "spiffe://{{ .TrustDomain }}/ns/{{ .PodMeta.Namespace }}/sa/{{ .PodSpec.ServiceAccountName }}"
+  podSelector: {}
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: podinfo
+```
+
+Install with Helm:
+
+```bash
+helm upgrade --install --wait podinfo --namespace podinfo \
+--set serviceAccount.enabled=true \
+--set tls.enabled=true \
+--set spiffe.enabled=true \
+--set spiffe.authorizedIDs={spiffe://example.org/ns/podinfo/sa/podinfo} \
+oci://ghcr.io/stefanprodan/charts/podinfo
+```
+
+The Helm test client runs with podinfo's service account, so its ID is included in `authorizedIDs` above.
 
 ### Continuous Delivery
 
