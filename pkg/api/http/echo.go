@@ -34,8 +34,6 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	client := http.Client{Transport: otelhttp.NewTransport(http.DefaultTransport)}
-
 	if len(s.config.BackendURL) > 0 {
 		result := make([]string, len(s.config.BackendURL))
 		var wg sync.WaitGroup
@@ -59,6 +57,14 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 
 				backendReq.Header.Set("X-API-Version", version.VERSION)
 				backendReq.Header.Set("X-API-Revision", version.REVISION)
+
+				transport, err := s.backendTransport(backend)
+				if err != nil {
+					s.logger.Error("backend call failed", zap.Error(err), zap.String("url", backend))
+					result[index] = fmt.Sprintf("backend %v call failed %v", backend, err)
+					return
+				}
+				client := http.Client{Transport: otelhttp.NewTransport(transport)}
 
 				// call backend
 				resp, err := client.Do(backendReq)

@@ -18,6 +18,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -180,11 +181,20 @@ func freePort(t *testing.T) string {
 // and a free secure port. The global ready state is reset for the test.
 func newSPIFFEServer(t *testing.T, socketPath string, authorized ...string) *Server {
 	t.Helper()
+	return newSPIFFEServerWithConfig(t, socketPath, func(c *Config) {
+		c.SPIFFEAuthorizedIDs = authorized
+	})
+}
+
+// newSPIFFEServerWithConfig is newSPIFFEServer with a hook to set the
+// config before the SPIFFE flags are validated.
+func newSPIFFEServerWithConfig(t *testing.T, socketPath string, configure func(*Config)) *Server {
+	t.Helper()
 	srv := NewMockServer()
 	srv.config.Host = "127.0.0.1"
 	srv.config.SecurePort = freePort(t)
 	srv.config.SPIFFEEndpointSocket = "unix://" + socketPath
-	srv.config.SPIFFEAuthorizedIDs = authorized
+	configure(srv.config)
 
 	st, err := newSPIFFEState(srv.config)
 	if err != nil {
@@ -241,7 +251,7 @@ func waitFor(t *testing.T, what string, cond func() bool) {
 func isReady() bool { return atomic.LoadInt32(&ready) == 1 }
 
 func TestParseSPIFFEIDs(t *testing.T) {
-	ids, err := parseSPIFFEIDs([]string{"spiffe://example.org/a", " ", " spiffe://example.org/b "})
+	ids, err := parseSPIFFEIDs("--spiffe-authorized-ids", []string{"spiffe://example.org/a", " ", " spiffe://example.org/b "})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -250,7 +260,7 @@ func TestParseSPIFFEIDs(t *testing.T) {
 	}
 
 	for _, bad := range []string{"not-an-id", "https://example.org/a", "spiffe://"} {
-		if _, err := parseSPIFFEIDs([]string{bad}); err == nil {
+		if _, err := parseSPIFFEIDs("--spiffe-authorized-ids", []string{bad}); err == nil {
 			t.Errorf("parseSPIFFEIDs(%q) returned no error", bad)
 		}
 	}
@@ -271,6 +281,153 @@ func TestNewSPIFFEState(t *testing.T) {
 	cfg.SPIFFEAuthorizedIDs = []string{"bad"}
 	if _, err := NewServer(cfg, zap.NewNop()); err == nil {
 		t.Fatal("expected NewServer to reject an invalid authorized ID")
+	}
+
+	cfg.SPIFFEAuthorizedIDs = nil
+	cfg.SPIFFEBackendMTLS = true
+	cfg.SPIFFEBackendIDs = []string{"bad"}
+	if _, err := NewServer(cfg, zap.NewNop()); err == nil {
+		t.Fatal("expected NewServer to reject an invalid backend ID")
+	}
+
+	cfg.SPIFFEBackendMTLS = false
+	cfg.SPIFFEBackendIDs = []string{"spiffe://example.org/backend"}
+	if _, err := newSPIFFEState(cfg); err == nil {
+		t.Fatal("expected an error for --spiffe-backend-ids without --spiffe-backend-mtls")
+	}
+
+	cfg = &Config{SecurePort: "9899", SPIFFEBackendMTLS: true}
+	if _, err := newSPIFFEState(cfg); err == nil {
+		t.Fatal("expected an error for --spiffe-backend-mtls without --spiffe-endpoint-socket")
+	}
+
+	cfg.SPIFFEEndpointSocket = "unix:///tmp/agent.sock"
+	cfg.SPIFFEBackendIDs = []string{"spiffe://example.org/backend"}
+	st, err := newSPIFFEState(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !st.backendMTLS || len(st.backendIDs) != 1 || st.backendIDs[0].String() != "spiffe://example.org/backend" {
+		t.Fatalf("backend flags not applied: mtls=%v ids=%v", st.backendMTLS, st.backendIDs)
+	}
+}
+
+// startSPIFFEBackend starts a podinfo backend serving SPIFFE mTLS with
+// serverID, authorizing the given client IDs, and returns its echo URL.
+func startSPIFFEBackend(t *testing.T, ca *testCA, authorized ...string) string {
+	t.Helper()
+	socket := newSocketPath(t)
+	startWorkloadAPI(t, socket, ca, ca.newSVID(t, serverID))
+	backend := newSPIFFEServer(t, socket, authorized...)
+	startSPIFFEServer(t, backend)
+
+	addr := net.JoinHostPort(backend.config.Host, backend.config.SecurePort)
+	waitFor(t, "backend listener", func() bool {
+		conn, err := net.Dial("tcp", addr)
+		if err != nil {
+			return false
+		}
+		conn.Close()
+		return true
+	})
+	return "https://" + addr + "/api/echo"
+}
+
+// startSPIFFEFrontend starts a podinfo frontend with the clientID SVID that
+// calls backendURL with SPIFFE mTLS, accepting the given backend IDs.
+func startSPIFFEFrontend(t *testing.T, ca *testCA, backendURL string, backendIDs ...spiffeid.ID) *Server {
+	t.Helper()
+	socket := newSocketPath(t)
+	startWorkloadAPI(t, socket, ca, ca.newSVID(t, clientID))
+	frontend := newSPIFFEServerWithConfig(t, socket, func(c *Config) {
+		c.SPIFFEBackendMTLS = true
+		for _, id := range backendIDs {
+			c.SPIFFEBackendIDs = append(c.SPIFFEBackendIDs, id.String())
+		}
+		c.BackendURL = []string{backendURL}
+	})
+	startSPIFFEServer(t, frontend)
+
+	waitFor(t, "frontend SVID", func() bool {
+		_, err := frontend.backendTransport(backendURL)
+		return err == nil
+	})
+	return frontend
+}
+
+func callEcho(srv *Server, body string) string {
+	req := httptest.NewRequest("POST", "/api/echo", strings.NewReader(body))
+	rr := httptest.NewRecorder()
+	http.HandlerFunc(srv.echoHandler).ServeHTTP(rr, req)
+	return rr.Body.String()
+}
+
+func TestSPIFFEBackendMTLS(t *testing.T) {
+	ca := newTestCA(t)
+
+	t.Run("authorized client and backend", func(t *testing.T) {
+		backendURL := startSPIFFEBackend(t, ca, clientID.String())
+		frontend := startSPIFFEFrontend(t, ca, backendURL, serverID)
+		if got := callEcho(frontend, "hello"); !strings.Contains(got, "hello") || strings.Contains(got, "call failed") {
+			t.Fatalf("expected the backend to echo the payload, got: %s", got)
+		}
+	})
+
+	t.Run("same trust domain default", func(t *testing.T) {
+		backendURL := startSPIFFEBackend(t, ca)
+		frontend := startSPIFFEFrontend(t, ca, backendURL)
+		if got := callEcho(frontend, "hello"); !strings.Contains(got, "hello") || strings.Contains(got, "call failed") {
+			t.Fatalf("expected a same trust domain backend to be accepted, got: %s", got)
+		}
+	})
+
+	t.Run("backend rejects the client", func(t *testing.T) {
+		backendURL := startSPIFFEBackend(t, ca, otherID.String())
+		frontend := startSPIFFEFrontend(t, ca, backendURL, serverID)
+		if got := callEcho(frontend, "hello"); !strings.Contains(got, "call failed") {
+			t.Fatalf("expected the backend to reject the client, got: %s", got)
+		}
+	})
+
+	t.Run("client rejects the backend", func(t *testing.T) {
+		backendURL := startSPIFFEBackend(t, ca, clientID.String())
+		frontend := startSPIFFEFrontend(t, ca, backendURL, otherID)
+		if got := callEcho(frontend, "hello"); !strings.Contains(got, "call failed") {
+			t.Fatalf("expected the client to reject the backend ID, got: %s", got)
+		}
+	})
+
+	t.Run("foreign trust domain backend", func(t *testing.T) {
+		backendURL := startSPIFFEBackend(t, newTestCA(t), clientID.String())
+		frontend := startSPIFFEFrontend(t, ca, backendURL, serverID)
+		if got := callEcho(frontend, "hello"); !strings.Contains(got, "call failed") {
+			t.Fatalf("expected the client to reject a backend from another CA, got: %s", got)
+		}
+	})
+}
+
+func TestSPIFFEBackendTransport(t *testing.T) {
+	srv := newSPIFFEServerWithConfig(t, newSocketPath(t), func(c *Config) {
+		c.SPIFFEBackendMTLS = true
+	})
+
+	if _, err := srv.backendTransport("https://backend:9899/api/echo"); err == nil {
+		t.Fatal("expected an error before the SVID is issued")
+	}
+
+	// http backends keep the default transport
+	plain := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`"plain"`))
+	}))
+	defer plain.Close()
+	srv.config.BackendURL = []string{plain.URL}
+	if got := callEcho(srv, "hello"); !strings.Contains(got, "plain") {
+		t.Fatalf("expected the http backend to be called, got: %s", got)
+	}
+
+	srv.config.BackendURL = []string{"https://127.0.0.1:1/api/echo"}
+	if got := callEcho(srv, "hello"); !strings.Contains(got, "not issued yet") {
+		t.Fatalf("expected the https backend call to wait for the SVID, got: %s", got)
 	}
 }
 
@@ -539,5 +696,48 @@ func TestEchoHeadersHandler_SPIFFEID(t *testing.T) {
 	}
 	if req.Header.Get(spiffeIDHeader) == "" {
 		t.Fatal("handler modified the request headers")
+	}
+}
+
+func TestSPIFFEBackendMTLSDisabled(t *testing.T) {
+	ca := newTestCA(t)
+	socket := newSocketPath(t)
+	startWorkloadAPI(t, socket, ca, ca.newSVID(t, clientID))
+	srv := newSPIFFEServer(t, socket)
+	startSPIFFEServer(t, srv)
+	waitFor(t, "server ready", isReady)
+
+	// without --spiffe-backend-mtls, https backends use the default transport
+	rt, err := srv.backendTransport("https://backend:9899/api/echo")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rt != http.DefaultTransport {
+		t.Fatalf("expected the default transport, got %T", rt)
+	}
+}
+
+func TestSPIFFEBackendTransportClosed(t *testing.T) {
+	ca := newTestCA(t)
+	socket := newSocketPath(t)
+	startWorkloadAPI(t, socket, ca, ca.newSVID(t, clientID))
+	srv := newSPIFFEServerWithConfig(t, socket, func(c *Config) {
+		c.SPIFFEBackendMTLS = true
+	})
+	httpsSrv := startSPIFFEServer(t, srv)
+
+	backendURL := "https://backend:9899/api/echo"
+	waitFor(t, "SVID", func() bool {
+		_, err := srv.backendTransport(backendURL)
+		return err == nil
+	})
+
+	srv.Stop()
+	_ = httpsSrv.Close()
+	if err := srv.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := srv.backendTransport(backendURL); err == nil || !strings.Contains(err.Error(), "closed") {
+		t.Fatalf("expected a closed error, got %v", err)
 	}
 }

@@ -93,6 +93,8 @@ The following tables lists the configurable parameters of the podinfo chart and 
 | `spiffe.endpointSocket`                        | `unix:///spiffe-workload-api/spire-agent.sock` | SPIFFE Workload API socket                                                                         |
 | `spiffe.csiDriver`                             | `csi.spiffe.io`                | CSI driver that mounts the Workload API socket                                                     |
 | `spiffe.authorizedIDs`                         | `[]`                           | Client SPIFFE IDs allowed to connect, when empty any ID in the trust domain is allowed             |
+| `spiffe.backendMTLS`                           | `false`                        | Call the `https` backends with SPIFFE mTLS                                                         |
+| `spiffe.backendIDs`                            | `[]`                           | Server SPIFFE IDs accepted from `https` backends, when empty any ID in the trust domain is accepted |
 | `extraArgs`                                    | `[]`                           | Additional command line arguments to pass to podinfo container                                     |
 | `extraEnvs`                                    | `[]`                           | Extra environment variables for the podinfo container                                              |
 | `config.path`                                  | `""`                           | config file path                                                                                   |
