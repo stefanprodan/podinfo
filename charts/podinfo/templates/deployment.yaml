@@ -245,7 +245,8 @@ spec:
     {{- end }}
       volumes:
       - name: data
-        emptyDir: {}
+        emptyDir:
+          sizeLimit: {{ .Values.dataVolume.sizeLimit | default "1Gi" }}
       {{- if .Values.spiffe.enabled }}
       - name: spiffe-workload-api
         csi:
