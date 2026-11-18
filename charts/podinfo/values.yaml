@@ -324,3 +324,6 @@ probes:
     failureThreshold: 20
     successThreshold: 1
     periodSeconds: 10
+
+dataVolume:
+  sizeLimit: 1Gi
