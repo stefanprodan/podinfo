@@ -14,7 +14,7 @@ metadata:
 spec:
   containers:
     - name: curl
-      image: curlimages/curl:7.69.0
+      image: {{ .Values.testImages.curl | quote }}
       command:
         - sh
         - -c
