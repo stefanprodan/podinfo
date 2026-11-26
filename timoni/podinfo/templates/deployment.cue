@@ -140,10 +140,8 @@ import (
 							},
 							if _config.env != _|_ for e in _config.env {e},
 						]
-						if _config.caching.enabled && _config.caching.credentialsSecretName != _|_ {
-							envFrom: [{
-								secretRef: name: _config.caching.credentialsSecretName
-							}]
+						if _config.envFrom != _|_ {
+							envFrom: _config.envFrom
 						}
 						ports: [
 							{
@@ -190,20 +188,20 @@ import (
 						name: "data"
 						_config.dataVolume
 					},
-					if _cacheCA if _config.caching.ca.secretName != _|_ {
+					if _cacheCA if _config.caching.ca.existingSecret != _|_ {
 						{
 							name: "cache-ca"
 							secret: {
-								secretName: _config.caching.ca.secretName
+								secretName: _config.caching.ca.existingSecret.name
 								items:      [{key: _config.caching.ca.key, path: "ca.crt"}]
 							}
 						}
 					},
-					if _cacheCA if _config.caching.ca.configMapName != _|_ {
+					if _cacheCA if _config.caching.ca.existingConfigMap != _|_ {
 						{
 							name: "cache-ca"
 							configMap: {
-								name:  _config.caching.ca.configMapName
+								name:  _config.caching.ca.existingConfigMap.name
 								items: [{key: _config.caching.ca.key, path: "ca.crt"}]
 							}
 						}

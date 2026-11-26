@@ -142,6 +142,7 @@ seccomp profile.
 | `logLevel` | `string` | `info` | Log level: `debug`, `info`, `warn` or `error` |
 | `extraArgs` | `[...string]` | `[]` | Extra command line arguments appended to the podinfo command |
 | `env` | `[...corev1.#EnvVar]` | unset | Extra environment variables of the podinfo container |
+| `envFrom` | `[...corev1.#EnvFromSource]` | unset | Secrets and ConfigMaps loaded as environment variables, e.g. the cache credentials |
 | `resources` | `timoniv1.#ResourceRequirements` | `10m` CPU, `32Mi` memory requests | Container resource requirements |
 | `securityContext` | `corev1.#SecurityContext` | hardened | Container security context; defaults: no privilege escalation, read-only rootfs, all capabilities dropped (the pod identity comes from `podSecurityContext`) |
 | `livenessProbe` / `readinessProbe` | `corev1.#Probe` | `/healthz`, `/readyz` | Container probes on the http port |
@@ -284,9 +285,12 @@ pod annotations.
 | `caching.redisURL` | `string` | required when enabled | Redis or Valkey URL in the format `redis://[user:password@]host[:port][/db]`, `rediss://` for TLS, `valkey://` and `valkeys://` as aliases, extra cluster nodes or Sentinels as `?addr=host:port` parameters; `tcp://` is deprecated |
 | `caching.cluster` | `bool` | `false` | Connect in cluster mode, implied when the URL has more than one address |
 | `caching.sentinelPrimary` | `string` | unset | Name of the primary monitored by Sentinel; the URL addresses are then the Sentinels |
-| `caching.credentialsSecretName` | `string` | unset | Existing Secret with the `PODINFO_CACHE_USERNAME`, `PODINFO_CACHE_PASSWORD` and `PODINFO_CACHE_SENTINEL_PASSWORD` keys, loaded as environment variables |
-| `caching.ca.secretName` / `configMapName` | `string` | unset | Existing Secret or ConfigMap holding the CA bundle that verifies the server certificate; requires a `rediss://` or `valkeys://` URL |
+| `caching.ca.existingSecret.name` / `existingConfigMap.name` | `string` | unset | Existing Secret or ConfigMap holding the CA bundle that verifies the server certificate; requires a `rediss://` or `valkeys://` URL |
 | `caching.ca.key` | `string` | `ca.crt` | Key of the CA bundle in the Secret or ConfigMap |
+
+The cache credentials are read from the `PODINFO_CACHE_USERNAME`,
+`PODINFO_CACHE_PASSWORD` and `PODINFO_CACHE_SENTINEL_PASSWORD` environment
+variables; load them from an existing Secret with `envFrom`.
 
 The client dials the addresses that the cluster nodes and Sentinels
 announce, not the hostnames in the URL. With TLS, the servers must
