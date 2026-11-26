@@ -13,7 +13,6 @@ import (
 
 	"github.com/gomodule/redigo/redis"
 	"github.com/gorilla/mux"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/stefanprodan/podinfo/pkg/api/http/docs"
 	"github.com/stefanprodan/podinfo/pkg/fscache"
 	"github.com/stefanprodan/podinfo/pkg/keypair"
@@ -158,7 +157,7 @@ func (s *Server) prefixedPath(route string) string {
 func (s *Server) registerHandlers() {
 	rootPath := s.prefixedPath("/")
 
-	s.router.Handle(s.prefixedPath("/metrics"), promhttp.Handler())
+	s.router.Handle(s.prefixedPath("/metrics"), metricsHandler())
 	s.router.PathPrefix(s.prefixedPath("/debug/pprof/")).Handler(http.DefaultServeMux)
 	s.router.HandleFunc(rootPath, s.indexHandler).HeadersRegexp("User-Agent", "^Mozilla.*").Methods("GET")
 	s.router.HandleFunc(rootPath, s.infoHandler).Methods("GET")
@@ -212,10 +211,10 @@ func (s *Server) registerHandlers() {
 }
 
 func (s *Server) registerMiddlewares() {
-	prom := NewPrometheusMiddleware()
-	s.router.Use(prom.Handler)
 	otel := NewOpenTelemetryMiddleware(s.config.OtelServiceName)
 	s.router.Use(otel)
+	prom := defaultPrometheusMiddleware()
+	s.router.Use(prom.Handler)
 	httpLogger := NewLoggingMiddleware(s.logger)
 	s.router.Use(httpLogger.Handler)
 	s.router.Use(versionMiddleware)
@@ -347,7 +346,7 @@ func (s *Server) startSecureServer() *http.Server {
 func (s *Server) startMetricsServer() {
 	if s.config.PortMetrics > 0 {
 		mux := http.DefaultServeMux
-		mux.Handle("/metrics", promhttp.Handler())
+		mux.Handle("/metrics", metricsHandler())
 		mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte("OK"))
