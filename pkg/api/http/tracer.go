@@ -7,7 +7,6 @@ import (
 	"github.com/spf13/viper"
 	"github.com/stefanprodan/podinfo/pkg/version"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux"
-	"go.opentelemetry.io/contrib/propagators/aws/xray"
 	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/contrib/propagators/jaeger"
 	"go.opentelemetry.io/contrib/propagators/ot"
@@ -19,6 +18,7 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
 	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/zap"
 )
 
@@ -28,7 +28,7 @@ const (
 
 func (s *Server) initTracer(ctx context.Context) {
 	if viper.GetString("otel-service-name") == "" {
-		nop := trace.NewNoopTracerProvider()
+		nop := noop.NewTracerProvider()
 		s.tracer = nop.Tracer(viper.GetString("otel-service-name"))
 		return
 	}
@@ -55,7 +55,6 @@ func (s *Server) initTracer(ctx context.Context) {
 		b3.New(),
 		&jaeger.Jaeger{},
 		&ot.OT{},
-		&xray.Propagator{},
 	))
 
 	s.tracer = s.tracerProvider.Tracer(
