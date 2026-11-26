@@ -117,12 +117,12 @@ import (
 	dataVolume: *{emptyDir: {}} | corev1.#VolumeSource
 
 	// Extra volumes and volume mounts of the podinfo container.
-	extraVolumes?: [...corev1.#Volume]
+	extraVolumes?:      [...corev1.#Volume]
 	extraVolumeMounts?: [...corev1.#VolumeMount]
 
 	// Extra containers and init containers added to the pods.
 	extraContainers?: [...corev1.#Container]
-	initContainers?: [...corev1.#Container]
+	initContainers?:  [...corev1.#Container]
 
 	// The security preset applied to the pod identity defaults: the
 	// default "hardened" preset pins the image's non-root UID/GID,
@@ -144,10 +144,10 @@ import (
 	podLabels?:      timoniv1.#Labels
 	podAnnotations?: timoniv1.#Annotations
 	// Pods are scheduled on Linux nodes by default.
-	nodeSelector: *{"kubernetes.io/os": "linux"} | {[string]: string}
-	tolerations?: [...corev1.#Toleration]
-	topologySpreadConstraints?: [...corev1.#TopologySpreadConstraint]
-	hostAliases?: [...corev1.#HostAlias]
+	nodeSelector:                   *{"kubernetes.io/os": "linux"} | {[string]: string}
+	tolerations?:                   [...corev1.#Toleration]
+	topologySpreadConstraints?:     [...corev1.#TopologySpreadConstraint]
+	hostAliases?:                   [...corev1.#HostAlias]
 	dnsConfig?:                     corev1.#PodDNSConfig
 	dnsPolicy?:                     "ClusterFirst" | "ClusterFirstWithHostNet" | "Default" | "None"
 	priorityClassName?:             string & =~".+"
@@ -193,13 +193,13 @@ import (
 	// podinfo gRPC port and the http-metrics port (9797) exposes
 	// the Prometheus metrics endpoint.
 	service: {
-		type:       *"ClusterIP" | "NodePort" | "LoadBalancer"
-		port:       *80 | int & >0 & <=65535
-		grpcPort:   *9999 | int & >0 & <=65535
-		clusterIP?: string & =~".+"
-		ipFamilies?: [..."IPv4" | "IPv6"]
+		type:            *"ClusterIP" | "NodePort" | "LoadBalancer"
+		port:            *80 | int & >0 & <=65535
+		grpcPort:        *9999 | int & >0 & <=65535
+		clusterIP?:      string & =~".+"
+		ipFamilies?:     [..."IPv4" | "IPv6"]
 		ipFamilyPolicy?: "SingleStack" | "PreferDualStack" | "RequireDualStack"
-		externalIPs?: [...string]
+		externalIPs?:    [...string]
 		if type != "ClusterIP" {
 			// Zero lets the cluster assign the node ports.
 			nodePort:               *0 | int & >=0 & <=32767
@@ -207,8 +207,8 @@ import (
 			externalTrafficPolicy?: "Cluster" | "Local"
 		}
 		if type == "LoadBalancer" {
-			loadBalancerIP?:    string & =~".+"
-			loadBalancerClass?: string & =~".+"
+			loadBalancerIP?:           string & =~".+"
+			loadBalancerClass?:        string & =~".+"
 			loadBalancerSourceRanges?: [...string]
 		}
 		annotations?: timoniv1.#Annotations
@@ -222,7 +222,7 @@ import (
 		if enabled {
 			hosts: [#IngressHost, ...#IngressHost]
 		}
-		tls?: [...networkingv1.#IngressTLS]
+		tls?:         [...networkingv1.#IngressTLS]
 		annotations?: timoniv1.#Annotations
 		labels?:      timoniv1.#Labels
 	}
@@ -266,8 +266,8 @@ import (
 		maxReplicas: *minReplicas | int & >=minReplicas
 		cpu:         *99 | int & >=0 & <=100
 		memory:      *"" | timoniv1.#MemoryQuantity
-		metrics: *[] | [...]
-		behavior?: {...}
+		metrics:     *[] | [...]
+		behavior?:   {...}
 	}
 
 	// Prometheus Operator ServiceMonitor (optional), created in the
@@ -301,7 +301,7 @@ import (
 			"\(config.metadata.name)-sa": #ServiceAccount & {_config: config}
 		}
 
-		"\(config.metadata.name)-svc": #Service & {_config: config}
+		"\(config.metadata.name)-svc":    #Service & {_config: config}
 		"\(config.metadata.name)-deploy": #Deployment & {_config: config}
 
 		if config.hpa.enabled {
@@ -326,7 +326,7 @@ import (
 	}
 
 	tests: {
-		"test-svc": #TestJob & {_config: config}
+		"test-svc":  #TestJob & {_config: config}
 		"test-grpc": #TestGRPCJob & {_config: config}
 	}
 }

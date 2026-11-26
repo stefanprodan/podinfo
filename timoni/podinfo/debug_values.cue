@@ -56,18 +56,18 @@ values: {
 	}]
 
 	extraContainers: [{
-		name:  "sidecar"
-		image: "docker.io/library/busybox:latest"
+		name:    "sidecar"
+		image:   "docker.io/library/busybox:latest"
 		command: ["sleep", "infinity"]
 	}]
 	initContainers: [{
-		name:  "init"
-		image: "docker.io/library/busybox:latest"
+		name:    "init"
+		image:   "docker.io/library/busybox:latest"
 		command: ["true"]
 	}]
 
 	extraVolumes: [{
-		name: "cache"
+		name:     "cache"
 		emptyDir: {}
 	}]
 	extraVolumeMounts: [{
@@ -103,7 +103,7 @@ values: {
 	affinity: podAntiAffinity: "hard"
 
 	hostAliases: [{
-		ip: "10.0.0.10"
+		ip:        "10.0.0.10"
 		hostnames: ["backend.internal"]
 	}]
 	dnsConfig: options: [{
@@ -151,8 +151,8 @@ values: {
 		type: "NodePort"
 		port: 8080
 		labels: "kubernetes.io/cluster-service": "true"
-		nodePort: 30898
-		ipFamilies: ["IPv4", "IPv6"]
+		nodePort:              30898
+		ipFamilies:            ["IPv4", "IPv6"]
 		ipFamilyPolicy:        "PreferDualStack"
 		externalTrafficPolicy: "Local"
 	}
@@ -162,12 +162,12 @@ values: {
 		className: "nginx"
 		annotations: "cert-manager.io/cluster-issuer": "letsencrypt"
 		hosts: [{
-			host: "podinfo.example.com"
+			host:  "podinfo.example.com"
 			paths: [{path: "/", pathType: "Prefix"}]
 		}]
 		tls: [{
 			secretName: "podinfo-ingress-tls"
-			hosts: ["podinfo.example.com"]
+			hosts:      ["podinfo.example.com"]
 		}]
 	}
 
@@ -198,11 +198,11 @@ values: {
 		scrapeTimeout: "5s"
 		honorLabels:   true
 		sampleLimit:   1000
-		targetLabels: ["app.kubernetes.io/part-of"]
+		targetLabels:  ["app.kubernetes.io/part-of"]
 		metricRelabelings: [{
-			action: "drop"
+			action:       "drop"
 			sourceLabels: ["__name__"]
-			regex: "go_gc_.*"
+			regex:        "go_gc_.*"
 		}]
 	}
 }

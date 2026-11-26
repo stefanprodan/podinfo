@@ -17,7 +17,7 @@ import (
 	spec: timoniv1.#MonitorSpec & {#Values: _config.serviceMonitor}
 	spec: {
 		namespaceSelector: matchNames: [_config.metadata.namespace]
-		selector: matchLabels: _config.selector.labels
+		selector: matchLabels:         _config.selector.labels
 		endpoints: [
 			timoniv1.#MonitorEndpointSpec & {
 				#Values: _config.serviceMonitor

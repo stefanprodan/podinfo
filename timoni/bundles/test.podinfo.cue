@@ -43,10 +43,10 @@ bundle: {
 				// exercises the template with a controller-agnostic config.
 				ingress: {
 					enabled: true
-					hosts: [{host: "podinfo.local"}]
+					hosts:   [{host: "podinfo.local"}]
 					tls: [{
 						secretName: "podinfo-cert"
-						hosts: ["podinfo.local"]
+						hosts:      ["podinfo.local"]
 					}]
 				}
 				test: enabled: true
