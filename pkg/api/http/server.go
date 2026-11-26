@@ -11,8 +11,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/gomodule/redigo/redis"
 	"github.com/gorilla/mux"
+	"github.com/redis/go-redis/v9"
 	"github.com/stefanprodan/podinfo/pkg/api/http/docs"
 	"github.com/stefanprodan/podinfo/pkg/fscache"
 	"github.com/stefanprodan/podinfo/pkg/keypair"
@@ -69,6 +69,12 @@ type Config struct {
 	Unready               bool          `mapstructure:"unready"`
 	JWTSecret             string        `mapstructure:"jwt-secret"`
 	CacheServer           string        `mapstructure:"cache-server"`
+	CacheCluster          bool          `mapstructure:"cache-cluster"`
+	CacheSentinelPrimary  string        `mapstructure:"cache-sentinel-primary"`
+	CacheCAFile           string        `mapstructure:"cache-ca-file"`
+	CacheUsername         string        `mapstructure:"cache-username"`
+	CachePassword         string        `mapstructure:"cache-password"`
+	CacheSentinelPassword string        `mapstructure:"cache-sentinel-password"`
 	SPIFFEEndpointSocket  string        `mapstructure:"spiffe-endpoint-socket"`
 	SPIFFEAuthorizedIDs   []string      `mapstructure:"spiffe-authorized-ids"`
 	SPIFFEBackendMTLS     bool          `mapstructure:"spiffe-backend-mtls"`
@@ -81,7 +87,7 @@ type Server struct {
 	router       *mux.Router
 	logger       *zap.Logger
 	config       *Config
-	pool         *redis.Pool
+	cache        redis.UniversalClient
 	cacheStop    chan struct{}
 	cacheStopped chan struct{}
 	handler      http.Handler
@@ -102,6 +108,14 @@ func NewServer(config *Config, logger *zap.Logger) (*Server, error) {
 		return nil, fmt.Errorf("loading the UI failed: %w", err)
 	}
 
+	cacheOpts, err := newCacheOptions(config)
+	if err != nil {
+		return nil, err
+	}
+	if strings.HasPrefix(config.CacheServer, "tcp://") {
+		logger.Warn("tcp:// in --cache-server is deprecated, use redis://")
+	}
+
 	spiffe, err := newSPIFFEState(config, logger)
 	if err != nil {
 		return nil, err
@@ -114,6 +128,10 @@ func NewServer(config *Config, logger *zap.Logger) (*Server, error) {
 		spiffe: spiffe,
 		ui:     page,
 		tracer: telemetry.Tracer(),
+	}
+	if cacheOpts != nil {
+		redis.SetLogger(cacheLogger{logger})
+		srv.cache = redis.NewUniversalClient(cacheOpts)
 	}
 
 	return srv, nil
@@ -248,8 +266,8 @@ func (s *Server) ListenAndServe() (*http.Server, *http.Server, *int32, *int32) {
 		}
 	}
 
-	// start redis connection pool
-	s.startCachePool(30 * time.Second)
+	// set the version in the cache on a schedule
+	s.startCacheVersion(30 * time.Second)
 
 	// create the http server
 	srv := s.startServer()
@@ -369,16 +387,16 @@ func (s *Server) SetKeyPair(kp *keypair.KeyPair) {
 	s.keyPair = kp
 }
 
-// Close releases the cache pool, the config watcher and the SPIFFE source once the HTTP and gRPC servers have stopped.
+// Close releases the cache client, the config watcher and the SPIFFE source once the HTTP and gRPC servers have stopped.
 func (s *Server) Close() error {
 	if s.cacheStop != nil {
 		close(s.cacheStop)
 		<-s.cacheStopped
 	}
 
-	var poolErr error
-	if s.pool != nil {
-		poolErr = s.pool.Close()
+	var cacheErr error
+	if s.cache != nil {
+		cacheErr = s.cache.Close()
 	}
 
 	var configsErr error
@@ -386,5 +404,5 @@ func (s *Server) Close() error {
 		configsErr = s.configs.Close()
 	}
 
-	return errors.Join(poolErr, configsErr, s.closeSPIFFE())
+	return errors.Join(cacheErr, configsErr, s.closeSPIFFE())
 }
