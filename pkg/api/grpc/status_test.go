@@ -41,13 +41,12 @@ func TestGrpcStatusError(t *testing.T) {
 	}
 
 	conn, err := grpc.NewClient("passthrough:///bufnet", grpc.WithContextDialer(dialer), grpc.WithTransportCredentials(insecure.NewCredentials()))
-	t.Cleanup(func() {
-		conn.Close()
-	})
-
 	if err != nil {
 		t.Fatalf("grpc.NewClient %v", err)
 	}
+	t.Cleanup(func() {
+		conn.Close()
+	})
 
 	client := status.NewStatusServiceClient(conn)
 
@@ -91,31 +90,25 @@ func TestGrpcStatusOk(t *testing.T) {
 	}
 
 	conn, err := grpc.NewClient("passthrough:///bufnet", grpc.WithContextDialer(dialer), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		t.Fatalf("grpc.NewClient %v", err)
+	}
 	t.Cleanup(func() {
 		conn.Close()
 	})
 
-	if err != nil {
-		t.Fatalf("grpc.NewClient %v", err)
-	}
-
 	client := status.NewStatusServiceClient(conn)
 
 	res, err := client.Status(context.Background(), &status.StatusRequest{Code: "Ok"})
-
 	if err != nil {
-		if e, ok := st.FromError(err); ok {
-			t.Errorf("Status returned %s, want %s", fmt.Sprint(e.Code()), fmt.Sprint(codes.OK))
-		}
+		t.Fatalf("Status returned %s, want %s", fmt.Sprint(st.Code(err)), fmt.Sprint(codes.OK))
 	}
 
 	expected := ".*Ok.*"
 	r := regexp.MustCompile(expected)
-	if res != nil {
-		if !r.MatchString(res.Status) {
-			t.Fatalf("Returned unexpected body:\ngot \n%v \nwant \n%s",
-				res, expected)
-		}
+	if !r.MatchString(res.Status) {
+		t.Fatalf("Returned unexpected body:\ngot \n%v \nwant \n%s",
+			res, expected)
 	}
 
 }

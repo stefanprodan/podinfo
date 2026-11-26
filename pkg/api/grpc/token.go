@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -43,7 +44,7 @@ func (s *TokenServer) TokenGenerate(ctx context.Context, req *pb.TokenRequest) (
 
 	if err != nil {
 		s.logger.Error("Failed to generate token", zap.Error(err))
-		return &pb.TokenResponse{}, err
+		return nil, status.Error(codes.Internal, "failed to generate token")
 	}
 
 	var result = pb.TokenResponse{
@@ -56,48 +57,42 @@ func (s *TokenServer) TokenGenerate(ctx context.Context, req *pb.TokenRequest) (
 }
 
 func (s *TokenServer) TokenValidate(ctx context.Context, req *pb.TokenRequest) (*pb.TokenResponse, error) {
-	md, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
-		return nil, status.Errorf(codes.DataLoss, "UnaryEcho: failed to get metadata")
-	}
-
+	md, _ := metadata.FromIncomingContext(ctx)
 	authorization := md.Get("authorization")
-
 	if len(authorization) == 0 {
-		return nil, status.Errorf(codes.Unauthenticated, "Authorization token not found in metadata")
+		return nil, status.Error(codes.Unauthenticated, "authorization bearer token required")
 	}
 
-	token := strings.TrimSpace(strings.TrimPrefix(authorization[0], "Bearer"))
+	bearerToken := strings.Split(authorization[0], " ")
+	if len(bearerToken) != 2 || strings.ToLower(bearerToken[0]) != "bearer" {
+		return nil, status.Error(codes.Unauthenticated, "authorization bearer token required")
+	}
 
 	claims := jwtCustomClaims{}
-
-	parsed_token, err := jwt.ParseWithClaims(token, &claims, func(parsed_token *jwt.Token) (interface{}, error) {
-		if _, ok := parsed_token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, status.Errorf(codes.Canceled, "invalid signing method")
+	token, err := jwt.ParseWithClaims(bearerToken[1], &claims, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("invalid signing method")
 		}
 		return []byte(s.config.JWTSecret), nil
 	})
 	if err != nil {
-		if strings.Contains(err.Error(), "token is expired") || strings.Contains(err.Error(), "signature is invalid") {
-			return &pb.TokenResponse{
-				Message: err.Error(),
-			}, nil
-		}
-		return nil, status.Errorf(codes.Unauthenticated, "Unable to parse token")
-
+		return nil, status.Error(codes.Unauthenticated, err.Error())
 	}
 
-	if parsed_token.Valid {
-		if claims.Issuer != "podinfo" {
-			return nil, status.Errorf(codes.OK, "Invalid issuer")
-		} else {
-			var result = pb.TokenResponse{
-				Token:     claims.Name,
-				ExpiresAt: claims.ExpiresAt.Time.String(),
-			}
-			return &result, nil
-		}
-	} else {
-		return nil, status.Errorf(codes.Unauthenticated, "Unauthenticated")
+	if !token.Valid {
+		return nil, status.Error(codes.Unauthenticated, "invalid authorization token")
 	}
+
+	if claims.Issuer != "podinfo" {
+		return nil, status.Error(codes.Unauthenticated, "invalid issuer")
+	}
+
+	result := pb.TokenResponse{
+		Token: claims.Name,
+	}
+	if claims.ExpiresAt != nil {
+		result.ExpiresAt = claims.ExpiresAt.Time.String()
+	}
+
+	return &result, nil
 }

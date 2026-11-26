@@ -20,7 +20,7 @@ type HeaderServer struct {
 func (s *HeaderServer) Header(ctx context.Context, in *pb.HeaderRequest) (*pb.HeaderResponse, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
-		return nil, status.Errorf(codes.DataLoss, "UnaryEcho: failed to get metadata")
+		return nil, status.Error(codes.DataLoss, "failed to get metadata")
 	}
 
 	// Creating slices beacause echoing the header metadata can't be predetermined by the proto contract

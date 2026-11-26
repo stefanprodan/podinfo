@@ -41,13 +41,12 @@ func TestGrpcVersion(t *testing.T) {
 	}
 
 	conn, err := grpc.NewClient("passthrough:///bufnet", grpc.WithContextDialer(dialer), grpc.WithTransportCredentials(insecure.NewCredentials()))
-	t.Cleanup(func() {
-		conn.Close()
-	})
-
 	if err != nil {
 		t.Fatalf("grpc.NewClient %v", err)
 	}
+	t.Cleanup(func() {
+		conn.Close()
+	})
 
 	client := version.NewVersionServiceClient(conn)
 	res, err := client.Version(context.Background(), &version.VersionRequest{})

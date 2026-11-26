@@ -8,9 +8,11 @@ import (
 	"regexp"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/stefanprodan/podinfo/pkg/api/grpc/delay"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
@@ -44,16 +46,15 @@ func TestGrpcDelay(t *testing.T) {
 	}
 
 	conn, err := grpc.NewClient("passthrough:///bufnet", grpc.WithContextDialer(dialer), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		t.Fatalf("grpc.NewClient %v", err)
+	}
 	t.Cleanup(func() {
 		conn.Close()
 	})
 
-	if err != nil {
-		t.Fatalf("grpc.NewClient %v", err)
-	}
-
 	client := delay.NewDelayServiceClient(conn)
-	res, err := client.Delay(context.Background(), &delay.DelayRequest{Seconds: 3})
+	res, err := client.Delay(context.Background(), &delay.DelayRequest{Seconds: 1})
 
 	// Check the status code is what we expect.
 	if _, ok := status.FromError(err); !ok {
@@ -64,11 +65,51 @@ func TestGrpcDelay(t *testing.T) {
 		fmt.Printf("res %v\n", res)
 	}
 
-	// Check the response body is what we expect. Here we expect the response to be "3" as the delay is set to 3 seconds.
-	expected := "3"
+	expected := "1"
 	r := regexp.MustCompile(expected)
 	if !r.MatchString(strconv.FormatInt(res.Message, 10)) {
 		t.Fatalf("Returned unexpected body:\ngot \n%v \nwant \n%s",
 			res.Message, expected)
+	}
+}
+
+func TestGrpcDelayContext(t *testing.T) {
+	tests := []struct {
+		name string
+		ctx  func() (context.Context, context.CancelFunc)
+		want codes.Code
+	}{
+		{
+			name: "deadline exceeded",
+			ctx: func() (context.Context, context.CancelFunc) {
+				return context.WithTimeout(context.Background(), 100*time.Millisecond)
+			},
+			want: codes.DeadlineExceeded,
+		},
+		{
+			name: "canceled",
+			ctx: func() (context.Context, context.CancelFunc) {
+				ctx, cancel := context.WithCancel(context.Background())
+				time.AfterFunc(100*time.Millisecond, cancel)
+				return ctx, cancel
+			},
+			want: codes.Canceled,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, cancel := tt.ctx()
+			defer cancel()
+
+			start := time.Now()
+			_, err := (&DelayServer{}).Delay(ctx, &delay.DelayRequest{Seconds: 10})
+			if elapsed := time.Since(start); elapsed > 2*time.Second {
+				t.Fatalf("Delay returned after %s", elapsed)
+			}
+			if code := status.Code(err); code != tt.want {
+				t.Errorf("Delay returned %s, want %s", code, tt.want)
+			}
+		})
 	}
 }

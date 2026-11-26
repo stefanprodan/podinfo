@@ -40,13 +40,12 @@ func TestGrpcHeader(t *testing.T) {
 	}
 
 	conn, err := grpc.NewClient("passthrough:///bufnet", grpc.WithContextDialer(dialer), grpc.WithTransportCredentials(insecure.NewCredentials()))
-	t.Cleanup(func() {
-		conn.Close()
-	})
-
 	if err != nil {
 		t.Fatalf("grpc.NewClient %v", err)
 	}
+	t.Cleanup(func() {
+		conn.Close()
+	})
 
 	headers := metadata.New(map[string]string{
 		"X-Test": "testing",

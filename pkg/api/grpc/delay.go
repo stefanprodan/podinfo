@@ -6,6 +6,7 @@ import (
 
 	pb "github.com/stefanprodan/podinfo/pkg/api/grpc/delay"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/status"
 )
 
 type DelayServer struct {
@@ -14,8 +15,14 @@ type DelayServer struct {
 	logger *zap.Logger
 }
 
-func (s *DelayServer) Delay(ctx context.Context, delayInput *pb.DelayRequest) (*pb.DelayResponse, error) {
+func (s *DelayServer) Delay(ctx context.Context, req *pb.DelayRequest) (*pb.DelayResponse, error) {
+	timer := time.NewTimer(time.Duration(req.GetSeconds()) * time.Second)
+	defer timer.Stop()
 
-	time.Sleep(time.Duration(delayInput.Seconds) * time.Second)
-	return &pb.DelayResponse{Message: delayInput.Seconds}, nil
+	select {
+	case <-timer.C:
+		return &pb.DelayResponse{Message: req.GetSeconds()}, nil
+	case <-ctx.Done():
+		return nil, status.FromContextError(ctx.Err()).Err()
+	}
 }

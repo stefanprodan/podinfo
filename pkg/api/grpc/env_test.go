@@ -39,13 +39,12 @@ func TestGrpcEnv(t *testing.T) {
 	}
 
 	conn, err := grpc.NewClient("passthrough:///bufnet", grpc.WithContextDialer(dialer), grpc.WithTransportCredentials(insecure.NewCredentials()))
-	t.Cleanup(func() {
-		conn.Close()
-	})
-
 	if err != nil {
 		t.Fatalf("grpc.NewClient %v", err)
 	}
+	t.Cleanup(func() {
+		conn.Close()
+	})
 
 	client := env.NewEnvServiceClient(conn)
 	res, err := client.Env(context.Background(), &env.EnvRequest{})
