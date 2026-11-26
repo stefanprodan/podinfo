@@ -7,8 +7,9 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/stefanprodan/podinfo/pkg/api/grpc/headers"
+	header "github.com/stefanprodan/podinfo/pkg/api/grpc/headers"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
@@ -38,13 +39,13 @@ func TestGrpcHeader(t *testing.T) {
 		return lis.Dial()
 	}
 
-	conn, err := grpc.DialContext(context.Background(), "", grpc.WithContextDialer(dialer), grpc.WithInsecure())
+	conn, err := grpc.NewClient("passthrough:///bufnet", grpc.WithContextDialer(dialer), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	t.Cleanup(func() {
 		conn.Close()
 	})
 
 	if err != nil {
-		t.Fatalf("grpc.DialContext %v", err)
+		t.Fatalf("grpc.NewClient %v", err)
 	}
 
 	headers := metadata.New(map[string]string{
