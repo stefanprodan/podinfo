@@ -20,6 +20,7 @@ import (
 
 	"github.com/stefanprodan/podinfo/pkg/api/grpc"
 	"github.com/stefanprodan/podinfo/pkg/api/http"
+	"github.com/stefanprodan/podinfo/pkg/keypair"
 	"github.com/stefanprodan/podinfo/pkg/signals"
 	"github.com/stefanprodan/podinfo/pkg/telemetry"
 	"github.com/stefanprodan/podinfo/pkg/version"
@@ -184,12 +185,22 @@ func main() {
 		logger.Fatal("invalid HTTP server config", zap.Error(err))
 	}
 
+	var keyPair *keypair.KeyPair
+	if srv.SPIFFESource() == nil && (srvCfg.SecurePort != "0" || (grpcCfg.Port > 0 && grpcCfg.TLS)) {
+		keyPair, err = keypair.New(srvCfg.CertPath, logger)
+		if err != nil {
+			logger.Fatal("loading the TLS key pair failed", zap.Error(err), zap.String("path", srvCfg.CertPath))
+		}
+		srv.SetKeyPair(keyPair)
+	}
+
 	// start gRPC server
 	var grpcServer *go_grpc.Server
 	var grpcHealth *health.Server
 	if grpcCfg.Port > 0 {
 		grpcSrv := grpc.NewServer(&grpcCfg, logger)
 		grpcSrv.SetSPIFFESource(srv.SPIFFESource())
+		grpcSrv.SetKeyPair(keyPair)
 		grpcServer, grpcHealth = grpcSrv.ListenAndServe()
 	}
 
@@ -208,6 +219,11 @@ func main() {
 	sd.Graceful(stopCh, httpServer, httpsServer, grpcServer, grpcHealth, healthy, ready)
 	if err := srv.Close(); err != nil {
 		logger.Warn("releasing HTTP server resources failed", zap.Error(err))
+	}
+	if keyPair != nil {
+		if err := keyPair.Close(); err != nil {
+			logger.Warn("closing the TLS key pair watcher failed", zap.Error(err))
+		}
 	}
 }
 

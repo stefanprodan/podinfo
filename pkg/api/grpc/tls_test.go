@@ -26,6 +26,7 @@ import (
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
 
+	"github.com/stefanprodan/podinfo/pkg/keypair"
 	"github.com/stefanprodan/podinfo/pkg/spiffe"
 	"github.com/stefanprodan/podinfo/pkg/spiffe/spiffetest"
 )
@@ -124,7 +125,14 @@ func TestGrpcTLS_CertPath(t *testing.T) {
 	dir := t.TempDir()
 	cert := writeCert(t, dir)
 
-	s := NewServer(&Config{ServiceName: "podinfo", TLS: true, CertPath: dir}, zap.NewNop())
+	kp, err := keypair.New(dir, zap.NewNop())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = kp.Close() })
+
+	s := NewServer(&Config{ServiceName: "podinfo", TLS: true}, zap.NewNop())
+	s.SetKeyPair(kp)
 	address, _ := startTLSServer(t, s)
 
 	roots := x509.NewCertPool()
@@ -145,10 +153,10 @@ func TestGrpcTLS_CertPath(t *testing.T) {
 	}
 }
 
-func TestGrpcTLS_MissingCert(t *testing.T) {
-	s := NewServer(&Config{TLS: true, CertPath: t.TempDir()}, zap.NewNop())
+func TestGrpcTLS_NoKeyPair(t *testing.T) {
+	s := NewServer(&Config{TLS: true}, zap.NewNop())
 	if _, err := s.credentials(); err == nil {
-		t.Fatal("expected an error without tls.crt and tls.key")
+		t.Fatal("expected an error without a key pair")
 	}
 }
 

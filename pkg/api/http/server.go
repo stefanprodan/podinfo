@@ -40,7 +40,6 @@ import (
 var (
 	healthy int32
 	ready   int32
-	watcher *fscache.Watcher
 )
 
 type Config struct {
@@ -90,6 +89,8 @@ type Server struct {
 	tracer       trace.Tracer
 	spiffe       *spiffeState
 	artifact     *artifact
+	configs      *fscache.Watcher
+	keyPair      *keypair.KeyPair
 }
 
 func NewServer(config *Config, logger *zap.Logger) (*Server, error) {
@@ -231,12 +232,12 @@ func (s *Server) ListenAndServe() (*http.Server, *http.Server, *int32, *int32) {
 
 	// load configs in memory and start watching for changes in the config dir
 	if stat, err := os.Stat(s.config.ConfigPath); err == nil && stat.IsDir() {
-		var err error
-		watcher, err = fscache.NewWatch(s.config.ConfigPath)
+		configs, err := fscache.New(s.config.ConfigPath, s.logger)
 		if err != nil {
 			s.logger.Error("config watch error", zap.Error(err), zap.String("path", s.config.ConfigPath))
 		} else {
-			watcher.Watch()
+			configs.Start()
+			s.configs = configs
 		}
 	}
 
@@ -318,11 +319,10 @@ func (s *Server) startSecureServer() *http.Server {
 		return srv
 	}
 
-	kp, err := keypair.NewReloader(path.Join(s.config.CertPath, "tls.crt"), path.Join(s.config.CertPath, "tls.key"), s.logger)
-	if err != nil {
-		s.logger.Fatal("loading the HTTPS key pair failed", zap.Error(err))
+	if s.keyPair == nil {
+		s.logger.Fatal("the HTTPS server has no TLS key pair")
 	}
-	srv.TLSConfig = kp.TLSConfig()
+	srv.TLSConfig = s.keyPair.TLSConfig()
 
 	// start the server in the background
 	go func() {
@@ -357,7 +357,12 @@ func (s *Server) startMetricsServer() {
 type ArrayResponse []string
 type MapResponse map[string]string
 
-// Close releases the cache pool and the SPIFFE source once the HTTP and gRPC servers have stopped.
+// SetKeyPair makes the HTTPS server serve the --cert-path key pair.
+func (s *Server) SetKeyPair(kp *keypair.KeyPair) {
+	s.keyPair = kp
+}
+
+// Close releases the cache pool, the config watcher and the SPIFFE source once the HTTP and gRPC servers have stopped.
 func (s *Server) Close() error {
 	if s.cacheStop != nil {
 		close(s.cacheStop)
@@ -369,5 +374,10 @@ func (s *Server) Close() error {
 		poolErr = s.pool.Close()
 	}
 
-	return errors.Join(poolErr, s.closeSPIFFE())
+	var configsErr error
+	if s.configs != nil {
+		configsErr = s.configs.Close()
+	}
+
+	return errors.Join(poolErr, configsErr, s.closeSPIFFE())
 }
