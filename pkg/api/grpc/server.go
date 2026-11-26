@@ -1,10 +1,8 @@
 package grpc
 
 import (
-	"fmt"
 	"net"
-
-	"github.com/stefanprodan/podinfo/pkg/api/grpc/echo"
+	"strconv"
 
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -13,6 +11,7 @@ import (
 	"google.golang.org/grpc/reflection"
 
 	"github.com/stefanprodan/podinfo/pkg/api/grpc/delay"
+	"github.com/stefanprodan/podinfo/pkg/api/grpc/echo"
 	"github.com/stefanprodan/podinfo/pkg/api/grpc/env"
 	header "github.com/stefanprodan/podinfo/pkg/api/grpc/headers"
 	"github.com/stefanprodan/podinfo/pkg/api/grpc/info"
@@ -30,51 +29,45 @@ type Server struct {
 type Config struct {
 	Port        int    `mapstructure:"grpc-port"`
 	ServiceName string `mapstructure:"grpc-service-name"`
-
-	BackendURL []string `mapstructure:"backend-url"`
-	UILogo     string   `mapstructure:"ui-logo"`
-	UIMessage  string   `mapstructure:"ui-message"`
-	UIColor    string   `mapstructure:"ui-color"`
-	UIPath     string   `mapstructure:"ui-path"`
-	DataPath   string   `mapstructure:"data-path"`
-	ConfigPath string   `mapstructure:"config-path"`
-	CertPath   string   `mapstructure:"cert-path"`
-	Host       string   `mapstructure:"host"`
-	//Port                  string        `mapstructure:"port"`
-	SecurePort      string `mapstructure:"secure-port"`
-	PortMetrics     int    `mapstructure:"port-metrics"`
-	Hostname        string `mapstructure:"hostname"`
-	H2C             bool   `mapstructure:"h2c"`
-	RandomDelay     bool   `mapstructure:"random-delay"`
-	RandomDelayUnit string `mapstructure:"random-delay-unit"`
-	RandomDelayMin  int    `mapstructure:"random-delay-min"`
-	RandomDelayMax  int    `mapstructure:"random-delay-max"`
-	RandomError     bool   `mapstructure:"random-error"`
-	Unhealthy       bool   `mapstructure:"unhealthy"`
-	Unready         bool   `mapstructure:"unready"`
-	JWTSecret       string `mapstructure:"jwt-secret"`
-	CacheServer     string `mapstructure:"cache-server"`
+	Host        string `mapstructure:"host"`
+	Hostname    string `mapstructure:"hostname"`
+	UILogo      string `mapstructure:"ui-logo"`
+	UIMessage   string `mapstructure:"ui-message"`
+	UIColor     string `mapstructure:"ui-color"`
+	Unhealthy   bool   `mapstructure:"unhealthy"`
+	Unready     bool   `mapstructure:"unready"`
+	JWTSecret   string `mapstructure:"jwt-secret"`
 }
 
-func NewServer(config *Config, logger *zap.Logger) (*Server, error) {
-	srv := &Server{
+func NewServer(config *Config, logger *zap.Logger) *Server {
+	return &Server{
 		logger: logger,
 		config: config,
 	}
-
-	return srv, nil
 }
 
-func (s *Server) ListenAndServe() *grpc.Server {
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%v", s.config.Port))
+// ListenAndServe starts the gRPC server and returns it with its health server.
+func (s *Server) ListenAndServe() (*grpc.Server, *health.Server) {
+	address := net.JoinHostPort(s.config.Host, strconv.Itoa(s.config.Port))
+	listener, err := net.Listen("tcp", address)
 	if err != nil {
-		s.logger.Fatal("failed to listen", zap.Int("port", s.config.Port))
+		s.logger.Fatal("failed to listen", zap.String("address", address), zap.Error(err))
 	}
 
-	srv := grpc.NewServer()
-	server := health.NewServer()
+	srv, healthSrv := s.newServer()
 
-	// Register grpc apis for reflection
+	go func() {
+		if err := srv.Serve(listener); err != nil {
+			s.logger.Fatal("failed to serve", zap.Error(err))
+		}
+	}()
+
+	return srv, healthSrv
+}
+
+func (s *Server) newServer() (*grpc.Server, *health.Server) {
+	srv := grpc.NewServer()
+
 	echo.RegisterEchoServiceServer(srv, &echoServer{config: s.config, logger: s.logger})
 	version.RegisterVersionServiceServer(srv, &VersionServer{config: s.config, logger: s.logger})
 	panic.RegisterPanicServiceServer(srv, &PanicServer{config: s.config, logger: s.logger})
@@ -84,16 +77,22 @@ func (s *Server) ListenAndServe() *grpc.Server {
 	status.RegisterStatusServiceServer(srv, &StatusServer{config: s.config, logger: s.logger})
 	token.RegisterTokenServiceServer(srv, &TokenServer{config: s.config, logger: s.logger})
 	env.RegisterEnvServiceServer(srv, &EnvServer{config: s.config, logger: s.logger})
-
 	reflection.Register(srv)
-	grpc_health_v1.RegisterHealthServer(srv, server)
-	server.SetServingStatus(s.config.ServiceName, grpc_health_v1.HealthCheckResponse_SERVING)
 
-	go func() {
-		if err := srv.Serve(listener); err != nil {
-			s.logger.Fatal("failed to serve", zap.Error(err))
-		}
-	}()
+	healthSrv := health.NewServer()
+	grpc_health_v1.RegisterHealthServer(srv, healthSrv)
 
-	return srv
+	live, ready := grpc_health_v1.HealthCheckResponse_SERVING, grpc_health_v1.HealthCheckResponse_SERVING
+	if s.config.Unhealthy {
+		live = grpc_health_v1.HealthCheckResponse_NOT_SERVING
+	}
+	if s.config.Unhealthy || s.config.Unready {
+		ready = grpc_health_v1.HealthCheckResponse_NOT_SERVING
+	}
+	healthSrv.SetServingStatus("", live)
+	if s.config.ServiceName != "" {
+		healthSrv.SetServingStatus(s.config.ServiceName, ready)
+	}
+
+	return srv, healthSrv
 }

@@ -140,7 +140,7 @@ func (s *Server) getCacheConn() (redis.Conn, error) {
 	return redis.Dial("tcp", redisUrl.Host, opts...)
 }
 
-func (s *Server) startCachePool(ticker *time.Ticker) {
+func (s *Server) startCachePool(interval time.Duration) {
 	if s.config.CacheServer == "" {
 		return
 	}
@@ -164,12 +164,19 @@ func (s *Server) startCachePool(ticker *time.Ticker) {
 	}
 
 	// set version on a schedule
+	s.cacheStop = make(chan struct{})
+	s.cacheStopped = make(chan struct{})
 	go func() {
+		defer close(s.cacheStopped)
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
 		setVersion()
 		for {
 			select {
 			case <-ticker.C:
 				setVersion()
+			case <-s.cacheStop:
+				return
 			}
 		}
 	}()

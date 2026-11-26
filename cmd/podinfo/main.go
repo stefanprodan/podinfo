@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -24,6 +25,7 @@ import (
 	"github.com/stefanprodan/podinfo/pkg/signals"
 	"github.com/stefanprodan/podinfo/pkg/version"
 	go_grpc "google.golang.org/grpc"
+	"google.golang.org/grpc/health"
 )
 
 func main() {
@@ -116,7 +118,11 @@ func main() {
 	}
 
 	// configure logging
-	logger, _ := initZap(viper.GetString("level"), loggerProvider)
+	logger, err := initZap(viper.GetString("level"), loggerProvider)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error initializing logger: %s\n", err.Error())
+		os.Exit(1)
+	}
 	defer logger.Sync()
 	stdLog := zap.RedirectStdLog(logger)
 	defer stdLog()
@@ -158,11 +164,9 @@ func main() {
 
 	// start gRPC server
 	var grpcServer *go_grpc.Server
+	var grpcHealth *health.Server
 	if grpcCfg.Port > 0 {
-		grpcSrv, _ := grpc.NewServer(&grpcCfg, logger)
-		//grpcinfoSrv, _ := grpc.NewInfoServer(&grpcCfg)
-
-		grpcServer = grpcSrv.ListenAndServe()
+		grpcServer, grpcHealth = grpc.NewServer(&grpcCfg, logger).ListenAndServe()
 	}
 
 	// load HTTP server config
@@ -187,12 +191,16 @@ func main() {
 
 	// graceful shutdown
 	stopCh := signals.SetupSignalHandler()
-	sd, _ := signals.NewShutdown(srvCfg.ServerShutdownTimeout, logger)
+	drainDelay := 3 * time.Second
+	if viper.GetString("level") == "debug" {
+		drainDelay = 0
+	}
+	sd := signals.NewShutdown(srvCfg.ServerShutdownTimeout, drainDelay, logger)
 	sd.SetLoggerProvider(loggerProvider)
 	sd.SetBeforeShutdown(srv.Stop)
-	sd.Graceful(stopCh, httpServer, httpsServer, grpcServer, healthy, ready)
+	sd.Graceful(stopCh, httpServer, httpsServer, grpcServer, grpcHealth, healthy, ready)
 	if err := srv.Close(); err != nil {
-		logger.Warn("closing the SPIFFE Workload API source failed", zap.Error(err))
+		logger.Warn("releasing HTTP server resources failed", zap.Error(err))
 	}
 }
 
@@ -215,7 +223,7 @@ func initLoggerProvider(ctx context.Context, serviceName string) (*sdklog.Logger
 }
 
 func initZap(logLevel string, loggerProvider *sdklog.LoggerProvider) (*zap.Logger, error) {
-	level := zap.NewAtomicLevelAt(zapcore.InfoLevel)
+	var level zap.AtomicLevel
 	switch logLevel {
 	case "debug":
 		level = zap.NewAtomicLevelAt(zapcore.DebugLevel)
@@ -229,6 +237,8 @@ func initZap(logLevel string, loggerProvider *sdklog.LoggerProvider) (*zap.Logge
 		level = zap.NewAtomicLevelAt(zapcore.FatalLevel)
 	case "panic":
 		level = zap.NewAtomicLevelAt(zapcore.PanicLevel)
+	default:
+		return nil, fmt.Errorf("unknown log level %q", logLevel)
 	}
 
 	zapEncoderConfig := zapcore.EncoderConfig{
@@ -278,18 +288,12 @@ func initZap(logLevel string, loggerProvider *sdklog.LoggerProvider) (*zap.Logge
 var stressMemoryPayload []byte
 
 func beginStressTest(cpus int, mem int, logger *zap.Logger) {
-	done := make(chan int)
 	if cpus > 0 {
 		logger.Info("starting CPU stress", zap.Int("cores", cpus))
 		for i := 0; i < cpus; i++ {
 			go func() {
 				for {
-					select {
-					case <-done:
-						return
-					default:
-
-					}
+					runtime.Gosched()
 				}
 			}()
 		}

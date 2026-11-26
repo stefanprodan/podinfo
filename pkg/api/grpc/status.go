@@ -43,5 +43,9 @@ func (s *StatusServer) Status(ctx context.Context, req *pb.StatusRequest) (*pb.S
 		return nil, status.Error(codes.Unknown, "Unknown status code for more information check https://chromium.googlesource.com/external/github.com/grpc/grpc/+/refs/tags/v1.21.4-pre1/doc/statuscodes.md")
 	}
 
-	return &pb.StatusResponse{Status: reqCode}, status.Error(code, "")
+	if code == codes.OK {
+		return &pb.StatusResponse{Status: reqCode}, nil
+	}
+
+	return nil, status.Error(code, "")
 }

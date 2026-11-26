@@ -40,13 +40,12 @@ func TestGrpcInfo(t *testing.T) {
 	}
 
 	conn, err := grpc.NewClient("passthrough:///bufnet", grpc.WithContextDialer(dialer), grpc.WithTransportCredentials(insecure.NewCredentials()))
-	t.Cleanup(func() {
-		conn.Close()
-	})
-
 	if err != nil {
 		t.Fatalf("grpc.NewClient %v", err)
 	}
+	t.Cleanup(func() {
+		conn.Close()
+	})
 
 	client := info.NewInfoServiceClient(conn)
 	res, err := client.Info(context.Background(), &info.InfoRequest{})

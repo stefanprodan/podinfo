@@ -14,7 +14,6 @@ type echoServer struct {
 }
 
 func (s *echoServer) Echo(ctx context.Context, message *echo.Message) (*echo.Message, error) {
-
-	s.logger.Info("Received message body from client:", zap.String("input body", message.Body))
+	s.logger.Debug("received message body from client", zap.String("body", message.Body))
 	return &echo.Message{Body: message.Body}, nil
 }

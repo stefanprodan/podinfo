@@ -2,7 +2,6 @@ package grpc
 
 import (
 	"context"
-	// "log"
 	"os"
 
 	pb "github.com/stefanprodan/podinfo/pkg/api/grpc/panic"
