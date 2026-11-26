@@ -13,6 +13,9 @@
 {{- if and .Values.cacheOptions.ca.secretName .Values.cacheOptions.ca.configMapName }}
 {{- fail "cacheOptions.ca.secretName and cacheOptions.ca.configMapName are mutually exclusive" }}
 {{- end }}
+{{- if and .Values.otel.samplerArg (not .Values.otel.sampler) }}
+{{- fail "otel.samplerArg requires otel.sampler" }}
+{{- end }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -155,6 +158,9 @@ spec:
           {{- if .Values.backend }}
           - name: PODINFO_BACKEND_URL
             value: {{ .Values.backend }}
+          {{- end }}
+          {{- if .Values.otel.enabled }}
+          {{- include "podinfo.otelEnv" . | nindent 10 }}
           {{- end }}
           {{- if .Values.extraEnvs }}
 {{ toYaml .Values.extraEnvs | indent 10 }}

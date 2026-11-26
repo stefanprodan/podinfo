@@ -48,6 +48,25 @@ jobs:
           cluster_name: kind
       - name: Run SPIFFE integration tests
         run: ./test/e2e-spiffe.sh
+  kind-otel:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Disk Cleanup
+        uses: ./.github/actions/runner-cleanup
+      - name: Setup Helm
+        uses: azure/setup-helm@2f5e7bc67f1f9972ab16657bb795f36d8f04de0e # v5.1.0
+        with:
+          version: v4.2.4
+      - name: Setup Timoni
+        uses: stefanprodan/timoni/actions/setup@58f38054cc5276178b1426fabaf0b5e066c7c271 # v0.38.0
+      - name: Setup Kubernetes
+        uses: helm/kind-action@ea822c7bf1874f08e5a491df991c228edffc3376 # v1.15.2
+        with:
+          cluster_name: kind
+      - name: Run OpenTelemetry integration tests
+        run: ./test/e2e-otel.sh
   kind-timoni:
     runs-on: ubuntu-latest
     services:

@@ -282,6 +282,26 @@ pod annotations.
 | `serviceMonitor.sampleLimit` / `targetLimit` / `labelLimit` / `labelNameLengthLimit` / `labelValueLengthLimit` | `int` | unset | Scrape limits |
 | `serviceMonitor.targetLabels` / `podTargetLabels` | `[...string]` | unset | Service/pod labels copied onto the metrics |
 
+### OpenTelemetry values
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| `otel.enabled` | `bool` | `false` | Export traces, metrics and logs over OTLP |
+| `otel.endpoint` | `string` | required when enabled | OTLP endpoint URL, e.g. `http://otel-collector:4318` |
+| `otel.protocol` | `string` | unset | `http/protobuf` (port 4318) when unset, or `grpc` (port 4317) |
+| `otel.serviceName` | `string` | instance name | Service name |
+| `otel.resourceAttributes` | `{[string]: string}` | unset | Extra resource attributes, merged over the Kubernetes attributes |
+| `otel.sampler` | `string` | unset | Traces sampler, e.g. `parentbased_traceidratio`; `parentbased_always_on` when unset |
+| `otel.samplerArg` | `string` | unset | Traces sampler argument, e.g. `"0.1"`; requires `otel.sampler` |
+
+The resource carries the `k8s.namespace.name`, `k8s.deployment.name`,
+`k8s.container.name`, `k8s.pod.name`, `k8s.pod.uid`, `k8s.node.name` and
+`service.namespace` attributes, set from the instance and the downward API.
+Any other `OTEL_*` variable is set with `env`, which also overrides the
+generated ones, e.g. `OTEL_METRICS_EXPORTER=none` to export traces and logs
+only; load the `OTEL_EXPORTER_OTLP_HEADERS` credentials from an existing
+Secret with `envFrom`.
+
 ### Caching values
 
 | Key | Type | Default | Description |

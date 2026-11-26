@@ -1,6 +1,9 @@
 package templates
 
 import (
+	"list"
+	"strings"
+
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	timoniv1 "timoni.sh/core/v1alpha1"
@@ -10,6 +13,70 @@ import (
 	_config: #Config
 
 	_cacheCA: _config.caching.enabled && _config.caching.ca != _|_
+
+	// The OpenTelemetry variables, except the ones set in env; the
+	// Kubernetes resource attributes are set from the downward API.
+	_otelEnv: *[] | [...corev1.#EnvVar]
+	if _config.otel.enabled {
+		let overrides = [if _config.env != _|_ for e in _config.env {e.name}]
+		let attributes = {
+			let k8s = {
+				"k8s.namespace.name":  _config.metadata.namespace
+				"k8s.deployment.name": _config.metadata.name
+				"k8s.container.name":  _config.metadata.name
+				"k8s.pod.name":        "$(OTEL_RESOURCE_ATTRIBUTES_POD_NAME)"
+				"k8s.pod.uid":         "$(OTEL_RESOURCE_ATTRIBUTES_POD_UID)"
+				"k8s.node.name":       "$(OTEL_RESOURCE_ATTRIBUTES_NODE_NAME)"
+				"service.namespace":   _config.metadata.namespace
+			}
+			for k, v in k8s if _config.otel.resourceAttributes[k] == _|_ {(k): v}
+			if _config.otel.resourceAttributes != _|_ {_config.otel.resourceAttributes}
+		}
+		_otelEnv: [for e in [
+			{
+				name:  "OTEL_SERVICE_NAME"
+				value: _config.otel.serviceName
+			},
+			{
+				name:  "OTEL_EXPORTER_OTLP_ENDPOINT"
+				value: _config.otel.endpoint
+			},
+			if _config.otel.protocol != _|_ {
+				{
+					name:  "OTEL_EXPORTER_OTLP_PROTOCOL"
+					value: _config.otel.protocol
+				}
+			},
+			if _config.otel.sampler != _|_ {
+				{
+					name:  "OTEL_TRACES_SAMPLER"
+					value: _config.otel.sampler
+				}
+			},
+			if _config.otel.samplerArg != _|_ {
+				{
+					name:  "OTEL_TRACES_SAMPLER_ARG"
+					value: _config.otel.samplerArg
+				}
+			},
+			{
+				name: "OTEL_RESOURCE_ATTRIBUTES_POD_NAME"
+				valueFrom: fieldRef: fieldPath: "metadata.name"
+			},
+			{
+				name: "OTEL_RESOURCE_ATTRIBUTES_POD_UID"
+				valueFrom: fieldRef: fieldPath: "metadata.uid"
+			},
+			{
+				name: "OTEL_RESOURCE_ATTRIBUTES_NODE_NAME"
+				valueFrom: fieldRef: fieldPath: "spec.nodeName"
+			},
+			{
+				name:  "OTEL_RESOURCE_ATTRIBUTES"
+				value: strings.Join([for k in list.SortStrings([for k, _ in attributes {k}]) {"\(k)=\(attributes[k])"}], ",")
+			},
+		] if !list.Contains(overrides, e.name) {e}]
+	}
 
 	// The affinity rules generated from the affinity values;
 	// the anti-affinity presets match the instance selector labels.
@@ -138,6 +205,7 @@ import (
 									value: _config.ui.backend
 								}
 							},
+							for e in _otelEnv {e},
 							if _config.env != _|_ for e in _config.env {e},
 						]
 						if _config.envFrom != _|_ {
