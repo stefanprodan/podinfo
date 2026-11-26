@@ -12,6 +12,11 @@ image:
   pullPolicy: IfNotPresent
   pullSecrets: []
 
+testImages:
+  grpc: ghcr.io/grpc-ecosystem/grpc-health-probe:v0.4.56
+  tools: giantswarm/tiny-tools
+  curl: curlimages/curl:7.69.0
+
 prefix: /
 
 ui:

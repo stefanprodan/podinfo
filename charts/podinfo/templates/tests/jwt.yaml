@@ -14,7 +14,7 @@ metadata:
 spec:
   containers:
     - name: tools
-      image: giantswarm/tiny-tools
+      image: {{ .Values.testImages.tools | quote }}
       command:
         - sh
         - -c
