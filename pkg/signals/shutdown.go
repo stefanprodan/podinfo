@@ -23,6 +23,10 @@ type Shutdown struct {
 	beforeShutdown        func()
 }
 
+func (s *Shutdown) SetTracerProvider(tp *sdktrace.TracerProvider) {
+	s.tracerProvider = tp
+}
+
 func (s *Shutdown) SetLoggerProvider(lp *sdklog.LoggerProvider) {
 	s.loggerProvider = lp
 }
@@ -91,19 +95,21 @@ func (s *Shutdown) Graceful(stopCh <-chan struct{}, httpServer *http.Server, htt
 	otelCtx, otelCancel := context.WithTimeout(context.Background(), s.serverShutdownTimeout)
 	defer otelCancel()
 
-	// stop OpenTelemetry tracer provider
 	if s.tracerProvider != nil {
-		if err := s.tracerProvider.Shutdown(otelCtx); err != nil {
-			s.logger.Warn("stopping tracer provider", zap.Error(err))
-		}
+		wg.Go(func() {
+			if err := s.tracerProvider.Shutdown(otelCtx); err != nil {
+				s.logger.Warn("stopping tracer provider", zap.Error(err))
+			}
+		})
 	}
-
-	// stop OpenTelemetry logger provider
 	if s.loggerProvider != nil {
-		if err := s.loggerProvider.Shutdown(otelCtx); err != nil {
-			s.logger.Warn("stopping logger provider", zap.Error(err))
-		}
+		wg.Go(func() {
+			if err := s.loggerProvider.Shutdown(otelCtx); err != nil {
+				s.logger.Warn("stopping logger provider", zap.Error(err))
+			}
+		})
 	}
+	wg.Wait()
 }
 
 func (s *Shutdown) stopGRPC(ctx context.Context, grpcServer *grpc.Server) {

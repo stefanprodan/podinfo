@@ -15,14 +15,13 @@ import (
 	"go.opentelemetry.io/contrib/bridges/otelzap"
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc"
 	sdklog "go.opentelemetry.io/otel/sdk/log"
-	"go.opentelemetry.io/otel/sdk/resource"
-	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/stefanprodan/podinfo/pkg/api/grpc"
 	"github.com/stefanprodan/podinfo/pkg/api/http"
 	"github.com/stefanprodan/podinfo/pkg/signals"
+	"github.com/stefanprodan/podinfo/pkg/telemetry"
 	"github.com/stefanprodan/podinfo/pkg/version"
 	go_grpc "google.golang.org/grpc"
 	"google.golang.org/grpc/health"
@@ -127,6 +126,9 @@ func main() {
 	stdLog := zap.RedirectStdLog(logger)
 	defer stdLog()
 
+	// initialize OTel tracer provider if service name is set
+	tracerProvider := telemetry.NewTracerProvider(context.Background(), viper.GetString("otel-service-name"), logger)
+
 	// start stress tests if any
 	beginStressTest(viper.GetInt("stress-cpu"), viper.GetInt("stress-memory"), logger)
 
@@ -196,6 +198,7 @@ func main() {
 		drainDelay = 0
 	}
 	sd := signals.NewShutdown(srvCfg.ServerShutdownTimeout, drainDelay, logger)
+	sd.SetTracerProvider(tracerProvider)
 	sd.SetLoggerProvider(loggerProvider)
 	sd.SetBeforeShutdown(srv.Stop)
 	sd.Graceful(stopCh, httpServer, httpsServer, grpcServer, grpcHealth, healthy, ready)
@@ -205,6 +208,11 @@ func main() {
 }
 
 func initLoggerProvider(ctx context.Context, serviceName string) (*sdklog.LoggerProvider, error) {
+	res, err := telemetry.NewResource(serviceName)
+	if err != nil {
+		return nil, fmt.Errorf("creating OpenTelemetry resource: %w", err)
+	}
+
 	exporter, err := otlploggrpc.New(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("creating OTLP log exporter: %w", err)
@@ -212,11 +220,7 @@ func initLoggerProvider(ctx context.Context, serviceName string) (*sdklog.Logger
 
 	provider := sdklog.NewLoggerProvider(
 		sdklog.WithProcessor(sdklog.NewBatchProcessor(exporter)),
-		sdklog.WithResource(resource.NewWithAttributes(
-			semconv.SchemaURL,
-			semconv.ServiceNameKey.String(serviceName),
-			semconv.ServiceVersionKey.String(version.VERSION),
-		)),
+		sdklog.WithResource(res),
 	)
 
 	return provider, nil
