@@ -65,8 +65,7 @@ func newSPIFFEServerWithConfig(t *testing.T, socketPath string, configure func(*
 	}
 	srv.spiffe = st
 
-	srv.registerHandlers()
-	srv.handler = srv.router
+	srv.setupHandler()
 
 	atomic.StoreInt32(&ready, 0)
 	t.Cleanup(func() { atomic.StoreInt32(&ready, 0) })
@@ -195,7 +194,7 @@ func startSPIFFEFrontend(t *testing.T, ca *spiffetest.CA, backendURL string, bac
 	startSPIFFEServer(t, frontend)
 
 	waitFor(t, "frontend SVID", func() bool {
-		_, err := frontend.backendTransport(backendURL)
+		_, err := frontend.backendClient(backendURL)
 		return err == nil
 	})
 	return frontend
@@ -257,7 +256,7 @@ func TestSPIFFEBackendTransport(t *testing.T) {
 		c.SPIFFEBackendMTLS = true
 	})
 
-	if _, err := srv.backendTransport("https://backend:9899/api/echo"); err == nil {
+	if _, err := srv.backendClient("https://backend:9899/api/echo"); err == nil {
 		t.Fatal("expected an error before the SVID is issued")
 	}
 
@@ -508,13 +507,13 @@ func TestSPIFFEBackendMTLSDisabled(t *testing.T) {
 	startSPIFFEServer(t, srv)
 	waitFor(t, "server ready", isReady)
 
-	// without --spiffe-backend-mtls, https backends use the default transport
-	rt, err := srv.backendTransport("https://backend:9899/api/echo")
+	// without --spiffe-backend-mtls, https backends use the default client
+	client, err := srv.backendClient("https://backend:9899/api/echo")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if rt != http.DefaultTransport {
-		t.Fatalf("expected the default transport, got %T", rt)
+	if client != srv.backend {
+		t.Fatal("expected the default client")
 	}
 }
 
@@ -529,7 +528,7 @@ func TestSPIFFEBackendTransportClosed(t *testing.T) {
 
 	backendURL := "https://backend:9899/api/echo"
 	waitFor(t, "SVID", func() bool {
-		_, err := srv.backendTransport(backendURL)
+		_, err := srv.backendClient(backendURL)
 		return err == nil
 	})
 
@@ -538,7 +537,7 @@ func TestSPIFFEBackendTransportClosed(t *testing.T) {
 	if err := srv.Close(); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := srv.backendTransport(backendURL); err == nil || !strings.Contains(err.Error(), "closed") {
+	if _, err := srv.backendClient(backendURL); err == nil || !strings.Contains(err.Error(), "closed") {
 		t.Fatalf("expected a closed error, got %v", err)
 	}
 }

@@ -201,15 +201,16 @@ func TestSetupSignals(t *testing.T) {
 	}
 }
 
-func TestSetupSDKDisabledLeavesPropagator(t *testing.T) {
+func TestSetupSDKDisabledSetsPropagator(t *testing.T) {
 	resetGlobals(t)
 	setEnv(t, map[string]string{"OTEL_SDK_DISABLED": "true"})
 
 	if _, err := setup(t, ""); err != nil {
 		t.Fatal(err)
 	}
-	if fields := otel.GetTextMapPropagator().Fields(); len(fields) != 0 {
-		t.Errorf("propagator fields: got %v, want none", fields)
+	want := []string{"baggage", "traceparent", "tracestate"}
+	if got := slices.Sorted(slices.Values(otel.GetTextMapPropagator().Fields())); !slices.Equal(got, want) {
+		t.Errorf("propagator fields: got %v, want %v", got, want)
 	}
 }
 

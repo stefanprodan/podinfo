@@ -7,6 +7,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc/filters"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -84,7 +85,7 @@ func (s *Server) streamRecoveryInterceptor(srv any, ss grpc.ServerStream, info *
 
 func (s *Server) serverOptions(m *metrics) []grpc.ServerOption {
 	return []grpc.ServerOption{
-		grpc.StatsHandler(otelgrpc.NewServerHandler()),
+		grpc.StatsHandler(otelgrpc.NewServerHandler(otelgrpc.WithFilter(filters.Not(filters.HealthCheck())))),
 		grpc.ChainUnaryInterceptor(m.unaryInterceptor, s.unaryRecoveryInterceptor),
 		grpc.ChainStreamInterceptor(m.streamInterceptor, s.streamRecoveryInterceptor),
 	}

@@ -1,5 +1,12 @@
 basePath: /
 definitions:
+  http.ErrorMessage:
+    properties:
+      code:
+        type: integer
+      message:
+        type: string
+    type: object
   http.MapResponse:
     additionalProperties:
       type: string
@@ -79,6 +86,14 @@ paths:
           description: Accepted
           schema:
             $ref: '#/definitions/http.MapResponse'
+        "400":
+          description: invalid request body
+          schema:
+            $ref: '#/definitions/http.ErrorMessage'
+        "413":
+          description: request body too large
+          schema:
+            $ref: '#/definitions/http.ErrorMessage'
       summary: Echo
       tags:
       - HTTP API
@@ -131,6 +146,14 @@ paths:
       responses:
         "202":
           description: Accepted
+        "500":
+          description: cache delete failed
+          schema:
+            $ref: '#/definitions/http.ErrorMessage'
+        "503":
+          description: cache server is offline
+          schema:
+            $ref: '#/definitions/http.ErrorMessage'
       summary: Delete payload from cache
       tags:
       - HTTP API
@@ -151,6 +174,16 @@ paths:
           description: OK
           schema:
             type: string
+        "404":
+          description: key not found
+        "500":
+          description: cache get failed
+          schema:
+            $ref: '#/definitions/http.ErrorMessage'
+        "503":
+          description: cache server is offline
+          schema:
+            $ref: '#/definitions/http.ErrorMessage'
       summary: Get payload from cache
       tags:
       - HTTP API
@@ -169,6 +202,22 @@ paths:
       responses:
         "202":
           description: Accepted
+        "400":
+          description: invalid request body
+          schema:
+            $ref: '#/definitions/http.ErrorMessage'
+        "413":
+          description: request body too large
+          schema:
+            $ref: '#/definitions/http.ErrorMessage'
+        "500":
+          description: cache set failed
+          schema:
+            $ref: '#/definitions/http.ErrorMessage'
+        "503":
+          description: cache server is offline
+          schema:
+            $ref: '#/definitions/http.ErrorMessage'
       summary: Save payload in cache
       tags:
       - HTTP API
@@ -191,6 +240,10 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/http.MapResponse'
+        "500":
+          description: Streaming unsupported!
+          schema:
+            $ref: '#/definitions/http.ErrorMessage'
       summary: Chunked transfer encoding
       tags:
       - HTTP API
@@ -212,6 +265,10 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/http.MapResponse'
+        "400":
+          description: invalid delay
+          schema:
+            $ref: '#/definitions/http.ErrorMessage'
       summary: Delay
       tags:
       - HTTP API
@@ -395,6 +452,10 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/http.MapResponse'
+        "400":
+          description: invalid status code
+          schema:
+            $ref: '#/definitions/http.ErrorMessage'
       summary: Status code
       tags:
       - HTTP API
@@ -411,6 +472,18 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/http.MapResponse'
+        "400":
+          description: invalid request body
+          schema:
+            $ref: '#/definitions/http.ErrorMessage'
+        "413":
+          description: request body too large
+          schema:
+            $ref: '#/definitions/http.ErrorMessage'
+        "500":
+          description: writing file failed
+          schema:
+            $ref: '#/definitions/http.ErrorMessage'
       summary: Upload file
       tags:
       - HTTP API
@@ -432,6 +505,14 @@ paths:
           description: file
           schema:
             type: string
+        "400":
+          description: invalid hash
+          schema:
+            $ref: '#/definitions/http.ErrorMessage'
+        "500":
+          description: reading file failed
+          schema:
+            $ref: '#/definitions/http.ErrorMessage'
       summary: Download file
       tags:
       - HTTP API
@@ -447,11 +528,23 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/http.TokenResponse'
+        "400":
+          description: invalid request body
+          schema:
+            $ref: '#/definitions/http.ErrorMessage'
+        "413":
+          description: request body too large
+          schema:
+            $ref: '#/definitions/http.ErrorMessage'
+        "500":
+          description: token signing failed
+          schema:
+            $ref: '#/definitions/http.ErrorMessage'
       summary: Generate JWT token
       tags:
       - HTTP API
   /token/validate:
-    post:
+    get:
       consumes:
       - application/json
       description: validates the JWT token
@@ -463,9 +556,9 @@ paths:
           schema:
             $ref: '#/definitions/http.TokenValidationResponse'
         "401":
-          description: Unauthorized
+          description: invalid or missing token
           schema:
-            type: string
+            $ref: '#/definitions/http.ErrorMessage'
       summary: Validate JWT token
       tags:
       - HTTP API

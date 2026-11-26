@@ -6,6 +6,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/golang-jwt/jwt/v4"
 )
 
 func TestTokenHandler(t *testing.T) {
@@ -109,8 +111,26 @@ func TestTokenValidateHandler(t *testing.T) {
 		rr := httptest.NewRecorder()
 		http.HandlerFunc(srv.tokenValidateHandler).ServeHTTP(rr, req)
 
-		if rr.Code != http.StatusOK {
-			t.Fatalf("got status %d", rr.Code)
+		if rr.Code != http.StatusUnauthorized {
+			t.Fatalf("got status %d, want %d", rr.Code, http.StatusUnauthorized)
+		}
+	})
+
+	t.Run("token without expiry", func(t *testing.T) {
+		unexpiring, err := jwt.NewWithClaims(jwt.SigningMethodHS256, jwtCustomClaims{
+			Name:             "test-user",
+			RegisteredClaims: jwt.RegisteredClaims{Issuer: "podinfo"},
+		}).SignedString([]byte(srv.config.JWTSecret))
+		if err != nil {
+			t.Fatal(err)
+		}
+		req, _ := http.NewRequest("GET", "/token/validate", nil)
+		req.Header.Set("Authorization", "Bearer "+unexpiring)
+		rr := httptest.NewRecorder()
+		http.HandlerFunc(srv.tokenValidateHandler).ServeHTTP(rr, req)
+
+		if rr.Code != http.StatusUnauthorized {
+			t.Fatalf("got status %d, want %d", rr.Code, http.StatusUnauthorized)
 		}
 	})
 

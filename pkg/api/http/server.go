@@ -80,7 +80,6 @@ type Config struct {
 	SPIFFEBackendMTLS     bool          `mapstructure:"spiffe-backend-mtls"`
 	SPIFFEBackendIDs      []string      `mapstructure:"spiffe-backend-ids"`
 	ArtifactPath          string        `mapstructure:"artifact-path"`
-	OtelServiceName       string        `mapstructure:"otel-service-name"`
 }
 
 type Server struct {
@@ -88,10 +87,12 @@ type Server struct {
 	logger       *zap.Logger
 	config       *Config
 	cache        redis.UniversalClient
+	cacheClosed  chan struct{}
 	cacheStop    chan struct{}
 	cacheStopped chan struct{}
 	handler      http.Handler
 	tracer       trace.Tracer
+	backend      *http.Client
 	spiffe       *spiffeState
 	artifact     *artifact
 	configs      *fscache.Watcher
@@ -122,16 +123,17 @@ func NewServer(config *Config, logger *zap.Logger) (*Server, error) {
 	}
 
 	srv := &Server{
-		router: mux.NewRouter(),
-		logger: logger,
-		config: config,
-		spiffe: spiffe,
-		ui:     page,
-		tracer: telemetry.Tracer(),
+		router:  mux.NewRouter(),
+		logger:  logger,
+		config:  config,
+		spiffe:  spiffe,
+		ui:      page,
+		tracer:  telemetry.Tracer(),
+		backend: newBackendClient(http.DefaultTransport),
 	}
 	if cacheOpts != nil {
 		redis.SetLogger(cacheLogger{logger})
-		srv.cache = redis.NewUniversalClient(cacheOpts)
+		srv.openCache(cacheOpts)
 	}
 
 	return srv, nil
@@ -229,8 +231,7 @@ func (s *Server) registerHandlers() {
 }
 
 func (s *Server) registerMiddlewares() {
-	otel := NewOpenTelemetryMiddleware(s.config.OtelServiceName)
-	s.router.Use(otel)
+	s.router.Use(routeMiddleware)
 	prom := defaultPrometheusMiddleware()
 	s.router.Use(prom.Handler)
 	httpLogger := NewLoggingMiddleware(s.logger)
@@ -246,14 +247,17 @@ func (s *Server) registerMiddlewares() {
 	}
 }
 
+func (s *Server) setupHandler() {
+	s.registerHandlers()
+	s.registerMiddlewares()
+	s.handler = s.instrument(s.router)
+}
+
 func (s *Server) ListenAndServe() (*http.Server, *http.Server, *int32, *int32) {
 	go s.startMetricsServer()
 
 	s.loadArtifact()
-	s.registerHandlers()
-	s.registerMiddlewares()
-
-	s.handler = s.router
+	s.setupHandler()
 
 	// load configs in memory and start watching for changes in the config dir
 	if stat, err := os.Stat(s.config.ConfigPath); err == nil && stat.IsDir() {
@@ -397,6 +401,7 @@ func (s *Server) Close() error {
 	var cacheErr error
 	if s.cache != nil {
 		cacheErr = s.cache.Close()
+		close(s.cacheClosed)
 	}
 
 	var configsErr error

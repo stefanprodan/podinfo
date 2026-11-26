@@ -13,9 +13,6 @@ import (
 // @Router /headers [get]
 // @Success 200 {object} http.ArrayResponse
 func (s *Server) echoHeadersHandler(w http.ResponseWriter, r *http.Request) {
-	_, span := s.tracer.Start(r.Context(), "echoHeadersHandler")
-	defer span.End()
-
 	headers := r.Header.Clone()
 	// never echo a client-supplied X-Spiffe-Id, only the verified peer ID
 	headers.Del(spiffeIDHeader)

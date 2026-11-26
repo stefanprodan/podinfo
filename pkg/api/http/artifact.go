@@ -120,9 +120,6 @@ func (s *Server) loadArtifact() {
 // @Success 200 {file} file "tar.gz archive"
 // @Failure 404 {object} http.MapResponse
 func (s *Server) artifactHandler(w http.ResponseWriter, r *http.Request) {
-	_, span := s.tracer.Start(r.Context(), "artifactHandler")
-	defer span.End()
-
 	a := s.artifact
 	if a == nil {
 		s.JSONResponseCode(w, r, map[string]any{

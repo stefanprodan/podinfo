@@ -42,14 +42,14 @@ type Telemetry struct {
 // Setup configures OpenTelemetry from the OTEL_* environment variables; serviceName applies when OTEL_SERVICE_NAME is not set.
 func Setup(ctx context.Context, serviceName string, logger *zap.Logger) (*Telemetry, error) {
 	t := &Telemetry{logger: logger}
-	if strings.EqualFold(strings.TrimSpace(os.Getenv("OTEL_SDK_DISABLED")), "true") {
-		return t, nil
-	}
-
 	otel.SetErrorHandler(otel.ErrorHandlerFunc(func(err error) {
 		logger.Warn("OpenTelemetry error", zap.Error(err))
 	}))
 	otel.SetTextMapPropagator(autoprop.NewTextMapPropagator())
+
+	if strings.EqualFold(strings.TrimSpace(os.Getenv("OTEL_SDK_DISABLED")), "true") {
+		return t, nil
+	}
 
 	if !signalEnabled("TRACES") && !signalEnabled("LOGS") && !signalEnabled("METRICS") {
 		return t, nil

@@ -10,11 +10,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/propagation"
-	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.opentelemetry.io/otel/trace/noop"
 )
 
@@ -53,48 +49,25 @@ func durationHistogram(t *testing.T, path string) (uint64, []map[string]string) 
 	return count, exemplars
 }
 
-func newMetricsTestServer() *Server {
-	srv := NewMockServer()
-	srv.registerHandlers()
-	srv.registerMiddlewares()
-	return srv
-}
-
 func serve(srv *Server, path string, header http.Header) *httptest.ResponseRecorder {
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header = header
 	rr := httptest.NewRecorder()
-	srv.router.ServeHTTP(rr, req)
+	srv.handler.ServeHTTP(rr, req)
 	return rr
 }
 
 func TestMetricsExemplars(t *testing.T) {
 	const traceID = "4bf92f3577b34da6a3ce929d0e0e4736"
-	spans := tracetest.NewInMemoryExporter()
-	tp := sdktrace.NewTracerProvider(
-		sdktrace.WithSampler(sdktrace.ParentBased(sdktrace.AlwaysSample())),
-		sdktrace.WithSyncer(spans),
-	)
-	reader := sdkmetric.NewManualReader()
-	mp := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
-	prevTP, prevMP, prevP := otel.GetTracerProvider(), otel.GetMeterProvider(), otel.GetTextMapPropagator()
-	otel.SetTracerProvider(tp)
-	otel.SetMeterProvider(mp)
-	otel.SetTextMapPropagator(propagation.TraceContext{})
-	t.Cleanup(func() {
-		otel.SetTracerProvider(prevTP)
-		otel.SetMeterProvider(prevMP)
-		otel.SetTextMapPropagator(prevP)
-		_ = tp.Shutdown(context.Background())
-		_ = mp.Shutdown(context.Background())
-	})
+	spans := setupTracing(t)
+	reader := setupMetrics(t)
 
-	srv := newMetricsTestServer()
+	srv := newInstrumentedServer("/")
 	serve(srv, "/version", http.Header{"Traceparent": {"00-" + traceID + "-00f067aa0ba902b7-01"}})
 	serve(srv, "/headers", http.Header{"Traceparent": {"00-" + traceID + "-00f067aa0ba902b7-00"}})
 
 	otel.SetTracerProvider(noop.NewTracerProvider())
-	serve(newMetricsTestServer(), "/api/info", http.Header{"Traceparent": {"00-" + traceID + "-00f067aa0ba902b7-01"}})
+	serve(newInstrumentedServer("/"), "/api/info", http.Header{"Traceparent": {"00-" + traceID + "-00f067aa0ba902b7-01"}})
 
 	t.Run("sampled span", func(t *testing.T) {
 		ended := spans.GetSpans()

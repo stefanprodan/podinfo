@@ -9,7 +9,6 @@ import (
 	"net/http"
 
 	"github.com/stefanprodan/podinfo/pkg/version"
-	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
@@ -68,16 +67,20 @@ func (s *Server) JSONResponseCode(w http.ResponseWriter, r *http.Request, result
 	w.Write(prettyJSON(body))
 }
 
-func (s *Server) ErrorResponse(w http.ResponseWriter, r *http.Request, span trace.Span, error string, code int) {
-	data := struct {
-		Code    int    `json:"code"`
-		Message string `json:"message"`
-	}{
+type ErrorMessage struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+}
+
+func (s *Server) ErrorResponse(w http.ResponseWriter, r *http.Request, msg string, code int) {
+	data := ErrorMessage{
 		Code:    code,
-		Message: error,
+		Message: msg,
 	}
 
-	span.SetStatus(codes.Error, error)
+	if code >= http.StatusInternalServerError {
+		trace.SpanFromContext(r.Context()).RecordError(errors.New(msg))
+	}
 
 	body, err := json.Marshal(data)
 	if err != nil {
@@ -88,24 +91,24 @@ func (s *Server) ErrorResponse(w http.ResponseWriter, r *http.Request, span trac
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(code)
 	w.Write(prettyJSON(body))
 }
 
 // readLimitedBody reads the request body up to maxRequestBodySize. It returns
 // the body and true on success. On an oversized body it writes a 413 response,
 // on any other read error a 400, and returns false so the caller returns early.
-func (s *Server) readLimitedBody(w http.ResponseWriter, r *http.Request, span trace.Span) ([]byte, bool) {
+func (s *Server) readLimitedBody(w http.ResponseWriter, r *http.Request) ([]byte, bool) {
 	r.Body = http.MaxBytesReader(w, r.Body, maxRequestBodySize)
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		var maxErr *http.MaxBytesError
 		if errors.As(err, &maxErr) {
-			s.ErrorResponse(w, r, span, "request body too large", http.StatusRequestEntityTooLarge)
+			s.ErrorResponse(w, r, "request body too large", http.StatusRequestEntityTooLarge)
 			return nil, false
 		}
 		s.logger.Error("reading the request body failed", zap.Error(err))
-		s.ErrorResponse(w, r, span, "invalid request body", http.StatusBadRequest)
+		s.ErrorResponse(w, r, "invalid request body", http.StatusBadRequest)
 		return nil, false
 	}
 	return body, true

@@ -31,6 +31,8 @@ type spiffeState struct {
 	mu sync.Mutex
 	// backendTransport presents the SVID to https backends.
 	backendTransport *http.Transport
+	// backendClient calls https backends through backendTransport.
+	backendClient *http.Client
 	// stopped is set by Stop, after which the server never becomes ready.
 	stopped bool
 	// closed is set by Close, after which backend mTLS calls fail.
@@ -97,7 +99,10 @@ func (s *Server) serveSPIFFE(srv *http.Server) {
 		transport := newHTTPTransport()
 		transport.TLSClientConfig = st.source.ClientTLSConfig(st.backendIDs)
 		st.mu.Lock()
-		st.backendTransport = transport
+		if !st.closed {
+			st.backendTransport = transport
+			st.backendClient = newBackendClient(transport)
+		}
 		st.mu.Unlock()
 	}
 	srv.TLSConfig = st.source.ServerTLSConfig()
@@ -160,6 +165,7 @@ func (s *Server) closeSPIFFE() error {
 	st.mu.Lock()
 	transport := st.backendTransport
 	st.backendTransport = nil
+	st.backendClient = nil
 	st.closed = true
 	st.mu.Unlock()
 
@@ -181,19 +187,19 @@ func newHTTPTransport() *http.Transport {
 	}
 }
 
-// backendTransport returns the transport for a backend call. With
+// backendClient returns the client for a backend call. With
 // --spiffe-backend-mtls, https backends are called with SPIFFE mTLS, which
-// fails until the SVID is issued. Other backends use the default transport.
-func (s *Server) backendTransport(backendURL string) (http.RoundTripper, error) {
+// fails until the SVID is issued. Other backends use the shared default client.
+func (s *Server) backendClient(backendURL string) (*http.Client, error) {
 	if s.spiffe == nil || !s.spiffe.backendMTLS {
-		return http.DefaultTransport, nil
+		return s.backend, nil
 	}
 	u, err := url.Parse(backendURL)
 	if err != nil {
 		return nil, err
 	}
 	if !strings.EqualFold(u.Scheme, "https") {
-		return http.DefaultTransport, nil
+		return s.backend, nil
 	}
 
 	s.spiffe.mu.Lock()
@@ -201,10 +207,10 @@ func (s *Server) backendTransport(backendURL string) (http.RoundTripper, error) 
 	if s.spiffe.closed {
 		return nil, fmt.Errorf("SPIFFE Workload API source closed")
 	}
-	if s.spiffe.backendTransport == nil {
+	if s.spiffe.backendClient == nil {
 		return nil, fmt.Errorf("SPIFFE X.509 SVID not issued yet")
 	}
-	return s.spiffe.backendTransport, nil
+	return s.spiffe.backendClient, nil
 }
 
 // peerSPIFFEID returns the SPIFFE ID of the TLS client certificate, if any.

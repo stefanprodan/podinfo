@@ -9,6 +9,8 @@ import (
 	"regexp"
 
 	"github.com/gorilla/mux"
+	semconv "go.opentelemetry.io/otel/semconv/v1.43.0"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -22,20 +24,23 @@ var validHash = regexp.MustCompile(`^[a-f0-9]{40}$`)
 // @Produce json
 // @Router /store [post]
 // @Success 200 {object} http.MapResponse
+// @Failure 400 {object} http.ErrorMessage "invalid request body"
+// @Failure 413 {object} http.ErrorMessage "request body too large"
+// @Failure 500 {object} http.ErrorMessage "writing file failed"
 func (s *Server) storeWriteHandler(w http.ResponseWriter, r *http.Request) {
-	_, span := s.tracer.Start(r.Context(), "storeWriteHandler")
-	defer span.End()
-
-	body, ok := s.readLimitedBody(w, r, span)
+	body, ok := s.readLimitedBody(w, r)
 	if !ok {
 		return
 	}
 
 	hash := hash(string(body))
-	err := os.WriteFile(path.Join(s.config.DataPath, hash), body, 0644)
+	file := path.Join(s.config.DataPath, hash)
+	_, span := s.tracer.Start(r.Context(), "store write", trace.WithAttributes(semconv.FilePath(file)))
+	err := os.WriteFile(file, body, 0644)
+	endSpan(span, err)
 	if err != nil {
-		s.logger.Warn("writing file failed", zap.Error(err), zap.String("file", path.Join(s.config.DataPath, hash)))
-		s.ErrorResponse(w, r, span, "writing file failed", http.StatusInternalServerError)
+		s.logger.Warn("writing file failed", zap.Error(err), zap.String("file", file))
+		s.ErrorResponse(w, r, "writing file failed", http.StatusInternalServerError)
 		return
 	}
 	s.JSONResponseCode(w, r, map[string]string{"hash": hash}, http.StatusAccepted)
@@ -50,19 +55,21 @@ func (s *Server) storeWriteHandler(w http.ResponseWriter, r *http.Request) {
 // @Param hash path string true "hash value"
 // @Router /store/{hash} [get]
 // @Success 200 {string} string "file"
+// @Failure 400 {object} http.ErrorMessage "invalid hash"
+// @Failure 500 {object} http.ErrorMessage "reading file failed"
 func (s *Server) storeReadHandler(w http.ResponseWriter, r *http.Request) {
-	_, span := s.tracer.Start(r.Context(), "storeReadHandler")
-	defer span.End()
-
 	hash := mux.Vars(r)["hash"]
 	if !validHash.MatchString(hash) {
-		s.ErrorResponse(w, r, span, "invalid hash", http.StatusBadRequest)
+		s.ErrorResponse(w, r, "invalid hash", http.StatusBadRequest)
 		return
 	}
-	content, err := os.ReadFile(path.Join(s.config.DataPath, hash))
+	file := path.Join(s.config.DataPath, hash)
+	_, span := s.tracer.Start(r.Context(), "store read", trace.WithAttributes(semconv.FilePath(file)))
+	content, err := os.ReadFile(file)
+	endSpan(span, err)
 	if err != nil {
-		s.logger.Warn("reading file failed", zap.Error(err), zap.String("file", path.Join(s.config.DataPath, hash)))
-		s.ErrorResponse(w, r, span, "reading file failed", http.StatusInternalServerError)
+		s.logger.Warn("reading file failed", zap.Error(err), zap.String("file", file))
+		s.ErrorResponse(w, r, "reading file failed", http.StatusInternalServerError)
 		return
 	}
 	setRawResponseHeaders(w)

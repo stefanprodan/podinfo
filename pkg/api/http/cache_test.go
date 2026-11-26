@@ -1,7 +1,9 @@
 package http
 
 import (
+	"context"
 	"crypto/tls"
+	"encoding/json"
 	"encoding/pem"
 	"net/http"
 	"net/http/httptest"
@@ -14,6 +16,9 @@ import (
 
 	"github.com/alicebob/miniredis/v2"
 	"github.com/redis/go-redis/v9"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/stefanprodan/podinfo/pkg/version"
 )
@@ -87,13 +92,26 @@ func TestCacheHandlers(t *testing.T) {
 	}
 }
 
-func TestCacheReadHandler_Error(t *testing.T) {
-	m := miniredis.RunT(t)
-	srv := newCacheMockServer(t, &Config{CacheServer: "redis://" + m.Addr()})
-	m.SetError("LOADING")
+func TestCacheHandlers_Error(t *testing.T) {
+	for _, tt := range []struct{ method, message string }{
+		{method: "POST", message: "cache set failed"},
+		{method: "GET", message: "cache get failed"},
+		{method: "DELETE", message: "cache delete failed"},
+	} {
+		t.Run(tt.method, func(t *testing.T) {
+			m := miniredis.RunT(t)
+			srv := newCacheMockServer(t, &Config{CacheServer: "redis://" + m.Addr()})
+			m.SetError("LOADING")
 
-	if rr := serveCache(srv, "GET", ""); rr.Code != http.StatusInternalServerError {
-		t.Fatalf("GET returned %d, want %d", rr.Code, http.StatusInternalServerError)
+			rr := serveCache(srv, tt.method, "value1")
+			if rr.Code != http.StatusInternalServerError {
+				t.Fatalf("%s returned %d, want %d", tt.method, rr.Code, http.StatusInternalServerError)
+			}
+			var resp ErrorMessage
+			if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil || resp.Message != tt.message {
+				t.Errorf("%s returned %q, want message %q", tt.method, rr.Body.String(), tt.message)
+			}
+		})
 	}
 }
 
@@ -326,7 +344,7 @@ func newCacheMockServer(t *testing.T, config *Config) *Server {
 	}
 	srv := NewMockServer()
 	srv.config.Hostname = config.Hostname
-	srv.cache = redis.NewUniversalClient(opts)
+	srv.openCache(opts)
 	t.Cleanup(func() { srv.cache.Close() })
 	srv.router.HandleFunc("/cache/{key}", srv.cacheWriteHandler).Methods("POST")
 	srv.router.HandleFunc("/cache/{key}", srv.cacheDeleteHandler).Methods("DELETE")
@@ -339,4 +357,78 @@ func serveCache(srv *Server, method, body string) *httptest.ResponseRecorder {
 	rr := httptest.NewRecorder()
 	srv.router.ServeHTTP(rr, req)
 	return rr
+}
+
+func TestCacheTracing(t *testing.T) {
+	const payload = "cache-payload-4bf92f35"
+	for _, cluster := range []bool{false, true} {
+		t.Run(map[bool]string{false: "standalone", true: "cluster"}[cluster], func(t *testing.T) {
+			spans := setupTracing(t)
+			reader := setupMetrics(t)
+			m := miniredis.RunT(t)
+			opts, err := newCacheOptions(&Config{CacheServer: "redis://" + m.Addr(), CacheCluster: cluster})
+			if err != nil {
+				t.Fatal(err)
+			}
+			srv := newInstrumentedServer("/")
+			srv.openCache(opts)
+			t.Cleanup(func() { srv.cache.Close() })
+
+			rr := httptest.NewRecorder()
+			srv.handler.ServeHTTP(rr, httptest.NewRequest("POST", "/cache/key1", strings.NewReader(payload)))
+			if rr.Code != http.StatusAccepted {
+				t.Fatalf("POST returned %d, want %d", rr.Code, http.StatusAccepted)
+			}
+			rr = httptest.NewRecorder()
+			srv.handler.ServeHTTP(rr, httptest.NewRequest("GET", "/cache/key1", nil))
+			if rr.Code != http.StatusOK {
+				t.Fatalf("GET returned %d, want %d", rr.Code, http.StatusOK)
+			}
+
+			ended := spans.GetSpans()
+			servers := map[trace.SpanID]string{}
+			for _, s := range spansOfKind(ended, trace.SpanKindServer) {
+				servers[s.SpanContext.SpanID()] = s.Name
+			}
+			commands := map[string]string{}
+			for _, s := range ended {
+				for _, a := range s.Attributes {
+					if strings.Contains(a.Value.Emit(), payload) {
+						t.Errorf("span %q attribute %s holds the payload", s.Name, a.Key)
+					}
+				}
+				for _, e := range s.Events {
+					for _, a := range e.Attributes {
+						if strings.Contains(a.Value.Emit(), payload) {
+							t.Errorf("span %q event %q attribute %s holds the payload", s.Name, e.Name, a.Key)
+						}
+					}
+				}
+				if s.Name == "set" || s.Name == "get" {
+					for _, key := range []attribute.Key{"db.statement", "code.function", "code.filepath", "code.lineno"} {
+						if _, ok := attr(s.Attributes, key); ok {
+							t.Errorf("span %q has %s", s.Name, key)
+						}
+					}
+					commands[s.Name] = servers[s.Parent.SpanID()]
+				}
+			}
+			want := map[string]string{"set": "POST /cache/{key}", "get": "GET /cache/{key}"}
+			if !reflect.DeepEqual(commands, want) {
+				t.Errorf("redis spans and their server spans %v, want %v", commands, want)
+			}
+
+			var rm metricdata.ResourceMetrics
+			if err := reader.Collect(context.Background(), &rm); err != nil {
+				t.Fatal(err)
+			}
+			var found bool
+			for _, sm := range rm.ScopeMetrics {
+				found = found || sm.Scope.Name == "github.com/redis/go-redis/extra/redisotel" && len(sm.Metrics) > 0
+			}
+			if !found {
+				t.Error("no redisotel metrics recorded")
+			}
+		})
+	}
 }
