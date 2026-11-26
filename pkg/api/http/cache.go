@@ -17,8 +17,10 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/redis/go-redis/extra/redisotel/v9"
 	"github.com/redis/go-redis/v9"
+	"github.com/redis/go-redis/v9/maintnotifications"
 	"go.uber.org/zap"
 
+	"github.com/stefanprodan/podinfo/pkg/telemetry"
 	"github.com/stefanprodan/podinfo/pkg/version"
 )
 
@@ -48,7 +50,7 @@ func (s *Server) cacheWriteHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := s.cache.Set(r.Context(), key, body, 0).Err(); err != nil {
-		s.logger.Warn("cache set failed", zap.Error(err))
+		s.logger.Warn("cache set failed", zap.Error(err), telemetry.Context(r.Context()))
 		s.ErrorResponse(w, r, "cache set failed", http.StatusInternalServerError)
 		return
 	}
@@ -76,7 +78,7 @@ func (s *Server) cacheDeleteHandler(w http.ResponseWriter, r *http.Request) {
 	key := mux.Vars(r)["key"]
 
 	if err := s.cache.Del(r.Context(), key).Err(); err != nil {
-		s.logger.Warn("cache delete failed", zap.Error(err))
+		s.logger.Warn("cache delete failed", zap.Error(err), telemetry.Context(r.Context()))
 		s.ErrorResponse(w, r, "cache delete failed", http.StatusInternalServerError)
 		return
 	}
@@ -106,12 +108,12 @@ func (s *Server) cacheReadHandler(w http.ResponseWriter, r *http.Request) {
 
 	data, err := s.cache.Get(r.Context(), key).Bytes()
 	if errors.Is(err, redis.Nil) {
-		s.logger.Warn("cache key not found", zap.String("key", key))
+		s.logger.Warn("cache key not found", zap.String("key", key), telemetry.Context(r.Context()))
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 	if err != nil {
-		s.logger.Warn("cache get failed", zap.Error(err))
+		s.logger.Warn("cache get failed", zap.Error(err), telemetry.Context(r.Context()))
 		s.ErrorResponse(w, r, "cache get failed", http.StatusInternalServerError)
 		return
 	}
@@ -185,6 +187,7 @@ func newCacheOptions(config *Config) (*redis.UniversalOptions, error) {
 		Password:         config.CachePassword,
 		SentinelPassword: config.CacheSentinelPassword,
 	}
+	opts.MaintNotificationsConfig = &maintnotifications.Config{Mode: maintnotifications.ModeDisabled}
 	if opts.Username == "" {
 		opts.Username = u.User.Username()
 	}
@@ -227,8 +230,8 @@ type cacheLogger struct {
 	logger *zap.Logger
 }
 
-func (l cacheLogger) Printf(_ context.Context, format string, v ...any) {
-	l.logger.Warn(fmt.Sprintf(format, v...))
+func (l cacheLogger) Printf(ctx context.Context, format string, v ...any) {
+	l.logger.Warn(fmt.Sprintf(format, v...), telemetry.Context(ctx))
 }
 
 func (s *Server) startCacheVersion(interval time.Duration) {

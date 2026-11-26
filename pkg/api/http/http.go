@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"net/http"
 
+	"github.com/stefanprodan/podinfo/pkg/telemetry"
 	"github.com/stefanprodan/podinfo/pkg/version"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -43,7 +44,7 @@ func (s *Server) JSONResponse(w http.ResponseWriter, r *http.Request, result int
 	body, err := json.Marshal(result)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		s.logger.Error("JSON marshal failed", zap.Error(err))
+		s.logger.Error("JSON marshal failed", zap.Error(err), telemetry.Context(r.Context()))
 		return
 	}
 
@@ -57,7 +58,7 @@ func (s *Server) JSONResponseCode(w http.ResponseWriter, r *http.Request, result
 	body, err := json.Marshal(result)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		s.logger.Error("JSON marshal failed", zap.Error(err))
+		s.logger.Error("JSON marshal failed", zap.Error(err), telemetry.Context(r.Context()))
 		return
 	}
 
@@ -85,7 +86,7 @@ func (s *Server) ErrorResponse(w http.ResponseWriter, r *http.Request, msg strin
 	body, err := json.Marshal(data)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		s.logger.Error("JSON marshal failed", zap.Error(err))
+		s.logger.Error("JSON marshal failed", zap.Error(err), telemetry.Context(r.Context()))
 		return
 	}
 
@@ -107,7 +108,7 @@ func (s *Server) readLimitedBody(w http.ResponseWriter, r *http.Request) ([]byte
 			s.ErrorResponse(w, r, "request body too large", http.StatusRequestEntityTooLarge)
 			return nil, false
 		}
-		s.logger.Error("reading the request body failed", zap.Error(err))
+		s.logger.Error("reading the request body failed", zap.Error(err), telemetry.Context(r.Context()))
 		s.ErrorResponse(w, r, "invalid request body", http.StatusBadRequest)
 		return nil, false
 	}

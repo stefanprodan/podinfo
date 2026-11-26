@@ -12,6 +12,8 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
+
+	"github.com/stefanprodan/podinfo/pkg/telemetry"
 )
 
 var validHash = regexp.MustCompile(`^[a-f0-9]{40}$`)
@@ -39,7 +41,7 @@ func (s *Server) storeWriteHandler(w http.ResponseWriter, r *http.Request) {
 	err := os.WriteFile(file, body, 0644)
 	endSpan(span, err)
 	if err != nil {
-		s.logger.Warn("writing file failed", zap.Error(err), zap.String("file", file))
+		s.logger.Warn("writing file failed", zap.Error(err), zap.String("file", file), telemetry.Context(r.Context()))
 		s.ErrorResponse(w, r, "writing file failed", http.StatusInternalServerError)
 		return
 	}
@@ -68,7 +70,7 @@ func (s *Server) storeReadHandler(w http.ResponseWriter, r *http.Request) {
 	content, err := os.ReadFile(file)
 	endSpan(span, err)
 	if err != nil {
-		s.logger.Warn("reading file failed", zap.Error(err), zap.String("file", file))
+		s.logger.Warn("reading file failed", zap.Error(err), zap.String("file", file), telemetry.Context(r.Context()))
 		s.ErrorResponse(w, r, "reading file failed", http.StatusInternalServerError)
 		return
 	}

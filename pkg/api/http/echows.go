@@ -1,6 +1,7 @@
 package http
 
 import (
+	"context"
 	"net/http"
 	"strings"
 	"sync"
@@ -8,6 +9,8 @@ import (
 
 	"github.com/gorilla/websocket"
 	"go.uber.org/zap"
+
+	"github.com/stefanprodan/podinfo/pkg/telemetry"
 )
 
 var wsCon = websocket.Upgrader{}
@@ -38,7 +41,7 @@ const (
 func (s *Server) echoWsHandler(w http.ResponseWriter, r *http.Request) {
 	c, err := wsCon.Upgrade(w, r, nil)
 	if err != nil {
-		s.logger.Warn("websocket upgrade error", zap.Error(err))
+		s.logger.Warn("websocket upgrade error", zap.Error(err), telemetry.Context(r.Context()))
 		return
 	}
 
@@ -57,8 +60,8 @@ func (s *Server) echoWsHandler(w http.ResponseWriter, r *http.Request) {
 	done := make(chan struct{})
 	defer close(done)
 	in := make(chan interface{})
-	go s.writeWs(c, in)
-	go s.sendHostWs(c, in, done, &wg)
+	go s.writeWs(r.Context(), c, in)
+	go s.sendHostWs(r.Context(), c, in, done, &wg)
 	go func() {
 		defer close(in)
 		wg.Wait()
@@ -67,7 +70,7 @@ func (s *Server) echoWsHandler(w http.ResponseWriter, r *http.Request) {
 		_, message, err := c.ReadMessage()
 		if err != nil {
 			if !strings.Contains(err.Error(), "close") {
-				s.logger.Warn("websocket read error", zap.Error(err))
+				s.logger.Warn("websocket read error", zap.Error(err), telemetry.Context(r.Context()))
 			}
 			break
 		}
@@ -82,7 +85,7 @@ func (s *Server) echoWsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Server) sendHostWs(ws *websocket.Conn, in chan interface{}, done chan struct{}, wg *sync.WaitGroup) {
+func (s *Server) sendHostWs(ctx context.Context, ws *websocket.Conn, in chan interface{}, done chan struct{}, wg *sync.WaitGroup) {
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
 	for {
@@ -97,14 +100,14 @@ func (s *Server) sendHostWs(ws *websocket.Conn, in chan interface{}, done chan s
 			}
 			in <- status
 		case <-done:
-			s.logger.Debug("websocket exit")
+			s.logger.Debug("websocket exit", telemetry.Context(ctx))
 			wg.Done()
 			return
 		}
 	}
 }
 
-func (s *Server) writeWs(ws *websocket.Conn, in chan interface{}) {
+func (s *Server) writeWs(ctx context.Context, ws *websocket.Conn, in chan interface{}) {
 	ping := time.NewTicker(wsPingInterval)
 	defer ping.Stop()
 	for {
@@ -113,7 +116,7 @@ func (s *Server) writeWs(ws *websocket.Conn, in chan interface{}) {
 			_ = ws.SetWriteDeadline(time.Now().Add(wsWriteTimeout))
 			if err := ws.WriteJSON(msg); err != nil {
 				if !strings.Contains(err.Error(), "close") {
-					s.logger.Warn("websocket write error", zap.Error(err))
+					s.logger.Warn("websocket write error", zap.Error(err), telemetry.Context(ctx))
 				}
 				return
 			}

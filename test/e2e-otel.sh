@@ -133,6 +133,7 @@ helm upgrade --install backend ./charts/podinfo \
     --namespace "${HELM_NAMESPACE}" \
     --set image.repository=test/podinfo \
     --set image.tag=latest \
+    --set logLevel=debug \
     --set otel.enabled=true \
     --set otel.endpoint="http://otel-collector.${OTEL_NAMESPACE}:4317" \
     --set otel.protocol=grpc \
@@ -145,6 +146,7 @@ helm upgrade --install frontend ./charts/podinfo \
     --set image.repository=test/podinfo \
     --set image.tag=latest \
     --set backend="http://backend-podinfo:9898/echo" \
+    --set logLevel=debug \
     --set otel.enabled=true \
     --set otel.endpoint="http://otel-collector.${OTEL_NAMESPACE}:4318" \
     --set otel.resourceAttributes.deployment\\.environment\\.name=e2e \
@@ -161,6 +163,7 @@ values: {
 		tag:        "latest"
 		digest:     ""
 	}
+	logLevel: "debug"
 	otel: {
 		enabled:  true
 		endpoint: "http://otel-collector.${OTEL_NAMESPACE}:4318"
@@ -211,7 +214,7 @@ info "Timoni: HTTP trace ${TIMONI_HTTP_TRACE}, gRPC trace ${TIMONI_GRPC_TRACE}"
 #   attr   <service> <key> <value>
 #   span   <service> <trace ID> <span ID> <parent ID> <kind> <name>
 #   metric <service> <name>
-#   log    <service>
+#   log    <service> <trace ID>
 collect() {
     kubectl -n "${OTEL_NAMESPACE}" logs deploy/otel-collector --tail=-1 | awk '
         function val(s) { sub(/^[^:]*: */, "", s); return s }
@@ -235,7 +238,7 @@ collect() {
         sig == "Spans" && /^ +Name +:/      { name = val($0) }
         sig == "Spans" && /^ +Kind +:/      { printf "span\t%s\t%s\t%s\t%s\t%s\t%s\n", svc, trace, id, parent, val($0), name }
         sig == "Metrics" && /^ +-> Name: /  { printf "metric\t%s\t%s\n", svc, val($0) }
-        sig == "Log" && /^LogRecord #/      { printf "log\t%s\n", svc }
+        sig == "Log" && /^ *Trace ID *:/    { printf "log\t%s\t%s\n", svc, val($0) }
     ' > "${RECORDS}"
 }
 
@@ -262,6 +265,8 @@ check() {
             || { echo "no http.server.request.duration metric from ${svc}"; return 1; }
         has "\$1==\"log\" && \$2==\"${svc}\"" \
             || { echo "no log records from ${svc}"; return 1; }
+        has "\$1==\"log\" && \$2==\"${svc}\" && \$3==\"${http_trace}\"" \
+            || { echo "no log record from ${svc} in trace ${http_trace}"; return 1; }
     done
     has "\$1==\"metric\" && \$2==\"${fe}\" && \$3==\"rpc.server.call.duration\"" \
         || { echo "no rpc.server.call.duration metric from ${fe}"; return 1; }
@@ -294,7 +299,7 @@ while true; do
     sleep 5
 done
 info "spans from both services share the trace, with the backend server span under the frontend client span"
-info "gRPC server spans, HTTP and gRPC metrics and log records arrived from both installs"
+info "gRPC server spans, HTTP and gRPC metrics and log records with the trace ID arrived from both installs"
 info "the resources carry the service names and the Kubernetes attributes"
 
 log "SUCCESS: all podinfo OpenTelemetry checks passed"

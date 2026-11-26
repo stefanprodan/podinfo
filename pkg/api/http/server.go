@@ -224,7 +224,7 @@ func (s *Server) registerHandlers() {
 	s.router.HandleFunc(s.prefixedPath("/swagger.json"), func(w http.ResponseWriter, r *http.Request) {
 		doc, err := swag.ReadDoc()
 		if err != nil {
-			s.logger.Error("swagger error", zap.Error(err), zap.String("path", s.prefixedPath("/swagger.json")))
+			s.logger.Error("swagger error", zap.Error(err), zap.String("path", s.prefixedPath("/swagger.json")), telemetry.Context(r.Context()))
 		}
 		w.Write([]byte(doc))
 	})

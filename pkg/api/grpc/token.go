@@ -13,6 +13,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	pb "github.com/stefanprodan/podinfo/pkg/api/grpc/token"
+	"github.com/stefanprodan/podinfo/pkg/telemetry"
 )
 
 type TokenServer struct {
@@ -43,7 +44,7 @@ func (s *TokenServer) TokenGenerate(ctx context.Context, req *pb.TokenRequest) (
 	t, err := token.SignedString([]byte(s.config.JWTSecret))
 
 	if err != nil {
-		s.logger.Error("Failed to generate token", zap.Error(err))
+		s.logger.Error("Failed to generate token", zap.Error(err), telemetry.Context(ctx))
 		return nil, status.Error(codes.Internal, "failed to generate token")
 	}
 

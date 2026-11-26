@@ -5,6 +5,7 @@ import (
 	"os"
 
 	pb "github.com/stefanprodan/podinfo/pkg/api/grpc/panic"
+	"github.com/stefanprodan/podinfo/pkg/telemetry"
 	"go.uber.org/zap"
 )
 
@@ -15,7 +16,7 @@ type PanicServer struct {
 }
 
 func (s *PanicServer) Panic(ctx context.Context, req *pb.PanicRequest) (*pb.PanicResponse, error) {
-	s.logger.Info("Panic command received")
+	s.logger.Info("Panic command received", telemetry.Context(ctx))
 	os.Exit(225)
 	return &pb.PanicResponse{}, nil
 }
