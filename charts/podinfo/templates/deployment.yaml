@@ -1,6 +1,9 @@
 {{- if and .Values.spiffe.enabled (not .Values.tls.enabled) }}
 {{- fail "spiffe.enabled requires tls.enabled" }}
 {{- end }}
+{{- if and .Values.service.grpcTLS (not .Values.tls.enabled) }}
+{{- fail "service.grpcTLS requires tls.enabled" }}
+{{- end }}
 {{- if and .Values.spiffe.backendMTLS (not .Values.spiffe.enabled) }}
 {{- fail "spiffe.backendMTLS requires spiffe.enabled" }}
 {{- end }}
@@ -91,6 +94,9 @@ spec:
             {{- end }}
             {{- if .Values.service.grpcService }}
             - --grpc-service-name={{ .Values.service.grpcService }}
+            {{- end }}
+            {{- if .Values.service.grpcTLS }}
+            - --grpc-tls
             {{- end }}
             {{- range .Values.backends }}
             - --backend-url={{ . }}

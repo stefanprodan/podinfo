@@ -156,6 +156,10 @@ Podinfo starts the HTTP port and passes the liveness probe right away, and keeps
 until the SVID is issued. The readiness probe fails until the HTTPS port is serving with the SVID.
 The request log includes the `spiffe_id` of the client at debug level.
 
+With `--grpc-tls`, the gRPC port is served with the same SVID and authorized IDs, and the gRPC health
+of the `--grpc-service-name` service is `NOT_SERVING` until the SVID is issued.
+Without SPIFFE, `--grpc-tls` serves the gRPC port with the `--cert-path` certificate.
+
 With `--spiffe-backend-mtls`, `/api/echo` calls the `https://` backends set with `--backend-url` over SPIFFE mTLS,
 presenting the same SVID and verifying the backend against `--spiffe-backend-ids`.
 All `https://` backends must then be SPIFFE workloads, calls to `http://` backends are unchanged.

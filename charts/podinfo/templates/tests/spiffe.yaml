@@ -47,7 +47,7 @@ spec:
         - name: svid
           mountPath: /svid
   containers:
-    - name: curl
+    - name: client
       image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
       imagePullPolicy: {{ .Values.image.pullPolicy }}
       command:
@@ -64,9 +64,23 @@ spec:
           curl -sSk --max-time 10 --cert /svid/svid.0.pem --key /svid/svid.0.key \
             ${PODINFO_SVC}/headers | grep X-Spiffe-Id
           echo "client with an SVID was accepted"
+          {{- if .Values.service.grpcTLS }}
+          if podcli check grpc ${PODINFO_GRPC} --tls --insecure-skip-verify --timeout=2s >/dev/null 2>&1; then
+            echo "FAIL: gRPC client without an SVID was accepted"
+            exit 1
+          fi
+          echo "gRPC client without an SVID was rejected"
+          podcli check grpc ${PODINFO_GRPC} --tls --insecure-skip-verify \
+            --cert /svid/svid.0.pem --key /svid/svid.0.key
+          echo "gRPC client with an SVID was accepted"
+          {{- end }}
       env:
         - name: PODINFO_SVC
           value: "https://{{ template "podinfo.fullname" . }}.{{ include "podinfo.namespace" . }}:{{ .Values.tls.port }}{{ trimSuffix "/" (.Values.prefix | default "/") }}"
+        {{- if .Values.service.grpcTLS }}
+        - name: PODINFO_GRPC
+          value: "{{ template "podinfo.fullname" . }}.{{ include "podinfo.namespace" . }}:{{ .Values.service.grpcPort }}"
+        {{- end }}
       volumeMounts:
         - name: svid
           mountPath: /svid

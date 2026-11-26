@@ -84,6 +84,7 @@ The following tables lists the configurable parameters of the podinfo chart and 
 | `service.externalPort`                         | `9898`                         | ClusterIP HTTP port                                                                                |
 | `service.grpcPort`                             | `9999`                         | ClusterIP gPRC port                                                                                |
 | `service.grpcService`                          | `podinfo`                      | gPRC service name                                                                                  |
+| `service.grpcTLS`                              | `false`                        | Serve the gRPC port with TLS (SPIFFE mTLS when `spiffe.enabled`), requires `tls.enabled`           |
 | `service.nodePort`                             | `31198`                        | NodePort for the HTTP endpoint                                                                     |
 | `service.trafficDistribution`                  | `""`                           | Traffic distribution strategy                                                                      |
 | `service.additionalLabels`                     | `{}`                           | Additional labels to add to the service                                                            |

@@ -1,3 +1,4 @@
+{{- if not (and .Values.service.grpcTLS .Values.spiffe.enabled) -}}
 apiVersion: v1
 kind: Pod
 metadata:
@@ -19,5 +20,6 @@ spec:
     - name: podcli
       image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
       imagePullPolicy: {{ .Values.image.pullPolicy }}
-      command: ["podcli", "check", "grpc", "{{ template "podinfo.fullname" . }}.{{ include "podinfo.namespace" . }}:{{ .Values.service.grpcPort }}"]
+      command: ["podcli", "check", "grpc", "{{ template "podinfo.fullname" . }}.{{ include "podinfo.namespace" . }}:{{ .Values.service.grpcPort }}"{{ if .Values.service.grpcTLS }}, "--tls", "--insecure-skip-verify"{{ end }}]
   restartPolicy: Never
+{{- end }}
