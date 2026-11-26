@@ -91,11 +91,17 @@ type Server struct {
 	artifact     *artifact
 	configs      *fscache.Watcher
 	keyPair      *keypair.KeyPair
+	ui           *uiPage
 }
 
 func NewServer(config *Config, logger *zap.Logger) (*Server, error) {
 	config.Prefix = normalizePrefix(config.Prefix)
 	docs.SwaggerInfo.BasePath = config.Prefix
+
+	page, err := newUIPage(config)
+	if err != nil {
+		return nil, fmt.Errorf("loading the UI failed: %w", err)
+	}
 
 	spiffe, err := newSPIFFEState(config, logger)
 	if err != nil {
@@ -107,6 +113,7 @@ func NewServer(config *Config, logger *zap.Logger) (*Server, error) {
 		logger: logger,
 		config: config,
 		spiffe: spiffe,
+		ui:     page,
 		tracer: telemetry.Tracer(),
 	}
 
@@ -159,6 +166,7 @@ func (s *Server) registerHandlers() {
 		s.router.HandleFunc(rootPath+"/", s.indexHandler).HeadersRegexp("User-Agent", "^Mozilla.*").Methods("GET")
 		s.router.HandleFunc(rootPath+"/", s.infoHandler).Methods("GET")
 	}
+	s.router.PathPrefix(s.prefixedPath("/ui/")).Handler(http.StripPrefix(s.prefixedPath("/ui"), http.FileServerFS(s.ui.assets))).Methods("GET", "HEAD")
 	s.router.HandleFunc(s.prefixedPath("/version"), s.versionHandler).Methods("GET")
 	s.router.HandleFunc(s.prefixedPath("/echo"), s.echoHandler)
 	s.router.PathPrefix(s.prefixedPath("/echo/")).HandlerFunc(s.echoHandler)

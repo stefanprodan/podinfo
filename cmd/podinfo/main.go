@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -51,8 +52,8 @@ func main() {
 	fs.StringSlice("spiffe-backend-ids", []string{}, "SPIFFE IDs accepted from https backends; requires --spiffe-backend-mtls; when empty, any ID in the server's trust domain is accepted")
 	fs.String("artifact-path", "./kustomize", "directory served as a tar.gz at /artifact; empty disables the route")
 	fs.String("config", "config.yaml", "config file name")
-	fs.String("ui-path", "./ui", "UI local path")
-	fs.String("ui-logo", "", "UI logo")
+	fs.String("ui-path", "", "deprecated, directory with a vue.html page that replaces the embedded UI")
+	fs.String("ui-logo", "", "UI logo URL, defaults to the embedded image")
 	fs.String("ui-color", "#34577c", "UI color")
 	fs.String("ui-message", fmt.Sprintf("greetings from podinfo v%v", version.VERSION), "UI message")
 	fs.Bool("h2c", false, "allow upgrading to H2C")
@@ -89,7 +90,6 @@ func main() {
 	viper.RegisterAlias("backendUrl", "backend-url")
 	hostname, _ := os.Hostname()
 	viper.SetDefault("jwt-secret", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9")
-	viper.SetDefault("ui-logo", "https://raw.githubusercontent.com/stefanprodan/podinfo/gh-pages/cuddle_clap.gif")
 	viper.Set("hostname", hostname)
 	viper.Set("version", version.VERSION)
 	viper.Set("revision", version.REVISION)
@@ -106,6 +106,10 @@ func main() {
 		}
 	}
 
+	if viper.GetString("ui-logo") == "" {
+		viper.Set("ui-logo", path.Join("/", viper.GetString("prefix"), "ui/cuddle_clap.gif"))
+	}
+
 	// configure logging
 	stderrLogger, err := initZap(viper.GetString("level"))
 	if err != nil {
@@ -118,6 +122,9 @@ func main() {
 	otelServiceName := viper.GetString("otel-service-name")
 	if otelServiceName != "" {
 		stderrLogger.Warn("--otel-service-name is deprecated, use OTEL_SERVICE_NAME")
+	}
+	if viper.GetString("ui-path") != "" {
+		stderrLogger.Warn("--ui-path is deprecated, the UI is embedded in the binary")
 	}
 	tel, err := telemetry.Setup(context.Background(), otelServiceName, stderrLogger)
 	if err != nil {
