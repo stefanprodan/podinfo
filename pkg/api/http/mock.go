@@ -19,10 +19,14 @@ func NewMockServer() *Server {
 		DataPath:              "/data",
 		HttpClientTimeout:     30 * time.Second,
 		UIColor:               "blue",
-		UIPath:                ".ui",
 		UIMessage:             "Greetings",
 		Hostname:              "localhost",
 		Prefix:                "/",
+	}
+
+	page, err := newUIPage(config)
+	if err != nil {
+		panic(err)
 	}
 
 	logger, _ := zap.NewDevelopment()
@@ -31,6 +35,7 @@ func NewMockServer() *Server {
 		router: mux.NewRouter(),
 		logger: logger,
 		config: config,
+		ui:     page,
 		tracer: noop.NewTracerProvider().Tracer("mock"),
 	}
 }
