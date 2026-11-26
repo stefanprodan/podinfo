@@ -194,6 +194,27 @@ values: {
 		}]
 	}
 
+	grpcRoute: {
+		enabled: true
+		parentRefs: [{
+			name:        "gateway"
+			namespace:   "gateway-system"
+			sectionName: "grpc"
+		}]
+		hostnames: ["grpc.podinfo.example.com"]
+		labels: "team": "dev"
+		rules: [{
+			matches: [{method: {service: "grpc.health.v1.Health"}}]
+			filters: [{
+				type: "RequestHeaderModifier"
+				requestHeaderModifier: set: [{
+					name:  "X-Forwarded-Proto"
+					value: "https"
+				}]
+			}]
+		}]
+	}
+
 	serviceMonitor: {
 		enabled: true
 		additionalLabels: prometheus: "platform"
