@@ -95,7 +95,7 @@ func NewServer(config *Config, logger *zap.Logger) (*Server, error) {
 	config.Prefix = normalizePrefix(config.Prefix)
 	docs.SwaggerInfo.BasePath = config.Prefix
 
-	spiffe, err := newSPIFFEState(config)
+	spiffe, err := newSPIFFEState(config, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -313,7 +313,6 @@ func (s *Server) startSecureServer() *http.Server {
 	}
 
 	if s.spiffe != nil {
-		s.spiffe.started.Store(true)
 		go s.serveSPIFFE(srv)
 		return srv
 	}
@@ -354,7 +353,7 @@ func (s *Server) startMetricsServer() {
 type ArrayResponse []string
 type MapResponse map[string]string
 
-// Close releases the cache pool and the SPIFFE source once the servers have stopped.
+// Close releases the cache pool and the SPIFFE source once the HTTP and gRPC servers have stopped.
 func (s *Server) Close() error {
 	if s.cacheStop != nil {
 		close(s.cacheStop)
