@@ -63,7 +63,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/runner-cleanup
       - name: Setup Timoni
-        uses: stefanprodan/timoni/actions/setup@40e1054b478fe15a8887fb8f22eb42c4a9da04f8 # v0.37.0
+        uses: stefanprodan/timoni/actions/setup@58f38054cc5276178b1426fabaf0b5e066c7c271 # v0.38.0
       - name: Setup Kubernetes
         uses: helm/kind-action@ea822c7bf1874f08e5a491df991c228edffc3376 # v1.15.2
         with:
