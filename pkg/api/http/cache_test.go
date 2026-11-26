@@ -10,12 +10,16 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/alicebob/miniredis/v2"
+	"github.com/alicebob/miniredis/v2/server"
 	"github.com/redis/go-redis/v9"
+	"github.com/redis/go-redis/v9/maintnotifications"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/trace"
@@ -257,7 +261,10 @@ func TestNewCacheOptions(t *testing.T) {
 			if (got.TLSConfig != nil) != tt.tls {
 				t.Errorf("TLS is %v, want %v", got.TLSConfig != nil, tt.tls)
 			}
-			got.TLSConfig = nil
+			if got.MaintNotificationsConfig == nil || got.MaintNotificationsConfig.Mode != maintnotifications.ModeDisabled {
+				t.Errorf("maintenance notifications config %+v, want mode %q", got.MaintNotificationsConfig, maintnotifications.ModeDisabled)
+			}
+			got.TLSConfig, got.MaintNotificationsConfig = nil, nil
 			if !reflect.DeepEqual(*got, tt.want) {
 				t.Errorf("newCacheOptions returned %+v, want %+v", *got, tt.want)
 			}
@@ -428,6 +435,45 @@ func TestCacheTracing(t *testing.T) {
 			}
 			if !found {
 				t.Error("no redisotel metrics recorded")
+			}
+		})
+	}
+}
+
+func TestCacheHandshake(t *testing.T) {
+	for _, cluster := range []bool{false, true} {
+		t.Run(map[bool]string{false: "standalone", true: "cluster"}[cluster], func(t *testing.T) {
+			spans := setupTracing(t)
+			m := miniredis.RunT(t)
+			var mu sync.Mutex
+			var commands []string
+			m.Server().SetPreHook(func(_ *server.Peer, cmd string, args ...string) bool {
+				mu.Lock()
+				defer mu.Unlock()
+				commands = append(commands, strings.ToUpper(strings.Join(append([]string{cmd}, args...), " ")))
+				return false
+			})
+			srv := newCacheMockServer(t, &Config{CacheServer: "redis://" + m.Addr(), CacheCluster: cluster})
+			t.Cleanup(func() { close(srv.cacheClosed) })
+
+			if rr := serveCache(srv, "POST", "value1"); rr.Code != http.StatusAccepted {
+				t.Fatalf("POST returned %d, want %d", rr.Code, http.StatusAccepted)
+			}
+
+			mu.Lock()
+			defer mu.Unlock()
+			if !slices.Contains(commands, "HELLO 3") {
+				t.Errorf("no HELLO 3 in %q", commands)
+			}
+			for _, c := range commands {
+				if strings.HasPrefix(c, "CLIENT MAINT_NOTIFICATIONS") {
+					t.Errorf("handshake sent %q", c)
+				}
+			}
+			for _, s := range spans.GetSpans() {
+				if strings.Contains(strings.ToUpper(s.Status.Description), "MAINT_NOTIFICATIONS") {
+					t.Errorf("span %q status %q", s.Name, s.Status.Description)
+				}
 			}
 		})
 	}

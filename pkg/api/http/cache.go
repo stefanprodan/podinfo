@@ -17,6 +17,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/redis/go-redis/extra/redisotel/v9"
 	"github.com/redis/go-redis/v9"
+	"github.com/redis/go-redis/v9/maintnotifications"
 	"go.uber.org/zap"
 
 	"github.com/stefanprodan/podinfo/pkg/telemetry"
@@ -186,6 +187,7 @@ func newCacheOptions(config *Config) (*redis.UniversalOptions, error) {
 		Password:         config.CachePassword,
 		SentinelPassword: config.CacheSentinelPassword,
 	}
+	opts.MaintNotificationsConfig = &maintnotifications.Config{Mode: maintnotifications.ModeDisabled}
 	if opts.Username == "" {
 		opts.Username = u.User.Username()
 	}
