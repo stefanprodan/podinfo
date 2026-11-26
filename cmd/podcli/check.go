@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -105,9 +106,6 @@ func init() {
 }
 
 func runCheck(cmd *cobra.Command, args []string) error {
-	if retryCount < 0 {
-		return fmt.Errorf("--retry is required")
-	}
 	if len(args) < 1 {
 		return fmt.Errorf("address is required! example: check http https://httpbin.org")
 	}
@@ -117,82 +115,48 @@ func runCheck(cmd *cobra.Command, args []string) error {
 		address = fmt.Sprintf("http://%s", address)
 	}
 
-	for n := 0; n <= retryCount; n++ {
-		if n != 0 {
-			time.Sleep(retryDelay)
-		}
-
+	return retryCheck(address, func() error {
 		req, err := http.NewRequest(method, address, bytes.NewBuffer([]byte(body)))
 		if err != nil {
-			logger.Info("check failed",
-				zap.String("address", address),
-				zap.Error(err))
-			os.Exit(1)
+			return permanent(err)
 		}
 
 		ctx, cancel := context.WithTimeout(req.Context(), timeout)
+		defer cancel()
 		resp, err := http.DefaultClient.Do(req.WithContext(ctx))
-		cancel()
 		if err != nil {
-			logger.Info("check failed",
-				zap.String("address", address),
-				zap.Error(err))
-			continue
+			return err
+		}
+		resp.Body.Close()
+
+		if resp.StatusCode < 200 || resp.StatusCode >= 400 {
+			return fmt.Errorf("status code %d", resp.StatusCode)
 		}
 
-		if resp.Body != nil {
-			resp.Body.Close()
-		}
-
-		if resp.StatusCode >= 200 && resp.StatusCode < 400 {
-			logger.Info("check succeed",
-				zap.String("address", address),
-				zap.Int("status code", resp.StatusCode),
-				zap.String("response size", fmtContentLength(resp.ContentLength)))
-			os.Exit(0)
-		} else {
-			logger.Info("check failed",
-				zap.String("address", address),
-				zap.Int("status code", resp.StatusCode))
-			continue
-		}
-	}
-
-	os.Exit(1)
-	return nil
+		logger.Info("check succeed",
+			zap.String("address", address),
+			zap.Int("status code", resp.StatusCode),
+			zap.String("response size", fmtContentLength(resp.ContentLength)))
+		return nil
+	})
 }
 
 func runCheckTCP(cmd *cobra.Command, args []string) error {
-	if retryCount < 0 {
-		return fmt.Errorf("--retry is required")
-	}
 	if len(args) < 1 {
 		return fmt.Errorf("address is required! example: check tcp httpbin.org:80")
 	}
 	address := args[0]
 
-	for n := 0; n <= retryCount; n++ {
-		if n != 0 {
-			time.Sleep(retryDelay)
-		}
-
+	return retryCheck(address, func() error {
 		conn, err := net.DialTimeout("tcp", address, timeout)
-
 		if err != nil {
-			logger.Info("check failed",
-				zap.String("address", address),
-				zap.Error(err))
-			continue
+			return err
 		}
-
 		conn.Close()
+
 		logger.Info("check succeed", zap.String("address", address))
-		os.Exit(0)
-
-	}
-
-	os.Exit(1)
-	return nil
+		return nil
+	})
 }
 
 func runCheckCert(cmd *cobra.Command, args []string) error {
@@ -280,9 +244,6 @@ func fmtContentLength(b int64) string {
 }
 
 func runCheckWs(cmd *cobra.Command, args []string) error {
-	if retryCount < 0 {
-		return fmt.Errorf("--retry is required")
-	}
 	if len(args) < 1 {
 		return fmt.Errorf("address is required! example: check ws wss://localhost:9898/ws/echo")
 	}
@@ -292,63 +253,40 @@ func runCheckWs(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("address must start with ws:// or wss://")
 	}
 
-	for n := 0; n <= retryCount; n++ {
-		if n != 0 {
-			time.Sleep(retryDelay)
-		}
-
+	return retryCheck(address, func() error {
 		dialer := websocket.Dialer{
 			HandshakeTimeout: timeout,
 		}
 
 		conn, _, err := dialer.Dial(address, nil)
 		if err != nil {
-			logger.Info("check failed",
-				zap.String("address", address),
-				zap.Error(err))
-			continue
+			return err
 		}
+		defer conn.Close()
 
 		msg := "podinfo-check"
 		start := time.Now()
 
 		conn.SetWriteDeadline(start.Add(timeout))
 		if err := conn.WriteMessage(websocket.TextMessage, []byte(msg)); err != nil {
-			conn.Close()
-			logger.Info("check failed",
-				zap.String("address", address),
-				zap.Error(err))
-			continue
+			return err
 		}
 
 		conn.SetReadDeadline(time.Now().Add(timeout))
 		_, resp, err := conn.ReadMessage()
 		if err != nil {
-			conn.Close()
-			logger.Info("check failed",
-				zap.String("address", address),
-				zap.Error(err))
-			continue
+			return err
 		}
-
-		rtt := time.Since(start)
-		conn.Close()
 
 		logger.Info("check succeed",
 			zap.String("address", address),
-			zap.Duration("round-trip", rtt),
+			zap.Duration("round-trip", time.Since(start)),
 			zap.Int("response size", len(resp)))
-		os.Exit(0)
-	}
-
-	os.Exit(1)
-	return nil
+		return nil
+	})
 }
 
 func runCheckgPRC(cmd *cobra.Command, args []string) error {
-	if retryCount < 0 {
-		return fmt.Errorf("--retry is required")
-	}
 	if len(args) < 1 {
 		return fmt.Errorf("address is required! example: check grpc localhost:8080")
 	}
@@ -361,41 +299,69 @@ func runCheckgPRC(cmd *cobra.Command, args []string) error {
 		creds = grpc.WithTransportCredentials(insecure.NewCredentials())
 	}
 
-	for n := 0; n <= retryCount; n++ {
-		if n != 0 {
-			time.Sleep(retryDelay)
-		}
-
+	return retryCheck(address, func() error {
 		conn, err := grpc.NewClient(address, creds)
 		if err != nil {
-			logger.Info("check failed",
-				zap.String("address", address),
-				zap.Error(err))
-			continue
+			return err
 		}
+		defer conn.Close()
+
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		defer cancel()
 		resp, err := grpc_health_v1.NewHealthClient(conn).Check(ctx, &grpc_health_v1.HealthCheckRequest{
 			Service: grpcServiceName,
 		})
-		cancel()
-
 		if err != nil {
 			if stat, ok := status.FromError(err); ok && stat.Code() == codes.Unimplemented {
-				logger.Info("gRPC health protocol not implemented")
-				os.Exit(1)
-			} else {
-				logger.Info("check failed",
-					zap.String("address", address),
-					zap.Error(err))
+				return permanent(fmt.Errorf("gRPC health protocol not implemented"))
 			}
-			conn.Close()
-			continue
+			return err
 		}
 
-		conn.Close()
 		logger.Info("check succeed",
 			zap.String("status", resp.GetStatus().String()))
-		os.Exit(0)
+		return nil
+	})
+}
+
+// permanentError marks a check failure that retrying cannot fix.
+type permanentError struct {
+	err error
+}
+
+func (e *permanentError) Error() string { return e.err.Error() }
+func (e *permanentError) Unwrap() error { return e.err }
+
+func permanent(err error) error {
+	return &permanentError{err: err}
+}
+
+// retryCheck runs the check once and then up to retryCount more times,
+// waiting retryDelay between attempts. It exits with 0 on the first
+// success and with 1 when all attempts fail or a failure is permanent.
+func retryCheck(address string, check func() error) error {
+	if retryCount < 0 {
+		return fmt.Errorf("--retry is required")
+	}
+
+	for n := 0; n <= retryCount; n++ {
+		if n > 0 {
+			time.Sleep(retryDelay)
+		}
+
+		err := check()
+		if err == nil {
+			os.Exit(0)
+		}
+
+		logger.Info("check failed",
+			zap.String("address", address),
+			zap.Error(err))
+
+		var perr *permanentError
+		if errors.As(err, &perr) {
+			break
+		}
 	}
 
 	os.Exit(1)
