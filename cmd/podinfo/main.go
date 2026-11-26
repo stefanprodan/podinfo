@@ -37,6 +37,7 @@ func main() {
 	fs.Int("port-metrics", 0, "metrics port")
 	fs.Int("grpc-port", 0, "gRPC port")
 	fs.String("grpc-service-name", "podinfo", "gPRC service name")
+	fs.Bool("grpc-tls", false, "serve the gRPC port with TLS using the --cert-path certificate, or with SPIFFE mTLS when --spiffe-endpoint-socket is set")
 	fs.String("level", "info", "log level debug, info, warn, error, fatal or panic")
 	fs.StringSlice("backend-url", []string{}, "backend service URL")
 	fs.Duration("http-client-timeout", 2*time.Minute, "client timeout duration")
@@ -44,7 +45,7 @@ func main() {
 	fs.Duration("server-shutdown-timeout", 5*time.Second, "server graceful shutdown timeout duration")
 	fs.String("data-path", "/data", "data local path")
 	fs.String("config-path", "", "config dir path")
-	fs.String("cert-path", "/data/cert", "certificate path for HTTPS port")
+	fs.String("cert-path", "/data/cert", "certificate path for the HTTPS port and the gRPC port with --grpc-tls")
 	fs.String("spiffe-endpoint-socket", "", "SPIFFE Workload API address, e.g. unix:///spiffe-workload-api/spire-agent.sock; when set, the HTTPS port uses SPIFFE mTLS instead of --cert-path")
 	fs.StringSlice("spiffe-authorized-ids", []string{}, "SPIFFE IDs allowed to connect to the HTTPS port; when empty, any ID in the server's trust domain is allowed")
 	fs.Bool("spiffe-backend-mtls", false, "call https backends with SPIFFE mTLS; requires --spiffe-endpoint-socket")
@@ -164,13 +165,6 @@ func main() {
 		logger.Panic("config unmarshal failed", zap.Error(err))
 	}
 
-	// start gRPC server
-	var grpcServer *go_grpc.Server
-	var grpcHealth *health.Server
-	if grpcCfg.Port > 0 {
-		grpcServer, grpcHealth = grpc.NewServer(&grpcCfg, logger).ListenAndServe()
-	}
-
 	// load HTTP server config
 	var srvCfg http.Config
 	if err := viper.Unmarshal(&srvCfg); err != nil {
@@ -189,6 +183,16 @@ func main() {
 	if err != nil {
 		logger.Fatal("invalid HTTP server config", zap.Error(err))
 	}
+
+	// start gRPC server
+	var grpcServer *go_grpc.Server
+	var grpcHealth *health.Server
+	if grpcCfg.Port > 0 {
+		grpcSrv := grpc.NewServer(&grpcCfg, logger)
+		grpcSrv.SetSPIFFESource(srv.SPIFFESource())
+		grpcServer, grpcHealth = grpcSrv.ListenAndServe()
+	}
+
 	httpServer, httpsServer, healthy, ready := srv.ListenAndServe()
 
 	// graceful shutdown
