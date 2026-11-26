@@ -14,6 +14,7 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/contrib/bridges/otelzap"
+	sdklog "go.opentelemetry.io/otel/sdk/log"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -117,11 +118,12 @@ func main() {
 	}
 
 	// configure logging
-	stderrLogger, err := initZap(viper.GetString("level"))
+	level, err := parseLevel(viper.GetString("level"))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error initializing logger: %s\n", err.Error())
 		os.Exit(1)
 	}
+	stderrLogger := initZap(level, nil)
 	defer stderrLogger.Sync()
 
 	// configure OpenTelemetry from the OTEL_* environment variables
@@ -139,7 +141,7 @@ func main() {
 	shutdownTimeout := viper.GetDuration("server-shutdown-timeout")
 	defer shutdownTelemetry(tel, shutdownTimeout, stderrLogger)
 
-	logger := withTelemetry(stderrLogger, tel, shutdownTimeout)
+	logger := withTelemetry(level, tel, shutdownTimeout, os.Exit)
 	stdLog := zap.RedirectStdLog(logger)
 	defer stdLog()
 
@@ -237,7 +239,7 @@ func main() {
 	}
 }
 
-func initZap(logLevel string) (*zap.Logger, error) {
+func parseLevel(logLevel string) (zap.AtomicLevel, error) {
 	var level zap.AtomicLevel
 	switch logLevel {
 	case "debug":
@@ -253,9 +255,12 @@ func initZap(logLevel string) (*zap.Logger, error) {
 	case "panic":
 		level = zap.NewAtomicLevelAt(zapcore.PanicLevel)
 	default:
-		return nil, fmt.Errorf("unknown log level %q", logLevel)
+		return level, fmt.Errorf("unknown log level %q", logLevel)
 	}
+	return level, nil
+}
 
+func initZap(level zap.AtomicLevel, loggerProvider *sdklog.LoggerProvider) *zap.Logger {
 	zapEncoderConfig := zapcore.EncoderConfig{
 		TimeKey:        "ts",
 		LevelKey:       "level",
@@ -270,33 +275,25 @@ func initZap(logLevel string) (*zap.Logger, error) {
 		EncodeCaller:   zapcore.ShortCallerEncoder,
 	}
 
-	zapConfig := zap.Config{
-		Level:       level,
-		Development: false,
-		Sampling: &zap.SamplingConfig{
-			Initial:    100,
-			Thereafter: 100,
-		},
-		Encoding:         "json",
-		EncoderConfig:    zapEncoderConfig,
-		OutputPaths:      []string{"stderr"},
-		ErrorOutputPaths: []string{"stderr"},
+	cores := []zapcore.Core{
+		telemetry.NewTraceIDCore(zapcore.NewCore(zapcore.NewJSONEncoder(zapEncoderConfig), zapcore.Lock(os.Stderr), level)),
 	}
-
-	return zapConfig.Build()
+	if loggerProvider != nil {
+		cores = append(cores, otelzap.NewCore("github.com/stefanprodan/podinfo",
+			otelzap.WithLoggerProvider(loggerProvider),
+		))
+	}
+	return zap.New(
+		zapcore.NewSamplerWithOptions(zapcore.NewTee(cores...), time.Second, 100, 100),
+		zap.ErrorOutput(zapcore.Lock(os.Stderr)),
+		zap.AddCaller(),
+		zap.AddStacktrace(zapcore.ErrorLevel),
+		zap.IncreaseLevel(level),
+	)
 }
 
-func withTelemetry(logger *zap.Logger, tel *telemetry.Telemetry, shutdownTimeout time.Duration) *zap.Logger {
-	logger = logger.WithOptions(zap.WithFatalHook(tel.ExitHook(shutdownTimeout, os.Exit)))
-	if loggerProvider := tel.LoggerProvider(); loggerProvider != nil {
-		otelCore := otelzap.NewCore("github.com/stefanprodan/podinfo",
-			otelzap.WithLoggerProvider(loggerProvider),
-		)
-		logger = logger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
-			return zapcore.NewTee(core, otelCore)
-		}))
-	}
-	return logger
+func withTelemetry(level zap.AtomicLevel, tel *telemetry.Telemetry, shutdownTimeout time.Duration, exit func(int)) *zap.Logger {
+	return initZap(level, tel.LoggerProvider()).WithOptions(zap.WithFatalHook(tel.ExitHook(shutdownTimeout, exit)))
 }
 
 func shutdownTelemetry(tel *telemetry.Telemetry, timeout time.Duration, logger *zap.Logger) {

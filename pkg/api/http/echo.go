@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"sync"
 
+	"github.com/stefanprodan/podinfo/pkg/telemetry"
 	"github.com/stefanprodan/podinfo/pkg/version"
 	"go.opentelemetry.io/otel/attribute"
 	semconv "go.opentelemetry.io/otel/semconv/v1.43.0"
@@ -50,7 +51,7 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 
 				backendReq, err := http.NewRequestWithContext(ctx, "POST", backend, bytes.NewReader(body))
 				if err != nil {
-					s.logger.Error("backend call failed", zap.Error(err), zap.String("url", backend))
+					s.logger.Error("backend call failed", zap.Error(err), zap.String("url", backend), telemetry.Context(r.Context()))
 					span.RecordError(errBackendCall, backendURL)
 					result[index] = fmt.Sprintf("backend %v call failed %v", backend, err)
 					return
@@ -64,7 +65,7 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 
 				client, err := s.backendClient(backend)
 				if err != nil {
-					s.logger.Error("backend call failed", zap.Error(err), zap.String("url", backend))
+					s.logger.Error("backend call failed", zap.Error(err), zap.String("url", backend), telemetry.Context(r.Context()))
 					span.RecordError(errBackendCall, backendURL)
 					result[index] = fmt.Sprintf("backend %v call failed %v", backend, err)
 					return
@@ -73,7 +74,7 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 				// call backend
 				resp, err := client.Do(backendReq)
 				if err != nil {
-					s.logger.Error("backend call failed", zap.Error(err), zap.String("url", backend))
+					s.logger.Error("backend call failed", zap.Error(err), zap.String("url", backend), telemetry.Context(r.Context()))
 					span.RecordError(errBackendCall, backendURL)
 					result[index] = fmt.Sprintf("backend %v call failed %v", backend, err)
 					return
@@ -82,7 +83,7 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 
 				// copy error status from backend and exit
 				if resp.StatusCode >= 400 {
-					s.logger.Error("backend call failed", zap.Int("status", resp.StatusCode), zap.String("url", backend))
+					s.logger.Error("backend call failed", zap.Int("status", resp.StatusCode), zap.String("url", backend), telemetry.Context(r.Context()))
 					span.RecordError(fmt.Errorf("backend response status code %v", resp.StatusCode), backendURL)
 					result[index] = fmt.Sprintf("backend %v response status code %v", backend, resp.StatusCode)
 					return
@@ -94,7 +95,8 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 					s.logger.Error(
 						"reading the backend request body failed",
 						zap.Error(err),
-						zap.String("url", backend))
+						zap.String("url", backend),
+						telemetry.Context(r.Context()))
 					span.RecordError(errBackendRead, backendURL)
 					result[index] = fmt.Sprintf("backend %v call failed %v", backend, err)
 					return
@@ -103,7 +105,8 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 				s.logger.Debug(
 					"payload received from backend",
 					zap.String("response", string(rbody)),
-					zap.String("url", backend))
+					zap.String("url", backend),
+					telemetry.Context(r.Context()))
 
 				result[index] = string(rbody)
 			}(i, b)
@@ -114,7 +117,7 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 		s.JSONResponse(w, r, result)
 
 	} else {
-		s.logPayload(body)
+		s.logPayload(r.Context(), body)
 		setRawResponseHeaders(w)
 		w.Header().Set("X-Color", s.config.UIColor)
 		w.WriteHeader(http.StatusAccepted)
@@ -142,9 +145,9 @@ const maxLoggedPayloadSize = 64 << 10 // 64 KiB
 // logPayload logs the request body at debug level. JSON bodies are embedded
 // as JSON objects in the log line, other bodies as strings. Bodies over
 // maxLoggedPayloadSize are logged with their size only.
-func (s *Server) logPayload(body []byte) {
+func (s *Server) logPayload(ctx context.Context, body []byte) {
 	if ce := s.logger.Check(zap.DebugLevel, "payload received"); ce != nil {
-		fields := []zap.Field{zap.Int("size", len(body))}
+		fields := []zap.Field{zap.Int("size", len(body)), telemetry.Context(ctx)}
 		switch {
 		case len(body) > maxLoggedPayloadSize:
 		case json.Valid(body):

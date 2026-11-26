@@ -3,8 +3,9 @@ package http
 import (
 	"net/http"
 
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
+
+	"github.com/stefanprodan/podinfo/pkg/telemetry"
 )
 
 type LoggingMiddleware struct {
@@ -25,15 +26,11 @@ func (m *LoggingMiddleware) Handler(next http.Handler) http.Handler {
 			zap.String("method", r.Method),
 			zap.String("remote", r.RemoteAddr),
 			zap.String("user-agent", r.UserAgent()),
+			telemetry.Context(r.Context()),
 		}
 
 		if id, ok := peerSPIFFEID(r); ok {
 			fields = append(fields, zap.String("spiffe_id", id.String()))
-		}
-
-		spanCtx := trace.SpanContextFromContext(r.Context())
-		if spanCtx.HasTraceID() {
-			fields = append(fields, zap.String("trace_id", spanCtx.TraceID().String()))
 		}
 
 		m.logger.Debug(
