@@ -160,7 +160,8 @@ spec:
           mountPath: /svid
   containers:
     - name: curl
-      image: curlimages/curl:7.69.0
+      image: test/podinfo:latest
+      imagePullPolicy: IfNotPresent
       command:
         - sh
         - -c

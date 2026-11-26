@@ -12,8 +12,12 @@ metadata:
     linkerd.io/inject: disabled
     appmesh.k8s.aws/sidecarInjectorWebhook: disabled
 spec:
+  {{- with .Values.image.pullSecrets }}
+  imagePullSecrets: {{ toYaml . | nindent 4 }}
+  {{- end }}
   containers:
-    - name: grpc-health-probe
-      image: {{ .Values.testImages.grpc | quote }}
-      args:  ['-addr={{ template "podinfo.fullname" . }}.{{ include "podinfo.namespace" . }}:{{ .Values.service.grpcPort }}']
+    - name: podcli
+      image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+      imagePullPolicy: {{ .Values.image.pullPolicy }}
+      command: ["podcli", "check", "grpc", "{{ template "podinfo.fullname" . }}.{{ include "podinfo.namespace" . }}:{{ .Values.service.grpcPort }}"]
   restartPolicy: Never

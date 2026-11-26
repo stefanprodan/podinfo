@@ -12,14 +12,18 @@ metadata:
     linkerd.io/inject: disabled
     appmesh.k8s.aws/sidecarInjectorWebhook: disabled
 spec:
+  {{- with .Values.image.pullSecrets }}
+  imagePullSecrets: {{ toYaml . | nindent 4 }}
+  {{- end }}
   containers:
-    - name: tools
-      image: {{ .Values.testImages.tools | quote }}
+    - name: curl
+      image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+      imagePullPolicy: {{ .Values.image.pullPolicy }}
       command:
         - sh
         - -c
         - |
-          TOKEN=$(curl -sd 'test' ${PODINFO_SVC}/token | jq -r .token) &&
+          TOKEN=$(curl -sd 'test' ${PODINFO_SVC}/token | sed -n 's/.*"token": *"\([^"]*\)".*/\1/p') &&
           curl -sH "Authorization: Bearer ${TOKEN}" ${PODINFO_SVC}/token/validate | grep test
       env:
       - name: PODINFO_SVC

@@ -12,9 +12,13 @@ metadata:
     linkerd.io/inject: disabled
     appmesh.k8s.aws/sidecarInjectorWebhook: disabled
 spec:
+  {{- with .Values.image.pullSecrets }}
+  imagePullSecrets: {{ toYaml . | nindent 4 }}
+  {{- end }}
   containers:
     - name: curl
-      image: {{ .Values.testImages.curl | quote }}
+      image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+      imagePullPolicy: {{ .Values.image.pullPolicy }}
       command:
         - sh
         - -c

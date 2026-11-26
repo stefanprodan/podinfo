@@ -13,9 +13,13 @@ metadata:
     linkerd.io/inject: disabled
     appmesh.k8s.aws/sidecarInjectorWebhook: disabled
 spec:
+  {{- with .Values.image.pullSecrets }}
+  imagePullSecrets: {{ toYaml . | nindent 4 }}
+  {{- end }}
   containers:
     - name: fault
-      image: alpine:3.11
+      image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+      imagePullPolicy: {{ .Values.image.pullPolicy }}
       command: ['/bin/sh']
       args:  ['-c', 'exit 1']
   restartPolicy: Never
