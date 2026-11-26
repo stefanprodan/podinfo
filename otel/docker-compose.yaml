@@ -1,44 +1,28 @@
-version: '2'
-
 services:
-  podinfo_frontend:
+  frontend:
     build: ..
-    command: ./podinfo --backend-url http://podinfo_backend:9899/status/200 --otel-service-name=podinfo_frontend
+    command: ./podinfo --level debug --grpc-port 9999 --backend-url http://backend:9898/echo
     environment:
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel:4317
-      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      OTEL_SERVICE_NAME: frontend
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://lgtm:4318
+      OTEL_METRIC_EXPORT_INTERVAL: "10000"
     ports:
       - "9898:9898"
-  podinfo_backend:
+      - "9999:9999"
+    depends_on:
+      - backend
+  backend:
     build: ..
-    command: ./podinfo --port 9899 --otel-service-name=podinfo_backend
+    command: ./podinfo --level debug --grpc-port 9999
     environment:
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel:4317
-      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
-    ports:
-      - "9899:9899"
-  otel:
-    command: --config otel-config.yaml
-    image: otel/opentelemetry-collector-contrib:0.116.1
-    ports:
-      - "4317:4317"
-    volumes:
-      - ${PWD}/otel-config.yaml:/otel-config.yaml
-  loki:
-    image: grafana/loki:3.0.0
-    ports:
-      - "3100:3100"
-    command: -config.file=/etc/loki/local-config.yaml
-  grafana:
-    image: grafana/grafana:10.4.0
+      OTEL_SERVICE_NAME: backend
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://lgtm:4318
+      OTEL_METRIC_EXPORT_INTERVAL: "10000"
+    depends_on:
+      - lgtm
+  lgtm:
+    image: grafana/otel-lgtm:0.41.1
     ports:
       - "3000:3000"
-    environment:
-      - GF_AUTH_ANONYMOUS_ENABLED=true
-      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
     volumes:
-      - ${PWD}/grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
-  jaeger:
-    image: jaegertracing/all-in-one:1.57.0
-    ports:
-      - "16686:16686"
+      - ./grafana-datasources.yaml:/otel-lgtm/grafana/conf/provisioning/datasources/podinfo.yaml:ro

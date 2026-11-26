@@ -1,10 +1,37 @@
 apiVersion: 1
 
 datasources:
-  - name: Loki
-    type: loki
-    url: http://loki:3100
-    isDefault: true
-  - name: Jaeger
-    type: jaeger
-    url: http://jaeger:16686
+  - name: Tempo
+    type: tempo
+    uid: tempo
+    url: http://127.0.0.1:3200
+    jsonData:
+      tracesToLogsV2:
+        datasourceUid: loki
+        customQuery: true
+        query: '{$${__tags}} | trace_id = "$${__trace.traceId}"'
+        tags:
+          - key: service.name
+            value: service_name
+      tracesToMetrics:
+        datasourceUid: prometheus
+        tags:
+          - key: service.name
+            value: job
+          - key: http.route
+            value: http_route
+          - key: rpc.method
+            value: rpc_method
+        queries:
+          - name: HTTP request rate
+            query: sum by (http_response_status_code) (rate(http_server_request_duration_seconds_count{$$__tags}[5m]))
+          - name: HTTP p95 latency
+            query: histogram_quantile(0.95, sum by (le) (rate(http_server_request_duration_seconds_bucket{$$__tags}[5m])))
+          - name: gRPC call rate
+            query: sum by (rpc_response_status_code) (rate(rpc_server_call_duration_seconds_count{$$__tags}[5m]))
+      serviceMap:
+        datasourceUid: prometheus
+      nodeGraph:
+        enabled: true
+      lokiSearch:
+        datasourceUid: loki
