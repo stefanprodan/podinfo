@@ -1,7 +1,6 @@
 package grpc
 
 import (
-	"crypto/tls"
 	"net"
 	"path"
 	"strconv"
@@ -23,6 +22,7 @@ import (
 	"github.com/stefanprodan/podinfo/pkg/api/grpc/status"
 	"github.com/stefanprodan/podinfo/pkg/api/grpc/token"
 	"github.com/stefanprodan/podinfo/pkg/api/grpc/version"
+	"github.com/stefanprodan/podinfo/pkg/keypair"
 	"github.com/stefanprodan/podinfo/pkg/spiffe"
 )
 
@@ -137,11 +137,11 @@ func (s *Server) credentials() (credentials.TransportCredentials, error) {
 	case s.spiffe != nil:
 		return credentials.NewTLS(s.spiffe.ServerTLSConfig()), nil
 	}
-	cert, err := tls.LoadX509KeyPair(path.Join(s.config.CertPath, "tls.crt"), path.Join(s.config.CertPath, "tls.key"))
+	kp, err := keypair.NewReloader(path.Join(s.config.CertPath, "tls.crt"), path.Join(s.config.CertPath, "tls.key"), s.logger)
 	if err != nil {
 		return nil, err
 	}
-	return credentials.NewTLS(&tls.Config{Certificates: []tls.Certificate{cert}}), nil
+	return credentials.NewTLS(kp.TLSConfig()), nil
 }
 
 // waitForSVID reports the service NOT_SERVING until the SPIFFE SVID is issued,
