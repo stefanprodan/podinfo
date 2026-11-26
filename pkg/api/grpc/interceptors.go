@@ -86,7 +86,10 @@ func (s *Server) streamRecoveryInterceptor(srv any, ss grpc.ServerStream, info *
 
 func (s *Server) serverOptions(m *metrics) []grpc.ServerOption {
 	return []grpc.ServerOption{
-		grpc.StatsHandler(otelgrpc.NewServerHandler(otelgrpc.WithFilter(filters.Not(filters.HealthCheck())))),
+		grpc.StatsHandler(otelgrpc.NewServerHandler(otelgrpc.WithFilter(filters.None(
+			filters.HealthCheck(),
+			filters.ServicePrefix("grpc.reflection."),
+		)))),
 		grpc.ChainUnaryInterceptor(m.unaryInterceptor, s.unaryRecoveryInterceptor),
 		grpc.ChainStreamInterceptor(m.streamInterceptor, s.streamRecoveryInterceptor),
 	}

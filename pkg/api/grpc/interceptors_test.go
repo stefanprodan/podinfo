@@ -198,7 +198,7 @@ func TestGrpcExemplars(t *testing.T) {
 		traced bool
 	}{
 		{method: "/status.StatusService/Status", code: codes.OK, traced: true},
-		{method: "/grpc.reflection.v1.ServerReflection/ServerReflectionInfo", code: codes.OK, traced: true},
+		{method: "/grpc.reflection.v1.ServerReflection/ServerReflectionInfo", code: codes.OK},
 		{method: "/grpc.health.v1.Health/Watch", code: codes.Internal},
 	}
 	tests := []struct {
@@ -275,14 +275,20 @@ func TestGrpcExemplars(t *testing.T) {
 			if err := reader.Collect(context.Background(), &rm); err != nil {
 				t.Fatal(err)
 			}
-			var found bool
+			var methods []string
 			for _, sm := range rm.ScopeMetrics {
 				for _, metric := range sm.Metrics {
-					found = found || metric.Name == "rpc.server.call.duration"
+					if metric.Name != "rpc.server.call.duration" {
+						continue
+					}
+					for _, dp := range metric.Data.(metricdata.Histogram[float64]).DataPoints {
+						method, _ := dp.Attributes.Value("rpc.method")
+						methods = append(methods, method.AsString())
+					}
 				}
 			}
-			if !found {
-				t.Error("rpc.server.call.duration not recorded")
+			if len(methods) != 1 || methods[0] != "status.StatusService/Status" {
+				t.Errorf("rpc.server.call.duration recorded for %v, want only status.StatusService/Status", methods)
 			}
 		})
 	}
