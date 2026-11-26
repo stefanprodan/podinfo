@@ -19,20 +19,20 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/runner-cleanup
       - name: Setup Go
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           go-version: 1.27.x
           cache-dependency-path: |
             **/go.sum
             **/go.mod
       - name: Setup Flux Schema CLI
-        uses: fluxcd/flux-schema/actions/setup@4c71b2098ba84b738d811877463f5a2b2bfe443f # v0.17.0
+        uses: fluxcd/flux-schema/actions/setup@f4ef1813dc8e5388c0f56bc16d7fe16ecfc0e023 # v0.18.0
       - name: Setup Helm
         uses: azure/setup-helm@2f5e7bc67f1f9972ab16657bb795f36d8f04de0e # v5.1.0
         with:
           version: v${{ env.HELM_VERSION }}
       - name: Setup Timoni
-        uses: stefanprodan/timoni/actions/setup@40e1054b478fe15a8887fb8f22eb42c4a9da04f8 # v0.37.0
+        uses: stefanprodan/timoni/actions/setup@58f38054cc5276178b1426fabaf0b5e066c7c271 # v0.38.0
       - name: Run unit tests
         run: make test
       - name: Validate Helm chart

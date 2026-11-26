@@ -153,9 +153,7 @@ seccomp profile.
 | `serviceAccount.name` | `string` | instance name, or `default` when `create: false` | Service account name |
 | `serviceAccount.labels` / `annotations` | `{[string]: string}` | unset | Extra service account metadata (e.g. IRSA role annotations) |
 | `serviceAccount.automountServiceAccountToken` | `bool` | `false` | Mount the token through the service account (the pod setting mounts it instead) |
-| `test.enabled` | `bool` | `false` | Run the end-to-end test Jobs at install and upgrades: a curl request to the http port and a grpc-health-probe check of the grpc port |
-| `test.image` | `timoniv1.#Image` | `ghcr.io/curl/curl-container/curl-multi:<version>` | Container image of the http test Job |
-| `test.grpcImage` | `timoniv1.#Image` | `ghcr.io/grpc-ecosystem/grpc-health-probe:<version>` | Container image of the gRPC test Job |
+| `test.enabled` | `bool` | `false` | Run the end-to-end test Jobs at install and upgrades with the podinfo image: a curl request to the http port and a podcli gRPC health check of the grpc port |
 
 ### Pod scheduling values
 
