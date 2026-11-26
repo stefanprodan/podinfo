@@ -1,12 +1,13 @@
 package http
 
 import (
+	"net/http"
 	"time"
-
-	"go.opentelemetry.io/otel/trace/noop"
 
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
+
+	"github.com/stefanprodan/podinfo/pkg/telemetry"
 )
 
 func NewMockServer() *Server {
@@ -32,10 +33,11 @@ func NewMockServer() *Server {
 	logger, _ := zap.NewDevelopment()
 
 	return &Server{
-		router: mux.NewRouter(),
-		logger: logger,
-		config: config,
-		ui:     page,
-		tracer: noop.NewTracerProvider().Tracer("mock"),
+		router:  mux.NewRouter(),
+		logger:  logger,
+		config:  config,
+		ui:      page,
+		tracer:  telemetry.Tracer(),
+		backend: newBackendClient(http.DefaultTransport),
 	}
 }

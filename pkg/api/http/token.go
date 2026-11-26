@@ -22,11 +22,11 @@ type jwtCustomClaims struct {
 // @Produce json
 // @Router /token [post]
 // @Success 200 {object} http.TokenResponse
+// @Failure 400 {object} http.ErrorMessage "invalid request body"
+// @Failure 413 {object} http.ErrorMessage "request body too large"
+// @Failure 500 {object} http.ErrorMessage "token signing failed"
 func (s *Server) tokenGenerateHandler(w http.ResponseWriter, r *http.Request) {
-	_, span := s.tracer.Start(r.Context(), "tokenGenerateHandler")
-	defer span.End()
-
-	body, ok := s.readLimitedBody(w, r, span)
+	body, ok := s.readLimitedBody(w, r)
 	if !ok {
 		return
 	}
@@ -49,7 +49,7 @@ func (s *Server) tokenGenerateHandler(w http.ResponseWriter, r *http.Request) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	t, err := token.SignedString([]byte(s.config.JWTSecret))
 	if err != nil {
-		s.ErrorResponse(w, r, span, err.Error(), http.StatusBadRequest)
+		s.ErrorResponse(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -67,23 +67,20 @@ func (s *Server) tokenGenerateHandler(w http.ResponseWriter, r *http.Request) {
 // @Tags HTTP API
 // @Accept json
 // @Produce json
-// @Router /token/validate [post]
+// @Router /token/validate [get]
 // @Success 200 {object} http.TokenValidationResponse
-// @Failure 401 {string} string "Unauthorized"
+// @Failure 401 {object} http.ErrorMessage "invalid or missing token"
 // Get: JWT=$(curl -s -d 'test' localhost:9898/token | jq -r .token)
 // Post: curl -H "Authorization: Bearer ${JWT}" localhost:9898/token/validate
 func (s *Server) tokenValidateHandler(w http.ResponseWriter, r *http.Request) {
-	_, span := s.tracer.Start(r.Context(), "tokenValidateHandler")
-	defer span.End()
-
 	authorizationHeader := r.Header.Get("authorization")
 	if authorizationHeader == "" {
-		s.ErrorResponse(w, r, span, "authorization bearer header required", http.StatusUnauthorized)
+		s.ErrorResponse(w, r, "authorization bearer header required", http.StatusUnauthorized)
 		return
 	}
 	bearerToken := strings.Split(authorizationHeader, " ")
 	if len(bearerToken) != 2 || strings.ToLower(bearerToken[0]) != "bearer" {
-		s.ErrorResponse(w, r, span, "authorization bearer header required", http.StatusUnauthorized)
+		s.ErrorResponse(w, r, "authorization bearer header required", http.StatusUnauthorized)
 		return
 	}
 
@@ -95,13 +92,15 @@ func (s *Server) tokenValidateHandler(w http.ResponseWriter, r *http.Request) {
 		return []byte(s.config.JWTSecret), nil
 	})
 	if err != nil {
-		s.ErrorResponse(w, r, span, err.Error(), http.StatusUnauthorized)
+		s.ErrorResponse(w, r, err.Error(), http.StatusUnauthorized)
 		return
 	}
 
 	if token.Valid {
 		if claims.Issuer != "podinfo" {
-			s.ErrorResponse(w, r, span, "invalid issuer", http.StatusUnauthorized)
+			s.ErrorResponse(w, r, "invalid issuer", http.StatusUnauthorized)
+		} else if claims.ExpiresAt == nil {
+			s.ErrorResponse(w, r, "token expiry required", http.StatusUnauthorized)
 		} else {
 			var result = TokenValidationResponse{
 				TokenName: claims.Name,
@@ -110,7 +109,7 @@ func (s *Server) tokenValidateHandler(w http.ResponseWriter, r *http.Request) {
 			s.JSONResponse(w, r, result)
 		}
 	} else {
-		s.ErrorResponse(w, r, span, "Invalid authorization token", http.StatusUnauthorized)
+		s.ErrorResponse(w, r, "Invalid authorization token", http.StatusUnauthorized)
 	}
 }
 

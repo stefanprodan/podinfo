@@ -81,26 +81,6 @@ func TestEchoHandler_ContentType(t *testing.T) {
 	}
 }
 
-func TestCopyTracingHeaders(t *testing.T) {
-	from, _ := http.NewRequest("GET", "/", nil)
-	from.Header.Set("x-request-id", "abc123")
-	from.Header.Set("x-b3-traceid", "trace-1")
-	from.Header.Set("x-b3-spanid", "span-1")
-
-	to, _ := http.NewRequest("POST", "/echo", nil)
-	copyTracingHeaders(from, to)
-
-	if to.Header.Get("x-request-id") != "abc123" {
-		t.Errorf("x-request-id not copied")
-	}
-	if to.Header.Get("x-b3-traceid") != "trace-1" {
-		t.Errorf("x-b3-traceid not copied")
-	}
-	if to.Header.Get("x-b3-spanid") != "span-1" {
-		t.Errorf("x-b3-spanid not copied")
-	}
-}
-
 func TestEchoHandler_WithBackend(t *testing.T) {
 	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)

@@ -61,6 +61,18 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/http.MapResponse"
                         }
+                    },
+                    "400": {
+                        "description": "invalid request body",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorMessage"
+                        }
+                    },
+                    "413": {
+                        "description": "request body too large",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorMessage"
+                        }
                     }
                 }
             }
@@ -142,6 +154,21 @@ const docTemplate = `{
                         "schema": {
                             "type": "string"
                         }
+                    },
+                    "404": {
+                        "description": "key not found"
+                    },
+                    "500": {
+                        "description": "cache get failed",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorMessage"
+                        }
+                    },
+                    "503": {
+                        "description": "cache server is offline",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorMessage"
+                        }
                     }
                 }
             },
@@ -169,6 +196,30 @@ const docTemplate = `{
                 "responses": {
                     "202": {
                         "description": "Accepted"
+                    },
+                    "400": {
+                        "description": "invalid request body",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorMessage"
+                        }
+                    },
+                    "413": {
+                        "description": "request body too large",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "cache set failed",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorMessage"
+                        }
+                    },
+                    "503": {
+                        "description": "cache server is offline",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorMessage"
+                        }
                     }
                 }
             },
@@ -196,6 +247,18 @@ const docTemplate = `{
                 "responses": {
                     "202": {
                         "description": "Accepted"
+                    },
+                    "500": {
+                        "description": "cache delete failed",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorMessage"
+                        }
+                    },
+                    "503": {
+                        "description": "cache server is offline",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorMessage"
+                        }
                     }
                 }
             }
@@ -228,6 +291,12 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/http.MapResponse"
                         }
+                    },
+                    "500": {
+                        "description": "Streaming unsupported!",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorMessage"
+                        }
                     }
                 }
             }
@@ -259,6 +328,12 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/http.MapResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid delay",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorMessage"
                         }
                     }
                 }
@@ -537,6 +612,12 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/http.MapResponse"
                         }
+                    },
+                    "400": {
+                        "description": "invalid status code",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorMessage"
+                        }
                     }
                 }
             }
@@ -559,6 +640,24 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/http.MapResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid request body",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorMessage"
+                        }
+                    },
+                    "413": {
+                        "description": "request body too large",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "writing file failed",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorMessage"
                         }
                     }
                 }
@@ -592,6 +691,18 @@ const docTemplate = `{
                         "schema": {
                             "type": "string"
                         }
+                    },
+                    "400": {
+                        "description": "invalid hash",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "reading file failed",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorMessage"
+                        }
                     }
                 }
             }
@@ -615,12 +726,30 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/http.TokenResponse"
                         }
+                    },
+                    "400": {
+                        "description": "invalid request body",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorMessage"
+                        }
+                    },
+                    "413": {
+                        "description": "request body too large",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "token signing failed",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorMessage"
+                        }
                     }
                 }
             }
         },
         "/token/validate": {
-            "post": {
+            "get": {
                 "description": "validates the JWT token",
                 "consumes": [
                     "application/json"
@@ -640,9 +769,9 @@ const docTemplate = `{
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "invalid or missing token",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/http.ErrorMessage"
                         }
                     }
                 }
@@ -693,6 +822,17 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "http.ErrorMessage": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
         "http.MapResponse": {
             "type": "object",
             "additionalProperties": {

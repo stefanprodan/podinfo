@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/redis/go-redis/extra/redisotel/v9"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 
@@ -30,24 +31,25 @@ import (
 // @Param key path string true "Key to save to"
 // @Router /cache/{key} [post]
 // @Success 202
+// @Failure 400 {object} http.ErrorMessage "invalid request body"
+// @Failure 413 {object} http.ErrorMessage "request body too large"
+// @Failure 500 {object} http.ErrorMessage "cache set failed"
+// @Failure 503 {object} http.ErrorMessage "cache server is offline"
 func (s *Server) cacheWriteHandler(w http.ResponseWriter, r *http.Request) {
-	_, span := s.tracer.Start(r.Context(), "cacheWriteHandler")
-	defer span.End()
-
 	if s.cache == nil {
-		s.ErrorResponse(w, r, span, "cache server is offline", http.StatusBadRequest)
+		s.ErrorResponse(w, r, "cache server is offline", http.StatusServiceUnavailable)
 		return
 	}
 
 	key := mux.Vars(r)["key"]
-	body, ok := s.readLimitedBody(w, r, span)
+	body, ok := s.readLimitedBody(w, r)
 	if !ok {
 		return
 	}
 
 	if err := s.cache.Set(r.Context(), key, body, 0).Err(); err != nil {
 		s.logger.Warn("cache set failed", zap.Error(err))
-		s.ErrorResponse(w, r, span, "cache set failed", http.StatusInternalServerError)
+		s.ErrorResponse(w, r, "cache set failed", http.StatusInternalServerError)
 		return
 	}
 
@@ -63,12 +65,11 @@ func (s *Server) cacheWriteHandler(w http.ResponseWriter, r *http.Request) {
 // @Param key path string true "Key to delete"
 // @Router /cache/{key} [delete]
 // @Success 202
+// @Failure 500 {object} http.ErrorMessage "cache delete failed"
+// @Failure 503 {object} http.ErrorMessage "cache server is offline"
 func (s *Server) cacheDeleteHandler(w http.ResponseWriter, r *http.Request) {
-	_, span := s.tracer.Start(r.Context(), "cacheDeleteHandler")
-	defer span.End()
-
 	if s.cache == nil {
-		s.ErrorResponse(w, r, span, "cache server is offline", http.StatusBadRequest)
+		s.ErrorResponse(w, r, "cache server is offline", http.StatusServiceUnavailable)
 		return
 	}
 
@@ -76,7 +77,7 @@ func (s *Server) cacheDeleteHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err := s.cache.Del(r.Context(), key).Err(); err != nil {
 		s.logger.Warn("cache delete failed", zap.Error(err))
-		w.WriteHeader(http.StatusBadRequest)
+		s.ErrorResponse(w, r, "cache delete failed", http.StatusInternalServerError)
 		return
 	}
 
@@ -92,12 +93,12 @@ func (s *Server) cacheDeleteHandler(w http.ResponseWriter, r *http.Request) {
 // @Param key path string true "Key to load from cache"
 // @Router /cache/{key} [get]
 // @Success 200 {string} string value
+// @Failure 404 "key not found"
+// @Failure 500 {object} http.ErrorMessage "cache get failed"
+// @Failure 503 {object} http.ErrorMessage "cache server is offline"
 func (s *Server) cacheReadHandler(w http.ResponseWriter, r *http.Request) {
-	_, span := s.tracer.Start(r.Context(), "cacheReadHandler")
-	defer span.End()
-
 	if s.cache == nil {
-		s.ErrorResponse(w, r, span, "cache server is offline", http.StatusBadRequest)
+		s.ErrorResponse(w, r, "cache server is offline", http.StatusServiceUnavailable)
 		return
 	}
 
@@ -111,7 +112,7 @@ func (s *Server) cacheReadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	if err != nil {
 		s.logger.Warn("cache get failed", zap.Error(err))
-		w.WriteHeader(http.StatusInternalServerError)
+		s.ErrorResponse(w, r, "cache get failed", http.StatusInternalServerError)
 		return
 	}
 
@@ -209,6 +210,17 @@ func newCacheOptions(config *Config) (*redis.UniversalOptions, error) {
 	}
 
 	return opts, nil
+}
+
+func (s *Server) openCache(opts *redis.UniversalOptions) {
+	s.cache = redis.NewUniversalClient(opts)
+	s.cacheClosed = make(chan struct{})
+	if err := errors.Join(
+		redisotel.InstrumentTracing(s.cache, redisotel.WithDBStatement(false), redisotel.WithCallerEnabled(false)),
+		redisotel.InstrumentMetrics(s.cache, redisotel.WithCloseChan(s.cacheClosed)),
+	); err != nil {
+		s.logger.Warn("OpenTelemetry instrumentation of the cache client failed", zap.Error(err))
+	}
 }
 
 type cacheLogger struct {

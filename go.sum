@@ -111,6 +111,10 @@ github.com/prometheus/otlptranslator v1.0.0 h1:s0LJW/iN9dkIH+EnhiD3BlkkP5QVIUVEo
 github.com/prometheus/otlptranslator v1.0.0/go.mod h1:vRYWnXvI6aWGpsdY/mOT/cbeVRBlPWtBNDb7kGR3uKM=
 github.com/prometheus/procfs v0.23.0 h1:ad+S6FTkzwaMgacKLM5h6bNKExS+DMH0YiUwXItH/o4=
 github.com/prometheus/procfs v0.23.0/go.mod h1:3AVXO0FqLafyYFU/V/IQRZlC8Rgqz8Dm/x6pKLK+RIk=
+github.com/redis/go-redis/extra/rediscmd/v9 v9.24.0 h1:gWs+ml481cQtddqKTMQZGkCtfuOuw84YIR5tB8sTbok=
+github.com/redis/go-redis/extra/rediscmd/v9 v9.24.0/go.mod h1:+gZSjEd82iY0sjNw5tx0xIgnnBK9wrGQQjJcvX90Cts=
+github.com/redis/go-redis/extra/redisotel/v9 v9.24.0 h1:H5cP0vML2PKV0R/vZkds/yS2bnXOvsb03pxvtFgKVFM=
+github.com/redis/go-redis/extra/redisotel/v9 v9.24.0/go.mod h1:UoKpuOc+m3fA5L4BY7DmuOVjFqbnaPRtVPJO84fr9do=
 github.com/redis/go-redis/v9 v9.24.0 h1:X1AnQHWaSfMeggDQm7UFad1YwJmoZxVm5XkaP0kr6nQ=
 github.com/redis/go-redis/v9 v9.24.0/go.mod h1:ted97kpLnB4S2KJkTkw+7GzRjgkFnU909IIrksu+ut4=
 github.com/rogpeppe/go-internal v1.9.0 h1:73kH8U+JUqXU8lRuOHeVHaa/SZPifC7BkcraZVejAe8=
@@ -154,12 +158,8 @@ go.opentelemetry.io/contrib/bridges/prometheus v0.72.0 h1:OUIUu7ovHCEvG4IE5LQd2P
 go.opentelemetry.io/contrib/bridges/prometheus v0.72.0/go.mod h1:pCrnkC07AZ5+h+0A0Z/1GYyqB+xu3A8LaEEhxvv9s6o=
 go.opentelemetry.io/contrib/exporters/autoexport v0.72.0 h1:TPXrl7vEkmh69tp7dHTpz+Y6AUenFg1Du3Nx3a6dlxY=
 go.opentelemetry.io/contrib/exporters/autoexport v0.72.0/go.mod h1:0jE6K8nsOgeiF53rcEhy71cgakek+XEWi4OPROUqLoI=
-go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux v0.72.0 h1:OB2Uj/zVI03+FrzEvEcw8PwFLlGzzCjcxbsCWuCcG3I=
-go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux v0.72.0/go.mod h1:ABTMg6leEdcok2hoBV/aQ6nyW93tRC5iCMuEuFYVqKs=
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.72.0 h1:Tq+E65HaNbZTeqcLw6QUhsV+/EIWdkfUH2CQzcrlE5M=
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.72.0/go.mod h1:A+EVhDakAj1waJBPhmTszZaSr08ww8MRRKy1nB1rqck=
-go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace v0.72.0 h1:jva1c3z2ZFEQ5sTvnLG2tBALNehO+QvdXKQii6eKRoo=
-go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace v0.72.0/go.mod h1:3pjFS5EnOVfjvYO6/NMdtJFHFQR+8uiGtrZ965nZP4w=
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.72.0 h1:LxwW/9ctSCv+QkE/cLR7M91ZIkXNMqJtEMi1vCw9U8s=
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.72.0/go.mod h1:tOsftB4SslBwwErVEPaenU2RpThXWPIU8DoJHEC4dyw=
 go.opentelemetry.io/contrib/instrumentation/runtime v0.72.0 h1:rv8t3kKjyC2/9D99L1MZt4tJSZO4aYUmHus7L//iKKg=

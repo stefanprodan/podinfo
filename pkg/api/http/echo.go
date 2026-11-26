@@ -4,15 +4,17 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
-	"net/http/httptrace"
+	"net/url"
 	"sync"
 
 	"github.com/stefanprodan/podinfo/pkg/version"
-	"go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace"
-	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel/attribute"
+	semconv "go.opentelemetry.io/otel/semconv/v1.43.0"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -24,11 +26,10 @@ import (
 // @Produce json
 // @Router /api/echo [post]
 // @Success 202 {object} http.MapResponse
+// @Failure 400 {object} http.ErrorMessage "invalid request body"
+// @Failure 413 {object} http.ErrorMessage "request body too large"
 func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
-	ctx, span := s.tracer.Start(r.Context(), "echoHandler")
-	defer span.End()
-
-	body, ok := s.readLimitedBody(w, r, span)
+	body, ok := s.readLimitedBody(w, r)
 	if !ok {
 		return
 	}
@@ -36,40 +37,44 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 
 	if len(s.config.BackendURL) > 0 {
 		result := make([]string, len(s.config.BackendURL))
+		span := trace.SpanFromContext(r.Context())
 		var wg sync.WaitGroup
 		wg.Add(len(s.config.BackendURL))
 		for i, b := range s.config.BackendURL {
 			go func(index int, backend string) {
 				defer wg.Done()
 
-				ctx := httptrace.WithClientTrace(ctx, otelhttptrace.NewClientTrace(ctx))
-				ctx, cancel := context.WithTimeout(ctx, s.config.HttpClientTimeout)
+				ctx, cancel := context.WithTimeout(r.Context(), s.config.HttpClientTimeout)
 				defer cancel()
+				backendURL := trace.WithAttributes(redactedURL(backend)...)
 
 				backendReq, err := http.NewRequestWithContext(ctx, "POST", backend, bytes.NewReader(body))
 				if err != nil {
 					s.logger.Error("backend call failed", zap.Error(err), zap.String("url", backend))
-					return
-				}
-
-				// forward headers
-				copyTracingHeaders(r, backendReq)
-
-				backendReq.Header.Set("X-API-Version", version.VERSION)
-				backendReq.Header.Set("X-API-Revision", version.REVISION)
-
-				transport, err := s.backendTransport(backend)
-				if err != nil {
-					s.logger.Error("backend call failed", zap.Error(err), zap.String("url", backend))
+					span.RecordError(errBackendCall, backendURL)
 					result[index] = fmt.Sprintf("backend %v call failed %v", backend, err)
 					return
 				}
-				client := http.Client{Transport: otelhttp.NewTransport(transport)}
+
+				if id := r.Header.Get("x-request-id"); id != "" {
+					backendReq.Header.Set("x-request-id", id)
+				}
+				backendReq.Header.Set("X-API-Version", version.VERSION)
+				backendReq.Header.Set("X-API-Revision", version.REVISION)
+
+				client, err := s.backendClient(backend)
+				if err != nil {
+					s.logger.Error("backend call failed", zap.Error(err), zap.String("url", backend))
+					span.RecordError(errBackendCall, backendURL)
+					result[index] = fmt.Sprintf("backend %v call failed %v", backend, err)
+					return
+				}
 
 				// call backend
 				resp, err := client.Do(backendReq)
 				if err != nil {
 					s.logger.Error("backend call failed", zap.Error(err), zap.String("url", backend))
+					span.RecordError(errBackendCall, backendURL)
 					result[index] = fmt.Sprintf("backend %v call failed %v", backend, err)
 					return
 				}
@@ -78,6 +83,7 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 				// copy error status from backend and exit
 				if resp.StatusCode >= 400 {
 					s.logger.Error("backend call failed", zap.Int("status", resp.StatusCode), zap.String("url", backend))
+					span.RecordError(fmt.Errorf("backend response status code %v", resp.StatusCode), backendURL)
 					result[index] = fmt.Sprintf("backend %v response status code %v", backend, resp.StatusCode)
 					return
 				}
@@ -89,6 +95,7 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 						"reading the backend request body failed",
 						zap.Error(err),
 						zap.String("url", backend))
+					span.RecordError(errBackendRead, backendURL)
 					result[index] = fmt.Sprintf("backend %v call failed %v", backend, err)
 					return
 				}
@@ -115,6 +122,20 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+var (
+	errBackendCall = errors.New("backend call failed")
+	errBackendRead = errors.New("reading the backend response failed")
+)
+
+func redactedURL(raw string) []attribute.KeyValue {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return nil
+	}
+	u.User, u.RawQuery, u.ForceQuery, u.Fragment, u.RawFragment = nil, "", false, "", ""
+	return []attribute.KeyValue{semconv.URLFull(u.String())}
+}
+
 // maxLoggedPayloadSize is the largest request body logged by logPayload.
 const maxLoggedPayloadSize = 64 << 10 // 64 KiB
 
@@ -132,24 +153,5 @@ func (s *Server) logPayload(body []byte) {
 			fields = append(fields, zap.String("payload", string(body)))
 		}
 		ce.Write(fields...)
-	}
-}
-
-func copyTracingHeaders(from *http.Request, to *http.Request) {
-	headers := []string{
-		"x-request-id",
-		"x-b3-traceid",
-		"x-b3-spanid",
-		"x-b3-parentspanid",
-		"x-b3-sampled",
-		"x-b3-flags",
-		"x-ot-span-context",
-	}
-
-	for i := range headers {
-		headerValue := from.Header.Get(headers[i])
-		if len(headerValue) > 0 {
-			to.Header.Set(headers[i], headerValue)
-		}
 	}
 }

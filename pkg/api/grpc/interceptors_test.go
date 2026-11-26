@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+	"io"
 	"testing"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -18,6 +19,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
+	"google.golang.org/grpc/reflection"
+	"google.golang.org/grpc/reflection/grpc_reflection_v1"
 	grpcstatus "google.golang.org/grpc/status"
 
 	"github.com/stefanprodan/podinfo/pkg/api/grpc/echo"
@@ -46,6 +49,7 @@ func newInstrumentedServer(m *metrics) *grpc.Server {
 	echo.RegisterEchoServiceServer(srv, panicEchoServer{})
 	status.RegisterStatusServiceServer(srv, &StatusServer{config: s.config, logger: s.logger})
 	grpc_health_v1.RegisterHealthServer(srv, panicHealthServer{health.NewServer()})
+	reflection.Register(srv)
 	return srv
 }
 
@@ -125,9 +129,9 @@ func TestGrpcTracing(t *testing.T) {
 	})
 
 	srv := newInstrumentedServer(newMetrics(prometheus.NewRegistry()))
-	client := status.NewStatusServiceClient(newBufconnClient(t, srv))
-
-	if _, err := client.Status(context.Background(), &status.StatusRequest{Code: "Ok"}); err != nil {
+	conn := newBufconnClient(t, srv)
+	assertHealth(t, grpc_health_v1.NewHealthClient(conn), "", grpc_health_v1.HealthCheckResponse_SERVING)
+	if _, err := status.NewStatusServiceClient(conn).Status(context.Background(), &status.StatusRequest{Code: "Ok"}); err != nil {
 		t.Fatalf("Status returned error %v", err)
 	}
 	srv.GracefulStop()
@@ -164,12 +168,37 @@ func histogramExemplars(t *testing.T, m *metrics, method string, code codes.Code
 	return metric.GetHistogram().GetSampleCount(), exemplars
 }
 
+func listServices(t *testing.T, conn *grpc.ClientConn) {
+	t.Helper()
+	stream, err := grpc_reflection_v1.NewServerReflectionClient(conn).ServerReflectionInfo(context.Background())
+	if err != nil {
+		t.Fatalf("ServerReflectionInfo returned error %v", err)
+	}
+	req := &grpc_reflection_v1.ServerReflectionRequest{
+		MessageRequest: &grpc_reflection_v1.ServerReflectionRequest_ListServices{},
+	}
+	if err := stream.Send(req); err != nil {
+		t.Fatalf("ServerReflectionInfo Send returned %v", err)
+	}
+	if _, err := stream.Recv(); err != nil {
+		t.Fatalf("ServerReflectionInfo Recv returned %v", err)
+	}
+	if err := stream.CloseSend(); err != nil {
+		t.Fatalf("ServerReflectionInfo CloseSend returned %v", err)
+	}
+	if _, err := stream.Recv(); err != io.EOF {
+		t.Fatalf("ServerReflectionInfo Recv returned %v, want EOF", err)
+	}
+}
+
 func TestGrpcExemplars(t *testing.T) {
 	calls := []struct {
 		method string
 		code   codes.Code
+		traced bool
 	}{
-		{method: "/status.StatusService/Status", code: codes.OK},
+		{method: "/status.StatusService/Status", code: codes.OK, traced: true},
+		{method: "/grpc.reflection.v1.ServerReflection/ServerReflectionInfo", code: codes.OK, traced: true},
 		{method: "/grpc.health.v1.Health/Watch", code: codes.Internal},
 	}
 	tests := []struct {
@@ -209,6 +238,7 @@ func TestGrpcExemplars(t *testing.T) {
 			if _, err := stream.Recv(); grpcstatus.Code(err) != codes.Internal {
 				t.Fatalf("Watch Recv returned %v, want %v", err, codes.Internal)
 			}
+			listServices(t, conn)
 			srv.GracefulStop()
 
 			spans := map[string]trace.SpanContext{}
@@ -220,7 +250,10 @@ func TestGrpcExemplars(t *testing.T) {
 				if count != 1 {
 					t.Errorf("%s: sample count %d, want 1", c.method, count)
 				}
-				if !tt.wantExemplar {
+				if _, ok := spans[c.method]; ok && !c.traced {
+					t.Errorf("%s: got a span, want none", c.method)
+				}
+				if !tt.wantExemplar || !c.traced {
 					if len(exemplars) != 0 {
 						t.Errorf("%s: got exemplars %v, want none", c.method, exemplars)
 					}

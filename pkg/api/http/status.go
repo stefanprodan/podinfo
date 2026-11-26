@@ -17,15 +17,13 @@ import (
 // @Param code path int true "status code to return"
 // @Router /status/{code} [get]
 // @Success 200 {object} http.MapResponse
+// @Failure 400 {object} http.ErrorMessage "invalid status code"
 func (s *Server) statusHandler(w http.ResponseWriter, r *http.Request) {
-	_, span := s.tracer.Start(r.Context(), "statusHandler")
-	defer span.End()
-
 	vars := mux.Vars(r)
 
 	code, err := strconv.Atoi(vars["code"])
-	if err != nil {
-		s.ErrorResponse(w, r, span, err.Error(), http.StatusBadRequest)
+	if err != nil || code < 100 || code > 999 {
+		s.ErrorResponse(w, r, "invalid status code", http.StatusBadRequest)
 		return
 	}
 
