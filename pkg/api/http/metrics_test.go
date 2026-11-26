@@ -57,6 +57,24 @@ func serve(srv *Server, path string, header http.Header) *httptest.ResponseRecor
 	return rr
 }
 
+func TestMetricsPathLabel(t *testing.T) {
+	srv := newInstrumentedServer("/")
+	for path, label := range map[string]string{
+		"/env":        "env",
+		"/status/418": "status",
+		"/delay/0":    "delay",
+		"/chunked/0":  "chunked_wait_0_9",
+		"/store/abc":  "store",
+		"/api/echo/x": "api_echo",
+	} {
+		before, _ := durationHistogram(t, label)
+		serve(srv, path, http.Header{})
+		if after, _ := durationHistogram(t, label); after != before+1 {
+			t.Errorf("%s: http_request_duration_seconds{path=%q} count %d, want %d", path, label, after, before+1)
+		}
+	}
+}
+
 func TestMetricsExemplars(t *testing.T) {
 	const traceID = "4bf92f3577b34da6a3ce929d0e0e4736"
 	spans := setupTracing(t)

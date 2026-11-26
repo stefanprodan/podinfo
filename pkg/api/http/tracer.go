@@ -2,8 +2,10 @@ package http
 
 import (
 	"net/http"
+	"strconv"
 	"strings"
 
+	"github.com/felixge/httpsnoop"
 	"github.com/gorilla/mux"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel/codes"
@@ -27,17 +29,45 @@ func (s *Server) instrument(next http.Handler) http.Handler {
 
 func routeMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if route, err := mux.CurrentRoute(r).GetPathTemplate(); err == nil {
-			attr := semconv.HTTPRoute(route)
-			span := trace.SpanFromContext(r.Context())
+		span := trace.SpanFromContext(r.Context())
+		labeler, _ := otelhttp.LabelerFromContext(r.Context())
+		if tpl, err := mux.CurrentRoute(r).GetPathTemplate(); err == nil {
+			route := routeTemplate(tpl)
 			span.SetName(spanMethod(r.Method) + " " + route)
-			span.SetAttributes(attr)
-			if labeler, ok := otelhttp.LabelerFromContext(r.Context()); ok {
-				labeler.Add(attr)
-			}
+			span.SetAttributes(semconv.HTTPRoute(route))
+			labeler.Add(semconv.HTTPRoute(route))
 		}
-		next.ServeHTTP(w, r)
+		m := httpsnoop.CaptureMetrics(next, w, r)
+		if m.Code >= http.StatusInternalServerError {
+			errorType := semconv.ErrorTypeKey.String(strconv.Itoa(m.Code))
+			span.SetAttributes(errorType)
+			labeler.Add(errorType)
+		}
 	})
+}
+
+// routeTemplate strips the variable patterns from a mux path template.
+func routeTemplate(tpl string) string {
+	var b strings.Builder
+	var depth int
+	var pattern bool
+	for _, c := range tpl {
+		switch {
+		case c == '{':
+			depth++
+		case c == '}':
+			depth--
+			if depth == 0 {
+				pattern = false
+			}
+		case c == ':' && depth == 1:
+			pattern = true
+		}
+		if !pattern {
+			b.WriteRune(c)
+		}
+	}
+	return b.String()
 }
 
 func spanMethod(method string) string {
@@ -50,7 +80,11 @@ func spanMethod(method string) string {
 }
 
 func newBackendClient(transport http.RoundTripper) *http.Client {
-	return &http.Client{Transport: otelhttp.NewTransport(transport)}
+	return &http.Client{Transport: otelhttp.NewTransport(transport,
+		otelhttp.WithSpanNameFormatter(func(_ string, r *http.Request) string {
+			return spanMethod(r.Method)
+		}),
+	)}
 }
 
 func endSpan(span trace.Span, err error) {

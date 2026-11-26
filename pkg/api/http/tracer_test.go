@@ -99,15 +99,18 @@ func spansOfKind(spans tracetest.SpanStubs, kind trace.SpanKind) tracetest.SpanS
 
 func TestServerSpan(t *testing.T) {
 	tests := []struct {
-		prefix   string
-		method   string
-		path     string
-		wantName string
-		route    string
-		code     int64
+		prefix    string
+		method    string
+		path      string
+		wantName  string
+		route     string
+		code      int64
+		errorType string
 	}{
 		{prefix: "/", method: "GET", path: "/env", wantName: "GET /env", route: "/env", code: 200},
-		{prefix: "/", method: "GET", path: "/status/418", wantName: "GET /status/{code:[0-9]+}", route: "/status/{code:[0-9]+}", code: 418},
+		{prefix: "/", method: "GET", path: "/status/418", wantName: "GET /status/{code}", route: "/status/{code}", code: 418},
+		{prefix: "/", method: "GET", path: "/status/503", wantName: "GET /status/{code}", route: "/status/{code}", code: 503, errorType: "503"},
+		{prefix: "/", method: "GET", path: "/chunked/0", wantName: "GET /chunked/{wait}", route: "/chunked/{wait}", code: 200},
 		{prefix: "/", method: "GET", path: "/unknown/path", wantName: "GET", code: 404},
 		{prefix: "/", method: "POST", path: "/version", wantName: "POST", code: 405},
 		{prefix: "/", method: "get", path: "/echo", wantName: "GET /echo", route: "/echo", code: 202},
@@ -152,6 +155,10 @@ func TestServerSpan(t *testing.T) {
 			if tt.route == "" && ok || route.AsString() != tt.route {
 				t.Errorf("http.route %q, want %q", route.AsString(), tt.route)
 			}
+			errorType, ok := attr(span.Attributes, "error.type")
+			if tt.errorType == "" && ok || errorType.AsString() != tt.errorType {
+				t.Errorf("error.type %q, want %q", errorType.AsString(), tt.errorType)
+			}
 
 			var rm metricdata.ResourceMetrics
 			if err := reader.Collect(context.Background(), &rm); err != nil {
@@ -169,6 +176,10 @@ func TestServerSpan(t *testing.T) {
 						if tt.route == "" && ok || route.AsString() != tt.route {
 							t.Errorf("metric http.route %q, want %q", route.AsString(), tt.route)
 						}
+						errorType, ok := dp.Attributes.Value("error.type")
+						if tt.errorType == "" && ok || errorType.AsString() != tt.errorType {
+							t.Errorf("metric error.type %q, want %q", errorType.AsString(), tt.errorType)
+						}
 					}
 				}
 			}
@@ -176,6 +187,19 @@ func TestServerSpan(t *testing.T) {
 				t.Error("http.server.request.duration not recorded")
 			}
 		})
+	}
+}
+
+func TestRouteTemplate(t *testing.T) {
+	for tpl, want := range map[string]string{
+		"/env":                          "/env",
+		"/store/{hash}":                 "/store/{hash}",
+		"/status/{code:[0-9]+}":         "/status/{code}",
+		"/{a:[a-z]{2,3}}/b/{c:x:y}/d:e": "/{a}/b/{c}/d:e",
+	} {
+		if got := routeTemplate(tpl); got != want {
+			t.Errorf("routeTemplate(%q) = %q, want %q", tpl, got, want)
+		}
 	}
 }
 
@@ -422,6 +446,9 @@ func TestEchoPropagation(t *testing.T) {
 		}
 		if client.Parent.SpanID() != server.SpanContext.SpanID() {
 			t.Errorf("client span is not a child of the server span")
+		}
+		if client.Name != "POST" {
+			t.Errorf("client span name %q, want %q", client.Name, "POST")
 		}
 		want := "00-" + testTraceID + "-" + client.SpanContext.SpanID().String() + "-01"
 		if tp := req.header.Get("traceparent"); tp != want {
