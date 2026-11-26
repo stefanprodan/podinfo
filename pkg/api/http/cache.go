@@ -1,13 +1,21 @@
 package http
 
 import (
+	"context"
+	"crypto/tls"
+	"crypto/x509"
+	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
+	"os"
+	"strconv"
+	"strings"
 	"time"
 
-	"github.com/gomodule/redigo/redis"
 	"github.com/gorilla/mux"
+	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 
 	"github.com/stefanprodan/podinfo/pkg/version"
@@ -26,7 +34,7 @@ func (s *Server) cacheWriteHandler(w http.ResponseWriter, r *http.Request) {
 	_, span := s.tracer.Start(r.Context(), "cacheWriteHandler")
 	defer span.End()
 
-	if s.pool == nil {
+	if s.cache == nil {
 		s.ErrorResponse(w, r, span, "cache server is offline", http.StatusBadRequest)
 		return
 	}
@@ -37,10 +45,7 @@ func (s *Server) cacheWriteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	conn := s.pool.Get()
-	defer conn.Close()
-	_, err := conn.Do("SET", key, string(body))
-	if err != nil {
+	if err := s.cache.Set(r.Context(), key, body, 0).Err(); err != nil {
 		s.logger.Warn("cache set failed", zap.Error(err))
 		s.ErrorResponse(w, r, span, "cache set failed", http.StatusInternalServerError)
 		return
@@ -62,17 +67,14 @@ func (s *Server) cacheDeleteHandler(w http.ResponseWriter, r *http.Request) {
 	_, span := s.tracer.Start(r.Context(), "cacheDeleteHandler")
 	defer span.End()
 
-	if s.pool == nil {
+	if s.cache == nil {
 		s.ErrorResponse(w, r, span, "cache server is offline", http.StatusBadRequest)
 		return
 	}
 
 	key := mux.Vars(r)["key"]
 
-	conn := s.pool.Get()
-	defer conn.Close()
-	_, err := conn.Do("DEL", key)
-	if err != nil {
+	if err := s.cache.Del(r.Context(), key).Err(); err != nil {
 		s.logger.Warn("cache delete failed", zap.Error(err))
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -94,24 +96,19 @@ func (s *Server) cacheReadHandler(w http.ResponseWriter, r *http.Request) {
 	_, span := s.tracer.Start(r.Context(), "cacheReadHandler")
 	defer span.End()
 
-	if s.pool == nil {
+	if s.cache == nil {
 		s.ErrorResponse(w, r, span, "cache server is offline", http.StatusBadRequest)
 		return
 	}
 
 	key := mux.Vars(r)["key"]
 
-	conn := s.pool.Get()
-	defer conn.Close()
-
-	ok, err := redis.Bool(conn.Do("EXISTS", key))
-	if err != nil || !ok {
+	data, err := s.cache.Get(r.Context(), key).Bytes()
+	if errors.Is(err, redis.Nil) {
 		s.logger.Warn("cache key not found", zap.String("key", key))
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
-
-	data, err := redis.String(conn.Do("GET", key))
 	if err != nil {
 		s.logger.Warn("cache get failed", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
@@ -120,47 +117,118 @@ func (s *Server) cacheReadHandler(w http.ResponseWriter, r *http.Request) {
 
 	setRawResponseHeaders(w)
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(data))
+	w.Write(data)
 }
 
-func (s *Server) getCacheConn() (redis.Conn, error) {
-	redisUrl, err := url.Parse(s.config.CacheServer)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse redis url: %v", err)
+func newCacheOptions(config *Config) (*redis.UniversalOptions, error) {
+	if config.CacheServer == "" {
+		if config.CacheCluster || config.CacheSentinelPrimary != "" || config.CacheCAFile != "" {
+			return nil, errors.New("--cache-cluster, --cache-sentinel-primary and --cache-ca-file require --cache-server")
+		}
+		return nil, nil
+	}
+	if config.CacheCluster && config.CacheSentinelPrimary != "" {
+		return nil, errors.New("--cache-cluster and --cache-sentinel-primary are mutually exclusive")
 	}
 
-	var opts []redis.DialOption
-	if user := redisUrl.User; user != nil {
-		opts = append(opts, redis.DialUsername(user.Username()))
-		if password, ok := user.Password(); ok {
-			opts = append(opts, redis.DialPassword(password))
+	u, err := url.Parse(config.CacheServer)
+	if err != nil {
+		return nil, fmt.Errorf("invalid cache server URL: %w", errors.Unwrap(err))
+	}
+
+	var secure bool
+	switch u.Scheme {
+	case "redis", "valkey", "tcp":
+	case "rediss", "valkeys":
+		secure = true
+	default:
+		return nil, fmt.Errorf("unsupported cache server URL scheme %q, use redis, rediss, valkey or valkeys", u.Scheme)
+	}
+
+	if u.Hostname() == "" {
+		return nil, errors.New("cache server URL has no host")
+	}
+	addrs := []string{u.Host}
+	if u.Port() == "" {
+		addrs[0] = net.JoinHostPort(u.Hostname(), "6379")
+	}
+
+	for key, values := range u.Query() {
+		if key != "addr" {
+			return nil, fmt.Errorf("unsupported cache server URL parameter %q", key)
+		}
+		for _, addr := range values {
+			if host, port, err := net.SplitHostPort(addr); err != nil || host == "" || port == "" {
+				return nil, fmt.Errorf("invalid cache server address %q, want host:port", addr)
+			}
+			addrs = append(addrs, addr)
 		}
 	}
 
-	return redis.Dial("tcp", redisUrl.Host, opts...)
+	var db int
+	if path := strings.Trim(u.Path, "/"); path != "" {
+		if db, err = strconv.Atoi(path); err != nil || db < 0 {
+			return nil, fmt.Errorf("invalid cache server database %q", path)
+		}
+	}
+	if db != 0 && config.CacheSentinelPrimary == "" && (config.CacheCluster || len(addrs) > 1) {
+		return nil, errors.New("cluster mode supports only database 0")
+	}
+
+	opts := &redis.UniversalOptions{
+		Addrs:            addrs,
+		DB:               db,
+		IsClusterMode:    config.CacheCluster,
+		MasterName:       config.CacheSentinelPrimary,
+		Username:         config.CacheUsername,
+		Password:         config.CachePassword,
+		SentinelPassword: config.CacheSentinelPassword,
+	}
+	if opts.Username == "" {
+		opts.Username = u.User.Username()
+	}
+	if password, ok := u.User.Password(); ok && opts.Password == "" {
+		opts.Password = password
+	}
+
+	if secure {
+		opts.TLSConfig = &tls.Config{MinVersion: tls.VersionTLS12}
+		if config.CacheCAFile != "" {
+			pem, err := os.ReadFile(config.CacheCAFile)
+			if err != nil {
+				return nil, fmt.Errorf("reading the cache CA file failed: %w", err)
+			}
+			roots := x509.NewCertPool()
+			if !roots.AppendCertsFromPEM(pem) {
+				return nil, fmt.Errorf("no PEM certificates found in the cache CA file %s", config.CacheCAFile)
+			}
+			opts.TLSConfig.RootCAs = roots
+		}
+	} else if config.CacheCAFile != "" {
+		return nil, errors.New("--cache-ca-file requires a rediss:// or valkeys:// cache server URL")
+	}
+
+	return opts, nil
 }
 
-func (s *Server) startCachePool(interval time.Duration) {
-	if s.config.CacheServer == "" {
+type cacheLogger struct {
+	logger *zap.Logger
+}
+
+func (l cacheLogger) Printf(_ context.Context, format string, v ...any) {
+	l.logger.Warn(fmt.Sprintf(format, v...))
+}
+
+func (s *Server) startCacheVersion(interval time.Duration) {
+	if s.cache == nil {
 		return
-	}
-	s.pool = &redis.Pool{
-		MaxIdle:     3,
-		IdleTimeout: 240 * time.Second,
-		Dial:        s.getCacheConn,
-		TestOnBorrow: func(c redis.Conn, t time.Time) error {
-			_, err := c.Do("PING")
-			return err
-		},
 	}
 
 	// set <hostname>=<version> with an expiry time of one minute
 	setVersion := func() {
-		conn := s.pool.Get()
-		if _, err := conn.Do("SET", s.config.Hostname, version.VERSION, "EX", 60); err != nil {
-			s.logger.Warn("cache server is offline", zap.Error(err), zap.String("server", s.config.CacheServer))
+		if err := s.cache.Set(context.Background(), s.config.Hostname, version.VERSION, time.Minute).Err(); err != nil {
+			s.logger.Warn("cache server is offline", zap.Error(err))
 		}
-		_ = conn.Close()
 	}
 
 	// set version on a schedule
