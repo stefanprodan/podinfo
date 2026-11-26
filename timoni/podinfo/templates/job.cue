@@ -31,8 +31,8 @@ import (
 				#config: cfg
 				containers: [{
 					name:            "curl"
-					image:           cfg.test.image.reference
-					imagePullPolicy: cfg.test.image.pullPolicy
+					image:           cfg.image.reference
+					imagePullPolicy: cfg.image.pullPolicy
 					securityContext: corev1.#SecurityContext & timoniv1.#ContainerSecurityContext
 					command: [
 						"curl",
@@ -49,7 +49,7 @@ import (
 }
 
 // The test Job verifying the podinfo gRPC health service through
-// the grpc Service port, using grpc-health-probe.
+// the grpc Service port, using podcli.
 #TestGRPCJob: batchv1.#Job & {
 	_config: #Config
 	let cfg = _config
@@ -68,14 +68,16 @@ import (
 			spec: #TestPodSpec & {
 				#config: cfg
 				containers: [{
-					name:            "grpc-health-probe"
-					image:           cfg.test.grpcImage.reference
-					imagePullPolicy: cfg.test.grpcImage.pullPolicy
+					name:            "podcli"
+					image:           cfg.image.reference
+					imagePullPolicy: cfg.image.pullPolicy
 					securityContext: corev1.#SecurityContext & timoniv1.#ContainerSecurityContext
-					args: [
-						"-addr=\(cfg.metadata.name):\(cfg.service.grpcPort)",
-						"-connect-timeout=5s",
-						"-rpc-timeout=5s",
+					command: [
+						"podcli",
+						"check",
+						"grpc",
+						"--timeout=5s",
+						"\(cfg.metadata.name):\(cfg.service.grpcPort)",
 					]
 				}]
 			}

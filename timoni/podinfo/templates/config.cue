@@ -277,15 +277,10 @@ import (
 	serviceMonitor: timoniv1.#MonitorValues
 
 	// Test Jobs (optional), run by Timoni after the deployment becomes
-	// ready: a curl Job verifying that the podinfo http Service port is
-	// reachable from inside the cluster, and a grpc-health-probe Job
-	// verifying the gRPC health service. The default images are set
-	// in `images.cue`.
-	test: {
-		enabled:    *false | bool
-		image!:     timoniv1.#Image
-		grpcImage!: timoniv1.#Image
-	}
+	// ready with the podinfo image: a curl Job verifying that the podinfo
+	// http Service port is reachable from inside the cluster, and a podcli
+	// Job verifying the gRPC health service.
+	test: enabled: *false | bool
 }
 
 // IngressHost defines the schema for an Ingress rule of one host.
