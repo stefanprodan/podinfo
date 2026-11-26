@@ -1,8 +1,8 @@
 package grpc
 
 import (
+	"errors"
 	"net"
-	"path"
 	"strconv"
 
 	"go.uber.org/zap"
@@ -27,15 +27,15 @@ import (
 )
 
 type Server struct {
-	logger *zap.Logger
-	config *Config
-	spiffe *spiffe.Source
+	logger  *zap.Logger
+	config  *Config
+	spiffe  *spiffe.Source
+	keyPair *keypair.KeyPair
 }
 
 type Config struct {
 	Port        int    `mapstructure:"grpc-port"`
 	TLS         bool   `mapstructure:"grpc-tls"`
-	CertPath    string `mapstructure:"cert-path"`
 	ServiceName string `mapstructure:"grpc-service-name"`
 	Host        string `mapstructure:"host"`
 	Hostname    string `mapstructure:"hostname"`
@@ -58,6 +58,11 @@ func NewServer(config *Config, logger *zap.Logger) *Server {
 // instead of the --cert-path certificate.
 func (s *Server) SetSPIFFESource(source *spiffe.Source) {
 	s.spiffe = source
+}
+
+// SetKeyPair makes --grpc-tls serve the --cert-path key pair.
+func (s *Server) SetKeyPair(kp *keypair.KeyPair) {
+	s.keyPair = kp
 }
 
 // ListenAndServe starts the gRPC server and returns it with its health server.
@@ -136,12 +141,10 @@ func (s *Server) credentials() (credentials.TransportCredentials, error) {
 		return insecure.NewCredentials(), nil
 	case s.spiffe != nil:
 		return credentials.NewTLS(s.spiffe.ServerTLSConfig()), nil
+	case s.keyPair != nil:
+		return credentials.NewTLS(s.keyPair.TLSConfig()), nil
 	}
-	kp, err := keypair.NewReloader(path.Join(s.config.CertPath, "tls.crt"), path.Join(s.config.CertPath, "tls.key"), s.logger)
-	if err != nil {
-		return nil, err
-	}
-	return credentials.NewTLS(kp.TLSConfig()), nil
+	return nil, errors.New("--grpc-tls requires a TLS key pair")
 }
 
 // waitForSVID reports the service NOT_SERVING until the SPIFFE SVID is issued,
