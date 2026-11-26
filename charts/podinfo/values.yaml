@@ -39,6 +39,9 @@ service:
   externalPort: 9898
   grpcPort: 9999
   grpcService: podinfo
+  # serve the gRPC port with TLS using the tls secret, or with SPIFFE mTLS when spiffe.enabled
+  # requires tls.enabled
+  grpcTLS: false
   nodePort: 31198
   # the port used to bind the http port to the host
   # NOTE: requires privileged container with NET_BIND_SERVICE capability -- this is useful for testing

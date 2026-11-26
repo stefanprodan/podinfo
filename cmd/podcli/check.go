@@ -32,6 +32,9 @@ var (
 	timeout         time.Duration
 	grpcServiceName string
 	grpcTLS         bool
+	grpcSkipVerify  bool
+	grpcCert        string
+	grpcKey         string
 )
 
 var checkCmd = &cobra.Command{
@@ -93,6 +96,10 @@ func init() {
 	checkgRPCCmd.Flags().DurationVar(&timeout, "timeout", 5*time.Second, "timeout")
 	checkgRPCCmd.Flags().StringVar(&grpcServiceName, "service", "", "gRPC service name")
 	checkgRPCCmd.Flags().BoolVar(&grpcTLS, "tls", false, "use TLS for gRPC connection")
+	checkgRPCCmd.Flags().BoolVar(&grpcSkipVerify, "insecure-skip-verify", false, "skip the server certificate verification, requires --tls")
+	checkgRPCCmd.Flags().StringVar(&grpcCert, "cert", "", "client certificate PEM file for mTLS, requires --tls")
+	checkgRPCCmd.Flags().StringVar(&grpcKey, "key", "", "client private key PEM file for mTLS, requires --tls")
+	checkgRPCCmd.MarkFlagsRequiredTogether("cert", "key")
 	checkCmd.AddCommand(checkgRPCCmd)
 
 	checkCmd.AddCommand(checkCertCmd)
@@ -292,9 +299,21 @@ func runCheckgPRC(cmd *cobra.Command, args []string) error {
 	}
 	address := args[0]
 
+	if !grpcTLS && (grpcSkipVerify || grpcCert != "") {
+		return fmt.Errorf("--insecure-skip-verify, --cert and --key require --tls")
+	}
+
 	var creds grpc.DialOption
 	if grpcTLS {
-		creds = grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{}))
+		tlsConfig := &tls.Config{InsecureSkipVerify: grpcSkipVerify}
+		if grpcCert != "" {
+			cert, err := tls.LoadX509KeyPair(grpcCert, grpcKey)
+			if err != nil {
+				return err
+			}
+			tlsConfig.Certificates = []tls.Certificate{cert}
+		}
+		creds = grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig))
 	} else {
 		creds = grpc.WithTransportCredentials(insecure.NewCredentials())
 	}

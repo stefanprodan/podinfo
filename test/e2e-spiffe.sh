@@ -75,6 +75,7 @@ helm upgrade --install podinfo ./charts/podinfo \
     --set logLevel=debug \
     --set serviceAccount.enabled=true \
     --set tls.enabled=true \
+    --set service.grpcTLS=true \
     --set spiffe.enabled=true \
     --set "spiffe.authorizedIDs={${PODINFO_ID}}"
 
@@ -113,6 +114,9 @@ kubectl -n "${NAMESPACE}" wait --for=condition=Ready pod "${POD}" --timeout=3m
 kubectl -n "${NAMESPACE}" logs "${POD}" | jq -e --arg id "${PODINFO_ID}" \
     'select(.msg == "Starting HTTPS Server with SPIFFE mTLS" and .spiffe_id == $id)' >/dev/null \
     || fail "podinfo did not start the HTTPS server with its SVID"
+kubectl -n "${NAMESPACE}" logs "${POD}" | jq -e --arg id "${PODINFO_ID}" \
+    'select(.msg == "Serving gRPC with SPIFFE mTLS" and .spiffe_id == $id)' >/dev/null \
+    || fail "podinfo did not serve gRPC with its SVID"
 info "podinfo became ready with ${PODINFO_ID} without a restart"
 
 log "Checking the artifact served from the image"

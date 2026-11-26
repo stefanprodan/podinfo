@@ -1,7 +1,6 @@
 package http
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -17,9 +16,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/stefanprodan/podinfo/pkg/api/http/docs"
 	"github.com/stefanprodan/podinfo/pkg/fscache"
+	"github.com/stefanprodan/podinfo/pkg/telemetry"
 	httpSwagger "github.com/swaggo/http-swagger"
 	"github.com/swaggo/swag"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
@@ -80,24 +79,23 @@ type Config struct {
 }
 
 type Server struct {
-	router         *mux.Router
-	logger         *zap.Logger
-	config         *Config
-	pool           *redis.Pool
-	cacheStop      chan struct{}
-	cacheStopped   chan struct{}
-	handler        http.Handler
-	tracer         trace.Tracer
-	tracerProvider *sdktrace.TracerProvider
-	spiffe         *spiffeState
-	artifact       *artifact
+	router       *mux.Router
+	logger       *zap.Logger
+	config       *Config
+	pool         *redis.Pool
+	cacheStop    chan struct{}
+	cacheStopped chan struct{}
+	handler      http.Handler
+	tracer       trace.Tracer
+	spiffe       *spiffeState
+	artifact     *artifact
 }
 
 func NewServer(config *Config, logger *zap.Logger) (*Server, error) {
 	config.Prefix = normalizePrefix(config.Prefix)
 	docs.SwaggerInfo.BasePath = config.Prefix
 
-	spiffe, err := newSPIFFEState(config)
+	spiffe, err := newSPIFFEState(config, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -107,6 +105,7 @@ func NewServer(config *Config, logger *zap.Logger) (*Server, error) {
 		logger: logger,
 		config: config,
 		spiffe: spiffe,
+		tracer: telemetry.Tracer(),
 	}
 
 	return srv, nil
@@ -221,11 +220,8 @@ func (s *Server) registerMiddlewares() {
 }
 
 func (s *Server) ListenAndServe() (*http.Server, *http.Server, *int32, *int32) {
-	ctx := context.Background()
-
 	go s.startMetricsServer()
 
-	s.initTracer(ctx)
 	s.loadArtifact()
 	s.registerHandlers()
 	s.registerMiddlewares()
@@ -317,7 +313,6 @@ func (s *Server) startSecureServer() *http.Server {
 	}
 
 	if s.spiffe != nil {
-		s.spiffe.started.Store(true)
 		go s.serveSPIFFE(srv)
 		return srv
 	}
@@ -358,7 +353,7 @@ func (s *Server) startMetricsServer() {
 type ArrayResponse []string
 type MapResponse map[string]string
 
-// Close releases the cache pool and the SPIFFE source once the servers have stopped.
+// Close releases the cache pool and the SPIFFE source once the HTTP and gRPC servers have stopped.
 func (s *Server) Close() error {
 	if s.cacheStop != nil {
 		close(s.cacheStop)

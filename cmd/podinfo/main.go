@@ -15,14 +15,13 @@ import (
 	"go.opentelemetry.io/contrib/bridges/otelzap"
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc"
 	sdklog "go.opentelemetry.io/otel/sdk/log"
-	"go.opentelemetry.io/otel/sdk/resource"
-	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/stefanprodan/podinfo/pkg/api/grpc"
 	"github.com/stefanprodan/podinfo/pkg/api/http"
 	"github.com/stefanprodan/podinfo/pkg/signals"
+	"github.com/stefanprodan/podinfo/pkg/telemetry"
 	"github.com/stefanprodan/podinfo/pkg/version"
 	go_grpc "google.golang.org/grpc"
 	"google.golang.org/grpc/health"
@@ -38,6 +37,7 @@ func main() {
 	fs.Int("port-metrics", 0, "metrics port")
 	fs.Int("grpc-port", 0, "gRPC port")
 	fs.String("grpc-service-name", "podinfo", "gPRC service name")
+	fs.Bool("grpc-tls", false, "serve the gRPC port with TLS using the --cert-path certificate, or with SPIFFE mTLS when --spiffe-endpoint-socket is set")
 	fs.String("level", "info", "log level debug, info, warn, error, fatal or panic")
 	fs.StringSlice("backend-url", []string{}, "backend service URL")
 	fs.Duration("http-client-timeout", 2*time.Minute, "client timeout duration")
@@ -45,7 +45,7 @@ func main() {
 	fs.Duration("server-shutdown-timeout", 5*time.Second, "server graceful shutdown timeout duration")
 	fs.String("data-path", "/data", "data local path")
 	fs.String("config-path", "", "config dir path")
-	fs.String("cert-path", "/data/cert", "certificate path for HTTPS port")
+	fs.String("cert-path", "/data/cert", "certificate path for the HTTPS port and the gRPC port with --grpc-tls")
 	fs.String("spiffe-endpoint-socket", "", "SPIFFE Workload API address, e.g. unix:///spiffe-workload-api/spire-agent.sock; when set, the HTTPS port uses SPIFFE mTLS instead of --cert-path")
 	fs.StringSlice("spiffe-authorized-ids", []string{}, "SPIFFE IDs allowed to connect to the HTTPS port; when empty, any ID in the server's trust domain is allowed")
 	fs.Bool("spiffe-backend-mtls", false, "call https backends with SPIFFE mTLS; requires --spiffe-endpoint-socket")
@@ -127,6 +127,9 @@ func main() {
 	stdLog := zap.RedirectStdLog(logger)
 	defer stdLog()
 
+	// initialize OTel tracer provider if service name is set
+	tracerProvider := telemetry.NewTracerProvider(context.Background(), viper.GetString("otel-service-name"), logger)
+
 	// start stress tests if any
 	beginStressTest(viper.GetInt("stress-cpu"), viper.GetInt("stress-memory"), logger)
 
@@ -162,13 +165,6 @@ func main() {
 		logger.Panic("config unmarshal failed", zap.Error(err))
 	}
 
-	// start gRPC server
-	var grpcServer *go_grpc.Server
-	var grpcHealth *health.Server
-	if grpcCfg.Port > 0 {
-		grpcServer, grpcHealth = grpc.NewServer(&grpcCfg, logger).ListenAndServe()
-	}
-
 	// load HTTP server config
 	var srvCfg http.Config
 	if err := viper.Unmarshal(&srvCfg); err != nil {
@@ -187,6 +183,16 @@ func main() {
 	if err != nil {
 		logger.Fatal("invalid HTTP server config", zap.Error(err))
 	}
+
+	// start gRPC server
+	var grpcServer *go_grpc.Server
+	var grpcHealth *health.Server
+	if grpcCfg.Port > 0 {
+		grpcSrv := grpc.NewServer(&grpcCfg, logger)
+		grpcSrv.SetSPIFFESource(srv.SPIFFESource())
+		grpcServer, grpcHealth = grpcSrv.ListenAndServe()
+	}
+
 	httpServer, httpsServer, healthy, ready := srv.ListenAndServe()
 
 	// graceful shutdown
@@ -196,6 +202,7 @@ func main() {
 		drainDelay = 0
 	}
 	sd := signals.NewShutdown(srvCfg.ServerShutdownTimeout, drainDelay, logger)
+	sd.SetTracerProvider(tracerProvider)
 	sd.SetLoggerProvider(loggerProvider)
 	sd.SetBeforeShutdown(srv.Stop)
 	sd.Graceful(stopCh, httpServer, httpsServer, grpcServer, grpcHealth, healthy, ready)
@@ -205,6 +212,11 @@ func main() {
 }
 
 func initLoggerProvider(ctx context.Context, serviceName string) (*sdklog.LoggerProvider, error) {
+	res, err := telemetry.NewResource(serviceName)
+	if err != nil {
+		return nil, fmt.Errorf("creating OpenTelemetry resource: %w", err)
+	}
+
 	exporter, err := otlploggrpc.New(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("creating OTLP log exporter: %w", err)
@@ -212,11 +224,7 @@ func initLoggerProvider(ctx context.Context, serviceName string) (*sdklog.Logger
 
 	provider := sdklog.NewLoggerProvider(
 		sdklog.WithProcessor(sdklog.NewBatchProcessor(exporter)),
-		sdklog.WithResource(resource.NewWithAttributes(
-			semconv.SchemaURL,
-			semconv.ServiceNameKey.String(serviceName),
-			semconv.ServiceVersionKey.String(version.VERSION),
-		)),
+		sdklog.WithResource(res),
 	)
 
 	return provider, nil
