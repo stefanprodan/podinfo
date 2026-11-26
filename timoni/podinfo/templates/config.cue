@@ -83,6 +83,40 @@ import (
 		][0]
 	}
 
+	// OpenTelemetry export of traces, metrics and logs over OTLP
+	// (optional); the endpoint is required when enabled. The resource
+	// carries the Kubernetes attributes set from the downward API,
+	// merged with the extra resource attributes. Other `OTEL_*`
+	// variables are set with `env`, which overrides the generated ones.
+	otel: {
+		enabled: *false | bool
+		if enabled {
+			endpoint: string & =~"^https?://.+$"
+		}
+		endpoint?: string & =~"^https?://.+$"
+
+		// The OTLP protocol; when unset, `http/protobuf` (port 4318).
+		protocol?: "http/protobuf" | "grpc"
+
+		// The service name, defaults to the instance name.
+		serviceName: *metadata.name | string & =~".+"
+
+		resourceAttributes?: {[string]: string}
+
+		// The traces sampler and its argument; when unset,
+		// `parentbased_always_on`.
+		sampler?:    "always_on" | "always_off" | "traceidratio" | "parentbased_always_on" | "parentbased_always_off" | "parentbased_traceidratio"
+		samplerArg?: string & =~".+"
+
+		_guard: "valid"
+		_guard: [
+			if samplerArg != _|_ if sampler == _|_ {
+				"otel.samplerArg requires otel.sampler"
+			},
+			"valid",
+		][0]
+	}
+
 	// The number of pod replicas; ignored when the autoscaler is enabled.
 	replicas: *1 | int & >=0
 

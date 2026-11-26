@@ -103,7 +103,14 @@ The following tables lists the configurable parameters of the podinfo chart and 
 | `spiffe.backendMTLS`                           | `false`                        | Call the `https` backends with SPIFFE mTLS                                                         |
 | `spiffe.backendIDs`                            | `[]`                           | Server SPIFFE IDs accepted from `https` backends, when empty any ID in the trust domain is accepted |
 | `extraArgs`                                    | `[]`                           | Additional command line arguments to pass to podinfo container                                     |
-| `extraEnvs`                                    | `[]`                           | Extra environment variables for the podinfo container                                              |
+| `extraEnvs`                                    | `[]`                           | Extra environment variables for the podinfo container; an `OTEL_*` variable replaces the generated one |
+| `otel.enabled`                                 | `false`                        | Export traces, metrics and logs over OTLP                                                          |
+| `otel.endpoint`                                | `""`                           | OTLP endpoint, e.g. `http://otel-collector:4318`, required when `otel.enabled`                     |
+| `otel.protocol`                                | `""`                           | OTLP protocol, `http/protobuf` (port 4318) when unset or `grpc` (port 4317)                        |
+| `otel.serviceName`                             | `""`                           | Service name, defaults to the release fullname                                                     |
+| `otel.resourceAttributes`                      | `{}`                           | Extra resource attributes, merged over the Kubernetes attributes set from the downward API         |
+| `otel.sampler`                                 | `""`                           | Traces sampler, `parentbased_always_on` when unset                                                 |
+| `otel.samplerArg`                              | `""`                           | Traces sampler argument, e.g. `0.1` for `parentbased_traceidratio`, requires `otel.sampler`        |
 | `config.path`                                  | `""`                           | config file path                                                                                   |
 | `config.name`                                  | `""`                           | config file name                                                                                   |
 | `hpa.enabled`                                  | `false`                        | Enables the Kubernetes HPA                                                                         |
@@ -191,3 +198,31 @@ With TLS, the servers must announce hostnames instead of pod IPs, or the certifi
 
 - Cluster: `cluster-announce-hostname <hostname>` and `cluster-preferred-endpoint-type hostname`
 - Sentinel: `replica-announce-ip <hostname>` on the servers, `sentinel resolve-hostnames yes` and `sentinel announce-hostnames yes` on the Sentinels
+
+## OpenTelemetry
+
+With `otel.enabled`, podinfo exports traces, metrics and logs to the OTLP endpoint:
+
+```yaml
+otel:
+  enabled: true
+  endpoint: http://otel-collector.monitoring:4318
+  resourceAttributes:
+    deployment.environment.name: production
+```
+
+The resource carries the `k8s.namespace.name`, `k8s.deployment.name`, `k8s.container.name`, `k8s.pod.name`,
+`k8s.pod.uid`, `k8s.node.name` and `service.namespace` attributes, set from the release and the downward API.
+Any other [OTEL_*](https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/) variable
+is set with `extraEnvs`, which also overrides the generated ones:
+
+```yaml
+extraEnvs:
+  - name: OTEL_EXPORTER_OTLP_HEADERS
+    valueFrom:
+      secretKeyRef:
+        name: otlp-auth
+        key: headers
+  - name: OTEL_METRICS_EXPORTER
+    value: none
+```

@@ -81,3 +81,57 @@ The directory of the SPIFFE Workload API socket, where the CSI volume is mounted
 {{- define "podinfo.spiffeSocketDir" -}}
 {{- dir (trimPrefix "unix://" .Values.spiffe.endpointSocket) }}
 {{- end }}
+
+{{/*
+The OpenTelemetry environment variables, except the ones set in extraEnvs.
+The Kubernetes resource attributes are set from the downward API.
+*/}}
+{{- define "podinfo.otelEnv" -}}
+{{- $fullname := include "podinfo.fullname" . }}
+{{- $namespace := include "podinfo.namespace" . }}
+{{- $attributes := dict
+  "k8s.namespace.name" $namespace
+  "k8s.deployment.name" $fullname
+  "k8s.container.name" .Chart.Name
+  "k8s.pod.name" "$(OTEL_RESOURCE_ATTRIBUTES_POD_NAME)"
+  "k8s.pod.uid" "$(OTEL_RESOURCE_ATTRIBUTES_POD_UID)"
+  "k8s.node.name" "$(OTEL_RESOURCE_ATTRIBUTES_NODE_NAME)"
+  "service.namespace" $namespace
+}}
+{{- $pairs := list }}
+{{- range $key, $value := mergeOverwrite $attributes .Values.otel.resourceAttributes }}
+{{- $pairs = append $pairs (printf "%s=%v" $key $value) }}
+{{- end }}
+{{- $env := list
+  (dict "name" "OTEL_SERVICE_NAME" "value" (default $fullname .Values.otel.serviceName))
+  (dict "name" "OTEL_EXPORTER_OTLP_ENDPOINT" "value" (required "otel.endpoint is required when otel.enabled" .Values.otel.endpoint))
+}}
+{{- with .Values.otel.protocol }}
+{{- $env = append $env (dict "name" "OTEL_EXPORTER_OTLP_PROTOCOL" "value" .) }}
+{{- end }}
+{{- with .Values.otel.sampler }}
+{{- $env = append $env (dict "name" "OTEL_TRACES_SAMPLER" "value" .) }}
+{{- end }}
+{{- with .Values.otel.samplerArg }}
+{{- $env = append $env (dict "name" "OTEL_TRACES_SAMPLER_ARG" "value" (toString .)) }}
+{{- end }}
+{{- $env = concat $env (list
+  (dict "name" "OTEL_RESOURCE_ATTRIBUTES_POD_NAME" "valueFrom" (dict "fieldRef" (dict "fieldPath" "metadata.name")))
+  (dict "name" "OTEL_RESOURCE_ATTRIBUTES_POD_UID" "valueFrom" (dict "fieldRef" (dict "fieldPath" "metadata.uid")))
+  (dict "name" "OTEL_RESOURCE_ATTRIBUTES_NODE_NAME" "valueFrom" (dict "fieldRef" (dict "fieldPath" "spec.nodeName")))
+  (dict "name" "OTEL_RESOURCE_ATTRIBUTES" "value" (join "," $pairs))
+) }}
+{{- $overrides := list }}
+{{- range .Values.extraEnvs }}
+{{- $overrides = append $overrides .name }}
+{{- end }}
+{{- $out := list }}
+{{- range $env }}
+{{- if not (has .name $overrides) }}
+{{- $out = append $out . }}
+{{- end }}
+{{- end }}
+{{- with $out }}
+{{- toYaml . }}
+{{- end }}
+{{- end }}

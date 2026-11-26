@@ -50,6 +50,15 @@ values: {
 		ca: existingConfigMap: name: "redis-ca"
 	}
 
+	otel: {
+		enabled:    true
+		endpoint:   "http://otel-collector.monitoring:4317"
+		protocol:   "grpc"
+		sampler:    "parentbased_traceidratio"
+		samplerArg: "0.5"
+		resourceAttributes: "deployment.environment.name": "dev"
+	}
+
 	envFrom: [{secretRef: name: "redis-credentials"}]
 
 	extraArgs: ["--random-delay=true"]
