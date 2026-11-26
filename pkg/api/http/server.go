@@ -16,6 +16,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/stefanprodan/podinfo/pkg/api/http/docs"
 	"github.com/stefanprodan/podinfo/pkg/fscache"
+	"github.com/stefanprodan/podinfo/pkg/keypair"
 	"github.com/stefanprodan/podinfo/pkg/telemetry"
 	httpSwagger "github.com/swaggo/http-swagger"
 	"github.com/swaggo/swag"
@@ -317,13 +318,16 @@ func (s *Server) startSecureServer() *http.Server {
 		return srv
 	}
 
-	cert := path.Join(s.config.CertPath, "tls.crt")
-	key := path.Join(s.config.CertPath, "tls.key")
+	kp, err := keypair.NewReloader(path.Join(s.config.CertPath, "tls.crt"), path.Join(s.config.CertPath, "tls.key"), s.logger)
+	if err != nil {
+		s.logger.Fatal("loading the HTTPS key pair failed", zap.Error(err))
+	}
+	srv.TLSConfig = kp.TLSConfig()
 
 	// start the server in the background
 	go func() {
 		s.logger.Info("Starting HTTPS Server.", zap.String("addr", srv.Addr))
-		if err := srv.ListenAndServeTLS(cert, key); err != http.ErrServerClosed {
+		if err := srv.ListenAndServeTLS("", ""); err != http.ErrServerClosed {
 			s.logger.Fatal("HTTPS server crashed", zap.Error(err))
 		}
 	}()
