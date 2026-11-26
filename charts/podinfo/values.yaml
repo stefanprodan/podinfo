@@ -186,8 +186,24 @@ hpa:
   # average http requests per second per pod (k8s-prometheus-adapter)
   requests:
 
-# Redis address in the format tcp://<host>:<port>
+# Redis or Valkey URL in the format redis://<host>:<port>, rediss:// for TLS, valkey:// and valkeys:// as aliases
 cache: ""
+# cache connection settings
+cacheOptions:
+  # connect in cluster mode, implied when the URL has more than one address
+  cluster: false
+  # the name of the primary monitored by Sentinel, the URL addresses are then the Sentinels
+  sentinelPrimary: ""
+  # the name of the secret with the PODINFO_CACHE_USERNAME, PODINFO_CACHE_PASSWORD and PODINFO_CACHE_SENTINEL_PASSWORD keys
+  credentialsSecretName: ""
+  # the CA bundle that verifies the server certificate, requires a rediss:// or valkeys:// URL
+  ca:
+    # the name of the secret holding the CA bundle
+    secretName: ""
+    # the name of the config map holding the CA bundle
+    configMapName: ""
+    # the key of the CA bundle in the secret or config map
+    key: ca.crt
 # Redis deployment
 redis:
   enabled: false

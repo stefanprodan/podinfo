@@ -58,7 +58,13 @@ The following tables lists the configurable parameters of the podinfo chart and 
 | `logLevel`                                     | `info`                         | Log level: `debug`, `info`, `warn`, `error`                                                        |
 | `backend`                                      | `None`                         | Echo backend URL                                                                                   |
 | `backends`                                     | `[]`                           | Array of echo backend URLs                                                                         |
-| `cache`                                        | `None`                         | Redis address in the format `tcp://<host>:<port>`                                                  |
+| `cache`                                        | `None`                         | Redis or Valkey URL in the format `redis://<host>:<port>`, `rediss://` for TLS                     |
+| `cacheOptions.cluster`                         | `false`                        | Connect in cluster mode, implied when the URL has more than one address                            |
+| `cacheOptions.sentinelPrimary`                 | `""`                           | Name of the primary monitored by Sentinel, the URL addresses are then the Sentinels                |
+| `cacheOptions.credentialsSecretName`           | `""`                           | Secret with the `PODINFO_CACHE_USERNAME`, `PODINFO_CACHE_PASSWORD` and `PODINFO_CACHE_SENTINEL_PASSWORD` keys |
+| `cacheOptions.ca.secretName`                   | `""`                           | Secret holding the CA bundle that verifies the cache server certificate                            |
+| `cacheOptions.ca.configMapName`                | `""`                           | ConfigMap holding the CA bundle, mutually exclusive with `cacheOptions.ca.secretName`              |
+| `cacheOptions.ca.key`                          | `ca.crt`                       | Key of the CA bundle in the Secret or ConfigMap                                                    |
 | `redis.enabled`                                | `false`                        | Create Redis deployment for caching purposes                                                       |
 | `redis.repository`                             | `docker.io/redis`              | Redis image repository                                                                             |
 | `redis.tag`                                    | `<VERSION>`                    | Redis image tag                                                                                    |
@@ -159,3 +165,23 @@ Alternatively, a YAML file that specifies the values for the above parameters ca
 ```console
 $ helm upgrade -i my-release oci://ghcr.io/stefanprodan/charts/podinfo -f values.yaml
 ```
+
+## Cache
+
+Podinfo caches to the bundled Redis (`redis.enabled`) or to an external Redis or Valkey server set with `cache`.
+The URL takes the extra cluster nodes or Sentinels as `addr` parameters:
+
+```yaml
+cache: "rediss://redis-0.redis:6379?addr=redis-1.redis:6379&addr=redis-2.redis:6379"
+cacheOptions:
+  cluster: true
+  credentialsSecretName: redis-credentials
+  ca:
+    secretName: redis-tls
+```
+
+The client dials the addresses that the cluster nodes and Sentinels announce, not the hostnames in the URL.
+With TLS, the servers must announce hostnames instead of pod IPs, or the certificate verification fails:
+
+- Cluster: `cluster-announce-hostname <hostname>` and `cluster-preferred-endpoint-type hostname`
+- Sentinel: `replica-announce-ip <hostname>` on the servers, `sentinel resolve-hostnames yes` and `sentinel announce-hostnames yes` on the Sentinels

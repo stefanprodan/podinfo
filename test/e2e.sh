@@ -24,7 +24,7 @@ spec:
   selfSigned: {}
 EOF
 
-# Install podinfo with TLS enabled
+# Install podinfo with TLS and Redis enabled
 helm upgrade --install --wait podinfo ./charts/podinfo \
     --set image.repository=test/podinfo \
     --set image.tag=latest \
@@ -34,7 +34,61 @@ helm upgrade --install --wait podinfo ./charts/podinfo \
     --set hpa.cpu=95 \
     --set replicaCount=2 \
     --set hooks.postInstall.job.enabled=true \
+    --set redis.enabled=true \
     --namespace=default
 
 # Run tests
 helm test podinfo
+
+# Install Valkey
+cat << 'EOF' | kubectl apply --server-side -f -
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: valkey
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: valkey
+  template:
+    metadata:
+      labels:
+        app: valkey
+    spec:
+      containers:
+        - name: valkey
+          image: docker.io/valkey/valkey:9
+          ports:
+            - name: valkey
+              containerPort: 6379
+          readinessProbe:
+            exec:
+              command:
+                - valkey-cli
+                - ping
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: valkey
+  namespace: default
+spec:
+  selector:
+    app: valkey
+  ports:
+    - name: valkey
+      port: 6379
+      targetPort: valkey
+EOF
+kubectl -n default rollout status deployment/valkey --timeout=2m
+
+# Install podinfo with Valkey
+helm upgrade --install --wait podinfo-valkey ./charts/podinfo \
+    --set image.repository=test/podinfo \
+    --set image.tag=latest \
+    --set cache=valkey://valkey:6379 \
+    --namespace=default
+
+# Run tests
+helm test podinfo-valkey

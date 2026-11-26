@@ -42,14 +42,50 @@ import (
 	// The log level of the podinfo container.
 	logLevel: *"info" | "debug" | "warn" | "error"
 
-	// Redis caching (optional); the Redis URL in the
-	// format `tcp://[:password@]host[:port]` is required when enabled.
+	// Redis or Valkey caching (optional); the URL in the format
+	// `redis://[user:password@]host[:port][/db]` is required when
+	// enabled, with `rediss://` for TLS, `valkey://` and `valkeys://`
+	// as aliases and the extra cluster nodes or Sentinels as
+	// `?addr=host:port` parameters. The `tcp://` scheme is deprecated.
 	caching: {
 		enabled: *false | bool
 		if enabled {
-			redisURL: string & =~"^tcp://.*$"
+			redisURL: string & =~"^(redis|rediss|valkey|valkeys|tcp)://.+$"
 		}
-		redisURL?: string & =~"^tcp://.*$"
+		redisURL?: string & =~"^(redis|rediss|valkey|valkeys|tcp)://.+$"
+
+		// Connect in cluster mode, implied when the URL has more
+		// than one address.
+		cluster: *false | bool
+
+		// The name of the primary monitored by Sentinel; the URL
+		// addresses are then the Sentinels.
+		sentinelPrimary?: string & =~".+"
+
+		// An existing Secret with the `PODINFO_CACHE_USERNAME`,
+		// `PODINFO_CACHE_PASSWORD` and `PODINFO_CACHE_SENTINEL_PASSWORD`
+		// keys, loaded as environment variables.
+		credentialsSecretName?: string & =~".+"
+
+		// The CA bundle that verifies the server certificate, from
+		// a key of an existing Secret or ConfigMap; requires a
+		// `rediss://` or `valkeys://` URL.
+		ca?: {
+			secretName?:    string & =~".+"
+			configMapName?: string & =~".+"
+			key:            *"ca.crt" | string & =~".+"
+		}
+
+		_guard: "valid"
+		_guard: [
+			if cluster && sentinelPrimary != _|_ {
+				"caching.cluster and caching.sentinelPrimary are mutually exclusive"
+			},
+			if ca != _|_ if (ca.secretName != _|_) == (ca.configMapName != _|_) {
+				"caching.ca requires one of secretName or configMapName"
+			},
+			"valid",
+		][0]
 	}
 
 	// The number of pod replicas; ignored when the autoscaler is enabled.

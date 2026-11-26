@@ -9,6 +9,8 @@ import (
 #Deployment: appsv1.#Deployment & {
 	_config: #Config
 
+	_cacheCA: _config.caching.enabled && _config.caching.ca != _|_
+
 	// The affinity rules generated from the affinity values;
 	// the anti-affinity presets match the instance selector labels.
 	_affinity: timoniv1.#Affinity & {
@@ -108,6 +110,15 @@ import (
 							if _config.caching.enabled {
 								"--cache-server=\(_config.caching.redisURL)"
 							},
+							if _config.caching.enabled && _config.caching.cluster {
+								"--cache-cluster"
+							},
+							if _config.caching.enabled && _config.caching.sentinelPrimary != _|_ {
+								"--cache-sentinel-primary=\(_config.caching.sentinelPrimary)"
+							},
+							if _cacheCA {
+								"--cache-ca-file=/data/cache-ca/ca.crt"
+							},
 							for a in _config.extraArgs {a},
 						]
 						env: [
@@ -129,6 +140,11 @@ import (
 							},
 							if _config.env != _|_ for e in _config.env {e},
 						]
+						if _config.caching.enabled && _config.caching.credentialsSecretName != _|_ {
+							envFrom: [{
+								secretRef: name: _config.caching.credentialsSecretName
+							}]
+						}
 						ports: [
 							{
 								name:          "http"
@@ -157,6 +173,13 @@ import (
 								name:      "data"
 								mountPath: "/data"
 							},
+							if _cacheCA {
+								{
+									name:      "cache-ca"
+									mountPath: "/data/cache-ca"
+									readOnly:  true
+								}
+							},
 							if _config.extraVolumeMounts != _|_ for m in _config.extraVolumeMounts {m},
 						]
 					},
@@ -166,6 +189,24 @@ import (
 					{
 						name: "data"
 						_config.dataVolume
+					},
+					if _cacheCA if _config.caching.ca.secretName != _|_ {
+						{
+							name: "cache-ca"
+							secret: {
+								secretName: _config.caching.ca.secretName
+								items:      [{key: _config.caching.ca.key, path: "ca.crt"}]
+							}
+						}
+					},
+					if _cacheCA if _config.caching.ca.configMapName != _|_ {
+						{
+							name: "cache-ca"
+							configMap: {
+								name:  _config.caching.ca.configMapName
+								items: [{key: _config.caching.ca.key, path: "ca.crt"}]
+							}
+						}
 					},
 					if _config.extraVolumes != _|_ for v in _config.extraVolumes {v},
 				]
