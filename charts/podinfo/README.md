@@ -132,6 +132,12 @@ The following tables lists the configurable parameters of the podinfo chart and 
 | `httpRoute.parentRefs`                         | `[]`                           | Gateways that this route is attached to                                                            |
 | `httpRoute.hostnames`                          | `["podinfo.local"]`            | Hostnames matching HTTP header                                                                     |
 | `httpRoute.rules`                              | `[]`                           | List of rules and filters applied                                                                  |
+| `grpcRoute.enabled`                            | `false`                        | Enables Gateway API GRPCRoute                                                                      |
+| `grpcRoute.additionalLabels`                   | `{}`                           | Add additional labels to the GRPCRoute                                                             |
+| `grpcRoute.annotations`                        | `{}`                           | GRPCRoute annotations                                                                              |
+| `grpcRoute.parentRefs`                         | `[]`                           | Gateways that this route is attached to                                                            |
+| `grpcRoute.hostnames`                          | `["podinfo.local"]`            | Hostnames matching HTTP header                                                                     |
+| `grpcRoute.rules`                              | `[{}]`                         | List of rules with matches and filters applied, match all by default                               |
 | `hooks.<hookType>.job.enabled`                 | `false`                        | Create a Helm hook job for testing (hookType: see values.yaml for available hooks)                 |
 | `hooks.<hookType>.job.hookDeletePolicy`        | `hook-succeeded,hook-failed`   | Helm hook delete policy                                                                            |
 | `hooks.<hookType>.job.ttlSecondsAfterFinished` | `None`                         | Job TTL after finished                                                                             |

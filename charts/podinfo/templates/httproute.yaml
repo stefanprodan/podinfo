@@ -26,17 +26,17 @@ spec:
   {{- end }}
   rules:
     {{- range .Values.httpRoute.rules }}
+    - backendRefs:
+        - name: {{ $fullName }}
+          port: {{ $svcPort }}
+          weight: 1
     {{- with .matches }}
-    - matches:
+      matches:
       {{- toYaml . | nindent 8 }}
     {{- end }}
     {{- with .filters }}
       filters:
       {{- toYaml . | nindent 8 }}
     {{- end }}
-      backendRefs:
-        - name: {{ $fullName }}
-          port: {{ $svcPort }}
-          weight: 1
     {{- end }}
 {{- end }}
