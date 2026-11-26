@@ -21,8 +21,6 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
 )
 
 // @title Podinfo API
@@ -228,11 +226,7 @@ func (s *Server) ListenAndServe() (*http.Server, *http.Server, *int32, *int32) {
 	s.registerHandlers()
 	s.registerMiddlewares()
 
-	if s.config.H2C {
-		s.handler = h2c.NewHandler(s.router, &http2.Server{})
-	} else {
-		s.handler = s.router
-	}
+	s.handler = s.router
 
 	//s.printRoutes()
 
@@ -284,6 +278,12 @@ func (s *Server) startServer() *http.Server {
 		ReadTimeout:  s.config.HttpServerTimeout,
 		IdleTimeout:  2 * s.config.HttpServerTimeout,
 		Handler:      s.handler,
+	}
+
+	if s.config.H2C {
+		srv.Protocols = new(http.Protocols)
+		srv.Protocols.SetHTTP1(true)
+		srv.Protocols.SetUnencryptedHTTP2(true)
 	}
 
 	// start the server in the background
