@@ -66,7 +66,7 @@ func (s *Server) ListenAndServe() (*grpc.Server, *health.Server) {
 }
 
 func (s *Server) newServer() (*grpc.Server, *health.Server) {
-	srv := grpc.NewServer()
+	srv := grpc.NewServer(s.serverOptions(defaultMetrics())...)
 
 	echo.RegisterEchoServiceServer(srv, &echoServer{config: s.config, logger: s.logger})
 	version.RegisterVersionServiceServer(srv, &VersionServer{config: s.config, logger: s.logger})
