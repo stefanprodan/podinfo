@@ -118,7 +118,7 @@ func runCheck(cmd *cobra.Command, args []string) error {
 	}
 
 	for n := 0; n <= retryCount; n++ {
-		if n != 1 {
+		if n != 0 {
 			time.Sleep(retryDelay)
 		}
 
@@ -172,7 +172,7 @@ func runCheckTCP(cmd *cobra.Command, args []string) error {
 	address := args[0]
 
 	for n := 0; n <= retryCount; n++ {
-		if n != 1 {
+		if n != 0 {
 			time.Sleep(retryDelay)
 		}
 
