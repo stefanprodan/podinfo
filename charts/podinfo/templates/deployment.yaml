@@ -10,6 +10,9 @@
 {{- if and .Values.spiffe.backendIDs (not .Values.spiffe.backendMTLS) }}
 {{- fail "spiffe.backendIDs requires spiffe.backendMTLS" }}
 {{- end }}
+{{- if and .Values.cacheOptions.ca.secretName .Values.cacheOptions.ca.configMapName }}
+{{- fail "cacheOptions.ca.secretName and cacheOptions.ca.configMapName are mutually exclusive" }}
+{{- end }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -104,7 +107,16 @@ spec:
             {{- if .Values.cache }}
             - --cache-server={{ .Values.cache }}
             {{- else if .Values.redis.enabled }}
-            - --cache-server=tcp://{{ template "podinfo.fullname" . }}-redis:6379
+            - --cache-server=redis://{{ template "podinfo.fullname" . }}-redis:6379
+            {{- end }}
+            {{- if .Values.cacheOptions.cluster }}
+            - --cache-cluster
+            {{- end }}
+            {{- with .Values.cacheOptions.sentinelPrimary }}
+            - --cache-sentinel-primary={{ . }}
+            {{- end }}
+            {{- if or .Values.cacheOptions.ca.secretName .Values.cacheOptions.ca.configMapName }}
+            - --cache-ca-file=/data/cache-ca/ca.crt
             {{- end }}
             - --level={{ .Values.logLevel }}
             - --random-delay={{ .Values.faults.delay }}
@@ -146,6 +158,11 @@ spec:
           {{- end }}
           {{- if .Values.extraEnvs }}
 {{ toYaml .Values.extraEnvs | indent 10 }}
+          {{- end }}
+          {{- with .Values.cacheOptions.credentialsSecretName }}
+          envFrom:
+          - secretRef:
+              name: {{ . }}
           {{- end }}
           ports:
             - name: http
@@ -228,6 +245,11 @@ spec:
             mountPath: {{ .Values.tls.certPath | default "/data/cert" }}
             readOnly: true
           {{- end }}
+          {{- if or .Values.cacheOptions.ca.secretName .Values.cacheOptions.ca.configMapName }}
+          - name: cache-ca
+            mountPath: /data/cache-ca
+            readOnly: true
+          {{- end }}
           resources:
 {{ toYaml .Values.resources | indent 12 }}
     {{- with .Values.podSecurityContext }}
@@ -261,6 +283,23 @@ spec:
       - name: tls
         secret:
           secretName: {{ template "podinfo.tlsSecretName" . }}
+      {{- end }}
+      {{- with .Values.cacheOptions.ca }}
+      {{- if .secretName }}
+      - name: cache-ca
+        secret:
+          secretName: {{ .secretName }}
+          items:
+            - key: {{ .key }}
+              path: ca.crt
+      {{- else if .configMapName }}
+      - name: cache-ca
+        configMap:
+          name: {{ .configMapName }}
+          items:
+            - key: {{ .key }}
+              path: ca.crt
+      {{- end }}
       {{- end }}
     {{- with .Values.topologySpreadConstraints }}
       topologySpreadConstraints:

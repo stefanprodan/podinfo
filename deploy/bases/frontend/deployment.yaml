@@ -39,7 +39,7 @@ spec:
         - --port-metrics=9797
         - --level=debug
         - --backend-url=http://backend:9898/echo
-        - --cache-server=tcp://cache:6379
+        - --cache-server=redis://cache:6379
         env:
         - name: PODINFO_UI_COLOR
           value: "#34577c"

@@ -15,6 +15,10 @@ bundle: {
 					repository: _imgURL
 					tag:        _imgTag
 				}
+				caching: {
+					enabled:  true
+					redisURL: "redis://cache:6379"
+				}
 				resources: requests: {
 					cpu:    "100m"
 					memory: "128Mi"

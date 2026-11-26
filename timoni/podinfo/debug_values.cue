@@ -45,8 +45,12 @@ values: {
 
 	caching: {
 		enabled:  true
-		redisURL: "tcp://:redis@redis:6379"
+		redisURL: "rediss://redis-0.redis:6379?addr=redis-1.redis:6379"
+		cluster:  true
+		ca: existingConfigMap: name: "redis-ca"
 	}
+
+	envFrom: [{secretRef: name: "redis-credentials"}]
 
 	extraArgs: ["--random-delay=true"]
 

@@ -30,7 +30,7 @@ spec:
           imagePullPolicy: IfNotPresent
           command:
             - redis-server
-            - "/redis-master/redis.conf"
+            - "/redis-config/redis.conf"
           ports:
             - name: redis
               containerPort: 6379
@@ -57,7 +57,7 @@ spec:
           volumeMounts:
             - mountPath: /var/lib/redis
               name: data
-            - mountPath: /redis-master
+            - mountPath: /redis-config
               name: config
       volumes:
         - name: data

@@ -78,6 +78,11 @@ jobs:
       - name: Build module
         run: |
           timoni mod push ./timoni/podinfo ${PODINFO_MODULE_URL} -v ${PODINFO_VERSION}
+      - name: Install Redis
+        run: |
+          kubectl create namespace podinfo
+          kubectl -n podinfo apply -k ./deploy/bases/cache
+          kubectl -n podinfo rollout status deployment/cache --timeout=2m
       - name: Apply bundle
         run: |
           timoni bundle apply -f ./timoni/bundles/test.podinfo.cue --runtime-from-env
@@ -85,6 +90,10 @@ jobs:
         run: |
           timoni -n podinfo status backend
           timoni -n podinfo status frontend
+      - name: Verify cache
+        run: |
+          kubectl -n podinfo exec deploy/backend -- curl -sfd data localhost:9898/cache/e2e
+          kubectl -n podinfo exec deploy/backend -- curl -sf localhost:9898/cache/e2e | grep data
       - name: Debug failure
         if: failure()
         run: |

@@ -42,14 +42,45 @@ import (
 	// The log level of the podinfo container.
 	logLevel: *"info" | "debug" | "warn" | "error"
 
-	// Redis caching (optional); the Redis URL in the
-	// format `tcp://[:password@]host[:port]` is required when enabled.
+	// Redis or Valkey caching (optional); the URL in the format
+	// `redis://[user:password@]host[:port][/db]` is required when
+	// enabled, with `rediss://` for TLS, `valkey://` and `valkeys://`
+	// as aliases and the extra cluster nodes or Sentinels as
+	// `?addr=host:port` parameters. The `tcp://` scheme is deprecated.
 	caching: {
 		enabled: *false | bool
 		if enabled {
-			redisURL: string & =~"^tcp://.*$"
+			redisURL: string & =~"^(redis|rediss|valkey|valkeys|tcp)://.+$"
 		}
-		redisURL?: string & =~"^tcp://.*$"
+		redisURL?: string & =~"^(redis|rediss|valkey|valkeys|tcp)://.+$"
+
+		// Connect in cluster mode, implied when the URL has more
+		// than one address.
+		cluster: *false | bool
+
+		// The name of the primary monitored by Sentinel; the URL
+		// addresses are then the Sentinels.
+		sentinelPrimary?: string & =~".+"
+
+		// The CA bundle that verifies the server certificate, from
+		// a key of an existing Secret or ConfigMap; requires a
+		// `rediss://` or `valkeys://` URL.
+		ca?: {
+			existingSecret?: name:    string & =~".+"
+			existingConfigMap?: name: string & =~".+"
+			key: *"ca.crt" | string & =~".+"
+		}
+
+		_guard: "valid"
+		_guard: [
+			if cluster && sentinelPrimary != _|_ {
+				"caching.cluster and caching.sentinelPrimary are mutually exclusive"
+			},
+			if ca != _|_ if (ca.existingSecret != _|_) == (ca.existingConfigMap != _|_) {
+				"caching.ca requires one of existingSecret or existingConfigMap"
+			},
+			"valid",
+		][0]
 	}
 
 	// The number of pod replicas; ignored when the autoscaler is enabled.
@@ -77,6 +108,12 @@ import (
 
 	// Extra environment variables of the podinfo container.
 	env?: [...corev1.#EnvVar]
+
+	// Secrets and ConfigMaps loaded as environment variables of the
+	// podinfo container, e.g. the `PODINFO_CACHE_USERNAME`,
+	// `PODINFO_CACHE_PASSWORD` and `PODINFO_CACHE_SENTINEL_PASSWORD`
+	// cache credentials.
+	envFrom?: [...corev1.#EnvFromSource]
 
 	// The container resource requirements.
 	// By default, the container requests 10m CPU and 32Mi memory.
