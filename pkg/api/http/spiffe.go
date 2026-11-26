@@ -213,9 +213,7 @@ func (s *Server) Stop() {
 	s.spiffe.mu.Unlock()
 }
 
-// Close stops the server and closes the SPIFFE Workload API source.
-// Call it after the HTTPS server has been shut down.
-func (s *Server) Close() error {
+func (s *Server) closeSPIFFE() error {
 	st := s.spiffe
 	if st == nil {
 		return nil

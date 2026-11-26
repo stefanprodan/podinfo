@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	_ "net/http/pprof"
@@ -75,6 +76,7 @@ type Config struct {
 	SPIFFEBackendMTLS     bool          `mapstructure:"spiffe-backend-mtls"`
 	SPIFFEBackendIDs      []string      `mapstructure:"spiffe-backend-ids"`
 	ArtifactPath          string        `mapstructure:"artifact-path"`
+	OtelServiceName       string        `mapstructure:"otel-service-name"`
 }
 
 type Server struct {
@@ -82,6 +84,8 @@ type Server struct {
 	logger         *zap.Logger
 	config         *Config
 	pool           *redis.Pool
+	cacheStop      chan struct{}
+	cacheStopped   chan struct{}
 	handler        http.Handler
 	tracer         trace.Tracer
 	tracerProvider *sdktrace.TracerProvider
@@ -201,7 +205,7 @@ func (s *Server) registerHandlers() {
 func (s *Server) registerMiddlewares() {
 	prom := NewPrometheusMiddleware()
 	s.router.Use(prom.Handler)
-	otel := NewOpenTelemetryMiddleware()
+	otel := NewOpenTelemetryMiddleware(s.config.OtelServiceName)
 	s.router.Use(otel)
 	httpLogger := NewLoggingMiddleware(s.logger)
 	s.router.Use(httpLogger.Handler)
@@ -228,8 +232,6 @@ func (s *Server) ListenAndServe() (*http.Server, *http.Server, *int32, *int32) {
 
 	s.handler = s.router
 
-	//s.printRoutes()
-
 	// load configs in memory and start watching for changes in the config dir
 	if stat, err := os.Stat(s.config.ConfigPath); err == nil && stat.IsDir() {
 		var err error
@@ -242,8 +244,7 @@ func (s *Server) ListenAndServe() (*http.Server, *http.Server, *int32, *int32) {
 	}
 
 	// start redis connection pool
-	ticker := time.NewTicker(30 * time.Second)
-	s.startCachePool(ticker)
+	s.startCachePool(30 * time.Second)
 
 	// create the http server
 	srv := s.startServer()
@@ -354,32 +355,20 @@ func (s *Server) startMetricsServer() {
 	}
 }
 
-func (s *Server) printRoutes() {
-	s.router.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
-		pathTemplate, err := route.GetPathTemplate()
-		if err == nil {
-			fmt.Println("ROUTE:", pathTemplate)
-		}
-		pathRegexp, err := route.GetPathRegexp()
-		if err == nil {
-			fmt.Println("Path regexp:", pathRegexp)
-		}
-		queriesTemplates, err := route.GetQueriesTemplates()
-		if err == nil {
-			fmt.Println("Queries templates:", strings.Join(queriesTemplates, ","))
-		}
-		queriesRegexps, err := route.GetQueriesRegexp()
-		if err == nil {
-			fmt.Println("Queries regexps:", strings.Join(queriesRegexps, ","))
-		}
-		methods, err := route.GetMethods()
-		if err == nil {
-			fmt.Println("Methods:", strings.Join(methods, ","))
-		}
-		fmt.Println()
-		return nil
-	})
-}
-
 type ArrayResponse []string
 type MapResponse map[string]string
+
+// Close releases the cache pool and the SPIFFE source once the servers have stopped.
+func (s *Server) Close() error {
+	if s.cacheStop != nil {
+		close(s.cacheStop)
+		<-s.cacheStopped
+	}
+
+	var poolErr error
+	if s.pool != nil {
+		poolErr = s.pool.Close()
+	}
+
+	return errors.Join(poolErr, s.closeSPIFFE())
+}

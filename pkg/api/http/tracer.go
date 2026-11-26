@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/gorilla/mux"
-	"github.com/spf13/viper"
 	"github.com/stefanprodan/podinfo/pkg/version"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux"
 	"go.opentelemetry.io/contrib/propagators/b3"
@@ -27,9 +26,9 @@ const (
 )
 
 func (s *Server) initTracer(ctx context.Context) {
-	if viper.GetString("otel-service-name") == "" {
+	if s.config.OtelServiceName == "" {
 		nop := noop.NewTracerProvider()
-		s.tracer = nop.Tracer(viper.GetString("otel-service-name"))
+		s.tracer = nop.Tracer(s.config.OtelServiceName)
 		return
 	}
 
@@ -43,7 +42,7 @@ func (s *Server) initTracer(ctx context.Context) {
 		sdktrace.WithBatcher(exporter),
 		sdktrace.WithResource(resource.NewWithAttributes(
 			semconv.SchemaURL,
-			semconv.ServiceNameKey.String(viper.GetString("otel-service-name")),
+			semconv.ServiceNameKey.String(s.config.OtelServiceName),
 			semconv.ServiceVersionKey.String(version.VERSION),
 		)),
 	)
@@ -64,6 +63,6 @@ func (s *Server) initTracer(ctx context.Context) {
 	)
 }
 
-func NewOpenTelemetryMiddleware() mux.MiddlewareFunc {
-	return otelmux.Middleware(viper.GetString("otel-service-name"))
+func NewOpenTelemetryMiddleware(serviceName string) mux.MiddlewareFunc {
+	return otelmux.Middleware(serviceName)
 }
