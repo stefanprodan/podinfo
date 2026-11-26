@@ -11,6 +11,7 @@ import (
 	"github.com/stefanprodan/podinfo/pkg/api/grpc/status"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
 	st "google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
 )
@@ -39,15 +40,13 @@ func TestGrpcStatusError(t *testing.T) {
 		return lis.Dial()
 	}
 
-	ctx := context.Background()
-
-	conn, err := grpc.DialContext(ctx, "", grpc.WithContextDialer(dialer), grpc.WithInsecure())
+	conn, err := grpc.NewClient("passthrough:///bufnet", grpc.WithContextDialer(dialer), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	t.Cleanup(func() {
 		conn.Close()
 	})
 
 	if err != nil {
-		t.Fatalf("grpc.DialContext %v", err)
+		t.Fatalf("grpc.NewClient %v", err)
 	}
 
 	client := status.NewStatusServiceClient(conn)
@@ -91,15 +90,13 @@ func TestGrpcStatusOk(t *testing.T) {
 		return lis.Dial()
 	}
 
-	ctx := context.Background()
-
-	conn, err := grpc.DialContext(ctx, "", grpc.WithContextDialer(dialer), grpc.WithInsecure())
+	conn, err := grpc.NewClient("passthrough:///bufnet", grpc.WithContextDialer(dialer), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	t.Cleanup(func() {
 		conn.Close()
 	})
 
 	if err != nil {
-		t.Fatalf("grpc.DialContext %v", err)
+		t.Fatalf("grpc.NewClient %v", err)
 	}
 
 	client := status.NewStatusServiceClient(conn)

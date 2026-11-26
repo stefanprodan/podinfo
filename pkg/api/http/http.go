@@ -7,7 +7,6 @@ import (
 	"io"
 	"math/rand"
 	"net/http"
-	"time"
 
 	"github.com/stefanprodan/podinfo/pkg/version"
 	"go.opentelemetry.io/otel/codes"
@@ -22,7 +21,6 @@ const maxRequestBodySize = 10 << 20 // 10 MiB
 
 func randomErrorMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		rand.Seed(time.Now().Unix())
 		if rand.Int31n(3) == 0 {
 
 			errors := []int{http.StatusInternalServerError, http.StatusBadRequest, http.StatusConflict}

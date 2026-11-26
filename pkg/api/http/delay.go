@@ -27,7 +27,6 @@ func NewRandomDelayMiddleware(minDelay, maxDelay int, delayUnit string) *RandomD
 func (m *RandomDelayMiddleware) Handler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var unit time.Duration
-		rand.Seed(time.Now().Unix())
 		switch m.unit {
 		case "s":
 			unit = time.Second
