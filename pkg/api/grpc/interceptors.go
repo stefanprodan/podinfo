@@ -11,6 +11,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"github.com/stefanprodan/podinfo/pkg/telemetry"
 )
 
 type metrics struct {
@@ -40,23 +42,23 @@ var defaultMetrics = sync.OnceValue(func() *metrics {
 	return newMetrics(prometheus.DefaultRegisterer)
 })
 
-func (m *metrics) observe(method string, start time.Time, err error) {
+func (m *metrics) observe(ctx context.Context, method string, start time.Time, err error) {
 	code := status.Code(err).String()
-	m.histogram.WithLabelValues(method, code).Observe(time.Since(start).Seconds())
+	telemetry.Observe(ctx, m.histogram.WithLabelValues(method, code), time.Since(start).Seconds())
 	m.counter.WithLabelValues(code).Inc()
 }
 
 func (m *metrics) unaryInterceptor(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 	start := time.Now()
 	resp, err := handler(ctx, req)
-	m.observe(info.FullMethod, start, err)
+	m.observe(ctx, info.FullMethod, start, err)
 	return resp, err
 }
 
 func (m *metrics) streamInterceptor(srv any, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 	start := time.Now()
 	err := handler(srv, ss)
-	m.observe(info.FullMethod, start, err)
+	m.observe(ss.Context(), info.FullMethod, start, err)
 	return err
 }
 

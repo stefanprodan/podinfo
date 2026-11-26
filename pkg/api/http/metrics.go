@@ -5,10 +5,14 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/felixge/httpsnoop"
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+
+	"github.com/stefanprodan/podinfo/pkg/telemetry"
 )
 
 type PrometheusMiddleware struct {
@@ -43,6 +47,8 @@ func NewPrometheusMiddleware() *PrometheusMiddleware {
 	}
 }
 
+var defaultPrometheusMiddleware = sync.OnceValue(NewPrometheusMiddleware)
+
 // Metrics godoc
 // @Summary Prometheus metrics
 // @Description returns HTTP requests duration and Go runtime metrics
@@ -55,7 +61,7 @@ func (p *PrometheusMiddleware) Handler(next http.Handler) http.Handler {
 		path := p.getRouteName(r)
 		m := httpsnoop.CaptureMetrics(next, w, r)
 		status := strconv.Itoa(m.Code)
-		p.Histogram.WithLabelValues(r.Method, path, status).Observe(m.Duration.Seconds())
+		telemetry.Observe(r.Context(), p.Histogram.WithLabelValues(r.Method, path, status), m.Duration.Seconds())
 		p.Counter.WithLabelValues(status).Inc()
 	})
 }
@@ -85,4 +91,11 @@ func urlToLabel(path string) string {
 		result = "root"
 	}
 	return result
+}
+
+func metricsHandler() http.Handler {
+	return promhttp.InstrumentMetricHandler(
+		prometheus.DefaultRegisterer,
+		promhttp.HandlerFor(prometheus.DefaultGatherer, promhttp.HandlerOpts{EnableOpenMetrics: true}),
+	)
 }

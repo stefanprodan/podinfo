@@ -9,10 +9,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"go.opentelemetry.io/contrib/exporters/autoexport"
+	"go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/contrib/propagators/autoprop"
 	"go.opentelemetry.io/otel"
 	sdklog "go.opentelemetry.io/otel/sdk/log"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.43.0"
@@ -48,7 +51,7 @@ func Setup(ctx context.Context, serviceName string, logger *zap.Logger) (*Teleme
 	}))
 	otel.SetTextMapPropagator(autoprop.NewTextMapPropagator())
 
-	if !signalEnabled("TRACES") && !signalEnabled("LOGS") {
+	if !signalEnabled("TRACES") && !signalEnabled("LOGS") && !signalEnabled("METRICS") {
 		return t, nil
 	}
 
@@ -61,23 +64,37 @@ func Setup(ctx context.Context, serviceName string, logger *zap.Logger) (*Teleme
 	if err != nil {
 		return t, err
 	}
+	if tp != nil {
+		t.shutdowns = append(t.shutdowns, tp.Shutdown)
+	}
 
 	lp, err := newLoggerProvider(ctx, res)
 	if err != nil {
-		if tp != nil {
-			_ = tp.Shutdown(ctx)
-		}
+		_ = t.Shutdown(context.WithoutCancel(ctx))
 		return t, err
+	}
+	if lp != nil {
+		t.shutdowns = append(t.shutdowns, lp.Shutdown)
+	}
+
+	mp, err := newMeterProvider(ctx, res)
+	if err != nil {
+		_ = t.Shutdown(context.WithoutCancel(ctx))
+		return t, err
+	}
+	if mp != nil {
+		t.shutdowns = append(t.shutdowns, mp.Shutdown)
 	}
 
 	if tp != nil {
 		otel.SetTracerProvider(tp)
-		t.shutdowns = append(t.shutdowns, tp.Shutdown)
 	}
 	if lp != nil {
 		otel.SetLoggerProvider(lp)
 		t.loggerProvider = lp
-		t.shutdowns = append(t.shutdowns, lp.Shutdown)
+	}
+	if mp != nil {
+		otel.SetMeterProvider(mp)
 	}
 
 	return t, nil
@@ -132,6 +149,20 @@ func Tracer() trace.Tracer {
 		trace.WithInstrumentationVersion(version.VERSION),
 		trace.WithSchemaURL(semconv.SchemaURL),
 	)
+}
+
+// Observe records v on o, with the trace_id and span_id of the recording, sampled span in ctx as exemplar.
+func Observe(ctx context.Context, o prometheus.Observer, v float64) {
+	span := trace.SpanFromContext(ctx)
+	sc := span.SpanContext()
+	if eo, ok := o.(prometheus.ExemplarObserver); ok && span.IsRecording() && sc.IsSampled() {
+		eo.ObserveWithExemplar(v, prometheus.Labels{
+			"trace_id": sc.TraceID().String(),
+			"span_id":  sc.SpanID().String(),
+		})
+		return
+	}
+	o.Observe(v)
 }
 
 func signalEnabled(signal string) bool {
@@ -196,4 +227,26 @@ func newLoggerProvider(ctx context.Context, res *resource.Resource) (*sdklog.Log
 		sdklog.WithProcessor(sdklog.NewBatchProcessor(exporter)),
 		sdklog.WithResource(res),
 	), nil
+}
+
+func newMeterProvider(ctx context.Context, res *resource.Resource) (*sdkmetric.MeterProvider, error) {
+	if !signalEnabled("METRICS") {
+		return nil, nil
+	}
+	reader, err := autoexport.NewMetricReader(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("creating metric reader: %w", err)
+	}
+	if autoexport.IsNoneMetricReader(reader) {
+		return nil, nil
+	}
+	mp := sdkmetric.NewMeterProvider(
+		sdkmetric.WithReader(reader),
+		sdkmetric.WithResource(res),
+	)
+	if err := runtime.Start(runtime.WithMeterProvider(mp)); err != nil {
+		_ = mp.Shutdown(context.WithoutCancel(ctx))
+		return nil, fmt.Errorf("starting runtime metrics: %w", err)
+	}
+	return mp, nil
 }
