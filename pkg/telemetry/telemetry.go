@@ -2,66 +2,127 @@ package telemetry
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"os"
+	"strings"
+	"sync"
+	"time"
 
-	"go.opentelemetry.io/contrib/propagators/b3"
-	"go.opentelemetry.io/contrib/propagators/jaeger"
-	"go.opentelemetry.io/contrib/propagators/ot"
+	"go.opentelemetry.io/contrib/exporters/autoexport"
+	"go.opentelemetry.io/contrib/propagators/autoprop"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
-	"go.opentelemetry.io/otel/propagation"
+	sdklog "go.opentelemetry.io/otel/sdk/log"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/stefanprodan/podinfo/pkg/version"
 )
 
-const instrumentationName = "github.com/stefanprodan/podinfo/pkg/api"
+const (
+	instrumentationName = "github.com/stefanprodan/podinfo/pkg/api"
+	defaultServiceName  = "podinfo"
+)
 
-// NewResource returns the SDK default resource merged with the podinfo service name and version.
-func NewResource(serviceName string) (*resource.Resource, error) {
-	return resource.Merge(resource.Default(), resource.NewWithAttributes(
-		semconv.SchemaURL,
-		semconv.ServiceName(serviceName),
-		semconv.ServiceVersion(version.VERSION),
-	))
+// Telemetry holds the OpenTelemetry providers configured by Setup.
+type Telemetry struct {
+	logger         *zap.Logger
+	loggerProvider *sdklog.LoggerProvider
+	shutdowns      []func(context.Context) error
+	shutdownOnce   sync.Once
 }
 
-// NewTracerProvider sets a global OTLP tracer provider, or returns nil and leaves the global one untouched.
-func NewTracerProvider(ctx context.Context, serviceName string, logger *zap.Logger) *sdktrace.TracerProvider {
-	if serviceName == "" {
-		return nil
+// Setup configures OpenTelemetry from the OTEL_* environment variables; serviceName applies when OTEL_SERVICE_NAME is not set.
+func Setup(ctx context.Context, serviceName string, logger *zap.Logger) (*Telemetry, error) {
+	t := &Telemetry{logger: logger}
+	if strings.EqualFold(strings.TrimSpace(os.Getenv("OTEL_SDK_DISABLED")), "true") {
+		return t, nil
 	}
 
-	res, err := NewResource(serviceName)
+	otel.SetErrorHandler(otel.ErrorHandlerFunc(func(err error) {
+		logger.Warn("OpenTelemetry error", zap.Error(err))
+	}))
+	otel.SetTextMapPropagator(autoprop.NewTextMapPropagator())
+
+	if !signalEnabled("TRACES") && !signalEnabled("LOGS") {
+		return t, nil
+	}
+
+	res, err := newResource(ctx, serviceName)
 	if err != nil {
-		logger.Error("creating OpenTelemetry resource, tracing disabled", zap.Error(err))
-		return nil
+		logger.Warn("detecting OpenTelemetry resource", zap.Error(err))
 	}
 
-	exporter, err := otlptracegrpc.New(ctx)
+	tp, err := newTracerProvider(ctx, res)
 	if err != nil {
-		logger.Error("creating OTLP trace exporter, tracing disabled", zap.Error(err))
-		return nil
+		return t, err
 	}
 
-	tp := sdktrace.NewTracerProvider(
-		sdktrace.WithBatcher(exporter),
-		sdktrace.WithResource(res),
-	)
+	lp, err := newLoggerProvider(ctx, res)
+	if err != nil {
+		if tp != nil {
+			_ = tp.Shutdown(ctx)
+		}
+		return t, err
+	}
 
-	otel.SetTracerProvider(tp)
-	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
-		propagation.TraceContext{},
-		propagation.Baggage{},
-		b3.New(),
-		&jaeger.Jaeger{},
-		&ot.OT{},
-	))
+	if tp != nil {
+		otel.SetTracerProvider(tp)
+		t.shutdowns = append(t.shutdowns, tp.Shutdown)
+	}
+	if lp != nil {
+		otel.SetLoggerProvider(lp)
+		t.loggerProvider = lp
+		t.shutdowns = append(t.shutdowns, lp.Shutdown)
+	}
 
-	return tp
+	return t, nil
+}
+
+// LoggerProvider returns the OTLP logger provider, or nil when log export is disabled.
+func (t *Telemetry) LoggerProvider() *sdklog.LoggerProvider {
+	return t.loggerProvider
+}
+
+// Shutdown flushes and stops the providers. Calls after the first are no-ops.
+func (t *Telemetry) Shutdown(ctx context.Context) error {
+	var err error
+	t.shutdownOnce.Do(func() {
+		errs := make([]error, len(t.shutdowns))
+		var wg sync.WaitGroup
+		for i, shutdown := range t.shutdowns {
+			wg.Go(func() {
+				errs[i] = shutdown(ctx)
+			})
+		}
+		wg.Wait()
+		err = errors.Join(errs...)
+	})
+	return err
+}
+
+// ExitHook returns a zap hook for fatal entries that shuts down telemetry within timeout and then calls exit(1).
+func (t *Telemetry) ExitHook(timeout time.Duration, exit func(int)) zapcore.CheckWriteHook {
+	return exitHook{telemetry: t, timeout: timeout, exit: exit}
+}
+
+type exitHook struct {
+	telemetry *Telemetry
+	timeout   time.Duration
+	exit      func(int)
+}
+
+func (h exitHook) OnWrite(*zapcore.CheckedEntry, []zapcore.Field) {
+	ctx, cancel := context.WithTimeout(context.Background(), h.timeout)
+	if err := h.telemetry.Shutdown(ctx); err != nil {
+		h.telemetry.logger.Warn("OpenTelemetry shutdown failed", zap.Error(err))
+	}
+	cancel()
+	h.exit(1)
 }
 
 // Tracer returns the podinfo tracer from the global tracer provider.
@@ -71,4 +132,68 @@ func Tracer() trace.Tracer {
 		trace.WithInstrumentationVersion(version.VERSION),
 		trace.WithSchemaURL(semconv.SchemaURL),
 	)
+}
+
+func signalEnabled(signal string) bool {
+	return os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT") != "" ||
+		os.Getenv("OTEL_EXPORTER_OTLP_"+signal+"_ENDPOINT") != "" ||
+		os.Getenv("OTEL_"+signal+"_EXPORTER") != ""
+}
+
+func newResource(ctx context.Context, serviceName string) (*resource.Resource, error) {
+	opts := []resource.Option{
+		resource.WithService(),
+		resource.WithAttributes(
+			semconv.ServiceName(defaultServiceName),
+			semconv.ServiceVersion(version.VERSION),
+		),
+		resource.WithTelemetrySDK(),
+		resource.WithProcessPID(),
+		resource.WithProcessExecutableName(),
+		resource.WithProcessRuntimeName(),
+		resource.WithProcessRuntimeVersion(),
+		resource.WithProcessRuntimeDescription(),
+		resource.WithHost(),
+		resource.WithOSType(),
+		resource.WithContainerID(),
+		resource.WithFromEnv(),
+	}
+	if serviceName != "" && strings.TrimSpace(os.Getenv("OTEL_SERVICE_NAME")) == "" {
+		opts = append(opts, resource.WithAttributes(semconv.ServiceName(serviceName)))
+	}
+	return resource.New(ctx, opts...)
+}
+
+func newTracerProvider(ctx context.Context, res *resource.Resource) (*sdktrace.TracerProvider, error) {
+	if !signalEnabled("TRACES") {
+		return nil, nil
+	}
+	exporter, err := autoexport.NewSpanExporter(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("creating span exporter: %w", err)
+	}
+	if autoexport.IsNoneSpanExporter(exporter) {
+		return nil, nil
+	}
+	return sdktrace.NewTracerProvider(
+		sdktrace.WithBatcher(exporter),
+		sdktrace.WithResource(res),
+	), nil
+}
+
+func newLoggerProvider(ctx context.Context, res *resource.Resource) (*sdklog.LoggerProvider, error) {
+	if !signalEnabled("LOGS") {
+		return nil, nil
+	}
+	exporter, err := autoexport.NewLogExporter(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("creating log exporter: %w", err)
+	}
+	if autoexport.IsNoneLogExporter(exporter) {
+		return nil, nil
+	}
+	return sdklog.NewLoggerProvider(
+		sdklog.WithProcessor(sdklog.NewBatchProcessor(exporter)),
+		sdklog.WithResource(res),
+	), nil
 }

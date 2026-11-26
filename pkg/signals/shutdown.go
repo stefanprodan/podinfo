@@ -7,8 +7,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	sdklog "go.opentelemetry.io/otel/sdk/log"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
@@ -16,19 +14,9 @@ import (
 
 type Shutdown struct {
 	logger                *zap.Logger
-	tracerProvider        *sdktrace.TracerProvider
-	loggerProvider        *sdklog.LoggerProvider
 	serverShutdownTimeout time.Duration
 	drainDelay            time.Duration
 	beforeShutdown        func()
-}
-
-func (s *Shutdown) SetTracerProvider(tp *sdktrace.TracerProvider) {
-	s.tracerProvider = tp
-}
-
-func (s *Shutdown) SetLoggerProvider(lp *sdklog.LoggerProvider) {
-	s.loggerProvider = lp
 }
 
 // SetBeforeShutdown registers a function that runs as soon as the stop
@@ -87,25 +75,6 @@ func (s *Shutdown) Graceful(stopCh <-chan struct{}, httpServer *http.Server, htt
 		wg.Go(func() {
 			if err := httpsServer.Shutdown(ctx); err != nil {
 				s.logger.Warn("HTTPS server graceful shutdown failed", zap.Error(err))
-			}
-		})
-	}
-	wg.Wait()
-
-	otelCtx, otelCancel := context.WithTimeout(context.Background(), s.serverShutdownTimeout)
-	defer otelCancel()
-
-	if s.tracerProvider != nil {
-		wg.Go(func() {
-			if err := s.tracerProvider.Shutdown(otelCtx); err != nil {
-				s.logger.Warn("stopping tracer provider", zap.Error(err))
-			}
-		})
-	}
-	if s.loggerProvider != nil {
-		wg.Go(func() {
-			if err := s.loggerProvider.Shutdown(otelCtx); err != nil {
-				s.logger.Warn("stopping logger provider", zap.Error(err))
 			}
 		})
 	}
