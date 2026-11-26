@@ -318,6 +318,10 @@ func runCheckgPRC(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
+		if resp.GetStatus() != grpc_health_v1.HealthCheckResponse_SERVING {
+			return fmt.Errorf("status %s", resp.GetStatus())
+		}
+
 		logger.Info("check succeed",
 			zap.String("status", resp.GetStatus().String()))
 		return nil
@@ -358,8 +362,7 @@ func retryCheck(address string, check func() error) error {
 			zap.String("address", address),
 			zap.Error(err))
 
-		var perr *permanentError
-		if errors.As(err, &perr) {
+		if _, ok := errors.AsType[*permanentError](err); ok {
 			break
 		}
 	}
