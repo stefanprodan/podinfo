@@ -6,6 +6,7 @@ services:
     command: ./podinfo --backend-url http://podinfo_backend:9899/status/200 --otel-service-name=podinfo_frontend
     environment:
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
     ports:
       - "9898:9898"
   podinfo_backend:
@@ -13,6 +14,7 @@ services:
     command: ./podinfo --port 9899 --otel-service-name=podinfo_backend
     environment:
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
     ports:
       - "9899:9899"
   otel:

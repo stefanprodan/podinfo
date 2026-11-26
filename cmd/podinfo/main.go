@@ -13,8 +13,6 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/contrib/bridges/otelzap"
-	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc"
-	sdklog "go.opentelemetry.io/otel/sdk/log"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -68,7 +66,7 @@ func main() {
 	fs.Int("stress-cpu", 0, "number of CPU cores with 100 load")
 	fs.Int("stress-memory", 0, "MB of data to load into memory")
 	fs.String("cache-server", "", "Redis address in the format 'tcp://<host>:<port>'")
-	fs.String("otel-service-name", "", "service name for OpenTelemetry, when not set tracing and log export are disabled")
+	fs.String("otel-service-name", "", "deprecated, use OTEL_SERVICE_NAME")
 
 	versionFlag := fs.BoolP("version", "v", false, "get version number")
 
@@ -108,28 +106,29 @@ func main() {
 		}
 	}
 
-	// initialize OTel log provider if service name is set
-	var loggerProvider *sdklog.LoggerProvider
-	if otelServiceName := viper.GetString("otel-service-name"); otelServiceName != "" {
-		var err error
-		loggerProvider, err = initLoggerProvider(context.Background(), otelServiceName)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error initializing OTel log provider: %s\n", err.Error())
-		}
-	}
-
 	// configure logging
-	logger, err := initZap(viper.GetString("level"), loggerProvider)
+	stderrLogger, err := initZap(viper.GetString("level"))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error initializing logger: %s\n", err.Error())
 		os.Exit(1)
 	}
-	defer logger.Sync()
+	defer stderrLogger.Sync()
+
+	// configure OpenTelemetry from the OTEL_* environment variables
+	otelServiceName := viper.GetString("otel-service-name")
+	if otelServiceName != "" {
+		stderrLogger.Warn("--otel-service-name is deprecated, use OTEL_SERVICE_NAME")
+	}
+	tel, err := telemetry.Setup(context.Background(), otelServiceName, stderrLogger)
+	if err != nil {
+		stderrLogger.Error("OpenTelemetry setup failed, telemetry disabled", zap.Error(err))
+	}
+	shutdownTimeout := viper.GetDuration("server-shutdown-timeout")
+	defer shutdownTelemetry(tel, shutdownTimeout, stderrLogger)
+
+	logger := withTelemetry(stderrLogger, tel, shutdownTimeout)
 	stdLog := zap.RedirectStdLog(logger)
 	defer stdLog()
-
-	// initialize OTel tracer provider if service name is set
-	tracerProvider := telemetry.NewTracerProvider(context.Background(), viper.GetString("otel-service-name"), logger)
 
 	// start stress tests if any
 	beginStressTest(viper.GetInt("stress-cpu"), viper.GetInt("stress-memory"), logger)
@@ -213,8 +212,6 @@ func main() {
 		drainDelay = 0
 	}
 	sd := signals.NewShutdown(srvCfg.ServerShutdownTimeout, drainDelay, logger)
-	sd.SetTracerProvider(tracerProvider)
-	sd.SetLoggerProvider(loggerProvider)
 	sd.SetBeforeShutdown(srv.Stop)
 	sd.Graceful(stopCh, httpServer, httpsServer, grpcServer, grpcHealth, healthy, ready)
 	if err := srv.Close(); err != nil {
@@ -227,26 +224,7 @@ func main() {
 	}
 }
 
-func initLoggerProvider(ctx context.Context, serviceName string) (*sdklog.LoggerProvider, error) {
-	res, err := telemetry.NewResource(serviceName)
-	if err != nil {
-		return nil, fmt.Errorf("creating OpenTelemetry resource: %w", err)
-	}
-
-	exporter, err := otlploggrpc.New(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("creating OTLP log exporter: %w", err)
-	}
-
-	provider := sdklog.NewLoggerProvider(
-		sdklog.WithProcessor(sdklog.NewBatchProcessor(exporter)),
-		sdklog.WithResource(res),
-	)
-
-	return provider, nil
-}
-
-func initZap(logLevel string, loggerProvider *sdklog.LoggerProvider) (*zap.Logger, error) {
+func initZap(logLevel string) (*zap.Logger, error) {
 	var level zap.AtomicLevel
 	switch logLevel {
 	case "debug":
@@ -292,12 +270,12 @@ func initZap(logLevel string, loggerProvider *sdklog.LoggerProvider) (*zap.Logge
 		ErrorOutputPaths: []string{"stderr"},
 	}
 
-	logger, err := zapConfig.Build()
-	if err != nil {
-		return nil, err
-	}
+	return zapConfig.Build()
+}
 
-	if loggerProvider != nil {
+func withTelemetry(logger *zap.Logger, tel *telemetry.Telemetry, shutdownTimeout time.Duration) *zap.Logger {
+	logger = logger.WithOptions(zap.WithFatalHook(tel.ExitHook(shutdownTimeout, os.Exit)))
+	if loggerProvider := tel.LoggerProvider(); loggerProvider != nil {
 		otelCore := otelzap.NewCore("github.com/stefanprodan/podinfo",
 			otelzap.WithLoggerProvider(loggerProvider),
 		)
@@ -305,8 +283,15 @@ func initZap(logLevel string, loggerProvider *sdklog.LoggerProvider) (*zap.Logge
 			return zapcore.NewTee(core, otelCore)
 		}))
 	}
+	return logger
+}
 
-	return logger, nil
+func shutdownTelemetry(tel *telemetry.Telemetry, timeout time.Duration, logger *zap.Logger) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	if err := tel.Shutdown(ctx); err != nil {
+		logger.Warn("OpenTelemetry shutdown failed", zap.Error(err))
+	}
 }
 
 var stressMemoryPayload []byte
