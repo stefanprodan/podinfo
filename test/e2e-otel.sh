@@ -196,7 +196,7 @@ send_requests() {
         curl -sf -H "traceparent: 00-${http_trace}-$(random_hex 8)-01" -d otel "http://${http_addr}/echo" >/dev/null
     run_client "${ns}" grpc-client "fullstorydev/grpcurl:${GRPCURL_VERSION}" \
         -plaintext -H "traceparent: 00-${grpc_trace}-$(random_hex 8)-01" -d '{"body":"otel"}' \
-        "${grpc_addr}" echo.EchoService/Echo >/dev/null
+        "${grpc_addr}" echo.v1.EchoService/Echo >/dev/null
 }
 
 HELM_HTTP_TRACE="$(random_hex 16)"
@@ -258,7 +258,7 @@ check() {
     client_ids=$(awk -F'\t' -v s="${fe}" -v t="${http_trace}" '$1=="span" && $2==s && $3==t && $6=="Client" {print $4}' "${RECORDS}" | paste -sd'|' -)
     has "\$1==\"span\" && \$2==\"${be}\" && \$3==\"${http_trace}\" && \$6==\"Server\" && \$5 ~ /^(${client_ids})\$/" \
         || { echo "the ${be} server span is not a child of the ${fe} client span"; return 1; }
-    has "\$1==\"span\" && \$2==\"${fe}\" && \$3==\"${grpc_trace}\" && \$6==\"Server\" && \$7==\"echo.EchoService/Echo\"" \
+    has "\$1==\"span\" && \$2==\"${fe}\" && \$3==\"${grpc_trace}\" && \$6==\"Server\" && \$7==\"echo.v1.EchoService/Echo\"" \
         || { echo "no ${fe} gRPC server span in trace ${grpc_trace}"; return 1; }
     for svc in "${fe}" "${be}"; do
         has "\$1==\"metric\" && \$2==\"${svc}\" && \$3==\"http.server.request.duration\"" \

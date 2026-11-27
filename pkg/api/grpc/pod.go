@@ -8,7 +8,7 @@ import (
 
 	"google.golang.org/grpc/metadata"
 
-	pb "github.com/stefanprodan/podinfo/pkg/api/grpc/pod"
+	pb "github.com/stefanprodan/podinfo/pkg/api/grpc/pod/v1"
 	"github.com/stefanprodan/podinfo/pkg/environ"
 	"github.com/stefanprodan/podinfo/pkg/version"
 )

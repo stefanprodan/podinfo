@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/stefanprodan/podinfo/pkg/api/grpc/version"
+	versionv1 "github.com/stefanprodan/podinfo/pkg/api/grpc/version/v1"
 	v "github.com/stefanprodan/podinfo/pkg/version"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -28,7 +28,7 @@ func TestGrpcVersion(t *testing.T) {
 		srv.Stop()
 	})
 
-	version.RegisterVersionServiceServer(srv, &VersionServer{})
+	versionv1.RegisterVersionServiceServer(srv, &VersionServer{})
 
 	go func() {
 		if err := srv.Serve(lis); err != nil {
@@ -48,8 +48,8 @@ func TestGrpcVersion(t *testing.T) {
 		conn.Close()
 	})
 
-	client := version.NewVersionServiceClient(conn)
-	res, err := client.Version(context.Background(), &version.VersionRequest{})
+	client := versionv1.NewVersionServiceClient(conn)
+	res, err := client.Version(context.Background(), &versionv1.VersionRequest{})
 
 	if _, ok := status.FromError(err); !ok {
 		t.Errorf("Version returned type %T, want %T", err, status.Error)

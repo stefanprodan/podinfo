@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"testing"
 
-	header "github.com/stefanprodan/podinfo/pkg/api/grpc/headers"
+	headerv1 "github.com/stefanprodan/podinfo/pkg/api/grpc/header/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
@@ -27,7 +27,7 @@ func TestGrpcHeader(t *testing.T) {
 		srv.Stop()
 	})
 
-	header.RegisterHeaderServiceServer(srv, &HeaderServer{})
+	headerv1.RegisterHeaderServiceServer(srv, &HeaderServer{})
 
 	go func() {
 		if err := srv.Serve(lis); err != nil {
@@ -53,8 +53,8 @@ func TestGrpcHeader(t *testing.T) {
 
 	ctx := metadata.NewOutgoingContext(context.Background(), headers)
 
-	client := header.NewHeaderServiceClient(conn)
-	res, err := client.Header(ctx, &header.HeaderRequest{})
+	client := headerv1.NewHeaderServiceClient(conn)
+	res, err := client.Header(ctx, &headerv1.HeaderRequest{})
 
 	if _, ok := status.FromError(err); !ok {
 		t.Errorf("Header returned type %T, want %T", err, status.Error)

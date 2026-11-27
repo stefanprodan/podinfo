@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/stefanprodan/podinfo/pkg/api/grpc/token"
+	tokenv1 "github.com/stefanprodan/podinfo/pkg/api/grpc/token/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -31,7 +31,7 @@ func TestGrpcToken(t *testing.T) {
 	})
 	config := &Config{}
 	config.JWTSecret = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"
-	token.RegisterTokenServiceServer(srv, &TokenServer{config: config})
+	tokenv1.RegisterTokenServiceServer(srv, &TokenServer{config: config})
 
 	go func() {
 		if err := srv.Serve(lis); err != nil {
@@ -51,14 +51,14 @@ func TestGrpcToken(t *testing.T) {
 		conn.Close()
 	})
 
-	client := token.NewTokenServiceClient(conn)
-	res, err := client.TokenGenerate(context.Background(), &token.TokenRequest{})
+	client := tokenv1.NewTokenServiceClient(conn)
+	res, err := client.TokenGenerate(context.Background(), &tokenv1.TokenGenerateRequest{})
 
 	if _, ok := status.FromError(err); !ok {
 		t.Errorf("Token Handler returned type %T, want %T", err, status.Error)
 	}
 
-	var token = token.TokenResponse{
+	var token = tokenv1.TokenGenerateResponse{
 		Token:     res.Token,
 		ExpiresAt: res.ExpiresAt,
 	}
@@ -119,7 +119,7 @@ func TestGrpcTokenValidate(t *testing.T) {
 				ctx = metadata.NewIncomingContext(ctx, md)
 			}
 
-			res, err := srv.TokenValidate(ctx, &token.TokenRequest{})
+			res, err := srv.TokenValidate(ctx, &tokenv1.TokenValidateRequest{})
 			if code := status.Code(err); code != tt.want {
 				t.Fatalf("TokenValidate returned %s (%v), want %s", code, err, tt.want)
 			}

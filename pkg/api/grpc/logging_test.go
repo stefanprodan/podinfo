@@ -19,7 +19,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
 
-	"github.com/stefanprodan/podinfo/pkg/api/grpc/echo"
+	echov1 "github.com/stefanprodan/podinfo/pkg/api/grpc/echo/v1"
 	"github.com/stefanprodan/podinfo/pkg/telemetry"
 )
 
@@ -54,17 +54,17 @@ func (r *logRecorder) find(msg string) (sdklog.Record, bool) {
 func TestGrpcLogCorrelation(t *testing.T) {
 	tests := []struct {
 		name   string
-		server func(*zap.Logger) echo.EchoServiceServer
+		server func(*zap.Logger) echov1.EchoServiceServer
 		msg    string
 	}{
 		{
 			name:   "handler",
-			server: func(l *zap.Logger) echo.EchoServiceServer { return &echoServer{logger: l} },
+			server: func(l *zap.Logger) echov1.EchoServiceServer { return &echoServer{logger: l} },
 			msg:    "received message body from client",
 		},
 		{
 			name:   "panic recovery",
-			server: func(*zap.Logger) echo.EchoServiceServer { return panicEchoServer{} },
+			server: func(*zap.Logger) echov1.EchoServiceServer { return panicEchoServer{} },
 			msg:    "gRPC handler panic",
 		},
 	}
@@ -90,8 +90,8 @@ func TestGrpcLogCorrelation(t *testing.T) {
 
 			s := &Server{logger: logger, config: &Config{}}
 			srv := grpc.NewServer(s.serverOptions(newMetrics(prometheus.NewRegistry()))...)
-			echo.RegisterEchoServiceServer(srv, tt.server(logger))
-			_, _ = echo.NewEchoServiceClient(newBufconnClient(t, srv)).Echo(context.Background(), &echo.Message{Body: "test"})
+			echov1.RegisterEchoServiceServer(srv, tt.server(logger))
+			_, _ = echov1.NewEchoServiceClient(newBufconnClient(t, srv)).Echo(context.Background(), &echov1.EchoRequest{Body: "test"})
 			srv.GracefulStop()
 
 			spans := exporter.GetSpans()

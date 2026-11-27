@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/stefanprodan/podinfo/pkg/api/grpc/echo"
+	echov1 "github.com/stefanprodan/podinfo/pkg/api/grpc/echo/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
@@ -27,7 +27,7 @@ func TestGrpcEcho(t *testing.T) {
 		srv.Stop()
 	})
 
-	echo.RegisterEchoServiceServer(srv, &echoServer{config: s.config, logger: s.logger})
+	echov1.RegisterEchoServiceServer(srv, &echoServer{config: s.config, logger: s.logger})
 
 	go func() {
 		if err := srv.Serve(lis); err != nil {
@@ -47,8 +47,8 @@ func TestGrpcEcho(t *testing.T) {
 		conn.Close()
 	})
 
-	client := echo.NewEchoServiceClient(conn)
-	res, err := client.Echo(context.Background(), &echo.Message{Body: "test123-test"})
+	client := echov1.NewEchoServiceClient(conn)
+	res, err := client.Echo(context.Background(), &echov1.EchoRequest{Body: "test123-test"})
 
 	if _, ok := status.FromError(err); !ok {
 		t.Errorf("Echo returned type %T, want %T", err, status.Error)

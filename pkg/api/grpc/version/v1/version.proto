@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package version.v1;
+
+option go_package = "github.com/stefanprodan/podinfo/pkg/api/grpc/version/v1;versionv1";
+
+service VersionService {
+  rpc Version(VersionRequest) returns (VersionResponse) {}
+}
+
+message VersionRequest {}
+
+message VersionResponse {
+  string version = 1;
+  string commit = 2;
+}

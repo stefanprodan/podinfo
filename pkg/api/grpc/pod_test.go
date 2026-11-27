@@ -12,7 +12,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/test/bufconn"
 
-	"github.com/stefanprodan/podinfo/pkg/api/grpc/pod"
+	podv1 "github.com/stefanprodan/podinfo/pkg/api/grpc/pod/v1"
 )
 
 func TestGrpcPod(t *testing.T) {
@@ -24,7 +24,7 @@ func TestGrpcPod(t *testing.T) {
 
 	srv := grpc.NewServer()
 	t.Cleanup(srv.Stop)
-	pod.RegisterPodServiceServer(srv, &podServer{config: NewMockGrpcServer().config})
+	podv1.RegisterPodServiceServer(srv, &podServer{config: NewMockGrpcServer().config})
 	go func() { _ = srv.Serve(lis) }()
 
 	dialer := func(context.Context, string) (net.Conn, error) { return lis.Dial() }
@@ -35,7 +35,7 @@ func TestGrpcPod(t *testing.T) {
 	t.Cleanup(func() { conn.Close() })
 
 	ctx := metadata.AppendToOutgoingContext(context.Background(), "x-test", "podinfo", "x-spiffe-id", "spiffe://example.org/forged", "authorization", "Bearer s3cret")
-	res, err := pod.NewPodServiceClient(conn).Pod(ctx, &pod.PodRequest{})
+	res, err := podv1.NewPodServiceClient(conn).Pod(ctx, &podv1.PodRequest{})
 	if err != nil {
 		t.Fatalf("Pod: %v", err)
 	}

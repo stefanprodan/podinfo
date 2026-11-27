@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stefanprodan/podinfo/pkg/api/grpc/delay"
+	delayv1 "github.com/stefanprodan/podinfo/pkg/api/grpc/delay/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -32,7 +32,7 @@ func TestGrpcDelay(t *testing.T) {
 		srv.Stop()
 	})
 
-	delay.RegisterDelayServiceServer(srv, &DelayServer{})
+	delayv1.RegisterDelayServiceServer(srv, &DelayServer{})
 
 	go func() {
 		if err := srv.Serve(lis); err != nil {
@@ -53,8 +53,8 @@ func TestGrpcDelay(t *testing.T) {
 		conn.Close()
 	})
 
-	client := delay.NewDelayServiceClient(conn)
-	res, err := client.Delay(context.Background(), &delay.DelayRequest{Seconds: 1})
+	client := delayv1.NewDelayServiceClient(conn)
+	res, err := client.Delay(context.Background(), &delayv1.DelayRequest{Seconds: 1})
 
 	// Check the status code is what we expect.
 	if _, ok := status.FromError(err); !ok {
@@ -103,7 +103,7 @@ func TestGrpcDelayContext(t *testing.T) {
 			defer cancel()
 
 			start := time.Now()
-			_, err := (&DelayServer{}).Delay(ctx, &delay.DelayRequest{Seconds: 10})
+			_, err := (&DelayServer{}).Delay(ctx, &delayv1.DelayRequest{Seconds: 10})
 			if elapsed := time.Since(start); elapsed > 2*time.Second {
 				t.Fatalf("Delay returned after %s", elapsed)
 			}

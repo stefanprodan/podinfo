@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	pb "github.com/stefanprodan/podinfo/pkg/api/grpc/delay"
+	pb "github.com/stefanprodan/podinfo/pkg/api/grpc/delay/v1"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/status"
 )

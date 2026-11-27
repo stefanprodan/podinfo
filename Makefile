@@ -87,6 +87,13 @@ ui-demo:
 ui-lint:
 	biome ci .
 
+proto:
+	buf generate
+
+proto-lint:
+	buf lint
+	buf format --exit-code --diff
+
 swagger:
 	go install github.com/swaggo/swag/cmd/swag@latest
 	go get github.com/swaggo/swag/gen@latest

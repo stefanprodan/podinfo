@@ -46,7 +46,7 @@ Make a gRPC call to the frontend with [grpcurl](https://github.com/fullstorydev/
 
 ```shell
 grpcurl -plaintext -H 'traceparent: 00-1af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01' \
-  -d '{"body":"hello"}' localhost:9999 echo.EchoService/Echo
+  -d '{"body":"hello"}' localhost:9999 echo.v1.EchoService/Echo
 ```
 
 Generate some traffic for the metrics:
@@ -69,7 +69,7 @@ Open <http://localhost:3000> (anonymous admin access).
 `0af7651916cd43dd8448eb211c80319c`. The trace has three spans: the frontend
 `POST /echo` server span, its `POST` client span and the backend `POST /echo`
 server span. Trace `1af7651916cd43dd8448eb211c80319c` holds one span, the gRPC
-server span `echo.EchoService/Echo`.
+server span `echo.v1.EchoService/Echo`.
 Both traces start with a parent span that only exists in the `traceparent` header,
 so Tempo search lists them as `<root span not yet received>`.
 

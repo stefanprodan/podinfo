@@ -12,7 +12,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
-	pb "github.com/stefanprodan/podinfo/pkg/api/grpc/token"
+	pb "github.com/stefanprodan/podinfo/pkg/api/grpc/token/v1"
 	"github.com/stefanprodan/podinfo/pkg/telemetry"
 )
 
@@ -27,7 +27,7 @@ type jwtCustomClaims struct {
 	jwt.RegisteredClaims
 }
 
-func (s *TokenServer) TokenGenerate(ctx context.Context, req *pb.TokenRequest) (*pb.TokenResponse, error) {
+func (s *TokenServer) TokenGenerate(ctx context.Context, req *pb.TokenGenerateRequest) (*pb.TokenGenerateResponse, error) {
 
 	user := "anonymous"
 	expiresAt := time.Now().Add(time.Minute * 1)
@@ -48,7 +48,7 @@ func (s *TokenServer) TokenGenerate(ctx context.Context, req *pb.TokenRequest) (
 		return nil, status.Error(codes.Internal, "failed to generate token")
 	}
 
-	var result = pb.TokenResponse{
+	var result = pb.TokenGenerateResponse{
 		Token:     t,
 		ExpiresAt: claims.ExpiresAt.Time.String(),
 		Message:   "Token generated successfully",
@@ -57,7 +57,7 @@ func (s *TokenServer) TokenGenerate(ctx context.Context, req *pb.TokenRequest) (
 	return &result, nil
 }
 
-func (s *TokenServer) TokenValidate(ctx context.Context, req *pb.TokenRequest) (*pb.TokenResponse, error) {
+func (s *TokenServer) TokenValidate(ctx context.Context, req *pb.TokenValidateRequest) (*pb.TokenValidateResponse, error) {
 	md, _ := metadata.FromIncomingContext(ctx)
 	authorization := md.Get("authorization")
 	if len(authorization) == 0 {
@@ -88,7 +88,7 @@ func (s *TokenServer) TokenValidate(ctx context.Context, req *pb.TokenRequest) (
 		return nil, status.Error(codes.Unauthenticated, "invalid issuer")
 	}
 
-	result := pb.TokenResponse{
+	result := pb.TokenValidateResponse{
 		Token: claims.Name,
 	}
 	if claims.ExpiresAt != nil {

@@ -13,16 +13,16 @@ import (
 	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
 
-	"github.com/stefanprodan/podinfo/pkg/api/grpc/delay"
-	"github.com/stefanprodan/podinfo/pkg/api/grpc/echo"
-	"github.com/stefanprodan/podinfo/pkg/api/grpc/env"
-	header "github.com/stefanprodan/podinfo/pkg/api/grpc/headers"
-	"github.com/stefanprodan/podinfo/pkg/api/grpc/info"
-	"github.com/stefanprodan/podinfo/pkg/api/grpc/panic"
-	"github.com/stefanprodan/podinfo/pkg/api/grpc/pod"
-	"github.com/stefanprodan/podinfo/pkg/api/grpc/status"
-	"github.com/stefanprodan/podinfo/pkg/api/grpc/token"
-	"github.com/stefanprodan/podinfo/pkg/api/grpc/version"
+	delayv1 "github.com/stefanprodan/podinfo/pkg/api/grpc/delay/v1"
+	echov1 "github.com/stefanprodan/podinfo/pkg/api/grpc/echo/v1"
+	envv1 "github.com/stefanprodan/podinfo/pkg/api/grpc/env/v1"
+	headerv1 "github.com/stefanprodan/podinfo/pkg/api/grpc/header/v1"
+	infov1 "github.com/stefanprodan/podinfo/pkg/api/grpc/info/v1"
+	panicv1 "github.com/stefanprodan/podinfo/pkg/api/grpc/panic/v1"
+	podv1 "github.com/stefanprodan/podinfo/pkg/api/grpc/pod/v1"
+	statusv1 "github.com/stefanprodan/podinfo/pkg/api/grpc/status/v1"
+	tokenv1 "github.com/stefanprodan/podinfo/pkg/api/grpc/token/v1"
+	versionv1 "github.com/stefanprodan/podinfo/pkg/api/grpc/version/v1"
 	"github.com/stefanprodan/podinfo/pkg/keypair"
 	"github.com/stefanprodan/podinfo/pkg/spiffe"
 )
@@ -101,16 +101,16 @@ func (s *Server) ListenAndServe() (*grpc.Server, *health.Server) {
 func (s *Server) newServer(opts ...grpc.ServerOption) (*grpc.Server, *health.Server) {
 	srv := grpc.NewServer(append(s.serverOptions(defaultMetrics()), opts...)...)
 
-	echo.RegisterEchoServiceServer(srv, &echoServer{config: s.config, logger: s.logger})
-	version.RegisterVersionServiceServer(srv, &VersionServer{config: s.config, logger: s.logger})
-	panic.RegisterPanicServiceServer(srv, &PanicServer{config: s.config, logger: s.logger})
-	delay.RegisterDelayServiceServer(srv, &DelayServer{config: s.config, logger: s.logger})
-	header.RegisterHeaderServiceServer(srv, &HeaderServer{config: s.config, logger: s.logger})
-	info.RegisterInfoServiceServer(srv, &infoServer{config: s.config})
-	pod.RegisterPodServiceServer(srv, &podServer{config: s.config})
-	status.RegisterStatusServiceServer(srv, &StatusServer{config: s.config, logger: s.logger})
-	token.RegisterTokenServiceServer(srv, &TokenServer{config: s.config, logger: s.logger})
-	env.RegisterEnvServiceServer(srv, &EnvServer{config: s.config, logger: s.logger})
+	echov1.RegisterEchoServiceServer(srv, &echoServer{config: s.config, logger: s.logger})
+	versionv1.RegisterVersionServiceServer(srv, &VersionServer{config: s.config, logger: s.logger})
+	panicv1.RegisterPanicServiceServer(srv, &PanicServer{config: s.config, logger: s.logger})
+	delayv1.RegisterDelayServiceServer(srv, &DelayServer{config: s.config, logger: s.logger})
+	headerv1.RegisterHeaderServiceServer(srv, &HeaderServer{config: s.config, logger: s.logger})
+	infov1.RegisterInfoServiceServer(srv, &infoServer{config: s.config})
+	podv1.RegisterPodServiceServer(srv, &podServer{config: s.config})
+	statusv1.RegisterStatusServiceServer(srv, &StatusServer{config: s.config, logger: s.logger})
+	tokenv1.RegisterTokenServiceServer(srv, &TokenServer{config: s.config, logger: s.logger})
+	envv1.RegisterEnvServiceServer(srv, &EnvServer{config: s.config, logger: s.logger})
 	reflection.Register(srv)
 
 	healthSrv := health.NewServer()

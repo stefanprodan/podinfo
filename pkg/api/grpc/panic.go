@@ -4,7 +4,7 @@ import (
 	"context"
 	"os"
 
-	pb "github.com/stefanprodan/podinfo/pkg/api/grpc/panic"
+	pb "github.com/stefanprodan/podinfo/pkg/api/grpc/panic/v1"
 	"github.com/stefanprodan/podinfo/pkg/telemetry"
 	"go.uber.org/zap"
 )
