@@ -7,8 +7,8 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: podinfo
-  minReplicas: 2
-  maxReplicas: 4
+  minReplicas: 1
+  maxReplicas: 1
   metrics:
   - type: Resource
     resource:
@@ -17,4 +17,4 @@ spec:
         type: Utilization
         # scale up if usage is above
         # 99% of the requested CPU (100m)
-        averageUtilization: 99
+        averageUtilization: 40
