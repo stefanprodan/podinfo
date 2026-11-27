@@ -10,9 +10,7 @@ const redacted = "[REDACTED]"
 
 var sensitiveNames = []string{"PASS", "SECRET", "TOKEN", "KEY", "CREDENTIAL", "AUTH", "PRIVATE"}
 
-// urlPassword matches the password in the userinfo of every URL in a value,
-// stopping at whitespace or a comma so lists and embedded URLs are covered.
-var urlPassword = regexp.MustCompile(`([a-zA-Z][a-zA-Z0-9+.-]*://[^:@/\s,]*):[^\s,]*@`)
+var urlScheme = regexp.MustCompile(`[a-zA-Z][a-zA-Z0-9+.-]*://`)
 
 // Redacted returns the process environment with secret values masked.
 func Redacted() []string {
@@ -29,7 +27,7 @@ func redact(env []string) []string {
 		case isSensitive(name):
 			out[i] = name + "=" + redacted
 		default:
-			out[i] = name + "=" + urlPassword.ReplaceAllString(value, "${1}:"+redacted+"@")
+			out[i] = name + "=" + redactURLs(value)
 		}
 	}
 	return out
@@ -46,4 +44,41 @@ func isSensitive(name string) bool {
 		}
 	}
 	return false
+}
+
+// redactURLs masks the userinfo password of every URL in the value. Each URL
+// runs until the next scheme, so lists, embedded URLs and passwords holding
+// commas or '@' are all covered.
+func redactURLs(value string) string {
+	starts := urlScheme.FindAllStringIndex(value, -1)
+	if starts == nil {
+		return value
+	}
+	var b strings.Builder
+	b.WriteString(value[:starts[0][0]])
+	for i, loc := range starts {
+		end := len(value)
+		if i+1 < len(starts) {
+			end = starts[i+1][0]
+		}
+		b.WriteString(value[loc[0]:loc[1]])
+		b.WriteString(redactUserinfo(value[loc[1]:end]))
+	}
+	return b.String()
+}
+
+func redactUserinfo(rest string) string {
+	token, tail := rest, ""
+	if i := strings.IndexAny(rest, " \t"); i >= 0 {
+		token, tail = rest[:i], rest[i:]
+	}
+	at := strings.LastIndex(token, "@")
+	if at < 0 {
+		return rest
+	}
+	user, _, ok := strings.Cut(token[:at], ":")
+	if !ok || strings.Contains(user, "/") {
+		return rest
+	}
+	return user + ":" + redacted + token[at:] + tail
 }

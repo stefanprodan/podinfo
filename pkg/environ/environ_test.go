@@ -29,6 +29,8 @@ func TestRedact(t *testing.T) {
 		{"url query", "PODINFO_BACKEND_URL=https://u:p@backend/api?x=1", "PODINFO_BACKEND_URL=https://u:[REDACTED]@backend/api?x=1"},
 		{"url password with at sign", "PODINFO_CACHE_SERVER=redis://u:p@ss@redis:6379", "PODINFO_CACHE_SERVER=redis://u:[REDACTED]@redis:6379"},
 		{"url password unparsable", "PODINFO_CACHE_SERVER=redis://u:p#/x@redis:6379", "PODINFO_CACHE_SERVER=redis://u:[REDACTED]@redis:6379"},
+		{"url password with comma", "PODINFO_CACHE_SERVER=redis://u:p,ss@h:6379", "PODINFO_CACHE_SERVER=redis://u:[REDACTED]@h:6379"},
+		{"url path with colon", "PODINFO_BACKEND_URL=http://backend/a:b@c", "PODINFO_BACKEND_URL=http://backend/a:b@c"},
 		{"url list", "NODES=redis://a:p@h1,redis://b:q@h2", "NODES=redis://a:[REDACTED]@h1,redis://b:[REDACTED]@h2"},
 		{"url embedded", "ARGS=--cache-server=redis://u:p@h:6379 --x", "ARGS=--cache-server=redis://u:[REDACTED]@h:6379 --x"},
 		{"url user only", "PODINFO_BACKEND_URL=https://u@backend/api", "PODINFO_BACKEND_URL=https://u@backend/api"},
