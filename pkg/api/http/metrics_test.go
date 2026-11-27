@@ -159,3 +159,56 @@ func TestMetricsExemplars(t *testing.T) {
 		}
 	})
 }
+
+func methodCount(t *testing.T, method, path string) uint64 {
+	t.Helper()
+	mfs, err := prometheus.DefaultGatherer.Gather()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var count uint64
+	for _, mf := range mfs {
+		if mf.GetName() != "http_request_duration_seconds" {
+			continue
+		}
+		for _, m := range mf.GetMetric() {
+			labels := map[string]string{}
+			for _, l := range m.GetLabel() {
+				labels[l.GetName()] = l.GetValue()
+			}
+			if labels["method"] == method && labels["path"] == path {
+				count += m.GetHistogram().GetSampleCount()
+			}
+		}
+	}
+	return count
+}
+
+func TestMethodLabel(t *testing.T) {
+	for _, m := range []string{
+		http.MethodGet, http.MethodHead, http.MethodPost, http.MethodPut, http.MethodPatch,
+		http.MethodDelete, http.MethodConnect, http.MethodOptions, http.MethodTrace,
+	} {
+		if got := methodLabel(m); got != m {
+			t.Errorf("methodLabel(%q) = %q, want %q", m, got, m)
+		}
+	}
+	for _, m := range []string{"FOO", "get", "", "PROPFIND"} {
+		if got := methodLabel(m); got != "other" {
+			t.Errorf("methodLabel(%q) = %q, want other", m, got)
+		}
+	}
+}
+
+func TestMetricsMethodLabel(t *testing.T) {
+	srv := newInstrumentedServer("/")
+	before := methodCount(t, "other", "echo")
+	req := httptest.NewRequest("FOO", "/echo", nil)
+	srv.handler.ServeHTTP(httptest.NewRecorder(), req)
+	if after := methodCount(t, "other", "echo"); after != before+1 {
+		t.Errorf(`http_request_duration_seconds{method="other",path="echo"} count %d, want %d`, after, before+1)
+	}
+	if n := methodCount(t, "FOO", "echo"); n != 0 {
+		t.Errorf(`http_request_duration_seconds{method="FOO"} count %d, want 0`, n)
+	}
+}

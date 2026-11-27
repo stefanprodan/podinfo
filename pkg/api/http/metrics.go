@@ -61,7 +61,7 @@ func (p *PrometheusMiddleware) Handler(next http.Handler) http.Handler {
 		path := p.getRouteName(r)
 		m := httpsnoop.CaptureMetrics(next, w, r)
 		status := strconv.Itoa(m.Code)
-		telemetry.Observe(r.Context(), p.Histogram.WithLabelValues(r.Method, path, status), m.Duration.Seconds())
+		telemetry.Observe(r.Context(), p.Histogram.WithLabelValues(methodLabel(r.Method), path, status), m.Duration.Seconds())
 		p.Counter.WithLabelValues(status).Inc()
 	})
 }
@@ -79,6 +79,17 @@ func (p *PrometheusMiddleware) getRouteName(r *http.Request) string {
 		}
 	}
 	return urlToLabel(r.RequestURI)
+}
+
+// methodLabel keeps the method label bounded: any non-standard method a
+// client sends is recorded as "other".
+func methodLabel(method string) string {
+	switch method {
+	case http.MethodGet, http.MethodHead, http.MethodPost, http.MethodPut, http.MethodPatch,
+		http.MethodDelete, http.MethodConnect, http.MethodOptions, http.MethodTrace:
+		return method
+	}
+	return "other"
 }
 
 var invalidChars = regexp.MustCompile(`[^a-zA-Z0-9]+`)
