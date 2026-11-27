@@ -3,6 +3,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: {{ template "podinfo.fullname" . }}-redis
+  namespace: {{ include "podinfo.namespace" . }}
 data:
   redis.conf: |
     maxmemory 64mb

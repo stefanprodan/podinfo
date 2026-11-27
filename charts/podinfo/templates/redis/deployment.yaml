@@ -3,6 +3,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ template "podinfo.fullname" . }}-redis
+  namespace: {{ include "podinfo.namespace" . }}
   labels:
     app: {{ template "podinfo.fullname" . }}-redis
 spec:
