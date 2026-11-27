@@ -70,6 +70,9 @@ The following tables lists the configurable parameters of the podinfo chart and 
 | `redis.repository`                             | `docker.io/redis`              | Redis image repository                                                                             |
 | `redis.tag`                                    | `<VERSION>`                    | Redis image tag                                                                                    |
 | `redis.imagePullSecrets`                       | `[]`                           | Redis image pull secrets                                                                           |
+| `redis.tls.enabled`                            | `false`                        | Serve Redis over mutual TLS with cert-manager certificates, podinfo presents a client certificate   |
+| `redis.tls.issuerRef`                          | `{}`                           | CA issuer that signs the Redis and podinfo certificates, a CA created by the chart when empty      |
+| `redis.tls.duration`                           | `8760h`                        | Lifetime of the Redis server certificate                                                           |
 | `ui.color`                                     | `#1f4e8c`                      | UI color, green is `#17694f`                                                                       |
 | `ui.message`                                   | `None`                         | UI greetings message                                                                               |
 | `ui.logo`                                      | `None`                         | UI logo                                                                                            |
@@ -200,7 +203,18 @@ $ helm upgrade -i my-release oci://ghcr.io/stefanprodan/charts/podinfo -f values
 ## Cache
 
 Podinfo caches to the bundled Redis (`redis.enabled`) or to an external Redis or Valkey server set with `cache`.
-The URL takes the extra cluster nodes or Sentinels as `addr` parameters:
+
+With `redis.tls.enabled`, the bundled Redis accepts only TLS clients that present a certificate signed by its CA.
+The chart creates the CA and the Redis and podinfo certificates with cert-manager. Set `redis.tls.issuerRef`
+to sign them with an existing private CA issuer instead (CA or Vault, not ACME), whose secrets carry the root CA as `ca.crt`.
+`cacheOptions.ca` and `cacheOptions.cert` replace the CA bundle and the client key pair that podinfo uses.
+
+Podinfo loads a renewed client certificate for new connections, but Redis reads its own certificate only at startup,
+so `redis.tls.duration` is long and Redis must be restarted when cert-manager renews it.
+Both read the CA at startup, so a renewed CA needs Redis and podinfo restarted.
+Unless cert-manager runs with `--enable-certificate-owner-ref`, the certificate secrets stay after `helm uninstall`.
+
+For an external server, the URL takes the extra cluster nodes or Sentinels as `addr` parameters:
 
 ```yaml
 cache: "rediss://redis-0.redis:6379?addr=redis-1.redis:6379&addr=redis-2.redis:6379"

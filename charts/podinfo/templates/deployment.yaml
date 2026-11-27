@@ -13,6 +13,12 @@
 {{- if and .Values.cacheOptions.ca.secretName .Values.cacheOptions.ca.configMapName }}
 {{- fail "cacheOptions.ca.secretName and cacheOptions.ca.configMapName are mutually exclusive" }}
 {{- end }}
+{{- if and .Values.redis.tls.enabled (not .Values.redis.enabled) }}
+{{- fail "redis.tls.enabled requires redis.enabled" }}
+{{- end }}
+{{- if and .Values.redis.tls.enabled .Values.cache }}
+{{- fail "redis.tls.enabled conflicts with cache" }}
+{{- end }}
 {{- if and .Values.otel.samplerArg (not .Values.otel.sampler) }}
 {{- fail "otel.samplerArg requires otel.sampler" }}
 {{- end }}
@@ -110,7 +116,7 @@ spec:
             {{- if .Values.cache }}
             - --cache-server={{ .Values.cache }}
             {{- else if .Values.redis.enabled }}
-            - --cache-server=redis://{{ template "podinfo.fullname" . }}-redis:6379
+            - --cache-server={{ ternary "rediss" "redis" (eq (include "podinfo.redisTLS" .) "true") }}://{{ template "podinfo.fullname" . }}-redis:6379
             {{- end }}
             {{- if .Values.cacheOptions.cluster }}
             - --cache-cluster
@@ -120,8 +126,10 @@ spec:
             {{- end }}
             {{- if or .Values.cacheOptions.ca.secretName .Values.cacheOptions.ca.configMapName }}
             - --cache-ca-file=/data/cache-ca/ca.crt
+            {{- else if include "podinfo.redisTLS" . }}
+            - --cache-ca-file=/data/cache-cert/ca.crt
             {{- end }}
-            {{- if .Values.cacheOptions.cert.secretName }}
+            {{- if or .Values.cacheOptions.cert.secretName (include "podinfo.redisTLS" .) }}
             - --cache-cert-path=/data/cache-cert
             {{- end }}
             - --level={{ .Values.logLevel }}
@@ -259,7 +267,7 @@ spec:
             mountPath: /data/cache-ca
             readOnly: true
           {{- end }}
-          {{- if .Values.cacheOptions.cert.secretName }}
+          {{- if or .Values.cacheOptions.cert.secretName (include "podinfo.redisTLS" .) }}
           - name: cache-cert
             mountPath: /data/cache-cert
             readOnly: true
@@ -315,10 +323,14 @@ spec:
               path: ca.crt
       {{- end }}
       {{- end }}
-      {{- with .Values.cacheOptions.cert.secretName }}
+      {{- if .Values.cacheOptions.cert.secretName }}
       - name: cache-cert
         secret:
-          secretName: {{ . }}
+          secretName: {{ .Values.cacheOptions.cert.secretName }}
+      {{- else if include "podinfo.redisTLS" . }}
+      - name: cache-cert
+        secret:
+          secretName: {{ template "podinfo.fullname" . }}-redis-client
       {{- end }}
     {{- with .Values.topologySpreadConstraints }}
       topologySpreadConstraints:

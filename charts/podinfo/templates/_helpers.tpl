@@ -76,6 +76,13 @@ Create the name of the tls secret for secure port
 {{- end }}
 
 {{/*
+True when podinfo caches to the bundled Redis over mutual TLS.
+*/}}
+{{- define "podinfo.redisTLS" -}}
+{{- if and .Values.redis.enabled .Values.redis.tls.enabled }}true{{ end }}
+{{- end }}
+
+{{/*
 The directory of the SPIFFE Workload API socket, where the CSI volume is mounted.
 */}}
 {{- define "podinfo.spiffeSocketDir" -}}

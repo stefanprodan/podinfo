@@ -231,6 +231,13 @@ redis:
   repository: docker.io/redis
   tag: 8.8.0
   imagePullSecrets: []
+  # serve Redis over mutual TLS, podinfo presents a client certificate (cert-manager required)
+  tls:
+    enabled: false
+    # the CA issuer that signs the Redis and podinfo certificates, a CA created by the chart when empty
+    issuerRef: {}
+    # the lifetime of the Redis server certificate, Redis reads it only at startup
+    duration: 8760h
 
 serviceAccount:
   # Specifies whether a service account should be created
