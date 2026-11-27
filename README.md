@@ -72,16 +72,16 @@ Errors are returned with their HTTP status code and a JSON body with the `code` 
 gRPC API:
 
 * `/grpc.health.v1.Health/Check` health checking
-* `/grpc.EchoService/Echo` echos the received content
-* `/grpc.VersionService/Version` returns podinfo version and Git commit hash
-* `/grpc.DelayService/Delay` returns a successful response after the given seconds in the body of gRPC request
-* `/grpc.EnvService/Env` returns environment variables as a JSON array, with secret values masked
-* `/grpc.HeaderService/Header` returns the headers present in the gRPC request. Any custom header can also be given as a part of request and that can be returned using this API
-* `/grpc.InfoService/Info` returns the runtime information
-* `/grpc.PanicService/Panic` crashes the process with gRPC status code as '1 CANCELLED'
-* `/grpc.StatusService/Status` returns the gRPC Status code given in the request body
-* `/grpc.TokenService/TokenGenerate` issues a JWT token valid for one minute
-* `/grpc.TokenService/TokenValidate` validates the JWT token
+* `/echo.EchoService/Echo` echos the received content
+* `/version.VersionService/Version` returns podinfo version and Git commit hash
+* `/delay.DelayService/Delay` returns a successful response after the given seconds in the body of gRPC request
+* `/env.EnvService/Env` returns environment variables as a JSON array, with secret values masked
+* `/header.HeaderService/Header` returns the headers present in the gRPC request. Any custom header can also be given as a part of request and that can be returned using this API
+* `/info.InfoService/Info` returns the runtime information
+* `/panic.PanicService/Panic` crashes the process with gRPC status code as '1 CANCELLED'
+* `/status.StatusService/Status` returns the gRPC Status code given in the request body
+* `/token.TokenService/TokenGenerate` issues a JWT token valid for one minute
+* `/token.TokenService/TokenValidate` validates the JWT token
 
 Web UI:
 
