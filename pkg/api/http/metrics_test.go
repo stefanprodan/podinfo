@@ -184,18 +184,21 @@ func methodCount(t *testing.T, method, path string) uint64 {
 	return count
 }
 
-func TestMethodLabel(t *testing.T) {
+func TestStandardMethod(t *testing.T) {
 	for _, m := range []string{
 		http.MethodGet, http.MethodHead, http.MethodPost, http.MethodPut, http.MethodPatch,
 		http.MethodDelete, http.MethodConnect, http.MethodOptions, http.MethodTrace,
 	} {
-		if got := methodLabel(m); got != m {
-			t.Errorf("methodLabel(%q) = %q, want %q", m, got, m)
+		if got := standardMethod(m, "other"); got != m {
+			t.Errorf("standardMethod(%q) = %q, want %q", m, got, m)
 		}
 	}
-	for _, m := range []string{"FOO", "get", "", "PROPFIND"} {
-		if got := methodLabel(m); got != "other" {
-			t.Errorf("methodLabel(%q) = %q, want other", m, got)
+	if got := standardMethod("get", "other"); got != http.MethodGet {
+		t.Errorf("standardMethod(%q) = %q, want %q", "get", got, http.MethodGet)
+	}
+	for _, m := range []string{"FOO", "", "PROPFIND"} {
+		if got := standardMethod(m, "other"); got != "other" {
+			t.Errorf("standardMethod(%q) = %q, want other", m, got)
 		}
 	}
 }
