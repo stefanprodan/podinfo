@@ -56,7 +56,7 @@ info:
     url: https://github.com/stefanprodan/podinfo
   description: Go microservice template for Kubernetes.
   license:
-    name: MIT License
+    name: Apache License 2.0
     url: https://github.com/stefanprodan/podinfo/blob/master/LICENSE
   title: Podinfo API
   version: "2.0"
