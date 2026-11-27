@@ -545,12 +545,15 @@ func TestEchoBackendErrorOnServerSpan(t *testing.T) {
 			if exceptions != 1 {
 				t.Errorf("got %d exception events on the server span, want 1", exceptions)
 			}
+			for _, c := range spansOfKind(ended, trace.SpanKindClient) {
+				if u, _ := attr(c.Attributes, "url.full"); u.AsString() != tt.url {
+					t.Errorf("client span url.full %q, want %q", u.AsString(), tt.url)
+				}
+			}
 			for _, s := range ended {
 				var values []string
 				for _, a := range s.Attributes {
-					if s.SpanKind != trace.SpanKindClient || a.Key != "url.full" {
-						values = append(values, a.Value.Emit())
-					}
+					values = append(values, a.Value.Emit())
 				}
 				for _, e := range s.Events {
 					values = append(values, e.Name)
