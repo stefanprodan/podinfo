@@ -30,7 +30,7 @@ timoni -n default apply podinfo oci://ghcr.io/stefanprodan/modules/podinfo
 To install a specific module version:
 
 ```shell
-timoni -n default apply podinfo oci://ghcr.io/stefanprodan/modules/podinfo -v 6.14.1
+timoni -n default apply podinfo oci://ghcr.io/stefanprodan/modules/podinfo -v 7.0.0
 ```
 
 To change the [default configuration](#configuration),
