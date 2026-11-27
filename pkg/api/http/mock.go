@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
 	"github.com/stefanprodan/podinfo/pkg/telemetry"
@@ -31,6 +32,7 @@ func NewMockServer() *Server {
 	}
 
 	logger, _ := zap.NewDevelopment()
+	reg := prometheus.NewRegistry()
 
 	return &Server{
 		router:  mux.NewRouter(),
@@ -39,5 +41,7 @@ func NewMockServer() *Server {
 		ui:      page,
 		tracer:  telemetry.Tracer(),
 		backend: newBackendClient(http.DefaultTransport),
+
+		metrics: newPrometheusMiddleware(reg, reg),
 	}
 }

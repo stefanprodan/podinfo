@@ -15,39 +15,38 @@ import (
 	"github.com/stefanprodan/podinfo/pkg/telemetry"
 )
 
-type PrometheusMiddleware struct {
-	Histogram *prometheus.HistogramVec
-	Counter   *prometheus.CounterVec
+type prometheusMiddleware struct {
+	histogram  *prometheus.HistogramVec
+	counter    *prometheus.CounterVec
+	registerer prometheus.Registerer
+	gatherer   prometheus.Gatherer
 }
 
-func NewPrometheusMiddleware() *PrometheusMiddleware {
-	// used for monitoring and alerting (RED method)
-	histogram := prometheus.NewHistogramVec(prometheus.HistogramOpts{
-		Subsystem: "http",
-		Name:      "request_duration_seconds",
-		Help:      "Seconds spent serving HTTP requests.",
-		Buckets:   prometheus.DefBuckets,
-	}, []string{"method", "path", "status"})
-	// used for horizontal pod auto-scaling (Kubernetes HPA v2)
-	counter := prometheus.NewCounterVec(
-		prometheus.CounterOpts{
+func newPrometheusMiddleware(reg prometheus.Registerer, g prometheus.Gatherer) *prometheusMiddleware {
+	p := &prometheusMiddleware{
+		registerer: reg,
+		gatherer:   g,
+		// used for monitoring and alerting (RED method)
+		histogram: prometheus.NewHistogramVec(prometheus.HistogramOpts{
+			Subsystem: "http",
+			Name:      "request_duration_seconds",
+			Help:      "Seconds spent serving HTTP requests.",
+			Buckets:   prometheus.DefBuckets,
+		}, []string{"method", "path", "status"}),
+		// used for horizontal pod auto-scaling (Kubernetes HPA v2)
+		counter: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Subsystem: "http",
 			Name:      "requests_total",
 			Help:      "The total number of HTTP requests.",
-		},
-		[]string{"status"},
-	)
-
-	prometheus.MustRegister(histogram)
-	prometheus.MustRegister(counter)
-
-	return &PrometheusMiddleware{
-		Histogram: histogram,
-		Counter:   counter,
+		}, []string{"status"}),
 	}
+	reg.MustRegister(p.histogram, p.counter)
+	return p
 }
 
-var defaultPrometheusMiddleware = sync.OnceValue(NewPrometheusMiddleware)
+var defaultPrometheusMiddleware = sync.OnceValue(func() *prometheusMiddleware {
+	return newPrometheusMiddleware(prometheus.DefaultRegisterer, prometheus.DefaultGatherer)
+})
 
 // Metrics godoc
 // @Summary Prometheus metrics
@@ -56,18 +55,18 @@ var defaultPrometheusMiddleware = sync.OnceValue(NewPrometheusMiddleware)
 // @Produce plain
 // @Router /metrics [get]
 // @Success 200 {string} string "OK"
-func (p *PrometheusMiddleware) Handler(next http.Handler) http.Handler {
+func (p *prometheusMiddleware) Handler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		path := p.getRouteName(r)
 		m := httpsnoop.CaptureMetrics(next, w, r)
 		status := strconv.Itoa(m.Code)
-		telemetry.Observe(r.Context(), p.Histogram.WithLabelValues(standardMethod(r.Method, "other"), path, status), m.Duration.Seconds())
-		p.Counter.WithLabelValues(status).Inc()
+		telemetry.Observe(r.Context(), p.histogram.WithLabelValues(standardMethod(r.Method, "other"), path, status), m.Duration.Seconds())
+		p.counter.WithLabelValues(status).Inc()
 	})
 }
 
 // converts gorilla mux routes from '/api/delay/{wait}' to 'api_delay_wait'
-func (p *PrometheusMiddleware) getRouteName(r *http.Request) string {
+func (p *prometheusMiddleware) getRouteName(r *http.Request) string {
 	if mux.CurrentRoute(r) != nil {
 		if name := mux.CurrentRoute(r).GetName(); len(name) > 0 {
 			return urlToLabel(name)
@@ -93,9 +92,9 @@ func urlToLabel(path string) string {
 	return result
 }
 
-func metricsHandler() http.Handler {
+func (p *prometheusMiddleware) metricsHandler() http.Handler {
 	return promhttp.InstrumentMetricHandler(
-		prometheus.DefaultRegisterer,
-		promhttp.HandlerFor(prometheus.DefaultGatherer, promhttp.HandlerOpts{EnableOpenMetrics: true}),
+		p.registerer,
+		promhttp.HandlerFor(p.gatherer, promhttp.HandlerOpts{EnableOpenMetrics: true}),
 	)
 }

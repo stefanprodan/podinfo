@@ -100,6 +100,7 @@ type Server struct {
 	configs      *fscache.Watcher
 	keyPair      *keypair.KeyPair
 	ui           *uiPage
+	metrics      *prometheusMiddleware
 }
 
 func NewServer(config *Config, logger *zap.Logger) (*Server, error) {
@@ -132,6 +133,8 @@ func NewServer(config *Config, logger *zap.Logger) (*Server, error) {
 		ui:      page,
 		tracer:  telemetry.Tracer(),
 		backend: newBackendClient(http.DefaultTransport),
+
+		metrics: defaultPrometheusMiddleware(),
 	}
 	if cacheOpts != nil {
 		redis.SetLogger(cacheLogger{logger})
@@ -180,7 +183,7 @@ func (s *Server) prefixedPath(route string) string {
 func (s *Server) registerHandlers() {
 	rootPath := s.prefixedPath("/")
 
-	s.router.Handle(s.prefixedPath("/metrics"), metricsHandler())
+	s.router.Handle(s.prefixedPath("/metrics"), s.metrics.metricsHandler())
 	s.router.PathPrefix(s.prefixedPath("/debug/pprof/")).Handler(pprofHandler())
 	s.router.HandleFunc(rootPath, s.indexHandler).HeadersRegexp("User-Agent", "^Mozilla.*").Methods("GET")
 	s.router.HandleFunc(rootPath, s.infoHandler).Methods("GET")
@@ -235,8 +238,7 @@ func (s *Server) registerHandlers() {
 
 func (s *Server) registerMiddlewares() {
 	s.router.Use(routeMiddleware)
-	prom := defaultPrometheusMiddleware()
-	s.router.Use(prom.Handler)
+	s.router.Use(s.metrics.Handler)
 	httpLogger := NewLoggingMiddleware(s.logger)
 	s.router.Use(httpLogger.Handler)
 	s.router.Use(versionMiddleware)
@@ -377,14 +379,14 @@ func (s *Server) startMetricsServer() {
 func (s *Server) metricsServer() *http.Server {
 	return &http.Server{
 		Addr:    fmt.Sprintf("%s:%v", s.config.Host, s.config.PortMetrics),
-		Handler: metricsMux(),
+		Handler: s.metricsMux(),
 	}
 }
 
-func metricsMux() http.Handler {
+func (s *Server) metricsMux() http.Handler {
 	mux := http.NewServeMux()
 	mux.Handle("/debug/pprof/", pprofHandler())
-	mux.Handle("/metrics", metricsHandler())
+	mux.Handle("/metrics", s.metrics.metricsHandler())
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
