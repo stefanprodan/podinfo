@@ -3,17 +3,17 @@ package http
 import (
 	"net/http"
 
-	"os"
+	"github.com/stefanprodan/podinfo/pkg/environ"
 )
 
 // Env godoc
 // @Summary Environment
-// @Description returns the environment variables as a JSON array
+// @Description returns the environment variables as a JSON array, with secret values masked
 // @Tags HTTP API
 // @Accept json
 // @Produce json
 // @Router /env [get]
 // @Success 200 {object} http.ArrayResponse
 func (s *Server) envHandler(w http.ResponseWriter, r *http.Request) {
-	s.JSONResponse(w, r, os.Environ())
+	s.JSONResponse(w, r, environ.Redacted())
 }

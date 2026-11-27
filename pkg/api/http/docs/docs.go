@@ -341,7 +341,7 @@ const docTemplate = `{
         },
         "/env": {
             "get": {
-                "description": "returns the environment variables as a JSON array",
+                "description": "returns the environment variables as a JSON array, with secret values masked",
                 "consumes": [
                     "application/json"
                 ],

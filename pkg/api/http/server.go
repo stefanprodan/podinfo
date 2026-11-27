@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	_ "net/http/pprof"
+	"net/http/pprof"
 	"os"
 	"path"
 	"strings"
@@ -181,7 +181,7 @@ func (s *Server) registerHandlers() {
 	rootPath := s.prefixedPath("/")
 
 	s.router.Handle(s.prefixedPath("/metrics"), metricsHandler())
-	s.router.PathPrefix(s.prefixedPath("/debug/pprof/")).Handler(http.DefaultServeMux)
+	s.router.PathPrefix(s.prefixedPath("/debug/pprof/")).Handler(pprofHandler())
 	s.router.HandleFunc(rootPath, s.indexHandler).HeadersRegexp("User-Agent", "^Mozilla.*").Methods("GET")
 	s.router.HandleFunc(rootPath, s.infoHandler).Methods("GET")
 	if rootPath != "/" {
@@ -370,20 +370,37 @@ func (s *Server) startSecureServer() *http.Server {
 
 func (s *Server) startMetricsServer() {
 	if s.config.PortMetrics > 0 {
-		mux := http.DefaultServeMux
-		mux.Handle("/metrics", metricsHandler())
-		mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-			w.Write([]byte("OK"))
-		})
-
-		srv := &http.Server{
-			Addr:    fmt.Sprintf(":%v", s.config.PortMetrics),
-			Handler: mux,
-		}
-
-		srv.ListenAndServe()
+		s.metricsServer().ListenAndServe()
 	}
+}
+
+func (s *Server) metricsServer() *http.Server {
+	return &http.Server{
+		Addr:    fmt.Sprintf("%s:%v", s.config.Host, s.config.PortMetrics),
+		Handler: metricsMux(),
+	}
+}
+
+func metricsMux() http.Handler {
+	mux := http.NewServeMux()
+	mux.Handle("/debug/pprof/", pprofHandler())
+	mux.Handle("/metrics", metricsHandler())
+	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("OK"))
+	})
+	return mux
+}
+
+// pprofHandler serves the runtime profiles without the cmdline endpoint,
+// which would disclose the process arguments, credentials included.
+func pprofHandler() http.Handler {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/debug/pprof/", pprof.Index)
+	mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+	return mux
 }
 
 type ArrayResponse []string

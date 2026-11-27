@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"regexp"
+	"strings"
 	"testing"
 )
 
@@ -35,6 +36,7 @@ func TestEnvHandler(t *testing.T) {
 }
 
 func TestEnvHandler_Actual(t *testing.T) {
+	t.Setenv("PODINFO_CACHE_PASSWORD", "s3cret-value")
 	srv := NewMockServer()
 	req, _ := http.NewRequest("GET", "/env", nil)
 	rr := httptest.NewRecorder()
@@ -45,5 +47,12 @@ func TestEnvHandler_Actual(t *testing.T) {
 	}
 	if rr.Header().Get("Content-Type") != "application/json; charset=utf-8" {
 		t.Errorf("Content-Type = %q, want application/json", rr.Header().Get("Content-Type"))
+	}
+	body := rr.Body.String()
+	if !strings.Contains(body, "PODINFO_CACHE_PASSWORD=[REDACTED]") {
+		t.Errorf("body does not contain redacted PODINFO_CACHE_PASSWORD:\n%s", body)
+	}
+	if strings.Contains(body, "s3cret-value") {
+		t.Error("body leaks PODINFO_CACHE_PASSWORD value")
 	}
 }

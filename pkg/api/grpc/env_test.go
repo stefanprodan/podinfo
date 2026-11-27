@@ -5,6 +5,8 @@ import (
 	"log"
 	"net"
 	"regexp"
+	"slices"
+	"strings"
 	"testing"
 
 	"github.com/stefanprodan/podinfo/pkg/api/grpc/env"
@@ -15,6 +17,7 @@ import (
 )
 
 func TestGrpcEnv(t *testing.T) {
+	t.Setenv("PODINFO_CACHE_PASSWORD", "s3cret-value")
 
 	lis := bufconn.Listen(1024 * 1024)
 	t.Cleanup(func() {
@@ -58,5 +61,12 @@ func TestGrpcEnv(t *testing.T) {
 	if !r.MatchString(res.String()) {
 		t.Fatalf("Returned unexpected body:\ngot \n%v \nwant \n%s",
 			res, expected)
+	}
+
+	if !slices.Contains(res.GetEnvVars(), "PODINFO_CACHE_PASSWORD=[REDACTED]") {
+		t.Errorf("EnvVars does not contain redacted PODINFO_CACHE_PASSWORD")
+	}
+	if strings.Contains(res.String(), "s3cret-value") {
+		t.Error("EnvVars leaks PODINFO_CACHE_PASSWORD value")
 	}
 }

@@ -2,10 +2,11 @@ package grpc
 
 import (
 	"context"
+
 	"go.uber.org/zap"
-	"os"
 
 	pb "github.com/stefanprodan/podinfo/pkg/api/grpc/env"
+	"github.com/stefanprodan/podinfo/pkg/environ"
 )
 
 type EnvServer struct {
@@ -15,5 +16,5 @@ type EnvServer struct {
 }
 
 func (s *EnvServer) Env(ctx context.Context, envInput *pb.EnvRequest) (*pb.EnvResponse, error) {
-	return &pb.EnvResponse{EnvVars: os.Environ()}, nil
+	return &pb.EnvResponse{EnvVars: environ.Redacted()}, nil
 }
