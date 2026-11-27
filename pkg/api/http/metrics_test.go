@@ -8,15 +8,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/prometheus/client_golang/prometheus"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/trace/noop"
 )
 
-func durationHistogram(t *testing.T, path string) (uint64, []map[string]string) {
+func durationHistogram(t *testing.T, srv *Server, path string) (uint64, []map[string]string) {
 	t.Helper()
-	mfs, err := prometheus.DefaultGatherer.Gather()
+	mfs, err := srv.metrics.gatherer.Gather()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -67,10 +66,9 @@ func TestMetricsPathLabel(t *testing.T) {
 		"/store/abc":  "store",
 		"/api/echo/x": "api_echo",
 	} {
-		before, _ := durationHistogram(t, label)
 		serve(srv, path, http.Header{})
-		if after, _ := durationHistogram(t, label); after != before+1 {
-			t.Errorf("%s: http_request_duration_seconds{path=%q} count %d, want %d", path, label, after, before+1)
+		if n, _ := durationHistogram(t, srv, label); n != 1 {
+			t.Errorf("%s: http_request_duration_seconds{path=%q} count %d, want 1", path, label, n)
 		}
 	}
 }
@@ -85,7 +83,8 @@ func TestMetricsExemplars(t *testing.T) {
 	serve(srv, "/headers", http.Header{"Traceparent": {"00-" + traceID + "-00f067aa0ba902b7-00"}})
 
 	otel.SetTracerProvider(noop.NewTracerProvider())
-	serve(newInstrumentedServer("/"), "/api/info", http.Header{"Traceparent": {"00-" + traceID + "-00f067aa0ba902b7-01"}})
+	untraced := newInstrumentedServer("/")
+	serve(untraced, "/api/info", http.Header{"Traceparent": {"00-" + traceID + "-00f067aa0ba902b7-01"}})
 
 	t.Run("sampled span", func(t *testing.T) {
 		ended := spans.GetSpans()
@@ -93,7 +92,7 @@ func TestMetricsExemplars(t *testing.T) {
 			t.Fatalf("got %d spans, want 1", len(ended))
 		}
 		spanID := ended[0].SpanContext.SpanID().String()
-		_, exemplars := durationHistogram(t, "version")
+		_, exemplars := durationHistogram(t, srv, "version")
 		var found bool
 		for _, e := range exemplars {
 			found = found || e["span_id"] == spanID && e["trace_id"] == traceID
@@ -103,14 +102,18 @@ func TestMetricsExemplars(t *testing.T) {
 		}
 	})
 
-	for _, tt := range []struct{ name, path string }{
-		{name: "unsampled span", path: "headers"},
-		{name: "remote span without tracer provider", path: "api_info"},
+	for _, tt := range []struct {
+		name string
+		srv  *Server
+		path string
+	}{
+		{name: "unsampled span", srv: srv, path: "headers"},
+		{name: "remote span without tracer provider", srv: untraced, path: "api_info"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			count, exemplars := durationHistogram(t, tt.path)
-			if count == 0 {
-				t.Error("request not observed")
+			count, exemplars := durationHistogram(t, tt.srv, tt.path)
+			if count != 1 {
+				t.Errorf("count %d, want 1", count)
 			}
 			if len(exemplars) != 0 {
 				t.Errorf("got exemplars %v, want none", exemplars)
@@ -160,9 +163,9 @@ func TestMetricsExemplars(t *testing.T) {
 	})
 }
 
-func methodCount(t *testing.T, method, path string) uint64 {
+func methodCount(t *testing.T, srv *Server, method, path string) uint64 {
 	t.Helper()
-	mfs, err := prometheus.DefaultGatherer.Gather()
+	mfs, err := srv.metrics.gatherer.Gather()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -205,13 +208,12 @@ func TestStandardMethod(t *testing.T) {
 
 func TestMetricsMethodLabel(t *testing.T) {
 	srv := newInstrumentedServer("/")
-	before := methodCount(t, "other", "echo")
 	req := httptest.NewRequest("FOO", "/echo", nil)
 	srv.handler.ServeHTTP(httptest.NewRecorder(), req)
-	if after := methodCount(t, "other", "echo"); after != before+1 {
-		t.Errorf(`http_request_duration_seconds{method="other",path="echo"} count %d, want %d`, after, before+1)
+	if n := methodCount(t, srv, "other", "echo"); n != 1 {
+		t.Errorf(`http_request_duration_seconds{method="other",path="echo"} count %d, want 1`, n)
 	}
-	if n := methodCount(t, "FOO", "echo"); n != 0 {
+	if n := methodCount(t, srv, "FOO", "echo"); n != 0 {
 		t.Errorf(`http_request_duration_seconds{method="FOO"} count %d, want 0`, n)
 	}
 }
