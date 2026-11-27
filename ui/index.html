@@ -10,27 +10,55 @@
 <link rel="icon" type="image/png" href="{{.Prefix}}/ui/favicon.png">
 <link rel="apple-touch-icon" href="{{.Prefix}}/ui/apple-touch-icon.png">
 <link rel="stylesheet" href="{{.Prefix}}/ui/podinfo.css">
-<script src="{{.Prefix}}/ui/podinfo.js" defer></script>
+<script src="{{.Prefix}}/ui/podinfo.js" type="module"></script>
 </head>
 <body data-prefix="{{.Prefix}}">
 <main class="poster">
   <div class="bubbles" aria-hidden="true"></div>
+  <p class="announcer sr" role="status"></p>
   <p class="greeting"><span class="message"></span> <span class="build">revision <span class="revision"></span></span></p>
-  <div class="stage">
-    <div class="id">
-      <div class="clip"><h1 class="version"></h1></div>
-      <p class="served up"><span class="pulse" aria-hidden="true"></span>Served by <b class="hostname"></b></p>
-      <p class="served lost" role="status" hidden><span class="pulse" aria-hidden="true"></span>No response since <b class="since"></b>, retrying</p>
+  <div class="deck">
+    <div class="stage">
+      <div class="id">
+        <div class="clip"><h1 class="version"></h1></div>
+        <p class="served up"><span class="pulse" aria-hidden="true"></span>Served by <b class="hostname"></b></p>
+        <p class="served lost" hidden><span class="pulse" aria-hidden="true"></span>No response since <b class="since"></b>, retrying</p>
+      </div>
+      <img class="logo" src="{{.Logo}}" alt="">
     </div>
-    <img class="logo" src="{{.Logo}}" alt="">
-  </div>
-  <div class="share">
-    <div class="bar" aria-hidden="true"></div>
-    <ul class="labels"></ul>
+    <div class="share">
+      <div class="bar" aria-hidden="true"></div>
+      <ul class="labels"></ul>
+    </div>
+    <section class="details" id="details" aria-label="Pod details" inert>
+      <article class="sheet" tabindex="-1">
+        <header class="top">
+          <div>
+            <h2 class="host"></h2>
+            <dl class="facts"></dl>
+            <p class="offline" hidden>No response since <b class="since"></b>, retrying</p>
+          </div>
+          <div class="stamp" role="img"><div aria-hidden="true"><b></b><span>podinfo</span></div></div>
+        </header>
+        <div class="cols">
+          <section class="col" aria-labelledby="env-title">
+            <h2 id="env-title">Environment <span></span></h2>
+            <dl class="lines" id="env"></dl>
+          </section>
+          <section class="col" aria-labelledby="headers-title">
+            <h2 id="headers-title">Request headers <span></span></h2>
+            <dl class="lines" id="headers"></dl>
+          </section>
+        </div>
+      </article>
+    </section>
   </div>
   <div class="foot">
     <button class="ping" type="button"><span>Ping</span><span class="fill" aria-hidden="true">Ping</span></button>
     <span class="pings" role="status"></span>
+    <button class="flip" type="button" aria-controls="details" aria-expanded="false" aria-label="Pod details" title="Pod details">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10.5"/><path d="M12 11v6"/><path d="M12 7.2h.01" stroke-width="2.6"/></svg>
+    </button>
     <a href="{{.Prefix}}/swagger/" aria-label="Swagger API docs" title="Swagger API docs">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10.5"/><path d="M9.6 6.9c-1.4 0-1.9.6-1.9 1.8v1.4c0 .9-.4 1.5-1.4 1.9 1 .4 1.4 1 1.4 1.9v1.4c0 1.2.5 1.8 1.9 1.8M14.4 6.9c1.4 0 1.9.6 1.9 1.8v1.4c0 .9.4 1.5 1.4 1.9-1 .4-1.4 1-1.4 1.9v1.4c0 1.2-.5 1.8-1.9 1.8"/><path d="M10.2 12h.01M12 12h.01M13.8 12h.01" stroke-width="1.6"/></svg>
     </a>

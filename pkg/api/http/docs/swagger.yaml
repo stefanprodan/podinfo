@@ -11,6 +11,35 @@ definitions:
     additionalProperties:
       type: string
     type: object
+  http.PodResponse:
+    properties:
+      env:
+        additionalProperties:
+          type: string
+        type: object
+      goarch:
+        type: string
+      goos:
+        type: string
+      headers:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        type: object
+      hostname:
+        type: string
+      num_cpu:
+        type: string
+      num_goroutine:
+        type: string
+      revision:
+        type: string
+      runtime:
+        type: string
+      version:
+        type: string
+    type: object
   http.RuntimeResponse:
     properties:
       color:
@@ -110,6 +139,23 @@ paths:
           schema:
             $ref: '#/definitions/http.RuntimeResponse'
       summary: Runtime information
+      tags:
+      - HTTP API
+  /api/pod:
+    get:
+      consumes:
+      - application/json
+      description: returns the runtime information, the environment variables and
+        the request HTTP headers of the pod that served the request, with secret values
+        masked, plus X-Spiffe-Id when the client presented a SPIFFE X.509 SVID
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.PodResponse'
+      summary: Pod runtime, environment and request headers
       tags:
       - HTTP API
   /artifact:
@@ -276,7 +322,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: returns the environment variables as a JSON array, with secret values masked
+      description: returns the environment variables as a JSON array, with secret
+        values masked
       produces:
       - application/json
       responses:
@@ -339,8 +386,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: returns a JSON array with the request HTTP headers, plus X-Spiffe-Id
-        when the client presented a SPIFFE X.509 SVID
+      description: returns a JSON array with the request HTTP headers, with credential
+        values masked, plus X-Spiffe-Id when the client presented a SPIFFE X.509 SVID
       produces:
       - application/json
       responses:

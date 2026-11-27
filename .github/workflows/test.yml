@@ -33,8 +33,14 @@ jobs:
           version: v${{ env.HELM_VERSION }}
       - name: Setup Timoni
         uses: stefanprodan/timoni/actions/setup@58f38054cc5276178b1426fabaf0b5e066c7c271 # v0.38.0
+      - name: Setup Biome
+        uses: biomejs/setup-biome@4c91541eaada48f67d7dbd7833600ce162b68f51 # v2.7.1
+        with:
+          version: 2.6.8
       - name: Run unit tests
         run: make test
+      - name: Lint UI
+        run: make ui-lint
       - name: Validate Helm chart
         run: |
           helm lint ./charts/podinfo/

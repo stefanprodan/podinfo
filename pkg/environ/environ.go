@@ -17,6 +17,39 @@ func Redacted() []string {
 	return redact(os.Environ())
 }
 
+// RedactedMap returns the process environment by name, with secret values masked.
+func RedactedMap() map[string]string {
+	return toMap(Redacted())
+}
+
+// RedactHeaders returns a copy of the HTTP headers or gRPC metadata with the
+// values of credential headers and cookies masked, and URL passwords hidden.
+func RedactHeaders(headers map[string][]string) map[string][]string {
+	out := make(map[string][]string, len(headers))
+	for name, values := range headers {
+		pseudo := strings.HasPrefix(name, ":")
+		if !pseudo && (isSensitive(name) || strings.Contains(strings.ToUpper(name), "COOKIE")) {
+			out[name] = []string{redacted}
+			continue
+		}
+		masked := make([]string, len(values))
+		for i, v := range values {
+			masked[i] = redactURLs(v)
+		}
+		out[name] = masked
+	}
+	return out
+}
+
+func toMap(env []string) map[string]string {
+	out := make(map[string]string, len(env))
+	for _, kv := range env {
+		name, value, _ := strings.Cut(kv, "=")
+		out[name] = value
+	}
+	return out
+}
+
 func redact(env []string) []string {
 	out := make([]string, len(env))
 	for i, kv := range env {

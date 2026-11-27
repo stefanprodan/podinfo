@@ -100,6 +100,29 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/pod": {
+            "get": {
+                "description": "returns the runtime information, the environment variables and the request HTTP headers of the pod that served the request, with secret values masked, plus X-Spiffe-Id when the client presented a SPIFFE X.509 SVID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "HTTP API"
+                ],
+                "summary": "Pod runtime, environment and request headers",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.PodResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/artifact": {
             "get": {
                 "description": "returns the files from the artifact path as a tar.gz, the digest is set in the X-Artifact-Digest header",
@@ -438,7 +461,7 @@ const docTemplate = `{
         },
         "/headers": {
             "get": {
-                "description": "returns a JSON array with the request HTTP headers, plus X-Spiffe-Id when the client presented a SPIFFE X.509 SVID",
+                "description": "returns a JSON array with the request HTTP headers, with credential values masked, plus X-Spiffe-Id when the client presented a SPIFFE X.509 SVID",
                 "consumes": [
                     "application/json"
                 ],
@@ -837,6 +860,50 @@ const docTemplate = `{
             "type": "object",
             "additionalProperties": {
                 "type": "string"
+            }
+        },
+        "http.PodResponse": {
+            "type": "object",
+            "properties": {
+                "env": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "goarch": {
+                    "type": "string"
+                },
+                "goos": {
+                    "type": "string"
+                },
+                "headers": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "hostname": {
+                    "type": "string"
+                },
+                "num_cpu": {
+                    "type": "string"
+                },
+                "num_goroutine": {
+                    "type": "string"
+                },
+                "revision": {
+                    "type": "string"
+                },
+                "runtime": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                }
             }
         },
         "http.RuntimeResponse": {

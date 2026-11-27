@@ -55,3 +55,49 @@ func TestRedactPreservesOrder(t *testing.T) {
 		t.Errorf("redact(%q) = %q, want %q", in, got, want)
 	}
 }
+
+func TestRedactedMap(t *testing.T) {
+	t.Setenv("PODINFO_TEST_PLAIN", "a=b")
+	t.Setenv("PODINFO_TEST_PASSWORD", "s3cret")
+
+	env := RedactedMap()
+	if got := env["PODINFO_TEST_PLAIN"]; got != "a=b" {
+		t.Errorf("PODINFO_TEST_PLAIN = %q, want %q", got, "a=b")
+	}
+	if got := env["PODINFO_TEST_PASSWORD"]; got != redacted {
+		t.Errorf("PODINFO_TEST_PASSWORD = %q, want %q", got, redacted)
+	}
+}
+
+func TestRedactHeaders(t *testing.T) {
+	in := map[string][]string{
+		"Accept":              {"*/*"},
+		"Authorization":       {"Bearer abc"},
+		"Proxy-Authorization": {"Basic abc"},
+		"Cookie":              {"session=abc"},
+		"X-Api-Key":           {"abc"},
+		"X-Auth-Request-User": {"stefan"},
+		"Referer":             {"https://u:p@example.com/"},
+		":authority":          {"podinfo:9999"},
+	}
+	want := map[string][]string{
+		"Accept":              {"*/*"},
+		"Authorization":       {redacted},
+		"Proxy-Authorization": {redacted},
+		"Cookie":              {redacted},
+		"X-Api-Key":           {redacted},
+		"X-Auth-Request-User": {redacted},
+		"Referer":             {"https://u:" + redacted + "@example.com/"},
+		":authority":          {"podinfo:9999"},
+	}
+
+	got := RedactHeaders(in)
+	for name, values := range want {
+		if !slices.Equal(got[name], values) {
+			t.Errorf("%s = %v, want %v", name, got[name], values)
+		}
+	}
+	if in["Authorization"][0] != "Bearer abc" {
+		t.Error("RedactHeaders modified its input")
+	}
+}
