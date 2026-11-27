@@ -1,9 +1,9 @@
 package http
 
 import (
+	"context"
 	"math/rand"
 	"net/http"
-
 	"strconv"
 	"time"
 
@@ -61,7 +61,23 @@ func (s *Server) delayHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	time.Sleep(time.Duration(delay) * time.Second)
+	if !wait(r.Context(), delay) {
+		return
+	}
 
 	s.JSONResponse(w, r, map[string]int{"delay": delay})
+}
+
+// wait sleeps for the given seconds and reports whether they elapsed before
+// ctx was done.
+func wait(ctx context.Context, seconds int) bool {
+	timer := time.NewTimer(time.Duration(seconds) * time.Second)
+	defer timer.Stop()
+
+	select {
+	case <-timer.C:
+		return true
+	case <-ctx.Done():
+		return false
+	}
 }

@@ -1,6 +1,7 @@
 package http
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
@@ -32,6 +33,26 @@ func TestChunkedHandler(t *testing.T) {
 	if !r.MatchString(rr.Body.String()) {
 		t.Fatalf("handler returned unexpected body:\ngot \n%v \nwant \n%s",
 			rr.Body.String(), expected)
+	}
+}
+
+func TestChunkedHandlerCanceled(t *testing.T) {
+	srv := NewMockServer()
+	srv.router.HandleFunc("/chunked/{wait}", srv.chunkedHandler)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	time.AfterFunc(50*time.Millisecond, cancel)
+	req := httptest.NewRequest("GET", "/chunked/10", nil).WithContext(ctx)
+	rr := httptest.NewRecorder()
+
+	start := time.Now()
+	srv.router.ServeHTTP(rr, req)
+
+	if elapsed := time.Since(start); elapsed > time.Second {
+		t.Errorf("handler took %s after cancellation, want prompt return", elapsed)
+	}
+	if rr.Body.Len() != 0 {
+		t.Errorf("got body %q, want none", rr.Body.String())
 	}
 }
 

@@ -39,7 +39,10 @@ func (s *Server) chunkedHandler(w http.ResponseWriter, r *http.Request) {
 
 	flusher.Flush()
 
-	time.Sleep(time.Duration(delay) * time.Second)
+	if !wait(r.Context(), delay) {
+		return
+	}
+
 	s.JSONResponse(w, r, map[string]int{"delay": delay})
 
 	flusher.Flush()
