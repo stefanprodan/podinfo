@@ -9,10 +9,11 @@ docker build --tag test/podinfo --build-arg "REVISION=0.0.0-$(git rev-list -1 HE
 kind load docker-image test/podinfo:latest
 
 # Install cert-manager
-kubectl apply --server-side -f https://github.com/cert-manager/cert-manager/releases/download/v1.20.2/cert-manager.yaml
-kubectl -n cert-manager rollout status deployment/cert-manager --timeout=2m
-kubectl -n cert-manager rollout status deployment/cert-manager-webhook --timeout=2m
-kubectl -n cert-manager rollout status deployment/cert-manager-cainjector --timeout=2m
+helm upgrade --install --wait cert-manager oci://quay.io/jetstack/charts/cert-manager \
+    --version v1.20.2 \
+    --set crds.enabled=true \
+    --namespace=cert-manager \
+    --create-namespace
 
 # Configure self-signed certificate
 cat << 'EOF' | kubectl apply --server-side -f -
