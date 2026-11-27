@@ -28,7 +28,7 @@ spec:
   selfSigned: {}
 EOF
 
-# Install podinfo with TLS and Redis enabled
+# Install podinfo with TLS and Redis over mutual TLS enabled
 helm upgrade --install --wait podinfo ./charts/podinfo \
     --set image.repository=test/podinfo \
     --set image.tag=latest \
@@ -39,6 +39,7 @@ helm upgrade --install --wait podinfo ./charts/podinfo \
     --set replicaCount=2 \
     --set hooks.postInstall.job.enabled=true \
     --set redis.enabled=true \
+    --set redis.tls.enabled=true \
     --namespace=default
 
 # Run tests

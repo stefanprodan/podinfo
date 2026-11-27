@@ -1,0 +1,88 @@
+{{- if include "podinfo.redisTLS" . }}
+{{- $fullname := include "podinfo.fullname" . }}
+{{- $namespace := include "podinfo.namespace" . }}
+{{- $issuerRef := .Values.redis.tls.issuerRef }}
+{{- if not $issuerRef }}
+{{- $issuerRef = dict "kind" "Issuer" "name" (printf "%s-redis-ca" $fullname) }}
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: {{ $fullname }}-redis-selfsigned
+  namespace: {{ $namespace }}
+  labels:
+    {{- include "podinfo.labels" . | nindent 4 }}
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ $fullname }}-redis-ca
+  namespace: {{ $namespace }}
+  labels:
+    {{- include "podinfo.labels" . | nindent 4 }}
+spec:
+  isCA: true
+  commonName: {{ $fullname }}-redis-ca
+  secretName: {{ $fullname }}-redis-ca
+  duration: 87600h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    kind: Issuer
+    name: {{ $fullname }}-redis-selfsigned
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: {{ $fullname }}-redis-ca
+  namespace: {{ $namespace }}
+  labels:
+    {{- include "podinfo.labels" . | nindent 4 }}
+spec:
+  ca:
+    secretName: {{ $fullname }}-redis-ca
+---
+{{- end }}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ $fullname }}-redis
+  namespace: {{ $namespace }}
+  labels:
+    {{- include "podinfo.labels" . | nindent 4 }}
+spec:
+  secretName: {{ $fullname }}-redis-tls
+  duration: {{ .Values.redis.tls.duration }}
+  dnsNames:
+    - {{ $fullname }}-redis
+    - {{ $fullname }}-redis.{{ $namespace }}
+    - {{ $fullname }}-redis.{{ $namespace }}.svc
+  usages:
+    - server auth
+    - client auth
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+  {{- $issuerRef | toYaml | trimSuffix "\n" | nindent 4 }}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ $fullname }}-redis-client
+  namespace: {{ $namespace }}
+  labels:
+    {{- include "podinfo.labels" . | nindent 4 }}
+spec:
+  secretName: {{ $fullname }}-redis-client
+  commonName: {{ $fullname }}
+  usages:
+    - client auth
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+  {{- $issuerRef | toYaml | trimSuffix "\n" | nindent 4 }}
+{{- end }}

@@ -44,6 +44,15 @@ spec:
             exec:
               command:
                 - redis-cli
+                {{- if include "podinfo.redisTLS" . }}
+                - --tls
+                - --cert
+                - /redis-tls/tls.crt
+                - --key
+                - /redis-tls/tls.key
+                - --cacert
+                - /redis-tls/ca.crt
+                {{- end }}
                 - ping
             initialDelaySeconds: 5
             timeoutSeconds: 5
@@ -59,6 +68,11 @@ spec:
               name: data
             - mountPath: /redis-config
               name: config
+            {{- if include "podinfo.redisTLS" . }}
+            - mountPath: /redis-tls
+              name: tls
+              readOnly: true
+            {{- end }}
       volumes:
         - name: data
           emptyDir: {}
@@ -68,4 +82,9 @@ spec:
             items:
               - key: redis.conf
                 path: redis.conf
+        {{- if include "podinfo.redisTLS" . }}
+        - name: tls
+          secret:
+            secretName: {{ template "podinfo.fullname" . }}-redis-tls
+        {{- end }}
 {{- end }}

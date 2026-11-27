@@ -9,4 +9,12 @@ data:
     maxmemory-policy allkeys-lru
     save ""
     appendonly no
+    {{- if include "podinfo.redisTLS" . }}
+    port 0
+    tls-port 6379
+    tls-cert-file /redis-tls/tls.crt
+    tls-key-file /redis-tls/tls.key
+    tls-ca-cert-file /redis-tls/ca.crt
+    tls-auth-clients yes
+    {{- end }}
 {{- end }}
