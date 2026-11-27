@@ -1,14 +1,18 @@
 package environ
 
 import (
-	"net/url"
 	"os"
+	"regexp"
 	"strings"
 )
 
 const redacted = "[REDACTED]"
 
-var sensitiveNames = []string{"PASSWORD", "PASSWD", "SECRET", "TOKEN", "KEY", "CREDENTIAL", "AUTH", "PRIVATE"}
+var sensitiveNames = []string{"PASS", "SECRET", "TOKEN", "KEY", "CREDENTIAL", "AUTH", "PRIVATE"}
+
+// urlPassword matches the password in the userinfo of every URL in a value,
+// stopping at whitespace or a comma so lists and embedded URLs are covered.
+var urlPassword = regexp.MustCompile(`([a-zA-Z][a-zA-Z0-9+.-]*://[^:@/\s,]*):[^\s,]*@`)
 
 // Redacted returns the process environment with secret values masked.
 func Redacted() []string {
@@ -25,7 +29,7 @@ func redact(env []string) []string {
 		case isSensitive(name):
 			out[i] = name + "=" + redacted
 		default:
-			out[i] = name + "=" + redactURL(value)
+			out[i] = name + "=" + urlPassword.ReplaceAllString(value, "${1}:"+redacted+"@")
 		}
 	}
 	return out
@@ -42,17 +46,4 @@ func isSensitive(name string) bool {
 		}
 	}
 	return false
-}
-
-func redactURL(value string) string {
-	u, err := url.Parse(value)
-	if err != nil || u.Scheme == "" || u.Host == "" || u.User == nil {
-		return value
-	}
-	if _, ok := u.User.Password(); !ok {
-		return value
-	}
-	u.User = url.User(u.User.Username())
-	prefix := u.Scheme + "://" + u.User.String()
-	return prefix + ":" + redacted + strings.TrimPrefix(u.String(), prefix)
 }
