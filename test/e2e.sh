@@ -2,6 +2,9 @@
 
 set -e
 
+CERT_MANAGER_CHART_VERSION="${CERT_MANAGER_CHART_VERSION:-v1.20.2}"
+VALKEY_CHART_VERSION="${VALKEY_CHART_VERSION:-1.0.0}"
+
 # Build container image
 docker build --tag test/podinfo --build-arg "REVISION=0.0.0-$(git rev-list -1 HEAD)" .
 
@@ -10,7 +13,7 @@ kind load docker-image test/podinfo:latest
 
 # Install cert-manager
 helm upgrade --install --wait cert-manager oci://quay.io/jetstack/charts/cert-manager \
-    --version v1.20.2 \
+    --version "${CERT_MANAGER_CHART_VERSION}" \
     --set crds.enabled=true \
     --namespace=cert-manager \
     --create-namespace
@@ -44,7 +47,7 @@ helm test podinfo --logs
 # Install Valkey
 helm upgrade --install --wait valkey valkey \
     --repo https://valkey.io/valkey-helm/ \
-    --version 1.0.0 \
+    --version "${VALKEY_CHART_VERSION}" \
     --namespace=default
 
 # Install podinfo with Valkey
