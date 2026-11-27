@@ -1,16 +1,19 @@
 :root {
   --color: #1f4e8c;
+  --dark: #14202b;
   --ink: #fff;
   --soft: rgba(255,255,255,.82);
   --faint: rgba(255,255,255,.28);
   --shine: rgba(255,255,255,.05);
   --deep: rgba(0,0,0,.34);
+  --bar: 18px;
+  --condensed: "Avenir Next Condensed", "Roboto Condensed", "Arial Narrow", "Helvetica Neue", system-ui, sans-serif;
 }
 
 :root[data-ink="dark"] {
-  --ink: #14202b;
-  --soft: rgba(20,32,43,.8);
-  --faint: rgba(20,32,43,.24);
+  --ink: var(--dark);
+  --soft: color-mix(in srgb, var(--dark) 80%, transparent);
+  --faint: color-mix(in srgb, var(--dark) 24%, transparent);
   --shine: rgba(255,255,255,.3);
   --deep: rgba(0,0,0,.06);
 }
@@ -29,10 +32,9 @@ body {
 
 .poster {
   isolation: isolate;
-  min-height: 100vh;
   min-height: 100dvh;
   display: grid;
-  grid-template-rows: auto 1fr auto auto;
+  grid-template-rows: auto 1fr auto;
   padding: clamp(20px, 4vw, 56px);
 }
 
@@ -68,10 +70,10 @@ body {
 
 .bubbles i {
   position: absolute;
-  animation: surface var(--time) cubic-bezier(.45,0,.85,.6) both;
+  animation: surface var(--rise-time) cubic-bezier(.45,0,.85,.6) both;
 }
 
-/* The bubble itself sways while its wrapper rises. */
+/* The bubble itself wobbles while its wrapper rises. */
 .bubbles i::before {
   content: "";
   display: block;
@@ -81,7 +83,7 @@ body {
   border-radius: 50%;
   background: radial-gradient(circle at 30% 28%, currentColor 0 11%, transparent 13%);
   opacity: .6;
-  animation: wobble var(--sway) ease-in-out infinite alternate;
+  animation: wobble var(--wobble) ease-in-out infinite alternate;
 }
 
 @keyframes surface {
@@ -130,12 +132,257 @@ body {
   white-space: nowrap;
 }
 
+/* The stage and the rollout bar, with the spec sheet laid over both so nothing moves when it opens. */
+.deck {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
 .stage {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 4vw;
   min-width: 0;
+  transition: opacity .3s .25s;
+}
+
+[data-view="details"] .stage {
+  opacity: 0;
+  transition-delay: 0s;
+}
+
+.details {
+  position: absolute;
+  inset: clamp(12px, 3vh, 32px) 0 0;
+  filter: drop-shadow(0 24px 40px rgba(0,0,0,.3));
+}
+
+/* A printed spec sheet: dark text on paper whatever the UI color, with the color kept for the stamp.
+   Closed, it is clipped to the rollout bar it rises from and sinks back into. */
+.sheet {
+  --paper: #f6f3ec;
+  --text: var(--dark);
+  --muted: #5b6672;
+  --rule: color-mix(in srgb, var(--dark) 14%, transparent);
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+  color: var(--text);
+  background: var(--paper);
+  visibility: hidden;
+  clip-path: inset(var(--bar-top) 0 var(--bar-bottom) round calc(var(--bar) / 2));
+  transition: clip-path .42s cubic-bezier(.55,0,.8,.2), visibility 0s .42s;
+}
+
+.sheet:focus {
+  outline: none;
+}
+
+[data-view="details"] .sheet {
+  visibility: visible;
+  clip-path: inset(0 round 6px);
+  transition: clip-path .6s cubic-bezier(.16,1,.3,1), visibility 0s;
+}
+
+.sheet > * {
+  opacity: 0;
+  transition: opacity .12s;
+}
+
+[data-view="details"] .sheet > * {
+  opacity: 1;
+  transition: opacity .3s .28s;
+}
+
+.top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 24px;
+  padding: clamp(16px, 3vh, 28px) clamp(20px, 3vw, 36px) clamp(14px, 2.4vh, 22px);
+  border-bottom: 3px solid var(--text);
+}
+
+.host {
+  margin: 0;
+  font-size: clamp(1.4rem, 3.2vw, 2.6rem);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -.01em;
+  overflow-wrap: anywhere;
+}
+
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 28px;
+  margin: 12px 0 0;
+  font-size: .92rem;
+}
+
+.facts div {
+  white-space: nowrap;
+}
+
+.facts dt,
+.facts dd {
+  display: inline;
+}
+
+.facts dt {
+  color: var(--muted);
+}
+
+.facts dd {
+  margin-left: 6px;
+  font-weight: 600;
+}
+
+.offline {
+  margin: 10px 0 0;
+  font-size: .92rem;
+  color: var(--muted);
+}
+
+.mono {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: .9em;
+}
+
+.stamp {
+  display: grid;
+  place-items: center;
+  width: clamp(84px, 9vw, 112px);
+  aspect-ratio: 1;
+  border: 3px solid;
+  border-radius: 50%;
+  color: var(--color);
+  text-align: center;
+  line-height: 1;
+  transform: rotate(-8deg);
+}
+
+:root[data-ink="dark"] .stamp {
+  color: var(--text);
+}
+
+.stamp b {
+  display: block;
+  max-width: 7ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--condensed);
+  font-size: clamp(1.1rem, 2vw, 1.6rem);
+}
+
+.stamp span {
+  font-size: .6rem;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.cols {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr;
+  min-height: 0;
+}
+
+.col {
+  min-height: 0;
+  overflow: auto;
+  padding: 0 clamp(20px, 3vw, 36px) 24px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--rule) transparent;
+}
+
+.col + .col {
+  border-left: 1px solid var(--rule);
+}
+
+.col:focus-visible {
+  outline-color: var(--text);
+  outline-offset: -3px;
+}
+
+.col h2 {
+  position: sticky;
+  top: 0;
+  margin: 0;
+  padding: 18px 0 8px;
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: var(--paper);
+}
+
+.col h2 span {
+  letter-spacing: 0;
+  opacity: .7;
+}
+
+.lines {
+  margin: 0;
+}
+
+.lines div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 8px;
+  padding: 5px 0;
+  font-size: .9rem;
+}
+
+/* A name never shrinks under a value: when both do not fit, the value moves to the next line. */
+.lines dt {
+  display: flex;
+  flex: 1 0 auto;
+  align-items: baseline;
+  gap: 8px;
+  max-width: 100%;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.lines dt::after {
+  content: "";
+  flex: 1;
+  min-width: 24px;
+  border-bottom: 1.5px dotted var(--rule);
+}
+
+.lines dd {
+  max-width: 34ch;
+  margin: 0 0 0 auto;
+  text-align: right;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.lines .long dd {
+  flex-basis: 100%;
+  max-width: none;
+  margin: 4px 0 0;
+  padding-left: 14px;
+  border-left: 2px solid var(--rule);
+  text-align: left;
+}
+
+.redacted {
+  display: inline-block;
+  width: 9ch;
+  height: .9em;
+  border-radius: 1px;
+  background: var(--text);
+  vertical-align: -.1em;
 }
 
 .id {
@@ -153,7 +400,7 @@ body {
   white-space: nowrap;
   vertical-align: top;
   padding-right: .05em;
-  font-family: "Avenir Next Condensed", "Roboto Condensed", "Arial Narrow", "Helvetica Neue", system-ui, sans-serif;
+  font-family: var(--condensed);
   font-stretch: condensed;
   font-size: clamp(5.5rem, 27vw, 24rem);
   font-weight: 700;
@@ -177,7 +424,6 @@ body {
   width: clamp(160px, 32vw, 560px);
   height: auto;
   flex: none;
-  object-fit: contain;
   animation: swim 7s ease-in-out infinite alternate;
 }
 
@@ -247,16 +493,25 @@ body {
   box-shadow: inset 0 0 0 2px var(--ink);
 }
 
+/* Offline, the data fades; the sheet's paper and its offline notice stay opaque. */
 .version,
 .logo,
 .bar,
-.labels {
+.labels,
+.host,
+.facts,
+.stamp,
+.col {
   transition: opacity .4s;
 }
 
 [data-state="down"] .version,
 [data-state="down"] .bar,
-[data-state="down"] .labels {
+[data-state="down"] .labels,
+[data-state="down"] .host,
+[data-state="down"] .facts,
+[data-state="down"] .stamp,
+[data-state="down"] .col {
   opacity: .35;
 }
 
@@ -266,19 +521,16 @@ body {
 
 .bar {
   display: flex;
-  height: 18px;
+  gap: 2px;
+  height: var(--bar);
   overflow: hidden;
-  border-radius: 9px;
+  border-radius: calc(var(--bar) / 2);
 }
 
 .bar i {
   flex-basis: 0;
   background: var(--faint);
   transition: flex-grow .6s ease;
-}
-
-.bar i + i {
-  margin-left: 2px;
 }
 
 .bar i.now {
@@ -297,7 +549,6 @@ body {
 }
 
 .labels li {
-  flex-basis: auto;
   text-align: center;
   white-space: nowrap;
   transition: flex-grow .6s ease;
@@ -367,7 +618,8 @@ body {
   background: repeating-linear-gradient(-45deg, var(--faint) 0 7px, var(--color) 7px 14px);
 }
 
-.pings {
+.pings,
+.sr {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -381,22 +633,39 @@ body {
   outline-offset: 3px;
 }
 
-.foot a {
+.foot a,
+.flip {
   display: inline-flex;
+  border-radius: 50%;
   color: var(--soft);
 }
 
-.foot a:hover {
+.flip {
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.foot a:hover,
+.flip:hover,
+.flip[aria-expanded="true"] {
   color: var(--ink);
+}
+
+.flip[aria-expanded="true"] svg {
+  fill: var(--ink);
+  stroke: var(--color);
+}
+
+.flip[aria-expanded="true"] circle {
+  stroke: var(--ink);
 }
 
 .foot svg {
   width: 26px;
   height: 26px;
-}
-
-.foot a:first-of-type {
-  margin-left: auto;
 }
 
 @media (max-width: 640px) {
@@ -411,17 +680,35 @@ body {
     font-size: 46vw;
   }
 
+  .id {
+    flex: none;
+  }
+
   .logo {
     align-self: center;
     width: min(66vw, 320px);
   }
+
+  .sheet {
+    display: block;
+    overflow: auto;
+  }
+
+  .cols {
+    grid-template-columns: 1fr;
+  }
+
+  .col {
+    overflow: visible;
+  }
+
+  .col + .col {
+    border-left: 0;
+    border-top: 1px solid var(--rule);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .bubbles {
-    display: none;
-  }
-
   *,
   ::before,
   ::after {
