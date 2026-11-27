@@ -81,8 +81,11 @@ release:
 # Run the UI against a fake API that plays a canary release.
 ui-demo:
 	@rm -rf bin/ui-demo && mkdir -p bin/ui-demo
-	@perl -0pe 'BEGIN { local $$/; open F, "<", "ui/demo/demo.js" or die $$!; $$demo = <F> } s{<script src=}{<script>\n$$demo</script>\n<script src=}' ui/index.html > bin/ui-demo/index.html
+	@perl -0pe 'BEGIN { local $$/; open F, "<", "ui/demo/demo.js" or die $$!; $$demo = <F> } s{<script src=}{<script type="module">\n$$demo</script>\n<script src=}' ui/index.html > bin/ui-demo/index.html
 	go run ./cmd/podinfo --ui-path bin/ui-demo --port $${PORT:-9898} --level warn
+
+ui-lint:
+	biome ci .
 
 swagger:
 	go install github.com/swaggo/swag/cmd/swag@latest

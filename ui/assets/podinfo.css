@@ -2,20 +2,22 @@
   --color: #1f4e8c;
   --dark: #14202b;
   --ink: #fff;
-  --soft: rgba(255,255,255,.82);
-  --faint: rgba(255,255,255,.28);
-  --shine: rgba(255,255,255,.05);
-  --deep: rgba(0,0,0,.34);
+  --soft: rgba(255, 255, 255, 0.82);
+  --faint: rgba(255, 255, 255, 0.28);
+  --shine: rgba(255, 255, 255, 0.05);
+  --deep: rgba(0, 0, 0, 0.34);
   --bar: 18px;
-  --condensed: "Avenir Next Condensed", "Roboto Condensed", "Arial Narrow", "Helvetica Neue", system-ui, sans-serif;
+  --condensed:
+    "Avenir Next Condensed", "Roboto Condensed", "Arial Narrow",
+    "Helvetica Neue", system-ui, sans-serif;
 }
 
 :root[data-ink="dark"] {
   --ink: var(--dark);
   --soft: color-mix(in srgb, var(--dark) 80%, transparent);
   --faint: color-mix(in srgb, var(--dark) 24%, transparent);
-  --shine: rgba(255,255,255,.3);
-  --deep: rgba(0,0,0,.06);
+  --shine: rgba(255, 255, 255, 0.3);
+  --deep: rgba(0, 0, 0, 0.06);
 }
 
 * {
@@ -24,10 +26,16 @@
 
 body {
   margin: 0;
-  font: 18px/1.45 "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  font:
+    18px / 1.45 "Avenir Next",
+    "Segoe UI",
+    system-ui,
+    sans-serif;
   color: var(--ink);
-  background: linear-gradient(var(--shine), transparent 38%, var(--deep)) fixed, var(--color);
-  transition: background-color .6s;
+  background:
+    linear-gradient(var(--shine), transparent 38%, var(--deep)) fixed,
+    var(--color);
+  transition: background-color 0.6s;
 }
 
 .poster {
@@ -44,7 +52,14 @@ body {
   position: fixed;
   inset: -10% -20% 0;
   z-index: -1;
-  background: repeating-linear-gradient(102deg, transparent 0 8%, rgba(255,255,255,.07) 11% 14%, transparent 18% 23%, rgba(255,255,255,.04) 25% 27%, transparent 30% 37%);
+  background: repeating-linear-gradient(
+    102deg,
+    transparent 0 8%,
+    rgba(255, 255, 255, 0.07) 11% 14%,
+    transparent 18% 23%,
+    rgba(255, 255, 255, 0.04) 25% 27%,
+    transparent 30% 37%
+  );
   -webkit-mask-image: linear-gradient(#000, transparent 80%);
   mask-image: linear-gradient(#000, transparent 80%);
   animation: sway 17s ease-in-out infinite alternate;
@@ -70,7 +85,7 @@ body {
 
 .bubbles i {
   position: absolute;
-  animation: surface var(--rise-time) cubic-bezier(.45,0,.85,.6) both;
+  animation: surface var(--rise-time) cubic-bezier(0.45, 0, 0.85, 0.6) both;
 }
 
 /* The bubble itself wobbles while its wrapper rises. */
@@ -81,20 +96,24 @@ body {
   height: var(--size);
   border: 1.5px solid;
   border-radius: 50%;
-  background: radial-gradient(circle at 30% 28%, currentColor 0 11%, transparent 13%);
-  opacity: .6;
+  background: radial-gradient(
+    circle at 30% 28%,
+    currentColor 0 11%,
+    transparent 13%
+  );
+  opacity: 0.6;
   animation: wobble var(--wobble) ease-in-out infinite alternate;
 }
 
 @keyframes surface {
   from {
     opacity: 0;
-    transform: scale(.3);
+    transform: scale(0.3);
   }
 
   12% {
     opacity: 1;
-    transform: translateY(calc(-.05 * var(--rise))) scale(.8);
+    transform: translateY(calc(-0.05 * var(--rise))) scale(0.8);
   }
 
   85% {
@@ -125,8 +144,8 @@ body {
 }
 
 .build {
-  margin-left: .6em;
-  font-size: .6em;
+  margin-left: 0.6em;
+  font-size: 0.6em;
   color: var(--soft);
   font-weight: 400;
   white-space: nowrap;
@@ -147,7 +166,7 @@ body {
   justify-content: space-between;
   gap: 4vw;
   min-width: 0;
-  transition: opacity .3s .25s;
+  transition: opacity 0.3s 0.25s;
 }
 
 [data-view="details"] .stage {
@@ -158,7 +177,7 @@ body {
 .details {
   position: absolute;
   inset: clamp(12px, 3vh, 32px) 0 0;
-  filter: drop-shadow(0 24px 40px rgba(0,0,0,.3));
+  filter: drop-shadow(0 24px 40px rgba(0, 0, 0, 0.3));
 }
 
 /* A printed spec sheet: dark text on paper whatever the UI color, with the color kept for the stamp.
@@ -175,8 +194,12 @@ body {
   color: var(--text);
   background: var(--paper);
   visibility: hidden;
-  clip-path: inset(var(--bar-top) 0 var(--bar-bottom) round calc(var(--bar) / 2));
-  transition: clip-path .42s cubic-bezier(.55,0,.8,.2), visibility 0s .42s;
+  clip-path: inset(
+    var(--bar-top) 0 var(--bar-bottom) round calc(var(--bar) / 2)
+  );
+  transition:
+    clip-path 0.42s cubic-bezier(0.55, 0, 0.8, 0.2),
+    visibility 0s 0.42s;
 }
 
 .sheet:focus {
@@ -186,17 +209,19 @@ body {
 [data-view="details"] .sheet {
   visibility: visible;
   clip-path: inset(0 round 6px);
-  transition: clip-path .6s cubic-bezier(.16,1,.3,1), visibility 0s;
+  transition:
+    clip-path 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+    visibility 0s;
 }
 
 .sheet > * {
   opacity: 0;
-  transition: opacity .12s;
+  transition: opacity 0.12s;
 }
 
 [data-view="details"] .sheet > * {
   opacity: 1;
-  transition: opacity .3s .28s;
+  transition: opacity 0.3s 0.28s;
 }
 
 .top {
@@ -204,7 +229,8 @@ body {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: end;
   gap: 24px;
-  padding: clamp(16px, 3vh, 28px) clamp(20px, 3vw, 36px) clamp(14px, 2.4vh, 22px);
+  padding: clamp(16px, 3vh, 28px) clamp(20px, 3vw, 36px)
+    clamp(14px, 2.4vh, 22px);
   border-bottom: 3px solid var(--text);
 }
 
@@ -213,7 +239,7 @@ body {
   font-size: clamp(1.4rem, 3.2vw, 2.6rem);
   font-weight: 700;
   line-height: 1.05;
-  letter-spacing: -.01em;
+  letter-spacing: -0.01em;
   overflow-wrap: anywhere;
 }
 
@@ -222,7 +248,7 @@ body {
   flex-wrap: wrap;
   gap: 6px 28px;
   margin: 12px 0 0;
-  font-size: .92rem;
+  font-size: 0.92rem;
 }
 
 .facts div {
@@ -245,13 +271,13 @@ body {
 
 .offline {
   margin: 10px 0 0;
-  font-size: .92rem;
+  font-size: 0.92rem;
   color: var(--muted);
 }
 
 .mono {
   font-family: ui-monospace, "SF Mono", Menlo, monospace;
-  font-size: .9em;
+  font-size: 0.9em;
 }
 
 .stamp {
@@ -281,9 +307,9 @@ body {
 }
 
 .stamp span {
-  font-size: .6rem;
+  font-size: 0.6rem;
   font-weight: 700;
-  letter-spacing: .14em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 
@@ -315,9 +341,9 @@ body {
   top: 0;
   margin: 0;
   padding: 18px 0 8px;
-  font-size: .72rem;
+  font-size: 0.72rem;
   font-weight: 700;
-  letter-spacing: .16em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--muted);
   background: var(--paper);
@@ -325,7 +351,7 @@ body {
 
 .col h2 span {
   letter-spacing: 0;
-  opacity: .7;
+  opacity: 0.7;
 }
 
 .lines {
@@ -338,7 +364,7 @@ body {
   align-items: baseline;
   gap: 0 8px;
   padding: 5px 0;
-  font-size: .9rem;
+  font-size: 0.9rem;
 }
 
 /* A name never shrinks under a value: when both do not fit, the value moves to the next line. */
@@ -379,10 +405,10 @@ body {
 .redacted {
   display: inline-block;
   width: 9ch;
-  height: .9em;
+  height: 0.9em;
   border-radius: 1px;
   background: var(--text);
-  vertical-align: -.1em;
+  vertical-align: -0.1em;
 }
 
 .id {
@@ -399,18 +425,18 @@ body {
   margin: 0;
   white-space: nowrap;
   vertical-align: top;
-  padding-right: .05em;
+  padding-right: 0.05em;
   font-family: var(--condensed);
   font-stretch: condensed;
   font-size: clamp(5.5rem, 27vw, 24rem);
   font-weight: 700;
-  line-height: .86;
-  letter-spacing: -.035em;
+  line-height: 0.86;
+  letter-spacing: -0.035em;
   font-variant-numeric: tabular-nums;
 }
 
 .version.swap {
-  animation: rise .45s cubic-bezier(.2,.8,.2,1);
+  animation: rise 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 @keyframes rise {
@@ -443,7 +469,7 @@ body {
 }
 
 [data-state="down"] .logo {
-  opacity: .55;
+  opacity: 0.55;
 }
 
 .served {
@@ -461,9 +487,9 @@ body {
 .pulse {
   position: relative;
   display: inline-block;
-  width: .55em;
-  height: .55em;
-  margin-right: .6em;
+  width: 0.55em;
+  height: 0.55em;
+  margin-right: 0.6em;
   border-radius: 50%;
   background: var(--ink);
 }
@@ -474,12 +500,12 @@ body {
   inset: 0;
   border-radius: 50%;
   border: 2px solid var(--ink);
-  animation: beat .9s ease-out both;
+  animation: beat 0.9s ease-out both;
 }
 
 @keyframes beat {
   from {
-    opacity: .9;
+    opacity: 0.9;
   }
 
   to {
@@ -502,7 +528,7 @@ body {
 .facts,
 .stamp,
 .col {
-  transition: opacity .4s;
+  transition: opacity 0.4s;
 }
 
 [data-state="down"] .version,
@@ -512,7 +538,7 @@ body {
 [data-state="down"] .facts,
 [data-state="down"] .stamp,
 [data-state="down"] .col {
-  opacity: .35;
+  opacity: 0.35;
 }
 
 .share {
@@ -530,7 +556,7 @@ body {
 .bar i {
   flex-basis: 0;
   background: var(--faint);
-  transition: flex-grow .6s ease;
+  transition: flex-grow 0.6s ease;
 }
 
 .bar i.now {
@@ -551,7 +577,7 @@ body {
 .labels li {
   text-align: center;
   white-space: nowrap;
-  transition: flex-grow .6s ease;
+  transition: flex-grow 0.6s ease;
 }
 
 .labels li:first-child {
@@ -575,7 +601,7 @@ body {
   align-items: center;
   gap: 24px;
   margin-top: 20px;
-  font-size: .95rem;
+  font-size: 0.95rem;
 }
 
 .ping {
@@ -591,11 +617,11 @@ body {
   color: var(--ink);
   background: transparent;
   cursor: pointer;
-  transition: transform .1s;
+  transition: transform 0.1s;
 }
 
 .ping:active {
-  transform: scale(.96);
+  transform: scale(0.96);
 }
 
 .ping span {
@@ -615,7 +641,11 @@ body {
 
 .ping[data-state="failed"] .fill {
   color: var(--ink);
-  background: repeating-linear-gradient(-45deg, var(--faint) 0 7px, var(--color) 7px 14px);
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--faint) 0 7px,
+    var(--color) 7px 14px
+  );
 }
 
 .pings,
@@ -712,7 +742,9 @@ body {
   *,
   ::before,
   ::after {
+    /* biome-ignore lint/complexity/noImportantStyles: reduced motion overrides every animation */
     animation: none !important;
+    /* biome-ignore lint/complexity/noImportantStyles: reduced motion overrides every transition */
     transition: none !important;
   }
 }
