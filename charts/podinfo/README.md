@@ -70,7 +70,7 @@ The following tables lists the configurable parameters of the podinfo chart and 
 | `redis.repository`                             | `docker.io/redis`              | Redis image repository                                                                             |
 | `redis.tag`                                    | `<VERSION>`                    | Redis image tag                                                                                    |
 | `redis.imagePullSecrets`                       | `[]`                           | Redis image pull secrets                                                                           |
-| `ui.color`                                     | `#34577c`                      | UI color                                                                                           |
+| `ui.color`                                     | `#1f4e8c`                      | UI color, green is `#17694f`                                                                       |
 | `ui.message`                                   | `None`                         | UI greetings message                                                                               |
 | `ui.logo`                                      | `None`                         | UI logo                                                                                            |
 | `prefix`                                       | `/`                            | URL path prefix for HTTP routes (e.g. `/foo` maps `/api/info` to `/foo/api/info`)                 |

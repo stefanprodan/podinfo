@@ -330,6 +330,6 @@ and `sentinel announce-hostnames yes` on the Sentinels.
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| `ui.color` | `string` | `#34577c` | Background color |
+| `ui.color` | `string` | `#1f4e8c` | Background color, green is `#17694f` |
 | `ui.message` | `string` | unset | Greeting message |
 | `ui.backend` | `string` | unset | Backend service URL called by the `/api/echo` endpoint |

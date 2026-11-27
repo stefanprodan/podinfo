@@ -15,7 +15,8 @@ image:
 prefix: /
 
 ui:
-  color: "#34577c"
+  # the background color, blue is "#1f4e8c" and green is "#17694f"
+  color: "#1f4e8c"
   message: ""
   logo: ""
 

@@ -14,7 +14,7 @@ const docTemplate = `{
             "url": "https://github.com/stefanprodan/podinfo"
         },
         "license": {
-            "name": "MIT License",
+            "name": "Apache License 2.0",
             "url": "https://github.com/stefanprodan/podinfo/blob/master/LICENSE"
         },
         "version": "{{.Version}}"

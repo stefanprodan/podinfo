@@ -32,9 +32,10 @@ import (
 
 	// Podinfo UI settings: the background color, the greeting
 	// message and the URL of the backend service called
-	// by the `/api/echo` endpoint.
+	// by the `/api/echo` endpoint. For blue/green deployments,
+	// blue is "#1f4e8c" and green is "#17694f".
 	ui: {
-		color:    *"#34577c" | string
+		color:    *"#1f4e8c" | string
 		message?: string
 		backend?: string
 	}

@@ -30,7 +30,7 @@ import (
 // @contact.name Source Code
 // @contact.url https://github.com/stefanprodan/podinfo
 
-// @license.name MIT License
+// @license.name Apache License 2.0
 // @license.url https://github.com/stefanprodan/podinfo/blob/master/LICENSE
 
 // @BasePath /
