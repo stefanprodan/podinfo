@@ -163,9 +163,33 @@ func TestUIAssets(t *testing.T) {
 }
 
 func TestIndexUIPath(t *testing.T) {
+	for _, name := range []string{"index.html", "vue.html"} {
+		t.Run(name, func(t *testing.T) { testIndexUIPath(t, name) })
+	}
+
+	dir := t.TempDir()
+	for name, title := range map[string]string{"index.html": "new", "vue.html": "old"} {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte("<title>"+title+"</title>"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	srv := NewMockServer()
+	srv.config.UIPath = dir
+	page, err := newUIPage(srv.config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	srv.ui = page
+	srv.registerHandlers()
+	if body := serveIndex(t, srv, "/").Body.String(); !strings.Contains(body, "<title>new</title>") {
+		t.Errorf("body = %s, want index.html to win over vue.html", body)
+	}
+}
+
+func testIndexUIPath(t *testing.T, name string) {
 	dir := t.TempDir()
 	custom := `<html><title>{{.Title}}</title><script src="https://cdn.example.com/app.js"></script>{{.Prefix}}</html>`
-	if err := os.WriteFile(filepath.Join(dir, "vue.html"), []byte(custom), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, name), []byte(custom), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -189,6 +213,6 @@ func TestIndexUIPath(t *testing.T) {
 
 	srv.config.UIPath = filepath.Join(dir, "missing")
 	if _, err := newUIPage(srv.config); err == nil {
-		t.Error("newUIPage succeeded for a directory without vue.html")
+		t.Error("newUIPage succeeded for a directory without a page")
 	}
 }

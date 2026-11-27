@@ -1,10 +1,12 @@
 package http
 
 import (
+	"errors"
 	"html/template"
 	"io/fs"
 	"net/http"
 	"net/url"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -24,7 +26,12 @@ func newUIPage(config *Config) (*uiPage, error) {
 	}
 
 	if config.UIPath != "" {
-		tmpl, err := template.ParseFiles(filepath.Join(config.UIPath, "vue.html"))
+		// vue.html is the page name of the 6.x UI.
+		name := filepath.Join(config.UIPath, "index.html")
+		if _, err := os.Stat(name); errors.Is(err, fs.ErrNotExist) {
+			name = filepath.Join(config.UIPath, "vue.html")
+		}
+		tmpl, err := template.ParseFiles(name)
 		if err != nil {
 			return nil, err
 		}

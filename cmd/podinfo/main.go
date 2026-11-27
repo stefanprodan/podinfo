@@ -53,7 +53,7 @@ func main() {
 	fs.StringSlice("spiffe-backend-ids", []string{}, "SPIFFE IDs accepted from https backends; requires --spiffe-backend-mtls; when empty, any ID in the server's trust domain is accepted")
 	fs.String("artifact-path", "./kustomize", "directory served as a tar.gz at /artifact; empty disables the route")
 	fs.String("config", "config.yaml", "config file name")
-	fs.String("ui-path", "", "deprecated, directory with a vue.html page that replaces the embedded UI")
+	fs.String("ui-path", "", "deprecated, directory with an index.html page that replaces the embedded UI")
 	fs.String("ui-logo", "", "UI logo URL, defaults to the embedded image")
 	fs.String("ui-color", "#1f4e8c", "UI color")
 	fs.String("ui-message", fmt.Sprintf("greetings from podinfo v%v", version.VERSION), "UI message")
