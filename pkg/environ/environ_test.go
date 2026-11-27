@@ -56,6 +56,19 @@ func TestRedactPreservesOrder(t *testing.T) {
 	}
 }
 
+func TestRedactedMap(t *testing.T) {
+	t.Setenv("PODINFO_TEST_PLAIN", "a=b")
+	t.Setenv("PODINFO_TEST_PASSWORD", "s3cret")
+
+	env := RedactedMap()
+	if got := env["PODINFO_TEST_PLAIN"]; got != "a=b" {
+		t.Errorf("PODINFO_TEST_PLAIN = %q, want %q", got, "a=b")
+	}
+	if got := env["PODINFO_TEST_PASSWORD"]; got != redacted {
+		t.Errorf("PODINFO_TEST_PASSWORD = %q, want %q", got, redacted)
+	}
+}
+
 func TestRedactHeaders(t *testing.T) {
 	in := map[string][]string{
 		"Accept":              {"*/*"},

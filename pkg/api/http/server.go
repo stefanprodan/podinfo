@@ -219,6 +219,7 @@ func (s *Server) registerHandlers() {
 	s.router.HandleFunc(s.prefixedPath("/token"), s.tokenGenerateHandler).Methods("POST")
 	s.router.HandleFunc(s.prefixedPath("/token/validate"), s.tokenValidateHandler).Methods("GET")
 	s.router.HandleFunc(s.prefixedPath("/api/info"), s.infoHandler).Methods("GET")
+	s.router.HandleFunc(s.prefixedPath("/api/pod"), s.podHandler).Methods("GET")
 	s.router.HandleFunc(s.prefixedPath("/api/echo"), s.echoHandler)
 	s.router.PathPrefix(s.prefixedPath("/api/echo/")).HandlerFunc(s.echoHandler)
 	s.router.HandleFunc(s.prefixedPath("/ws/echo"), s.echoWsHandler)

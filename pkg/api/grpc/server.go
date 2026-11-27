@@ -19,6 +19,7 @@ import (
 	header "github.com/stefanprodan/podinfo/pkg/api/grpc/headers"
 	"github.com/stefanprodan/podinfo/pkg/api/grpc/info"
 	"github.com/stefanprodan/podinfo/pkg/api/grpc/panic"
+	"github.com/stefanprodan/podinfo/pkg/api/grpc/pod"
 	"github.com/stefanprodan/podinfo/pkg/api/grpc/status"
 	"github.com/stefanprodan/podinfo/pkg/api/grpc/token"
 	"github.com/stefanprodan/podinfo/pkg/api/grpc/version"
@@ -106,6 +107,7 @@ func (s *Server) newServer(opts ...grpc.ServerOption) (*grpc.Server, *health.Ser
 	delay.RegisterDelayServiceServer(srv, &DelayServer{config: s.config, logger: s.logger})
 	header.RegisterHeaderServiceServer(srv, &HeaderServer{config: s.config, logger: s.logger})
 	info.RegisterInfoServiceServer(srv, &infoServer{config: s.config})
+	pod.RegisterPodServiceServer(srv, &podServer{config: s.config})
 	status.RegisterStatusServiceServer(srv, &StatusServer{config: s.config, logger: s.logger})
 	token.RegisterTokenServiceServer(srv, &TokenServer{config: s.config, logger: s.logger})
 	env.RegisterEnvServiceServer(srv, &EnvServer{config: s.config, logger: s.logger})

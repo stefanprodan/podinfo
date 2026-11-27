@@ -39,6 +39,7 @@ Web API:
 
 * `GET /` serves the web UI to browsers and prints the runtime information to other clients
 * `GET /api/info` returns the runtime information as JSON, polled by the web UI
+* `GET /api/pod` returns the runtime information, the environment variables and the request headers of one pod, with secret values masked, polled by the web UI while its spec sheet is open
 * `GET /version` prints podinfo version and git commit hash 
 * `GET /metrics` return HTTP requests duration and Go runtime metrics
 * `GET /healthz` used by Kubernetes liveness probe
@@ -78,6 +79,7 @@ gRPC API:
 * `/env.EnvService/Env` returns environment variables as a JSON array, with secret values masked
 * `/header.HeaderService/Header` returns the headers present in the gRPC request, with credential values masked. Any custom header can also be given as a part of request and that can be returned using this API
 * `/info.InfoService/Info` returns the runtime information
+* `/pod.PodService/Pod` returns the runtime information, the environment variables and the request metadata of one pod, with secret values masked
 * `/panic.PanicService/Panic` crashes the process with gRPC status code as '1 CANCELLED'
 * `/status.StatusService/Status` returns the gRPC Status code given in the request body
 * `/token.TokenService/TokenGenerate` issues a JWT token valid for one minute
