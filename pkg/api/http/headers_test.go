@@ -34,3 +34,16 @@ func TestEchoHeadersHandler(t *testing.T) {
 			rr.Body.String(), expected)
 	}
 }
+
+func TestEchoHeadersHandlerMasksCredentials(t *testing.T) {
+	req := httptest.NewRequest("GET", "/headers", nil)
+	req.Header.Set("Authorization", "Bearer s3cret")
+	req.Header.Set("Cookie", "session=s3cret")
+
+	rr := httptest.NewRecorder()
+	http.HandlerFunc(NewMockServer().echoHeadersHandler).ServeHTTP(rr, req)
+
+	if body := rr.Body.String(); regexp.MustCompile("s3cret").MatchString(body) {
+		t.Fatalf("credential echoed:\n%s", body)
+	}
+}

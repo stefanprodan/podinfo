@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	pb "github.com/stefanprodan/podinfo/pkg/api/grpc/headers"
+	"github.com/stefanprodan/podinfo/pkg/environ"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -25,7 +26,7 @@ func (s *HeaderServer) Header(ctx context.Context, in *pb.HeaderRequest) (*pb.He
 
 	// Creating slices beacause echoing the header metadata can't be predetermined by the proto contract
 	res := []string{}
-	for i, e := range md {
+	for i, e := range environ.RedactHeaders(md) {
 		res = append(res, i+"="+strings.Join(e, ","))
 	}
 

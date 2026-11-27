@@ -438,7 +438,7 @@ const docTemplate = `{
         },
         "/headers": {
             "get": {
-                "description": "returns a JSON array with the request HTTP headers, plus X-Spiffe-Id when the client presented a SPIFFE X.509 SVID",
+                "description": "returns a JSON array with the request HTTP headers, with credential values masked, plus X-Spiffe-Id when the client presented a SPIFFE X.509 SVID",
                 "consumes": [
                     "application/json"
                 ],

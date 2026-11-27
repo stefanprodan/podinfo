@@ -52,7 +52,7 @@ Web API:
 * `GET /panic` crashes the process with exit code 255
 * `POST /echo` forwards the call to the backend service and echos the posted content, without backends the content is logged at debug level
 * `GET /env` returns the environment variables as a JSON array, with secret values masked
-* `GET /headers` returns a JSON with the request HTTP headers, plus `X-Spiffe-Id` for SPIFFE mTLS clients
+* `GET /headers` returns a JSON with the request HTTP headers, with credential values masked, plus `X-Spiffe-Id` for SPIFFE mTLS clients
 * `GET /delay/{seconds}` waits for the specified period
 * `POST /token` issues a JWT token valid for one minute `JWT=$(curl -sd 'anon' podinfo:9898/token | jq -r .token)`
 * `GET /token/validate` validates the JWT token `curl -H "Authorization: Bearer $JWT" podinfo:9898/token/validate`
@@ -76,7 +76,7 @@ gRPC API:
 * `/version.VersionService/Version` returns podinfo version and Git commit hash
 * `/delay.DelayService/Delay` returns a successful response after the given seconds in the body of gRPC request
 * `/env.EnvService/Env` returns environment variables as a JSON array, with secret values masked
-* `/header.HeaderService/Header` returns the headers present in the gRPC request. Any custom header can also be given as a part of request and that can be returned using this API
+* `/header.HeaderService/Header` returns the headers present in the gRPC request, with credential values masked. Any custom header can also be given as a part of request and that can be returned using this API
 * `/info.InfoService/Info` returns the runtime information
 * `/panic.PanicService/Panic` crashes the process with gRPC status code as '1 CANCELLED'
 * `/status.StatusService/Status` returns the gRPC Status code given in the request body

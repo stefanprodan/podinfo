@@ -17,6 +17,25 @@ func Redacted() []string {
 	return redact(os.Environ())
 }
 
+// RedactHeaders returns a copy of the HTTP headers or gRPC metadata with the
+// values of credential headers and cookies masked, and URL passwords hidden.
+func RedactHeaders(headers map[string][]string) map[string][]string {
+	out := make(map[string][]string, len(headers))
+	for name, values := range headers {
+		pseudo := strings.HasPrefix(name, ":")
+		if !pseudo && (isSensitive(name) || strings.Contains(strings.ToUpper(name), "COOKIE")) {
+			out[name] = []string{redacted}
+			continue
+		}
+		masked := make([]string, len(values))
+		for i, v := range values {
+			masked[i] = redactURLs(v)
+		}
+		out[name] = masked
+	}
+	return out
+}
+
 func redact(env []string) []string {
 	out := make([]string, len(env))
 	for i, kv := range env {
