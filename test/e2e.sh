@@ -2,6 +2,9 @@
 
 set -e
 
+CERT_MANAGER_CHART_VERSION="${CERT_MANAGER_CHART_VERSION:-v1.21.3}"
+VALKEY_CHART_VERSION="${VALKEY_CHART_VERSION:-1.0.0}"
+
 # Build container image
 docker build --tag test/podinfo --build-arg "REVISION=0.0.0-$(git rev-list -1 HEAD)" .
 
@@ -9,10 +12,11 @@ docker build --tag test/podinfo --build-arg "REVISION=0.0.0-$(git rev-list -1 HE
 kind load docker-image test/podinfo:latest
 
 # Install cert-manager
-kubectl apply --server-side -f https://github.com/cert-manager/cert-manager/releases/download/v1.20.2/cert-manager.yaml
-kubectl -n cert-manager rollout status deployment/cert-manager --timeout=2m
-kubectl -n cert-manager rollout status deployment/cert-manager-webhook --timeout=2m
-kubectl -n cert-manager rollout status deployment/cert-manager-cainjector --timeout=2m
+helm upgrade --install --wait cert-manager oci://quay.io/jetstack/charts/cert-manager \
+    --version "${CERT_MANAGER_CHART_VERSION}" \
+    --set crds.enabled=true \
+    --namespace=cert-manager \
+    --create-namespace
 
 # Configure self-signed certificate
 cat << 'EOF' | kubectl apply --server-side -f -
@@ -38,50 +42,13 @@ helm upgrade --install --wait podinfo ./charts/podinfo \
     --namespace=default
 
 # Run tests
-helm test podinfo
+helm test podinfo --logs
 
 # Install Valkey
-cat << 'EOF' | kubectl apply --server-side -f -
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: valkey
-  namespace: default
-spec:
-  selector:
-    matchLabels:
-      app: valkey
-  template:
-    metadata:
-      labels:
-        app: valkey
-    spec:
-      containers:
-        - name: valkey
-          image: docker.io/valkey/valkey:9
-          ports:
-            - name: valkey
-              containerPort: 6379
-          readinessProbe:
-            exec:
-              command:
-                - valkey-cli
-                - ping
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: valkey
-  namespace: default
-spec:
-  selector:
-    app: valkey
-  ports:
-    - name: valkey
-      port: 6379
-      targetPort: valkey
-EOF
-kubectl -n default rollout status deployment/valkey --timeout=2m
+helm upgrade --install --wait valkey valkey \
+    --repo https://valkey.io/valkey-helm/ \
+    --version "${VALKEY_CHART_VERSION}" \
+    --namespace=default
 
 # Install podinfo with Valkey
 helm upgrade --install --wait podinfo-valkey ./charts/podinfo \
@@ -91,4 +58,4 @@ helm upgrade --install --wait podinfo-valkey ./charts/podinfo \
     --namespace=default
 
 # Run tests
-helm test podinfo-valkey
+helm test podinfo-valkey --logs

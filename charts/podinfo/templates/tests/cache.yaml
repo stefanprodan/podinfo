@@ -24,9 +24,9 @@ spec:
         - sh
         - -c
         - |
-          curl -sd 'data' ${PODINFO_SVC}/cache/test &&
-          curl -s ${PODINFO_SVC}/cache/test | grep data &&
-          curl -s -XDELETE ${PODINFO_SVC}/cache/test
+          curl -sSf --retry 5 --retry-connrefused -d 'data' ${PODINFO_SVC}/cache/test &&
+          curl -sSf ${PODINFO_SVC}/cache/test | grep data &&
+          curl -sSf -XDELETE ${PODINFO_SVC}/cache/test
       env:
       - name: PODINFO_SVC
         value: "{{ template "podinfo.fullname" . }}.{{ include "podinfo.namespace" . }}:{{ .Values.service.externalPort }}"

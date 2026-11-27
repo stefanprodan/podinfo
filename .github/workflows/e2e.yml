@@ -30,7 +30,8 @@ jobs:
       - name: Debug failure
         if: failure()
         run: |
-          kubectl logs -l app=podinfo || true
+          kubectl get pods -o wide || true
+          kubectl logs -l 'app.kubernetes.io/name in (podinfo,podinfo-valkey)' --prefix --tail=100 --max-log-requests=10 || true
   kind-spiffe:
     runs-on: ubuntu-latest
     steps:
