@@ -370,21 +370,24 @@ func (s *Server) startSecureServer() *http.Server {
 
 func (s *Server) startMetricsServer() {
 	if s.config.PortMetrics > 0 {
-		mux := http.NewServeMux()
-		mux.Handle("/debug/pprof/", pprofHandler())
-		mux.Handle("/metrics", metricsHandler())
-		mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-			w.Write([]byte("OK"))
-		})
-
 		srv := &http.Server{
 			Addr:    fmt.Sprintf("%s:%v", s.config.Host, s.config.PortMetrics),
-			Handler: mux,
+			Handler: metricsMux(),
 		}
 
 		srv.ListenAndServe()
 	}
+}
+
+func metricsMux() http.Handler {
+	mux := http.NewServeMux()
+	mux.Handle("/debug/pprof/", pprofHandler())
+	mux.Handle("/metrics", metricsHandler())
+	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("OK"))
+	})
+	return mux
 }
 
 // pprofHandler serves the runtime profiles without the cmdline endpoint,

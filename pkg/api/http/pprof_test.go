@@ -6,8 +6,9 @@ import (
 	"testing"
 )
 
-func TestPprofHandler(t *testing.T) {
-	h := pprofHandler()
+func TestDebugEndpoints(t *testing.T) {
+	srv := NewMockServer()
+	srv.registerHandlers()
 
 	cases := map[string]int{
 		"/debug/pprof/":                  http.StatusOK,
@@ -15,13 +16,18 @@ func TestPprofHandler(t *testing.T) {
 		"/debug/pprof/symbol":            http.StatusOK,
 		"/debug/pprof/cmdline":           http.StatusNotFound,
 		"/debug/pprof/cmdline?debug=1":   http.StatusNotFound,
+		"/debug/vars":                    http.StatusNotFound,
+		"/debug/requests":                http.StatusNotFound,
 	}
-	for p, want := range cases {
-		req := httptest.NewRequest("GET", p, nil)
-		rr := httptest.NewRecorder()
-		h.ServeHTTP(rr, req)
-		if rr.Code != want {
-			t.Errorf("GET %s: got %d want %d", p, rr.Code, want)
+	ports := map[string]http.Handler{"main": srv.router, "metrics": metricsMux()}
+	for port, h := range ports {
+		for p, want := range cases {
+			req := httptest.NewRequest("GET", p, nil)
+			rr := httptest.NewRecorder()
+			h.ServeHTTP(rr, req)
+			if rr.Code != want {
+				t.Errorf("%s port GET %s: got %d want %d", port, p, rr.Code, want)
+			}
 		}
 	}
 }
