@@ -74,6 +74,7 @@ The following tables lists the configurable parameters of the podinfo chart and 
 | `ui.message`                                   | `None`                         | UI greetings message                                                                               |
 | `ui.logo`                                      | `None`                         | UI logo                                                                                            |
 | `prefix`                                       | `/`                            | URL path prefix for HTTP routes (e.g. `/foo` maps `/api/info` to `/foo/api/info`)                 |
+| `host`                                         | `None`                         | Host address to bind the HTTP and gRPC servers to, all interfaces when not set                      |
 | `faults.delay`                                 | `false`                        | Random HTTP response delays between 0 and 5 seconds                                                |
 | `faults.error`                                 | `false`                        | 1/3 chances of a random HTTP response error                                                        |
 | `faults.unhealthy`                             | `false`                        | When set, the healthy state is never reached                                                       |
@@ -96,7 +97,18 @@ The following tables lists the configurable parameters of the podinfo chart and 
 | `service.trafficDistribution`                  | `""`                           | Traffic distribution strategy                                                                      |
 | `service.additionalLabels`                     | `{}`                           | Additional labels to add to the service                                                            |
 | `service.externalTrafficPolicy`                | `None`                         | External traffic policy for LoadBalance service                                                    |
+| `service.annotations`                          | `{}`                           | Annotations of the Kubernetes Service                                                               |
+| `service.hostPort`                             | `None`                         | Bind the HTTP port to this host port                                                                |
 | `h2c.enabled`                                  | `false`                        | Allow upgrading to h2c (non-TLS version of HTTP/2)                                                 |
+| `tls.enabled`                                  | `false`                        | Serve HTTPS on a second port with the certificate from `tls.secretName`                             |
+| `tls.secretName`                               | `None`                         | `kubernetes.io/tls` Secret with the certificate key pair, reloaded on rotation                      |
+| `tls.certPath`                                 | `/data/cert`                   | Path where the certificate key pair is mounted                                                      |
+| `tls.port`                                     | `9899`                         | HTTPS port of the container and the Service                                                         |
+| `tls.hostPort`                                 | `None`                         | Bind the HTTPS port to this host port                                                               |
+| `certificate.create`                           | `false`                        | Create a cert-manager Certificate for `tls.secretName`                                              |
+| `certificate.issuerRef.kind`                   | `ClusterIssuer`                | Kind of the cert-manager issuer                                                                     |
+| `certificate.issuerRef.name`                   | `self-signed`                  | Name of the cert-manager issuer                                                                     |
+| `certificate.dnsNames`                         | `["podinfo"]`                  | Subject alternative names of the certificate                                                        |
 | `spiffe.enabled`                               | `false`                        | Serve the TLS port with SPIFFE mTLS, requires `tls.enabled`, SPIRE and the SPIFFE CSI driver       |
 | `spiffe.endpointSocket`                        | `unix:///spiffe-workload-api/spire-agent.sock` | SPIFFE Workload API socket                                                                         |
 | `spiffe.csiDriver`                             | `csi.spiffe.io`                | CSI driver that mounts the Workload API socket                                                     |
@@ -132,18 +144,18 @@ The following tables lists the configurable parameters of the podinfo chart and 
 | `ingress.className`                            | `""`                           | Use ingressClassName                                                                               |
 | `ingress.additionalLabels`                     | `{}`                           | Add additional labels to the ingress                                                               |
 | `ingress.annotations`                          | `{}`                           | Ingress annotations                                                                                |
-| `ingress.hosts`                                | `[]`                           | Ingress accepted hosts                                                                             |
+| `ingress.hosts`                                | `[{host: podinfo.local, paths: [/]}]` | Ingress accepted hosts                                                                              |
 | `ingress.tls`                                  | `[]`                           | Ingress TLS configuration                                                                          |
 | `httpRoute.enabled`                            | `false`                        | Enables Gateway API HTTPRoute                                                                      |
 | `httpRoute.additionalLabels`                   | `{}`                           | Add additional labels to the HTTPRoute                                                             |
 | `httpRoute.annotations`                        | `{}`                           | HTTPRoute annotations                                                                              |
-| `httpRoute.parentRefs`                         | `[]`                           | Gateways that this route is attached to                                                            |
+| `httpRoute.parentRefs`                         | `[{name: gateway, sectionName: http}]` | Gateways that this route is attached to                                                             |
 | `httpRoute.hostnames`                          | `["podinfo.local"]`            | Hostnames matching HTTP header                                                                     |
-| `httpRoute.rules`                              | `[]`                           | List of rules and filters applied                                                                  |
+| `httpRoute.rules`                              | `[{matches: [{path: /}]}]`     | List of rules and filters applied                                                                   |
 | `grpcRoute.enabled`                            | `false`                        | Enables Gateway API GRPCRoute                                                                      |
 | `grpcRoute.additionalLabels`                   | `{}`                           | Add additional labels to the GRPCRoute                                                             |
 | `grpcRoute.annotations`                        | `{}`                           | GRPCRoute annotations                                                                              |
-| `grpcRoute.parentRefs`                         | `[]`                           | Gateways that this route is attached to                                                            |
+| `grpcRoute.parentRefs`                         | `[{name: gateway, sectionName: http}]` | Gateways that this route is attached to                                                             |
 | `grpcRoute.hostnames`                          | `["podinfo.local"]`            | Hostnames matching HTTP header                                                                     |
 | `grpcRoute.rules`                              | `[{}]`                         | List of rules with matches and filters applied, match all by default                               |
 | `hooks.<hookType>.job.enabled`                 | `false`                        | Create a Helm hook job for testing (hookType: see values.yaml for available hooks)                 |
@@ -157,7 +169,12 @@ The following tables lists the configurable parameters of the podinfo chart and 
 | `resources.limits.memory`                      | `None`                         | Pod memory limit                                                                                   |
 | `nodeSelector`                                 | `{}`                           | Node labels for pod assignment                                                                     |
 | `tolerations`                                  | `[]`                           | List of node taints to tolerate                                                                    |
-| `affinity`                                     | `None`                         | Node/pod affinities                                                                                |
+| `affinity`                                     | `{}`                           | Node/pod affinities                                                                                 |
+| `topologySpreadConstraints`                    | `[]`                           | Pod topology spread constraints                                                                     |
+| `podDisruptionBudget`                          | `{}`                           | PodDisruptionBudget spec, e.g. `maxUnavailable: 1`, applied when `replicaCount` is greater than 1   |
+| `probes.readiness`                             | see `values.yaml`              | Delay, timeout, period and thresholds of the readiness probe                                        |
+| `probes.liveness`                              | see `values.yaml`              | Delay, timeout, period and thresholds of the liveness probe                                         |
+| `probes.startup.enable`                        | `false`                        | Add a startup probe, with its own delay, timeout, period and thresholds                             |
 | `priorityClassName`                            | `""`                           | Pod priority class name                                                                            |
 
 Specify each parameter using the `--set key=value[,key=value]` argument:

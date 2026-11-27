@@ -11,16 +11,22 @@ Podinfo is a tiny web application made with Go that showcases best practices of 
 Podinfo is used by CNCF projects like [Flux](https://github.com/fluxcd/flux2) and [Flagger](https://github.com/fluxcd/flagger)
 for end-to-end testing and workshops.
 
-Specifications:
+![podinfo-ui](https://raw.githubusercontent.com/stefanprodan/podinfo/gh-pages/screens/podinfo-ui-v7.png)
+
+### Specifications
+
+Features:
 
 * Health checks (readiness and liveness)
 * Graceful shutdown on interrupt signals
 * File watcher for secrets and configmaps
-* Instrumented with Prometheus and Open Telemetry
+* Instrumented with Prometheus and OpenTelemetry (traces, metrics and logs over OTLP)
 * Structured logging with zap 
 * 12-factor app with viper
 * Fault injection (random errors and latency)
-* SPIFFE mTLS with X.509 SVIDs from the SPIFFE Workload API
+* TLS and SPIFFE mTLS on the HTTPS and gRPC ports, with X.509 SVIDs from the SPIFFE Workload API
+* Redis and Valkey cache in standalone, Cluster and Sentinel mode, with TLS and mTLS
+* Web UI embedded in the binary, with no external requests
 * Swagger docs
 * Timoni, Helm and Kustomize installers
 * End-to-End testing with Kubernetes Kind and Helm
@@ -31,7 +37,8 @@ Specifications:
 
 Web API:
 
-* `GET /` prints runtime information
+* `GET /` serves the web UI to browsers and prints the runtime information to other clients
+* `GET /api/info` returns the runtime information as JSON, polled by the web UI
 * `GET /version` prints podinfo version and git commit hash 
 * `GET /metrics` return HTTP requests duration and Go runtime metrics
 * `GET /healthz` used by Kubernetes liveness probe
@@ -60,6 +67,8 @@ Web API:
 * `GET /chunked/{seconds}` uses `transfer-encoding` type `chunked` to give a partial response and then waits for the specified period
 * `GET /swagger.json` returns the API Swagger docs, used for Linkerd service profiling and Gloo routes discovery
 
+Errors are returned with their HTTP status code and a JSON body with the `code` and the `message`.
+
 gRPC API:
 
 * `/grpc.health.v1.Health/Check` health checking
@@ -76,7 +85,16 @@ gRPC API:
 
 Web UI:
 
-![podinfo-ui](https://raw.githubusercontent.com/stefanprodan/podinfo/gh-pages/screens/podinfo-ui-v7.png)
+The UI shows the version and the pod that answered, each version's share of the last 30 responses,
+and when the API stopped answering. It is set up with flags:
+
+| Flag           | Description                                                                              |
+|----------------|------------------------------------------------------------------------------------------|
+| `--ui-color`   | Background color, defaults to the blue `#1f4e8c`; `#17694f` is the green that goes with it |
+| `--ui-message` | Greeting, defaults to `greetings from podinfo`                                           |
+| `--ui-logo`    | Image URL, defaults to the embedded one                                                  |
+
+To see the UI during a canary release without a cluster, run `make ui-demo` and open `http://localhost:9898`.
 
 To access the Swagger UI open `<podinfo-host>/swagger/index.html` in a browser.
 
@@ -89,7 +107,8 @@ To access the Swagger UI open `<podinfo-host>/swagger/index.html` in a browser.
 
 ### Install
 
-To install Podinfo on Kubernetes the minimum required version is **Kubernetes v1.23**.
+To install Podinfo on Kubernetes the minimum required version is **Kubernetes v1.23**
+with Helm and Kustomize, and **Kubernetes v1.25** with Timoni.
 
 #### Timoni
 
@@ -138,6 +157,56 @@ kubectl apply -k github.com/stefanprodan/podinfo//kustomize
 ```bash
 docker run -dp 9898:9898 stefanprodan/podinfo
 ```
+
+### OpenTelemetry
+
+Podinfo exports traces, metrics and logs over OTLP, and is configured with the standard
+[OTEL_*](https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/) environment variables.
+Telemetry is off until an endpoint is set:
+
+```bash
+docker run -dp 9898:9898 \
+-e OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318 \
+-e OTEL_SERVICE_NAME=podinfo \
+stefanprodan/podinfo
+```
+
+| Variable                      | Description                                                                         |
+|-------------------------------|-------------------------------------------------------------------------------------|
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | Collector address, enables the three signals                                        |
+| `OTEL_EXPORTER_OTLP_PROTOCOL` | `http/protobuf` on port 4318 (default) or `grpc` on port 4317                       |
+| `OTEL_SERVICE_NAME`           | Service name, defaults to `podinfo`                                                 |
+| `OTEL_METRICS_EXPORTER`       | Set to `none` to keep traces and logs only                                          |
+| `OTEL_PROPAGATORS`            | Defaults to `tracecontext,baggage`; add `b3`, `jaeger` or `ottrace` for those headers |
+| `OTEL_SDK_DISABLED`           | Set to `true` to turn telemetry off                                                 |
+
+HTTP and gRPC requests, the calls to backends and the cache commands are traced, and the trace context
+is propagated from frontend to backend. Logs follow `--level` and carry the `trace_id` and `span_id`;
+request logs are written at debug level. The Prometheus `/metrics` endpoint is always on, and its
+histograms carry exemplars when scraped as OpenMetrics.
+
+The [otel](otel/README.md) directory runs two podinfo instances with Grafana otel-lgtm,
+with traces, logs and metrics correlated in Grafana.
+
+### Cache
+
+The `/cache/{key}` endpoints store values in Redis or Valkey:
+
+```bash
+podinfo --cache-server=redis://redis:6379
+```
+
+| Setting                                                     | Description                                                                                         |
+|-------------------------------------------------------------|-----------------------------------------------------------------------------------------------------|
+| `--cache-server`                                            | `redis://[user:password@]host:port[/db]`, `rediss://` for TLS, `valkey://` and `valkeys://` as aliases |
+| `--cache-cluster`                                           | Cluster mode, implied when the URL has more addresses as `?addr=host:port` parameters               |
+| `--cache-sentinel-primary`                                  | Name of the primary monitored by Sentinel, the URL addresses are then the Sentinels                 |
+| `--cache-ca-file`                                           | CA bundle that verifies the server certificate instead of the system roots                          |
+| `--cache-cert-path`                                         | Directory with the `tls.crt` and `tls.key` client key pair for mTLS, reloaded on rotation           |
+| `PODINFO_CACHE_USERNAME`, `PODINFO_CACHE_PASSWORD`          | Credentials, instead of putting them in the URL                                                     |
+| `PODINFO_CACHE_SENTINEL_PASSWORD`                           | Password of the Sentinels                                                                           |
+
+Without `--cache-server` the endpoints return HTTP 503. An invalid cache configuration is a startup error.
 
 ### SPIFFE mTLS
 
