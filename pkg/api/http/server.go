@@ -72,6 +72,7 @@ type Config struct {
 	CacheCluster          bool          `mapstructure:"cache-cluster"`
 	CacheSentinelPrimary  string        `mapstructure:"cache-sentinel-primary"`
 	CacheCAFile           string        `mapstructure:"cache-ca-file"`
+	CacheCertPath         string        `mapstructure:"cache-cert-path"`
 	CacheUsername         string        `mapstructure:"cache-username"`
 	CachePassword         string        `mapstructure:"cache-password"`
 	CacheSentinelPassword string        `mapstructure:"cache-sentinel-password"`
@@ -90,6 +91,7 @@ type Server struct {
 	cacheClosed  chan struct{}
 	cacheStop    chan struct{}
 	cacheStopped chan struct{}
+	cacheKeyPair *keypair.KeyPair
 	handler      http.Handler
 	tracer       trace.Tracer
 	backend      *http.Client
@@ -109,17 +111,17 @@ func NewServer(config *Config, logger *zap.Logger) (*Server, error) {
 		return nil, fmt.Errorf("loading the UI failed: %w", err)
 	}
 
-	cacheOpts, err := newCacheOptions(config)
+	spiffe, err := newSPIFFEState(config, logger)
+	if err != nil {
+		return nil, err
+	}
+
+	cacheOpts, cacheKeyPair, err := newCacheOptions(config, logger)
 	if err != nil {
 		return nil, err
 	}
 	if strings.HasPrefix(config.CacheServer, "tcp://") {
 		logger.Warn("tcp:// in --cache-server is deprecated, use redis://")
-	}
-
-	spiffe, err := newSPIFFEState(config, logger)
-	if err != nil {
-		return nil, err
 	}
 
 	srv := &Server{
@@ -134,6 +136,7 @@ func NewServer(config *Config, logger *zap.Logger) (*Server, error) {
 	if cacheOpts != nil {
 		redis.SetLogger(cacheLogger{logger})
 		srv.openCache(cacheOpts)
+		srv.cacheKeyPair = cacheKeyPair
 	}
 
 	return srv, nil
@@ -391,7 +394,7 @@ func (s *Server) SetKeyPair(kp *keypair.KeyPair) {
 	s.keyPair = kp
 }
 
-// Close releases the cache client, the config watcher and the SPIFFE source once the HTTP and gRPC servers have stopped.
+// Close releases the cache client and its key pair watcher, the config watcher and the SPIFFE source once the HTTP and gRPC servers have stopped.
 func (s *Server) Close() error {
 	if s.cacheStop != nil {
 		close(s.cacheStop)
@@ -404,10 +407,15 @@ func (s *Server) Close() error {
 		close(s.cacheClosed)
 	}
 
+	var cacheKeyPairErr error
+	if s.cacheKeyPair != nil {
+		cacheKeyPairErr = s.cacheKeyPair.Close()
+	}
+
 	var configsErr error
 	if s.configs != nil {
 		configsErr = s.configs.Close()
 	}
 
-	return errors.Join(cacheErr, configsErr, s.closeSPIFFE())
+	return errors.Join(cacheErr, cacheKeyPairErr, configsErr, s.closeSPIFFE())
 }

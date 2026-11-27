@@ -65,6 +65,7 @@ The following tables lists the configurable parameters of the podinfo chart and 
 | `cacheOptions.ca.secretName`                   | `""`                           | Secret holding the CA bundle that verifies the cache server certificate                            |
 | `cacheOptions.ca.configMapName`                | `""`                           | ConfigMap holding the CA bundle, mutually exclusive with `cacheOptions.ca.secretName`              |
 | `cacheOptions.ca.key`                          | `ca.crt`                       | Key of the CA bundle in the Secret or ConfigMap                                                    |
+| `cacheOptions.cert.secretName`                 | `""`                           | `kubernetes.io/tls` Secret holding the client key pair presented to the cache server, a rotated pair is used for new connections |
 | `redis.enabled`                                | `false`                        | Create Redis deployment for caching purposes                                                       |
 | `redis.repository`                             | `docker.io/redis`              | Redis image repository                                                                             |
 | `redis.tag`                                    | `<VERSION>`                    | Redis image tag                                                                                    |

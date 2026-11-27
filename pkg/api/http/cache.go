@@ -20,6 +20,7 @@ import (
 	"github.com/redis/go-redis/v9/maintnotifications"
 	"go.uber.org/zap"
 
+	"github.com/stefanprodan/podinfo/pkg/keypair"
 	"github.com/stefanprodan/podinfo/pkg/telemetry"
 	"github.com/stefanprodan/podinfo/pkg/version"
 )
@@ -123,20 +124,20 @@ func (s *Server) cacheReadHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
-func newCacheOptions(config *Config) (*redis.UniversalOptions, error) {
+func newCacheOptions(config *Config, logger *zap.Logger) (*redis.UniversalOptions, *keypair.KeyPair, error) {
 	if config.CacheServer == "" {
-		if config.CacheCluster || config.CacheSentinelPrimary != "" || config.CacheCAFile != "" {
-			return nil, errors.New("--cache-cluster, --cache-sentinel-primary and --cache-ca-file require --cache-server")
+		if config.CacheCluster || config.CacheSentinelPrimary != "" || config.CacheCAFile != "" || config.CacheCertPath != "" {
+			return nil, nil, errors.New("--cache-cluster, --cache-sentinel-primary, --cache-ca-file and --cache-cert-path require --cache-server")
 		}
-		return nil, nil
+		return nil, nil, nil
 	}
 	if config.CacheCluster && config.CacheSentinelPrimary != "" {
-		return nil, errors.New("--cache-cluster and --cache-sentinel-primary are mutually exclusive")
+		return nil, nil, errors.New("--cache-cluster and --cache-sentinel-primary are mutually exclusive")
 	}
 
 	u, err := url.Parse(config.CacheServer)
 	if err != nil {
-		return nil, fmt.Errorf("invalid cache server URL: %w", errors.Unwrap(err))
+		return nil, nil, fmt.Errorf("invalid cache server URL: %w", errors.Unwrap(err))
 	}
 
 	var secure bool
@@ -145,11 +146,11 @@ func newCacheOptions(config *Config) (*redis.UniversalOptions, error) {
 	case "rediss", "valkeys":
 		secure = true
 	default:
-		return nil, fmt.Errorf("unsupported cache server URL scheme %q, use redis, rediss, valkey or valkeys", u.Scheme)
+		return nil, nil, fmt.Errorf("unsupported cache server URL scheme %q, use redis, rediss, valkey or valkeys", u.Scheme)
 	}
 
 	if u.Hostname() == "" {
-		return nil, errors.New("cache server URL has no host")
+		return nil, nil, errors.New("cache server URL has no host")
 	}
 	addrs := []string{u.Host}
 	if u.Port() == "" {
@@ -158,11 +159,11 @@ func newCacheOptions(config *Config) (*redis.UniversalOptions, error) {
 
 	for key, values := range u.Query() {
 		if key != "addr" {
-			return nil, fmt.Errorf("unsupported cache server URL parameter %q", key)
+			return nil, nil, fmt.Errorf("unsupported cache server URL parameter %q", key)
 		}
 		for _, addr := range values {
 			if host, port, err := net.SplitHostPort(addr); err != nil || host == "" || port == "" {
-				return nil, fmt.Errorf("invalid cache server address %q, want host:port", addr)
+				return nil, nil, fmt.Errorf("invalid cache server address %q, want host:port", addr)
 			}
 			addrs = append(addrs, addr)
 		}
@@ -171,11 +172,11 @@ func newCacheOptions(config *Config) (*redis.UniversalOptions, error) {
 	var db int
 	if path := strings.Trim(u.Path, "/"); path != "" {
 		if db, err = strconv.Atoi(path); err != nil || db < 0 {
-			return nil, fmt.Errorf("invalid cache server database %q", path)
+			return nil, nil, fmt.Errorf("invalid cache server database %q", path)
 		}
 	}
 	if db != 0 && config.CacheSentinelPrimary == "" && (config.CacheCluster || len(addrs) > 1) {
-		return nil, errors.New("cluster mode supports only database 0")
+		return nil, nil, errors.New("cluster mode supports only database 0")
 	}
 
 	opts := &redis.UniversalOptions{
@@ -200,19 +201,29 @@ func newCacheOptions(config *Config) (*redis.UniversalOptions, error) {
 		if config.CacheCAFile != "" {
 			pem, err := os.ReadFile(config.CacheCAFile)
 			if err != nil {
-				return nil, fmt.Errorf("reading the cache CA file failed: %w", err)
+				return nil, nil, fmt.Errorf("reading the cache CA file failed: %w", err)
 			}
 			roots := x509.NewCertPool()
 			if !roots.AppendCertsFromPEM(pem) {
-				return nil, fmt.Errorf("no PEM certificates found in the cache CA file %s", config.CacheCAFile)
+				return nil, nil, fmt.Errorf("no PEM certificates found in the cache CA file %s", config.CacheCAFile)
 			}
 			opts.TLSConfig.RootCAs = roots
 		}
 	} else if config.CacheCAFile != "" {
-		return nil, errors.New("--cache-ca-file requires a rediss:// or valkeys:// cache server URL")
+		return nil, nil, errors.New("--cache-ca-file requires a rediss:// or valkeys:// cache server URL")
+	} else if config.CacheCertPath != "" {
+		return nil, nil, errors.New("--cache-cert-path requires a rediss:// or valkeys:// cache server URL")
 	}
 
-	return opts, nil
+	if config.CacheCertPath == "" {
+		return opts, nil, nil
+	}
+	kp, err := keypair.New(config.CacheCertPath, logger)
+	if err != nil {
+		return nil, nil, fmt.Errorf("loading the cache client key pair from %s failed: %w", config.CacheCertPath, err)
+	}
+	opts.TLSConfig.GetClientCertificate = kp.GetClientCertificate
+	return opts, kp, nil
 }
 
 func (s *Server) openCache(opts *redis.UniversalOptions) {

@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"slices"
 	"strings"
 	"sync"
@@ -23,7 +25,9 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
 
+	"github.com/stefanprodan/podinfo/pkg/spiffe/spiffetest"
 	"github.com/stefanprodan/podinfo/pkg/version"
 )
 
@@ -120,14 +124,7 @@ func TestCacheHandlers_Error(t *testing.T) {
 }
 
 func TestCacheTLS(t *testing.T) {
-	ts := httptest.NewTLSServer(nil)
-	cert := ts.TLS.Certificates[0]
-	caFile := filepath.Join(t.TempDir(), "ca.pem")
-	if err := os.WriteFile(caFile, pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: ts.Certificate().Raw}), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	ts.Close()
-
+	cert, caFile := newCacheServerCert(t)
 	m := miniredis.NewMiniRedis()
 	if err := m.StartTLS(&tls.Config{Certificates: []tls.Certificate{cert}}); err != nil {
 		t.Fatal(err)
@@ -142,6 +139,80 @@ func TestCacheTLS(t *testing.T) {
 	srv = newCacheMockServer(t, &Config{CacheServer: "rediss://" + m.Addr()})
 	if rr := serveCache(srv, "POST", "value1"); !strings.Contains(rr.Body.String(), "cache set failed") {
 		t.Fatalf("POST without the CA returned %q, want a cache set error", rr.Body.String())
+	}
+}
+
+func TestCacheMTLS(t *testing.T) {
+	cert, caFile := newCacheServerCert(t)
+	for _, cluster := range []bool{false, true} {
+		t.Run(map[bool]string{false: "standalone", true: "cluster"}[cluster], func(t *testing.T) {
+			first, second := spiffetest.NewCA(t), spiffetest.NewCA(t)
+			var mu sync.Mutex
+			clientCA, peers := first, map[*server.Peer]*spiffetest.CA{}
+			m := miniredis.NewMiniRedis()
+			err := m.StartTLS(&tls.Config{GetConfigForClient: func(*tls.ClientHelloInfo) (*tls.Config, error) {
+				mu.Lock()
+				defer mu.Unlock()
+				pool := x509.NewCertPool()
+				for _, c := range clientCA.Bundle(clientID.TrustDomain()).X509Authorities() {
+					pool.AddCert(c)
+				}
+				return &tls.Config{Certificates: []tls.Certificate{cert}, ClientAuth: tls.RequireAndVerifyClientCert, ClientCAs: pool}, nil
+			}})
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(m.Close)
+			m.Server().SetPreHook(func(p *server.Peer, _ string, _ ...string) bool {
+				mu.Lock()
+				defer mu.Unlock()
+				if ca, ok := peers[p]; ok && ca != clientCA {
+					p.Close()
+					return true
+				}
+				peers[p] = clientCA
+				return false
+			})
+
+			dir := t.TempDir()
+			writeClientPair(t, dir, first)
+			srv := newCacheMockServer(t, &Config{CacheServer: "rediss://" + m.Addr(), CacheCluster: cluster, CacheCAFile: caFile, CacheCertPath: dir})
+			t.Cleanup(func() { close(srv.cacheClosed) })
+			if rr := serveCache(srv, "POST", "value1"); rr.Code != http.StatusAccepted {
+				t.Fatalf("POST returned %d, want %d", rr.Code, http.StatusAccepted)
+			}
+			if rr := serveCache(srv, "GET", ""); rr.Code != http.StatusOK || rr.Body.String() != "value1" {
+				t.Fatalf("GET returned %d %q, want %d %q", rr.Code, rr.Body.String(), http.StatusOK, "value1")
+			}
+			if rr := serveCache(srv, "DELETE", ""); rr.Code != http.StatusAccepted {
+				t.Fatalf("DELETE returned %d, want %d", rr.Code, http.StatusAccepted)
+			}
+
+			anonymous := newCacheMockServer(t, &Config{CacheServer: "rediss://" + m.Addr(), CacheCluster: cluster, CacheCAFile: caFile})
+			t.Cleanup(func() { close(anonymous.cacheClosed) })
+			if rr := serveCache(anonymous, "POST", "value1"); rr.Code != http.StatusInternalServerError {
+				t.Errorf("POST without a client certificate returned %d, want %d", rr.Code, http.StatusInternalServerError)
+			}
+			if err := anonymous.cache.Ping(t.Context()).Err(); err == nil || !strings.Contains(err.Error(), "tls: certificate required") {
+				t.Errorf("PING without a client certificate returned %v, want a certificate required alert", err)
+			}
+			if m.Exists("key1") {
+				t.Error("the write without a client certificate reached the cache")
+			}
+
+			mu.Lock()
+			clientCA = second
+			mu.Unlock()
+			if rr := serveCache(srv, "POST", "value1"); rr.Code != http.StatusInternalServerError {
+				t.Fatalf("POST with a pair from the old CA returned %d, want %d", rr.Code, http.StatusInternalServerError)
+			}
+
+			writeClientPair(t, dir, second)
+			waitFor(t, "the rotated client key pair", func() bool { return serveCache(srv, "POST", "value2").Code == http.StatusAccepted })
+			if got, _ := m.Get("key1"); got != "value2" {
+				t.Errorf("cache has %q after the rotation, want %q", got, "value2")
+			}
+		})
 	}
 }
 
@@ -185,7 +256,33 @@ func TestCloseReleasesCache(t *testing.T) {
 	}
 }
 
+func TestCloseReleasesCacheKeyPair(t *testing.T) {
+	dir := t.TempDir()
+	writeClientPair(t, dir, spiffetest.NewCA(t))
+	watchers := func() int {
+		buf := make([]byte, 1<<20)
+		return strings.Count(string(buf[:runtime.Stack(buf, true)]), "fscache.(*Watcher).run(")
+	}
+	before := watchers()
+
+	srv, err := NewServer(&Config{CacheServer: "rediss://cache:6379", CacheCertPath: dir}, NewMockServer().logger)
+	if err != nil {
+		t.Fatalf("NewServer returned %v", err)
+	}
+	if n := watchers(); n != before+1 {
+		t.Fatalf("%d key pair watchers are running, want %d", n, before+1)
+	}
+
+	if err := srv.Close(); err != nil {
+		t.Fatalf("Close returned %v", err)
+	}
+	waitFor(t, "the key pair watcher to stop", func() bool { return watchers() == before })
+}
+
 func TestNewCacheOptions(t *testing.T) {
+	_, caFile := newCacheServerCert(t)
+	certDir := t.TempDir()
+	writeClientPair(t, certDir, spiffetest.NewCA(t))
 	tests := []struct {
 		name   string
 		config Config
@@ -251,15 +348,55 @@ func TestNewCacheOptions(t *testing.T) {
 				SentinelPassword: "sentinel-pass",
 			},
 		},
+		{
+			name:   "client key pair",
+			config: Config{CacheServer: "rediss://cache:6380", CacheCAFile: caFile, CacheCertPath: certDir},
+			want:   redis.UniversalOptions{Addrs: []string{"cache:6380"}},
+			tls:    true,
+		},
+		{
+			name:   "cluster client key pair",
+			config: Config{CacheServer: "valkeys://node-0:6379?addr=node-1:6379", CacheCertPath: certDir},
+			want:   redis.UniversalOptions{Addrs: []string{"node-0:6379", "node-1:6379"}},
+			tls:    true,
+		},
+		{
+			name: "sentinel client key pair",
+			config: Config{
+				CacheServer:          "rediss://sentinel-0:26379?addr=sentinel-1:26379",
+				CacheSentinelPrimary: "primary",
+				CacheCAFile:          caFile,
+				CacheCertPath:        certDir,
+			},
+			want: redis.UniversalOptions{Addrs: []string{"sentinel-0:26379", "sentinel-1:26379"}, MasterName: "primary"},
+			tls:  true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newCacheOptions(&tt.config)
+			got, kp, err := newCacheOptions(&tt.config, zap.NewNop())
 			if err != nil {
 				t.Fatalf("newCacheOptions returned %v", err)
 			}
 			if (got.TLSConfig != nil) != tt.tls {
 				t.Errorf("TLS is %v, want %v", got.TLSConfig != nil, tt.tls)
+			}
+			if tt.config.CacheCAFile != "" && got.TLSConfig.RootCAs == nil {
+				t.Error("the CA file is not applied")
+			}
+			if (kp != nil) != (tt.config.CacheCertPath != "") {
+				t.Fatalf("key pair is %v, want %v", kp != nil, tt.config.CacheCertPath != "")
+			}
+			if kp != nil {
+				t.Cleanup(func() { _ = kp.Close() })
+				if got.TLSConfig.GetClientCertificate == nil {
+					t.Fatal("GetClientCertificate is not set")
+				}
+				if cert, _ := got.TLSConfig.GetClientCertificate(nil); cert == nil {
+					t.Error("GetClientCertificate returned no certificate")
+				}
+			} else if got.TLSConfig != nil && got.TLSConfig.GetClientCertificate != nil {
+				t.Error("GetClientCertificate is set without a key pair")
 			}
 			if got.MaintNotificationsConfig == nil || got.MaintNotificationsConfig.Mode != maintnotifications.ModeDisabled {
 				t.Errorf("maintenance notifications config %+v, want mode %q", got.MaintNotificationsConfig, maintnotifications.ModeDisabled)
@@ -273,9 +410,9 @@ func TestNewCacheOptions(t *testing.T) {
 }
 
 func TestNewCacheOptions_Disabled(t *testing.T) {
-	opts, err := newCacheOptions(&Config{})
-	if opts != nil || err != nil {
-		t.Errorf("newCacheOptions returned %v, %v, want nil, nil", opts, err)
+	opts, kp, err := newCacheOptions(&Config{}, zap.NewNop())
+	if opts != nil || kp != nil || err != nil {
+		t.Errorf("newCacheOptions returned %v, %v, %v, want nil, nil, nil", opts, kp, err)
 	}
 }
 
@@ -283,6 +420,14 @@ func TestNewCacheOptions_Invalid(t *testing.T) {
 	caFile := filepath.Join(t.TempDir(), "ca.pem")
 	if err := os.WriteFile(caFile, []byte("not a certificate"), 0o600); err != nil {
 		t.Fatal(err)
+	}
+	certDir := t.TempDir()
+	writeClientPair(t, certDir, spiffetest.NewCA(t))
+	invalidDir := t.TempDir()
+	for _, name := range []string{"tls.crt", "tls.key"} {
+		if err := os.WriteFile(filepath.Join(invalidDir, name), []byte("not a certificate"), 0o600); err != nil {
+			t.Fatal(err)
+		}
 	}
 	tests := map[string]Config{
 		"bad URL":                     {CacheServer: "redis://user:secret@cache:port"},
@@ -299,10 +444,14 @@ func TestNewCacheOptions_Invalid(t *testing.T) {
 		"CA file without TLS":         {CacheServer: "redis://cache:6379", CacheCAFile: caFile},
 		"unreadable CA file":          {CacheServer: "rediss://cache:6379", CacheCAFile: filepath.Join(t.TempDir(), "missing.pem")},
 		"CA file without certificate": {CacheServer: "rediss://cache:6379", CacheCAFile: caFile},
+		"cert path without TLS":       {CacheServer: "redis://cache:6379", CacheCertPath: certDir},
+		"cert path without addresses": {CacheCertPath: certDir},
+		"missing cert path":           {CacheServer: "rediss://cache:6379", CacheCertPath: filepath.Join(t.TempDir(), "missing")},
+		"invalid key pair":            {CacheServer: "rediss://cache:6379", CacheCertPath: invalidDir},
 	}
 	for name, config := range tests {
 		t.Run(name, func(t *testing.T) {
-			_, err := newCacheOptions(&config)
+			_, _, err := newCacheOptions(&config, zap.NewNop())
 			if err == nil {
 				t.Fatal("newCacheOptions returned no error")
 			}
@@ -341,13 +490,19 @@ func TestNewServer_InvalidCache(t *testing.T) {
 	if _, err := NewServer(&Config{CacheServer: "redis://cache:6379", CacheCAFile: "ca.pem"}, NewMockServer().logger); err == nil {
 		t.Error("NewServer returned no error")
 	}
+	if _, err := NewServer(&Config{CacheServer: "rediss://cache:6379", CacheCertPath: t.TempDir()}, NewMockServer().logger); err == nil {
+		t.Error("NewServer returned no error without a client key pair")
+	}
 }
 
 func newCacheMockServer(t *testing.T, config *Config) *Server {
 	t.Helper()
-	opts, err := newCacheOptions(config)
+	opts, kp, err := newCacheOptions(config, zap.NewNop())
 	if err != nil {
 		t.Fatalf("newCacheOptions returned %v", err)
+	}
+	if kp != nil {
+		t.Cleanup(func() { _ = kp.Close() })
 	}
 	srv := NewMockServer()
 	srv.config.Hostname = config.Hostname
@@ -366,6 +521,30 @@ func serveCache(srv *Server, method, body string) *httptest.ResponseRecorder {
 	return rr
 }
 
+func newCacheServerCert(t *testing.T) (tls.Certificate, string) {
+	t.Helper()
+	ts := httptest.NewTLSServer(nil)
+	defer ts.Close()
+	caFile := filepath.Join(t.TempDir(), "ca.pem")
+	if err := os.WriteFile(caFile, pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: ts.Certificate().Raw}), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	return ts.TLS.Certificates[0], caFile
+}
+
+func writeClientPair(t *testing.T, dir string, ca *spiffetest.CA) {
+	t.Helper()
+	cert, key, err := ca.NewSVID(t, clientID).Marshal()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for name, data := range map[string][]byte{"tls.crt": cert, "tls.key": key} {
+		if err := os.WriteFile(filepath.Join(dir, name), data, 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
 func TestCacheTracing(t *testing.T) {
 	const payload = "cache-payload-4bf92f35"
 	for _, cluster := range []bool{false, true} {
@@ -373,7 +552,7 @@ func TestCacheTracing(t *testing.T) {
 			spans := setupTracing(t)
 			reader := setupMetrics(t)
 			m := miniredis.RunT(t)
-			opts, err := newCacheOptions(&Config{CacheServer: "redis://" + m.Addr(), CacheCluster: cluster})
+			opts, _, err := newCacheOptions(&Config{CacheServer: "redis://" + m.Addr(), CacheCluster: cluster}, zap.NewNop())
 			if err != nil {
 				t.Fatal(err)
 			}

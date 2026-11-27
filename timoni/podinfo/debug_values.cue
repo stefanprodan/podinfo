@@ -48,6 +48,7 @@ values: {
 		redisURL: "rediss://redis-0.redis:6379?addr=redis-1.redis:6379"
 		cluster:  true
 		ca: existingConfigMap: name: "redis-ca"
+		cert: existingSecret: name:  "redis-client"
 	}
 
 	otel: {

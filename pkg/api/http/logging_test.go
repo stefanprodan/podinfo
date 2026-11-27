@@ -99,7 +99,7 @@ func TestLogCorrelation(t *testing.T) {
 			srv, recorder, buf := newLoggingServer(t, zapcore.DebugLevel)
 			if tt.cache {
 				m := miniredis.RunT(t)
-				opts, err := newCacheOptions(&Config{CacheServer: "redis://" + m.Addr()})
+				opts, _, err := newCacheOptions(&Config{CacheServer: "redis://" + m.Addr()}, zap.NewNop())
 				if err != nil {
 					t.Fatal(err)
 				}

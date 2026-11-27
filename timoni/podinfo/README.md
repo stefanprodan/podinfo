@@ -312,6 +312,7 @@ Secret with `envFrom`.
 | `caching.sentinelPrimary` | `string` | unset | Name of the primary monitored by Sentinel; the URL addresses are then the Sentinels |
 | `caching.ca.existingSecret.name` / `existingConfigMap.name` | `string` | unset | Existing Secret or ConfigMap holding the CA bundle that verifies the server certificate; requires a `rediss://` or `valkeys://` URL |
 | `caching.ca.key` | `string` | `ca.crt` | Key of the CA bundle in the Secret or ConfigMap |
+| `caching.cert.existingSecret.name` | `string` | unset | Existing `kubernetes.io/tls` Secret holding the `tls.crt` and `tls.key` client key pair presented to the server, a rotated pair is used for new connections; requires a `rediss://` or `valkeys://` URL |
 
 The cache credentials are read from the `PODINFO_CACHE_USERNAME`,
 `PODINFO_CACHE_PASSWORD` and `PODINFO_CACHE_SENTINEL_PASSWORD` environment

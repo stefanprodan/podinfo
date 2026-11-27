@@ -114,6 +114,26 @@ func TestKeyPairRotation(t *testing.T) {
 	eventually(t, "the rewritten pair was not loaded", func() bool { return commonName(t, kp) == "second" })
 }
 
+func TestKeyPairClientCertificate(t *testing.T) {
+	dir := t.TempDir()
+	writePair(t, dir, newPair(t, "first", nil))
+	kp, _ := newKeyPair(t, dir)
+
+	clientName := func() string {
+		cert, err := kp.GetClientCertificate(nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return cert.Leaf.Subject.CommonName
+	}
+	if cn := clientName(); cn != "first" {
+		t.Fatalf("got %q, want first", cn)
+	}
+
+	writePair(t, dir, newPair(t, "second", nil))
+	eventually(t, "the rewritten pair was not presented", func() bool { return clientName() == "second" })
+}
+
 func TestKeyPairSymlinkSwap(t *testing.T) {
 	dir := t.TempDir()
 	for v, cn := range map[string]string{"..v1": "v1", "..v2": "v2"} {

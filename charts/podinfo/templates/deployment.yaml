@@ -121,6 +121,9 @@ spec:
             {{- if or .Values.cacheOptions.ca.secretName .Values.cacheOptions.ca.configMapName }}
             - --cache-ca-file=/data/cache-ca/ca.crt
             {{- end }}
+            {{- if .Values.cacheOptions.cert.secretName }}
+            - --cache-cert-path=/data/cache-cert
+            {{- end }}
             - --level={{ .Values.logLevel }}
             - --random-delay={{ .Values.faults.delay }}
             - --random-error={{ .Values.faults.error }}
@@ -256,6 +259,11 @@ spec:
             mountPath: /data/cache-ca
             readOnly: true
           {{- end }}
+          {{- if .Values.cacheOptions.cert.secretName }}
+          - name: cache-cert
+            mountPath: /data/cache-cert
+            readOnly: true
+          {{- end }}
           resources:
 {{ toYaml .Values.resources | indent 12 }}
     {{- with .Values.podSecurityContext }}
@@ -306,6 +314,11 @@ spec:
             - key: {{ .key }}
               path: ca.crt
       {{- end }}
+      {{- end }}
+      {{- with .Values.cacheOptions.cert.secretName }}
+      - name: cache-cert
+        secret:
+          secretName: {{ . }}
       {{- end }}
     {{- with .Values.topologySpreadConstraints }}
       topologySpreadConstraints:

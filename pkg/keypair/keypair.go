@@ -43,6 +43,11 @@ func (kp *KeyPair) GetCertificate(*tls.ClientHelloInfo) (*tls.Certificate, error
 	return kp.cert.Load(), nil
 }
 
+// GetClientCertificate returns the current key pair.
+func (kp *KeyPair) GetClientCertificate(*tls.CertificateRequestInfo) (*tls.Certificate, error) {
+	return kp.cert.Load(), nil
+}
+
 // TLSConfig returns a server TLS config that serves the current key pair.
 func (kp *KeyPair) TLSConfig() *tls.Config {
 	return &tls.Config{GetCertificate: kp.GetCertificate}
@@ -59,7 +64,7 @@ func (kp *KeyPair) update(files map[string][]byte) {
 	case err != nil:
 		if !kp.failing {
 			kp.failing = true
-			kp.logger.Warn("reloading the TLS key pair failed, serving the previous one", zap.String("dir", kp.dir), zap.Error(err))
+			kp.logger.Warn("reloading the TLS key pair failed, keeping the previous one", zap.String("dir", kp.dir), zap.Error(err))
 		}
 		return
 	case kp.failing:
