@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -53,19 +52,27 @@ func (s *Server) echoWsHandler(w http.ResponseWriter, r *http.Request) {
 		return c.SetReadDeadline(time.Now().Add(wsReadTimeout))
 	})
 
-	var wg sync.WaitGroup
-	wg.Add(1)
-
 	defer c.Close()
 	done := make(chan struct{})
 	defer close(done)
 	in := make(chan interface{})
-	go s.writeWs(r.Context(), c, in)
-	go s.sendHostWs(r.Context(), c, in, done, &wg)
+	writerDone := make(chan struct{})
 	go func() {
-		defer close(in)
-		wg.Wait()
+		defer close(writerDone)
+		defer c.Close()
+		s.writeWs(r.Context(), c, in, done)
 	}()
+	send := func(msg interface{}) bool {
+		select {
+		case in <- msg:
+			return true
+		case <-writerDone:
+			return false
+		case <-done:
+			return false
+		}
+	}
+	go s.sendHostWs(r.Context(), send, done)
 	for {
 		_, message, err := c.ReadMessage()
 		if err != nil {
@@ -81,11 +88,13 @@ func (s *Server) echoWsHandler(w http.ResponseWriter, r *http.Request) {
 			Time:    time.Now(),
 			Message: string(message),
 		}
-		in <- response
+		if !send(response) {
+			break
+		}
 	}
 }
 
-func (s *Server) sendHostWs(ctx context.Context, ws *websocket.Conn, in chan interface{}, done chan struct{}, wg *sync.WaitGroup) {
+func (s *Server) sendHostWs(ctx context.Context, send func(interface{}) bool, done chan struct{}) {
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
 	for {
@@ -98,16 +107,17 @@ func (s *Server) sendHostWs(ctx context.Context, ws *websocket.Conn, in chan int
 				Time: time.Now(),
 				Host: s.config.Hostname,
 			}
-			in <- status
+			if !send(status) {
+				return
+			}
 		case <-done:
 			s.logger.Debug("websocket exit", telemetry.Context(ctx))
-			wg.Done()
 			return
 		}
 	}
 }
 
-func (s *Server) writeWs(ctx context.Context, ws *websocket.Conn, in chan interface{}) {
+func (s *Server) writeWs(ctx context.Context, ws *websocket.Conn, in chan interface{}, done chan struct{}) {
 	ping := time.NewTicker(wsPingInterval)
 	defer ping.Stop()
 	for {
@@ -125,6 +135,8 @@ func (s *Server) writeWs(ctx context.Context, ws *websocket.Conn, in chan interf
 			if err := ws.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}
+		case <-done:
+			return
 		}
 	}
 }
