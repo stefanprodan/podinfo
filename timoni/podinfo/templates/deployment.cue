@@ -12,7 +12,8 @@ import (
 #Deployment: appsv1.#Deployment & {
 	_config: #Config
 
-	_cacheCA: _config.caching.enabled && _config.caching.ca != _|_
+	_cacheCA:   _config.caching.enabled && _config.caching.ca != _|_
+	_cacheCert: _config.caching.enabled && _config.caching.cert != _|_
 
 	// The OpenTelemetry variables, except the ones set in env; the
 	// Kubernetes resource attributes are set from the downward API.
@@ -186,6 +187,9 @@ import (
 							if _cacheCA {
 								"--cache-ca-file=/data/cache-ca/ca.crt"
 							},
+							if _cacheCert {
+								"--cache-cert-path=/data/cache-cert"
+							},
 							for a in _config.extraArgs {a},
 						]
 						env: [
@@ -246,6 +250,13 @@ import (
 									readOnly:  true
 								}
 							},
+							if _cacheCert {
+								{
+									name:      "cache-cert"
+									mountPath: "/data/cache-cert"
+									readOnly:  true
+								}
+							},
 							if _config.extraVolumeMounts != _|_ for m in _config.extraVolumeMounts {m},
 						]
 					},
@@ -272,6 +283,12 @@ import (
 								name:  _config.caching.ca.existingConfigMap.name
 								items: [{key: _config.caching.ca.key, path: "ca.crt"}]
 							}
+						}
+					},
+					if _cacheCert {
+						{
+							name: "cache-cert"
+							secret: secretName: _config.caching.cert.existingSecret.name
 						}
 					},
 					if _config.extraVolumes != _|_ for v in _config.extraVolumes {v},

@@ -108,6 +108,10 @@ cacheOptions:
     configMapName: ""
     # the key of the CA bundle in the secret or config map
     key: ca.crt
+  # the client key pair presented to the server, a rotated pair is used for new connections, requires a rediss:// or valkeys:// URL
+  cert:
+    # the name of the kubernetes.io/tls secret holding the tls.crt and tls.key
+    secretName: ""
 # Redis deployment
 redis:
   enabled: true

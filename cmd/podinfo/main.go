@@ -71,6 +71,7 @@ func main() {
 	fs.Bool("cache-cluster", false, "connect to the cache in cluster mode, implied when --cache-server has more than one address")
 	fs.String("cache-sentinel-primary", "", "name of the primary monitored by Sentinel (what Redis calls the master name); the --cache-server addresses are then the Sentinels")
 	fs.String("cache-ca-file", "", "PEM CA bundle that verifies the cache server certificate instead of the system roots")
+	fs.String("cache-cert-path", "", "directory with the tls.crt and tls.key client key pair presented to the cache server, a rotated pair is used for new connections; requires a rediss:// or valkeys:// --cache-server")
 	fs.String("otel-service-name", "", "deprecated, use OTEL_SERVICE_NAME")
 
 	versionFlag := fs.BoolP("version", "v", false, "get version number")

@@ -36,9 +36,10 @@ func NewCA(t *testing.T) *CA {
 	if err != nil {
 		t.Fatal(err)
 	}
+	serial, _ := rand.Int(rand.Reader, big.NewInt(1<<62))
 	tmpl := &x509.Certificate{
-		SerialNumber:          big.NewInt(1),
-		Subject:               pkix.Name{CommonName: "test-ca"},
+		SerialNumber:          serial,
+		Subject:               pkix.Name{CommonName: "test-ca-" + serial.String()},
 		NotBefore:             time.Now().Add(-time.Hour),
 		NotAfter:              time.Now().Add(time.Hour),
 		KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageCRLSign,

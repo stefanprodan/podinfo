@@ -71,6 +71,12 @@ import (
 			key: *"ca.crt" | string & =~".+"
 		}
 
+		// The client key pair presented to the server, from the
+		// `tls.crt` and `tls.key` of an existing `kubernetes.io/tls`
+		// Secret, a rotated pair is used for new connections; requires
+		// a `rediss://` or `valkeys://` URL.
+		cert?: existingSecret: name: string & =~".+"
+
 		_guard: "valid"
 		_guard: [
 			if cluster && sentinelPrimary != _|_ {
