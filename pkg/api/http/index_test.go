@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
 
@@ -113,7 +114,7 @@ func TestIndexNoExternalOrigins(t *testing.T) {
 	check("index", serveIndex(t, srv, "/").Body.String())
 
 	err := fs.WalkDir(ui.FS, ".", func(name string, d fs.DirEntry, err error) error {
-		if err != nil || d.IsDir() || filepath.Ext(name) == ".gif" {
+		if err != nil || d.IsDir() || slices.Contains([]string{".gif", ".png"}, filepath.Ext(name)) {
 			return err
 		}
 		data, err := fs.ReadFile(ui.FS, name)
@@ -130,11 +131,12 @@ func TestIndexNoExternalOrigins(t *testing.T) {
 
 func TestUIAssets(t *testing.T) {
 	tests := map[string]string{
-		"favicon.svg":      "image/svg+xml",
-		"podinfo.css":      "text/css; charset=utf-8",
-		"podinfo.js":       "text/javascript; charset=utf-8",
-		"cuddle_clap.gif":  "image/gif",
-		"cuddle_bunny.gif": "image/gif",
+		"favicon.png":          "image/png",
+		"apple-touch-icon.png": "image/png",
+		"podinfo.css":          "text/css; charset=utf-8",
+		"podinfo.js":           "text/javascript; charset=utf-8",
+		"cuddle_clap.gif":      "image/gif",
+		"cuddle_bunny.gif":     "image/gif",
 	}
 
 	for _, prefix := range []string{"/", "/foo"} {

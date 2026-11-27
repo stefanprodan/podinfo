@@ -56,7 +56,7 @@ func main() {
 	fs.String("ui-path", "", "deprecated, directory with an index.html page that replaces the embedded UI")
 	fs.String("ui-logo", "", "UI logo URL, defaults to the embedded image")
 	fs.String("ui-color", "#1f4e8c", "UI color")
-	fs.String("ui-message", fmt.Sprintf("greetings from podinfo v%v", version.VERSION), "UI message")
+	fs.String("ui-message", "greetings from podinfo", "UI message")
 	fs.Bool("h2c", false, "allow upgrading to H2C")
 	fs.Bool("random-delay", false, "between 0 and 5 seconds random delay by default")
 	fs.String("random-delay-unit", "s", "either s(seconds) or ms(milliseconds")
