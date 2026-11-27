@@ -276,7 +276,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: returns the environment variables as a JSON array
+      description: returns the environment variables as a JSON array, with secret values masked
       produces:
       - application/json
       responses:
