@@ -33,6 +33,10 @@ func (s *Server) chunkedHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !s.drainBody(w, r) {
+		return
+	}
+
 	w.Header().Set("Connection", "Keep-Alive")
 	w.Header().Set("Transfer-Encoding", "chunked")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
