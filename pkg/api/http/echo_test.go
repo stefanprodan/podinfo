@@ -2,6 +2,9 @@ package http
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -229,5 +232,53 @@ func TestEchoHandler_LogPayloadInfoLevel(t *testing.T) {
 
 	if n := logs.FilterMessage("payload received").Len(); n != 0 {
 		t.Fatalf("payload logged at info level")
+	}
+}
+
+func TestEchoBackendFailureHidesCredentials(t *testing.T) {
+	refused := roundTripperFunc(func(*http.Request) (*http.Response, error) {
+		return nil, errors.New("connection refused")
+	})
+	unavailable := roundTripperFunc(func(*http.Request) (*http.Response, error) {
+		return &http.Response{StatusCode: http.StatusServiceUnavailable, Body: http.NoBody}, nil
+	})
+	ok := roundTripperFunc(func(*http.Request) (*http.Response, error) {
+		return &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader("pong"))}, nil
+	})
+	for _, c := range []struct {
+		name, backend, want string
+		transport           http.RoundTripper
+	}{
+		{"call failed", "http://podinfo:s3cret@backend.test:9898/echo?token=t0ken#frag", "http://backend.test:9898/echo", refused},
+		{"invalid URL", "http://podinfo:s3cret@backend.test:9898/echo?token=t0ken\x7f", "[invalid]", refused},
+		{"invalid escape", "http://podinfo:s3%zzcret@backend.test:9898/echo", "[invalid]", refused},
+		{"no host", "http:podinfo:s3cret@backend.test/echo", "[invalid]", refused},
+		{"error status", "http://podinfo:s3cret@backend.test:9898/echo?token=t0ken", "http://backend.test:9898/echo", unavailable},
+		{"success", "http://podinfo:s3cret@backend.test:9898/echo?token=t0ken", "pong", ok},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			core, logs := observer.New(zap.DebugLevel)
+			srv := NewMockServer()
+			srv.logger = zap.New(core)
+			srv.config.BackendURL = []string{c.backend}
+			srv.backend = newBackendClient(c.transport)
+
+			rr := httptest.NewRecorder()
+			req := httptest.NewRequest("POST", "/api/echo", strings.NewReader("hello"))
+			http.HandlerFunc(srv.echoHandler).ServeHTTP(rr, req)
+
+			if !strings.Contains(rr.Body.String(), c.want) {
+				t.Errorf("response %q does not contain %q", rr.Body.String(), c.want)
+			}
+			out := []string{rr.Body.String()}
+			for _, e := range logs.All() {
+				out = append(out, e.Message, fmt.Sprint(e.ContextMap()))
+			}
+			for _, s := range out {
+				if strings.Contains(s, "s3cret") || strings.Contains(s, "t0ken") || strings.Contains(s, "zz") {
+					t.Errorf("credentials leaked: %s", s)
+				}
+			}
+		})
 	}
 }

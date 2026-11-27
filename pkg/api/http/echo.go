@@ -47,13 +47,19 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 
 				ctx, cancel := context.WithTimeout(r.Context(), s.config.HttpClientTimeout)
 				defer cancel()
-				backendURL := trace.WithAttributes(redactedURL(backend)...)
+				display, ok := backendURL(backend)
+				var attrs []attribute.KeyValue
+				if ok {
+					attrs = append(attrs, semconv.URLFull(display))
+				}
+				urlAttr := trace.WithAttributes(attrs...)
 
 				backendReq, err := http.NewRequestWithContext(ctx, "POST", backend, bytes.NewReader(body))
 				if err != nil {
-					s.logger.Error("backend call failed", zap.Error(err), zap.String("url", backend), telemetry.Context(r.Context()))
-					span.RecordError(errBackendCall, backendURL)
-					result[index] = fmt.Sprintf("backend %v call failed %v", backend, err)
+					err = redactURLError(err, display)
+					s.logger.Error("backend call failed", zap.Error(err), zap.String("url", display), telemetry.Context(r.Context()))
+					span.RecordError(errBackendCall, urlAttr)
+					result[index] = fmt.Sprintf("backend %v call failed %v", display, err)
 					return
 				}
 
@@ -65,27 +71,29 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 
 				client, err := s.backendClient(backend)
 				if err != nil {
-					s.logger.Error("backend call failed", zap.Error(err), zap.String("url", backend), telemetry.Context(r.Context()))
-					span.RecordError(errBackendCall, backendURL)
-					result[index] = fmt.Sprintf("backend %v call failed %v", backend, err)
+					err = redactURLError(err, display)
+					s.logger.Error("backend call failed", zap.Error(err), zap.String("url", display), telemetry.Context(r.Context()))
+					span.RecordError(errBackendCall, urlAttr)
+					result[index] = fmt.Sprintf("backend %v call failed %v", display, err)
 					return
 				}
 
 				// call backend
 				resp, err := client.Do(backendReq)
 				if err != nil {
-					s.logger.Error("backend call failed", zap.Error(err), zap.String("url", backend), telemetry.Context(r.Context()))
-					span.RecordError(errBackendCall, backendURL)
-					result[index] = fmt.Sprintf("backend %v call failed %v", backend, err)
+					err = redactURLError(err, display)
+					s.logger.Error("backend call failed", zap.Error(err), zap.String("url", display), telemetry.Context(r.Context()))
+					span.RecordError(errBackendCall, urlAttr)
+					result[index] = fmt.Sprintf("backend %v call failed %v", display, err)
 					return
 				}
 				defer resp.Body.Close()
 
 				// copy error status from backend and exit
 				if resp.StatusCode >= 400 {
-					s.logger.Error("backend call failed", zap.Int("status", resp.StatusCode), zap.String("url", backend), telemetry.Context(r.Context()))
-					span.RecordError(fmt.Errorf("backend response status code %v", resp.StatusCode), backendURL)
-					result[index] = fmt.Sprintf("backend %v response status code %v", backend, resp.StatusCode)
+					s.logger.Error("backend call failed", zap.Int("status", resp.StatusCode), zap.String("url", display), telemetry.Context(r.Context()))
+					span.RecordError(fmt.Errorf("backend response status code %v", resp.StatusCode), urlAttr)
+					result[index] = fmt.Sprintf("backend %v response status code %v", display, resp.StatusCode)
 					return
 				}
 
@@ -95,17 +103,17 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 					s.logger.Error(
 						"reading the backend request body failed",
 						zap.Error(err),
-						zap.String("url", backend),
+						zap.String("url", display),
 						telemetry.Context(r.Context()))
-					span.RecordError(errBackendRead, backendURL)
-					result[index] = fmt.Sprintf("backend %v call failed %v", backend, err)
+					span.RecordError(errBackendRead, urlAttr)
+					result[index] = fmt.Sprintf("backend %v call failed %v", display, err)
 					return
 				}
 
 				s.logger.Debug(
 					"payload received from backend",
 					zap.String("response", string(rbody)),
-					zap.String("url", backend),
+					zap.String("url", display),
 					telemetry.Context(r.Context()))
 
 				result[index] = string(rbody)
@@ -128,15 +136,40 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 var (
 	errBackendCall = errors.New("backend call failed")
 	errBackendRead = errors.New("reading the backend response failed")
+	errInvalidURL  = errors.New("invalid URL")
 )
 
-func redactedURL(raw string) []attribute.KeyValue {
+// backendURL returns the URL without userinfo, query and fragment, the form
+// shown in logs, responses and traces.
+func backendURL(raw string) (string, bool) {
 	u, err := url.Parse(raw)
 	if err != nil {
-		return nil
+		return "[invalid]", false
 	}
-	u.User, u.RawQuery, u.ForceQuery, u.Fragment, u.RawFragment = nil, "", false, "", ""
-	return []attribute.KeyValue{semconv.URLFull(u.String())}
+	return displayURL(u)
+}
+
+func displayURL(u *url.URL) (string, bool) {
+	if u.Opaque != "" || u.Host == "" {
+		return "[invalid]", false
+	}
+	d := *u
+	d.User, d.RawQuery, d.ForceQuery, d.Fragment, d.RawFragment = nil, "", false, "", ""
+	return d.String(), true
+}
+
+// redactURLError replaces the URL that net/url and net/http errors embed with
+// the display URL. Parse errors can quote part of the URL, so they become
+// errInvalidURL.
+func redactURLError(err error, display string) error {
+	ue, ok := errors.AsType[*url.Error](err)
+	if !ok {
+		return err
+	}
+	if ue.Op == "parse" {
+		return errInvalidURL
+	}
+	return &url.Error{Op: ue.Op, URL: display, Err: ue.Err}
 }
 
 // maxLoggedPayloadSize is the largest request body logged by logPayload.

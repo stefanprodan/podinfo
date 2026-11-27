@@ -1,9 +1,11 @@
 package http
 
 import (
+	"context"
+	"errors"
+	"io"
 	"math/rand"
 	"net/http"
-
 	"strconv"
 	"time"
 
@@ -61,7 +63,41 @@ func (s *Server) delayHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	time.Sleep(time.Duration(delay) * time.Second)
+	if !s.drainBody(w, r) || !wait(r.Context(), delay) {
+		return
+	}
 
 	s.JSONResponse(w, r, map[string]int{"delay": delay})
+}
+
+// drainBody reads the request body to the end, so the server notices a
+// client disconnect while the handler waits.
+func (s *Server) drainBody(w http.ResponseWriter, r *http.Request) bool {
+	if r.Body == nil {
+		return true
+	}
+	_, err := io.Copy(io.Discard, http.MaxBytesReader(w, r.Body, 1<<20))
+	if err == nil {
+		return true
+	}
+	code := http.StatusBadRequest
+	if _, ok := errors.AsType[*http.MaxBytesError](err); ok {
+		code = http.StatusRequestEntityTooLarge
+	}
+	s.ErrorResponse(w, r, err.Error(), code)
+	return false
+}
+
+// wait sleeps for the given seconds and reports whether they elapsed before
+// ctx was done.
+func wait(ctx context.Context, seconds int) bool {
+	timer := time.NewTimer(time.Duration(seconds) * time.Second)
+	defer timer.Stop()
+
+	select {
+	case <-timer.C:
+		return true
+	case <-ctx.Done():
+		return false
+	}
 }

@@ -33,13 +33,20 @@ func (s *Server) chunkedHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !s.drainBody(w, r) {
+		return
+	}
+
 	w.Header().Set("Connection", "Keep-Alive")
 	w.Header().Set("Transfer-Encoding", "chunked")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
 	flusher.Flush()
 
-	time.Sleep(time.Duration(delay) * time.Second)
+	if !wait(r.Context(), delay) {
+		return
+	}
+
 	s.JSONResponse(w, r, map[string]int{"delay": delay})
 
 	flusher.Flush()

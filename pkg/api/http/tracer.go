@@ -70,21 +70,40 @@ func routeTemplate(tpl string) string {
 	return b.String()
 }
 
-func spanMethod(method string) string {
+// standardMethod returns the method in upper case, or fallback when it is
+// not a standard HTTP method, so client-sent methods stay a bounded set.
+func standardMethod(method, fallback string) string {
 	switch m := strings.ToUpper(method); m {
 	case http.MethodConnect, http.MethodDelete, http.MethodGet, http.MethodHead, http.MethodOptions,
 		http.MethodPatch, http.MethodPost, http.MethodPut, http.MethodTrace:
 		return m
 	}
-	return "HTTP"
+	return fallback
+}
+
+func spanMethod(method string) string {
+	return standardMethod(method, "HTTP")
 }
 
 func newBackendClient(transport http.RoundTripper) *http.Client {
-	return &http.Client{Transport: otelhttp.NewTransport(transport,
+	return &http.Client{Transport: otelhttp.NewTransport(backendURLTransport{transport},
 		otelhttp.WithSpanNameFormatter(func(_ string, r *http.Request) string {
 			return spanMethod(r.Method)
 		}),
 	)}
+}
+
+// backendURLTransport replaces the url.full that otelhttp records on the
+// client span, which keeps the query, with the backend URL as shown in logs.
+type backendURLTransport struct {
+	next http.RoundTripper
+}
+
+func (t backendURLTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	if u, ok := displayURL(r.URL); ok {
+		trace.SpanFromContext(r.Context()).SetAttributes(semconv.URLFull(u))
+	}
+	return t.next.RoundTrip(r)
 }
 
 func endSpan(span trace.Span, err error) {

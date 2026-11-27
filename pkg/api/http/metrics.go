@@ -61,7 +61,7 @@ func (p *PrometheusMiddleware) Handler(next http.Handler) http.Handler {
 		path := p.getRouteName(r)
 		m := httpsnoop.CaptureMetrics(next, w, r)
 		status := strconv.Itoa(m.Code)
-		telemetry.Observe(r.Context(), p.Histogram.WithLabelValues(r.Method, path, status), m.Duration.Seconds())
+		telemetry.Observe(r.Context(), p.Histogram.WithLabelValues(standardMethod(r.Method, "other"), path, status), m.Duration.Seconds())
 		p.Counter.WithLabelValues(status).Inc()
 	})
 }
