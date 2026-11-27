@@ -370,12 +370,14 @@ func (s *Server) startSecureServer() *http.Server {
 
 func (s *Server) startMetricsServer() {
 	if s.config.PortMetrics > 0 {
-		srv := &http.Server{
-			Addr:    fmt.Sprintf("%s:%v", s.config.Host, s.config.PortMetrics),
-			Handler: metricsMux(),
-		}
+		s.metricsServer().ListenAndServe()
+	}
+}
 
-		srv.ListenAndServe()
+func (s *Server) metricsServer() *http.Server {
+	return &http.Server{
+		Addr:    fmt.Sprintf("%s:%v", s.config.Host, s.config.PortMetrics),
+		Handler: metricsMux(),
 	}
 }
 

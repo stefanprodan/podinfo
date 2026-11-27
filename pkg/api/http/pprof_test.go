@@ -19,7 +19,7 @@ func TestDebugEndpoints(t *testing.T) {
 		"/debug/vars":                    http.StatusNotFound,
 		"/debug/requests":                http.StatusNotFound,
 	}
-	ports := map[string]http.Handler{"main": srv.router, "metrics": metricsMux()}
+	ports := map[string]http.Handler{"main": srv.router, "metrics": srv.metricsServer().Handler}
 	for port, h := range ports {
 		for p, want := range cases {
 			req := httptest.NewRequest("GET", p, nil)
@@ -29,5 +29,14 @@ func TestDebugEndpoints(t *testing.T) {
 				t.Errorf("%s port GET %s: got %d want %d", port, p, rr.Code, want)
 			}
 		}
+	}
+}
+
+func TestMetricsServerAddr(t *testing.T) {
+	srv := NewMockServer()
+	srv.config.Host = "127.0.0.1"
+	srv.config.PortMetrics = 9797
+	if got, want := srv.metricsServer().Addr, "127.0.0.1:9797"; got != want {
+		t.Errorf("metrics server Addr = %q, want %q", got, want)
 	}
 }
