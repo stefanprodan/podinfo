@@ -22,7 +22,8 @@ func (s *Server) statusHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	code, err := strconv.Atoi(vars["code"])
-	if err != nil || code < 100 || code > 999 {
+	// A response cannot end with a 1xx status: net/http sends it as interim, then a 200.
+	if err != nil || code < 200 || code > 999 {
 		s.ErrorResponse(w, r, "invalid status code", http.StatusBadRequest)
 		return
 	}
