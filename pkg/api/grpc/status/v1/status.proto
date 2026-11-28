@@ -4,7 +4,8 @@ package status.v1;
 
 option go_package = "github.com/stefanprodan/podinfo/pkg/api/grpc/status/v1;statusv1";
 
-// The greeting service definition.
+// Status returns the gRPC status named in the request, such as NotFound,
+// and Unknown for a name that is not a gRPC status code.
 service StatusService {
   rpc Status(StatusRequest) returns (StatusResponse) {}
 }

@@ -4,7 +4,7 @@ package panic.v1;
 
 option go_package = "github.com/stefanprodan/podinfo/pkg/api/grpc/panic/v1;panicv1";
 
-// The greeting service definition.
+// Panic exits the process with code 225, to test how a crash is handled.
 service PanicService {
   rpc Panic(PanicRequest) returns (PanicResponse) {}
 }

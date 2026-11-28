@@ -26,7 +26,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
-// The greeting service definition.
+// Panic exits the process with code 225, to test how a crash is handled.
 type PanicServiceClient interface {
 	Panic(ctx context.Context, in *PanicRequest, opts ...grpc.CallOption) (*PanicResponse, error)
 }
@@ -53,7 +53,7 @@ func (c *panicServiceClient) Panic(ctx context.Context, in *PanicRequest, opts .
 // All implementations must embed UnimplementedPanicServiceServer
 // for forward compatibility.
 //
-// The greeting service definition.
+// Panic exits the process with code 225, to test how a crash is handled.
 type PanicServiceServer interface {
 	Panic(context.Context, *PanicRequest) (*PanicResponse, error)
 	mustEmbedUnimplementedPanicServiceServer()
