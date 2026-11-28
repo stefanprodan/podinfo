@@ -334,7 +334,7 @@ func TestWithTelemetryFatal(t *testing.T) {
 	t.Cleanup(func() { _ = tel.Shutdown(context.Background()) })
 	var codes []int
 	logger, out := captureStderr(t, func() *zap.Logger {
-		return withTelemetry(mustParseLevel(t, "info"), tel, time.Second, func(code int) { codes = append(codes, code) })
+		return withTelemetry(mustParseLevel(t, "info"), tel, time.Minute, func(code int) { codes = append(codes, code) })
 	})
 
 	logger.Fatal("fatal")

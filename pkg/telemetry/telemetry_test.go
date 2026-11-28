@@ -555,7 +555,7 @@ func TestExitHookFlushes(t *testing.T) {
 	code := -1
 	logger := zap.New(
 		otelzap.NewCore("test", otelzap.WithLoggerProvider(tel.LoggerProvider())),
-		zap.WithFatalHook(tel.ExitHook(time.Second, func(c int) { code = c })),
+		zap.WithFatalHook(tel.ExitHook(time.Minute, func(c int) { code = c })),
 	)
 	logger.Fatal("boom")
 
