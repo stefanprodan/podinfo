@@ -13,10 +13,13 @@ import (
 	"os"
 	"regexp"
 	"slices"
+	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/log"
@@ -29,8 +32,55 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/stefanprodan/podinfo/pkg/api/grpc"
+	podinfohttp "github.com/stefanprodan/podinfo/pkg/api/http"
 	"github.com/stefanprodan/podinfo/pkg/telemetry"
 )
+
+func TestResetInvalidPorts(t *testing.T) {
+	viper.Reset()
+	t.Cleanup(viper.Reset)
+	t.Setenv("PODINFO_PORT", "tcp://10.0.0.1:9898")
+	t.Setenv("PODINFO_SECURE_PORT", "9899")
+	t.Setenv("PODINFO_GRPC_PORT", "tcp://10.0.0.1:9999")
+	t.Setenv("PODINFO_PORT_METRICS", "tcp://10.0.0.1:9797")
+
+	fs := pflag.NewFlagSet("test", pflag.ContinueOnError)
+	fs.Int("port", 9898, "")
+	fs.Int("secure-port", 0, "")
+	fs.Int("grpc-port", 0, "")
+	fs.Int("port-metrics", 0, "")
+	if err := fs.Parse([]string{"--port-metrics=9797"}); err != nil {
+		t.Fatal(err)
+	}
+	viper.BindPFlags(fs)
+	viper.SetEnvPrefix("PODINFO")
+	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
+	viper.AutomaticEnv()
+
+	resetInvalidPorts(fs, "port", "secure-port", "grpc-port", "port-metrics")
+
+	var grpcCfg grpc.Config
+	if err := viper.Unmarshal(&grpcCfg); err != nil {
+		t.Fatal(err)
+	}
+	var srvCfg podinfohttp.Config
+	if err := viper.Unmarshal(&srvCfg); err != nil {
+		t.Fatal(err)
+	}
+	if srvCfg.Port != "9898" {
+		t.Errorf("port: got %q, want 9898", srvCfg.Port)
+	}
+	if srvCfg.SecurePort != "9899" {
+		t.Errorf("secure-port: got %q, want 9899", srvCfg.SecurePort)
+	}
+	if grpcCfg.Port != 0 {
+		t.Errorf("grpc-port: got %d, want 0", grpcCfg.Port)
+	}
+	if srvCfg.PortMetrics != 9797 {
+		t.Errorf("port-metrics: got %d, want 9797", srvCfg.PortMetrics)
+	}
+}
 
 func TestParseLevel(t *testing.T) {
 	for _, level := range []string{"debug", "info", "warn", "error", "fatal", "panic"} {

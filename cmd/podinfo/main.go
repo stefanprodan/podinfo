@@ -152,17 +152,7 @@ func main() {
 	// start stress tests if any
 	beginStressTest(viper.GetInt("stress-cpu"), viper.GetInt("stress-memory"), logger)
 
-	// validate port
-	if _, err := strconv.Atoi(viper.GetString("port")); err != nil {
-		port, _ := fs.GetInt("port")
-		viper.Set("port", strconv.Itoa(port))
-	}
-
-	// validate secure port
-	if _, err := strconv.Atoi(viper.GetString("secure-port")); err != nil {
-		securePort, _ := fs.GetInt("secure-port")
-		viper.Set("secure-port", strconv.Itoa(securePort))
-	}
+	resetInvalidPorts(fs, "port", "secure-port", "grpc-port", "port-metrics")
 
 	// validate random delay options
 	if viper.GetInt("random-delay-min") < 0 || viper.GetInt("random-delay-max") < 0 {
@@ -256,6 +246,18 @@ func main() {
 	if keyPair != nil {
 		if err := keyPair.Close(); err != nil {
 			logger.Warn("closing the TLS key pair watcher failed", zap.Error(err))
+		}
+	}
+}
+
+// resetInvalidPorts restores the flag value of the ports that are not
+// integers, as Kubernetes service links set variables such as
+// PODINFO_GRPC_PORT=tcp://10.0.0.1:9999 for a Service named podinfo-grpc.
+func resetInvalidPorts(fs *pflag.FlagSet, names ...string) {
+	for _, name := range names {
+		if _, err := strconv.Atoi(viper.GetString(name)); err != nil {
+			port, _ := fs.GetInt(name)
+			viper.Set(name, strconv.Itoa(port))
 		}
 	}
 }
