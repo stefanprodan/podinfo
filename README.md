@@ -90,6 +90,9 @@ gRPC API:
 * `/token.v1.TokenService/TokenGenerate` issues a JWT token valid for one minute
 * `/token.v1.TokenService/TokenValidate` validates the JWT token
 
+The gRPC server accepts messages up to 10 MiB, like the HTTP body limit. Clients that read values or files over 4 MiB
+must raise their receive limit, for example `grpcurl -max-msg-sz 10486784`.
+
 Web UI:
 
 The UI shows the version and the pod that answered, each version's share of the last 30 responses,

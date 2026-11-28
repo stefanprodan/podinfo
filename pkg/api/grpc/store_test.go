@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -80,4 +81,17 @@ func TestGrpcStoreWriteError(t *testing.T) {
 
 	_, err := client.Write(context.Background(), &storev1.WriteRequest{Content: []byte("hello world")})
 	wantCode(t, "Write", err, codes.Internal)
+}
+
+func TestGrpcStoreWriteMaxSize(t *testing.T) {
+	s := &Server{config: &Config{}, logger: zap.NewNop()}
+	srv := grpc.NewServer(s.serverOptions(newMetrics(prometheus.NewRegistry()))...)
+	storev1.RegisterStoreServiceServer(srv, &storeServer{store: store.New(t.TempDir(), noop.NewTracerProvider().Tracer("test")), logger: s.logger})
+	client := storev1.NewStoreServiceClient(newBufconnClient(t, srv))
+
+	if _, err := client.Write(context.Background(), &storev1.WriteRequest{Content: make([]byte, 10<<20)}); err != nil {
+		t.Fatalf("Write of 10 MiB returned error %v", err)
+	}
+	_, err := client.Write(context.Background(), &storev1.WriteRequest{Content: make([]byte, maxRecvMsgSize)})
+	wantCode(t, "Write over the limit", err, codes.ResourceExhausted)
 }

@@ -84,8 +84,13 @@ func (s *Server) streamRecoveryInterceptor(srv any, ss grpc.ServerStream, info *
 	return handler(srv, ss)
 }
 
+// maxRecvMsgSize applies to all services. It matches the 10 MiB HTTP body
+// limit (maxRequestBodySize in pkg/api/http) plus room for the key and framing.
+const maxRecvMsgSize = 10<<20 + 1<<10
+
 func (s *Server) serverOptions(m *metrics) []grpc.ServerOption {
 	return []grpc.ServerOption{
+		grpc.MaxRecvMsgSize(maxRecvMsgSize),
 		grpc.StatsHandler(otelgrpc.NewServerHandler(otelgrpc.WithFilter(filters.None(
 			filters.HealthCheck(),
 			filters.ServicePrefix("grpc.reflection."),
