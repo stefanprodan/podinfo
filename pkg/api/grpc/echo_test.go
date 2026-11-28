@@ -3,8 +3,6 @@ package grpc
 import (
 	"context"
 	"math"
-	"net"
-	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -147,14 +145,13 @@ func TestGrpcEchoBackends_Timeout(t *testing.T) {
 // listenAndServe starts the server on a free port and returns its address.
 func listenAndServe(t *testing.T, s *Server) (string, *grpc.Server) {
 	t.Helper()
-	s.config.Host = "127.0.0.1"
-	s.config.Port = freePort(t)
-	srv, _ := s.ListenAndServe()
+	ln := listen(t)
+	srv, _ := s.serve(ln)
 	t.Cleanup(func() {
 		srv.Stop()
 		_ = s.Close()
 	})
-	return net.JoinHostPort(s.config.Host, strconv.Itoa(s.config.Port)), srv
+	return ln.Addr().String(), srv
 }
 
 func TestGrpcEchoBackendURL(t *testing.T) {

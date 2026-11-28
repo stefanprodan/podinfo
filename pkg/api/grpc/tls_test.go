@@ -13,7 +13,6 @@ import (
 	"net"
 	"os"
 	"path/filepath"
-	"strconv"
 	"testing"
 	"time"
 
@@ -37,14 +36,14 @@ var (
 	otherID  = spiffeid.RequireFromString("spiffe://example.org/ns/default/sa/other")
 )
 
-func freePort(t *testing.T) int {
+// listen returns a listener on a free loopback port.
+func listen(t *testing.T) net.Listener {
 	t.Helper()
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer ln.Close()
-	return ln.Addr().(*net.TCPAddr).Port
+	return ln
 }
 
 // writeCert writes a self-signed tls.crt and tls.key for 127.0.0.1 to dir.
@@ -89,11 +88,10 @@ func writeCert(t *testing.T, dir string) *x509.Certificate {
 // startTLSServer starts the gRPC server on a free port and stops it at the end of the test.
 func startTLSServer(t *testing.T, s *Server) (string, *health.Server) {
 	t.Helper()
-	s.config.Host = "127.0.0.1"
-	s.config.Port = freePort(t)
-	srv, healthSrv := s.ListenAndServe()
+	ln := listen(t)
+	srv, healthSrv := s.serve(ln)
 	t.Cleanup(srv.Stop)
-	return net.JoinHostPort(s.config.Host, strconv.Itoa(s.config.Port)), healthSrv
+	return ln.Addr().String(), healthSrv
 }
 
 func checkHealth(address string, creds credentials.TransportCredentials) (grpc_health_v1.HealthCheckResponse_ServingStatus, error) {

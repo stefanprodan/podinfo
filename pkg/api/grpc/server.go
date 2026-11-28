@@ -94,15 +94,18 @@ func (s *Server) SetCache(client redis.UniversalClient) {
 
 // ListenAndServe starts the gRPC server and returns it with its health server.
 func (s *Server) ListenAndServe() (*grpc.Server, *health.Server) {
-	creds, err := s.credentials()
-	if err != nil {
-		s.logger.Fatal("failed to load the gRPC TLS certificate", zap.Error(err))
-	}
-
 	address := net.JoinHostPort(s.config.Host, strconv.Itoa(s.config.Port))
 	listener, err := net.Listen("tcp", address)
 	if err != nil {
 		s.logger.Fatal("failed to listen", zap.String("address", address), zap.Error(err))
+	}
+	return s.serve(listener)
+}
+
+func (s *Server) serve(listener net.Listener) (*grpc.Server, *health.Server) {
+	creds, err := s.credentials()
+	if err != nil {
+		s.logger.Fatal("failed to load the gRPC TLS certificate", zap.Error(err))
 	}
 
 	if err := s.dialBackends(); err != nil {
@@ -115,7 +118,7 @@ func (s *Server) ListenAndServe() (*grpc.Server, *health.Server) {
 	}
 
 	s.logger.Info("Starting gRPC Server",
-		zap.String("addr", address),
+		zap.String("addr", listener.Addr().String()),
 		zap.Bool("tls", s.config.TLS),
 		zap.Bool("spiffe", s.spiffeTLS()))
 
