@@ -22,7 +22,6 @@ func TestTokenHandler(t *testing.T) {
 
 	handler.ServeHTTP(rr, req)
 
-	// Check the status code is what we expect.
 	if status := rr.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v",
 			status, http.StatusOK)
@@ -60,7 +59,6 @@ func TestTokenValidateHandler(t *testing.T) {
 	srv := NewMockServer()
 	srv.config.JWTSecret = "test-secret"
 
-	// Generate a token first
 	genReq, _ := http.NewRequest("POST", "/token", strings.NewReader("test-user"))
 	genRR := httptest.NewRecorder()
 	http.HandlerFunc(srv.tokenGenerateHandler).ServeHTTP(genRR, genReq)

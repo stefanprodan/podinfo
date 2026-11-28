@@ -48,9 +48,8 @@ helm upgrade --install spire-crds spiffe/spire-crds \
     --namespace spire-crds \
     --create-namespace \
     --wait --timeout 5m
-# The SPIRE chart creates its own namespaces. Pre-create them and keep the
-# chart's namespace creation disabled to avoid a conflict with Helm 4's
-# --create-namespace behavior.
+# Pre-create the SPIRE namespaces and disable their creation by the chart,
+# which conflicts with Helm 4's --create-namespace behavior.
 kubectl create namespace spire-system --dry-run=client -o yaml | kubectl apply -f - >/dev/null
 kubectl create namespace spire-server --dry-run=client -o yaml | kubectl apply -f - >/dev/null
 # The default ClusterSPIFFEID issues an identity to every pod. Disable it

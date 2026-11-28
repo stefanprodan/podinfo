@@ -10,7 +10,6 @@ spec:
   failedJobsHistoryLimit: 1
   jobTemplate:
     spec:
-      # Cleanup after 1 hour
       ttlSecondsAfterFinished: 3600
       backoffLimit: 3
       template:

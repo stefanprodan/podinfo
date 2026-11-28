@@ -53,10 +53,8 @@ func (s *Server) chunkedHandler(w http.ResponseWriter, r *http.Request) {
 	flusher.Flush()
 }
 
-// randomDelaySeconds returns a random delay in seconds within [10, timeout),
-// used when no explicit wait is provided. timeout is a time.Duration, so it is
-// converted to whole seconds; the upper bound is clamped to keep rand.Intn's
-// argument positive (it panics on a non-positive argument).
+// randomDelaySeconds returns a random delay in [10, timeout) seconds. Timeouts
+// under 12s count as 12s, as rand.Intn panics on a non-positive argument.
 func randomDelaySeconds(timeout time.Duration) int {
 	maxDelay := int(timeout / time.Second)
 	if maxDelay <= 11 {

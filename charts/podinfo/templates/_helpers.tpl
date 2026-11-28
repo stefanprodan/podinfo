@@ -68,7 +68,7 @@ Create the name of the service account to use
 {{- end }}
 
 {{/*
-Create the name of the tls secret for secure port
+Create the name of the TLS secret for the secure port.
 */}}
 {{- define "podinfo.tlsSecretName" -}}
 {{- $fullname := include "podinfo.fullname" . -}}

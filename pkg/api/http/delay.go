@@ -12,6 +12,8 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// RandomDelayMiddleware delays every request by a random duration between
+// min and max, in seconds or milliseconds.
 type RandomDelayMiddleware struct {
 	min  int
 	max  int

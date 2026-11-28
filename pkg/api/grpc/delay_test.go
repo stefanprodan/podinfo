@@ -20,8 +20,6 @@ import (
 
 func TestGrpcDelay(t *testing.T) {
 
-	// Server initialization
-	// bufconn => uses in-memory connection instead of system network I/O
 	lis := bufconn.Listen(1024 * 1024)
 	t.Cleanup(func() {
 		lis.Close()
@@ -40,7 +38,6 @@ func TestGrpcDelay(t *testing.T) {
 		}
 	}()
 
-	// - Test
 	dialer := func(context.Context, string) (net.Conn, error) {
 		return lis.Dial()
 	}
@@ -56,7 +53,6 @@ func TestGrpcDelay(t *testing.T) {
 	client := delayv1.NewDelayServiceClient(conn)
 	res, err := client.Delay(context.Background(), &delayv1.DelayRequest{Seconds: 1})
 
-	// Check the status code is what we expect.
 	if _, ok := status.FromError(err); !ok {
 		t.Errorf("Delay returned type %T, want %T", err, status.Error)
 	}

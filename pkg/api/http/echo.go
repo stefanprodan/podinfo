@@ -79,7 +79,6 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 
-				// call backend
 				resp, err := client.Do(backendReq)
 				if err != nil {
 					err = redactURLError(err, display)
@@ -92,7 +91,6 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 				}
 				defer resp.Body.Close()
 
-				// copy error status from backend and exit
 				if resp.StatusCode >= 400 {
 					s.logger.Error("backend call failed", zap.Int("status", resp.StatusCode), zap.String("url", display), telemetry.Context(r.Context()))
 					span.RecordError(fmt.Errorf("backend response status code %v", resp.StatusCode), urlAttr)
@@ -100,7 +98,6 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 
-				// forward the received body
 				rbody, err := io.ReadAll(io.LimitReader(resp.Body, limits.MaxBackendResponseSize+1))
 				if err == nil && len(rbody) > limits.MaxBackendResponseSize {
 					err = errBackendTooLarge

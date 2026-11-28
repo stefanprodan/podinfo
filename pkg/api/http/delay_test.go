@@ -76,13 +76,11 @@ func TestDelayHandler(t *testing.T) {
 	srv.router.HandleFunc("/delay/{wait}", srv.delayHandler)
 	srv.router.ServeHTTP(rr, req)
 
-	// Check the status code is what we expect.
 	if status := rr.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v",
 			status, http.StatusOK)
 	}
 
-	// Check the response body is what we expect.
 	expected := ".*delay.*0.*"
 	r := regexp.MustCompile(expected)
 	if !r.MatchString(rr.Body.String()) {

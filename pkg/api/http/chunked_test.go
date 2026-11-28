@@ -25,7 +25,6 @@ func TestChunkedHandler(t *testing.T) {
 	srv.router.HandleFunc("/chunked/{wait}", srv.chunkedHandler)
 	srv.router.ServeHTTP(rr, req)
 
-	// Check the status code is what we expect.
 	if status := rr.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v",
 			status, http.StatusOK)
@@ -34,7 +33,6 @@ func TestChunkedHandler(t *testing.T) {
 		t.Errorf("got Content-Type %q, want application/json; charset=utf-8", ct)
 	}
 
-	// Check the response body is what we expect.
 	expected := ".*delay.*0.*"
 	r := regexp.MustCompile(expected)
 	if !r.MatchString(rr.Body.String()) {
@@ -91,10 +89,9 @@ func TestChunkedHandlerCanceled(t *testing.T) {
 	}
 }
 
-// TestRandomDelaySeconds covers the default-delay branch taken by the bare
-// /chunked route (no {wait} value). This used to panic because the
-// duration-to-seconds math overflowed int64 and handed rand.Intn a negative
-// argument. Every timeout must yield a valid delay in [10, max] without panicking.
+// TestRandomDelaySeconds covers the delay of the bare /chunked route: every
+// timeout, even zero or negative, must give a delay of at least 10s and not
+// make rand.Intn panic.
 func TestRandomDelaySeconds(t *testing.T) {
 	timeouts := []time.Duration{30 * time.Second, 12 * time.Second, time.Second, 0, -1}
 	for _, timeout := range timeouts {

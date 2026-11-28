@@ -70,8 +70,8 @@ func (s *Server) tokenGenerateHandler(w http.ResponseWriter, r *http.Request) {
 // @Router /token/validate [get]
 // @Success 200 {object} http.TokenValidationResponse
 // @Failure 401 {object} http.ErrorMessage "invalid or missing token"
-// Get: JWT=$(curl -s -d 'test' localhost:9898/token | jq -r .token)
-// Post: curl -H "Authorization: Bearer ${JWT}" localhost:9898/token/validate
+// Generate: JWT=$(curl -s -d 'test' localhost:9898/token | jq -r .token)
+// Validate: curl -H "Authorization: Bearer ${JWT}" localhost:9898/token/validate
 func (s *Server) tokenValidateHandler(w http.ResponseWriter, r *http.Request) {
 	authorizationHeader := r.Header.Get("authorization")
 	if authorizationHeader == "" {

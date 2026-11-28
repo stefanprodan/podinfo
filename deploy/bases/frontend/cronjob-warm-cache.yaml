@@ -3,14 +3,12 @@ kind: CronJob
 metadata:
   name: warm-cache
 spec:
-  # Runs every 5 minutes
   schedule: "*/5 * * * *"
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 1
   failedJobsHistoryLimit: 1
   jobTemplate:
     spec:
-      # Cleanup after 1 hour
       ttlSecondsAfterFinished: 3600
       backoffLimit: 3
       template:

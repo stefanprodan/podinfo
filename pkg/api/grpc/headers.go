@@ -30,7 +30,7 @@ func (s *HeaderServer) Header(ctx context.Context, in *pb.HeaderRequest) (*pb.He
 		return nil, status.Error(codes.DataLoss, "failed to get metadata")
 	}
 
-	// Creating slices beacause echoing the header metadata can't be predetermined by the proto contract
+	// Headers are returned as name=value strings: their names are not part of the proto contract.
 	res := []string{}
 	for i, e := range echoedMetadata(ctx, md) {
 		res = append(res, i+"="+strings.Join(e, ","))

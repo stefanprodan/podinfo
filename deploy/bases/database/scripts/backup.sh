@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-# This is a simulation of a backup process.
+# Simulates a backup.
 
 EXIT_CODE=${BACKUP_EXIT:-0}
 

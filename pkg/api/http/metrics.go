@@ -65,7 +65,8 @@ func (p *prometheusMiddleware) Handler(next http.Handler) http.Handler {
 	})
 }
 
-// converts gorilla mux routes from '/api/delay/{wait}' to 'api_delay_wait'
+// getRouteName returns the path label of a request: the route name, else the
+// route path template, else the request URI.
 func (p *prometheusMiddleware) getRouteName(r *http.Request) string {
 	if mux.CurrentRoute(r) != nil {
 		if name := mux.CurrentRoute(r).GetName(); len(name) > 0 {
@@ -82,7 +83,7 @@ func (p *prometheusMiddleware) getRouteName(r *http.Request) string {
 
 var invalidChars = regexp.MustCompile(`[^a-zA-Z0-9]+`)
 
-// converts a URL path to a string compatible with Prometheus label value.
+// urlToLabel turns a path into a label value such as "api_info", and the root path into "root".
 func urlToLabel(path string) string {
 	result := invalidChars.ReplaceAllString(path, "_")
 	result = strings.ToLower(strings.Trim(result, "_"))

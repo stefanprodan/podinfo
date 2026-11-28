@@ -36,7 +36,7 @@ const (
 // @Produce json
 // @Router /ws/echo [post]
 // @Success 202 {object} http.MapResponse
-// Test: go run ./cmd/podcli/* ws localhost:9898/ws/echo
+// Test: go run ./cmd/podcli ws localhost:9898/ws/echo
 func (s *Server) echoWsHandler(w http.ResponseWriter, r *http.Request) {
 	c, err := wsCon.Upgrade(w, r, nil)
 	if err != nil {
@@ -44,8 +44,7 @@ func (s *Server) echoWsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Bound per-message size and idle time; refresh the read deadline whenever
-	// the client responds to a ping so live connections stay open.
+	// Each pong extends the read deadline, so only idle or dead connections time out.
 	c.SetReadLimit(wsMaxMessageSize)
 	_ = c.SetReadDeadline(time.Now().Add(wsReadTimeout))
 	c.SetPongHandler(func(string) error {

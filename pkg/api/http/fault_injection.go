@@ -7,16 +7,14 @@ import (
 	"sync/atomic"
 )
 
-// faultInjection toggles a process-wide fault-injection mode in which
-// the server responds with HTTP 500 for application endpoints. It is
-// intended for testing client-side circuit breakers / outlier detection
-// against a single "sick" replica.
+// faultInjection is 1 while the server answers 500 on the application
+// endpoints, to test client-side circuit breakers and outlier detection
+// against a single failing replica.
 var faultInjection int32
 
-// faultInjectionExcluded returns true if the given request path should
-// bypass fault injection. Kubernetes probes, metrics, pprof and the
-// control endpoints themselves stay functional so the pod is not torn
-// down by the platform while a circuit breaker detects the fault.
+// faultInjectionExcluded reports whether the path bypasses fault injection.
+// The probes, metrics, pprof and the control endpoints keep working, so
+// Kubernetes does not restart the pod while a circuit breaker detects the fault.
 func faultInjectionExcluded(p string) bool {
 	switch {
 	case strings.HasPrefix(p, "/fault_injection"):
@@ -48,9 +46,8 @@ func faultInjectionMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-// faultInjectionMiddleware is a method form that strips the configured
-// path prefix before consulting the exclusion list, so the same set of
-// excluded routes works regardless of whether --prefix is set.
+// faultInjectionMiddleware strips the --prefix from the path before checking
+// the exclusion list.
 func (s *Server) faultInjectionMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		p := r.URL.Path

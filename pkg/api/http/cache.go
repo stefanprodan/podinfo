@@ -286,14 +286,12 @@ func (s *Server) startCacheVersion(interval time.Duration) {
 		return
 	}
 
-	// set <hostname>=<version> with an expiry time of one minute
 	setVersion := func() {
 		if err := s.cache.Set(context.Background(), s.config.Hostname, version.VERSION, time.Minute).Err(); err != nil {
 			s.logger.Warn("cache server is offline", zap.Error(err))
 		}
 	}
 
-	// set version on a schedule
 	s.cacheStop = make(chan struct{})
 	s.cacheStopped = make(chan struct{})
 	go func() {

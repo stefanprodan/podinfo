@@ -20,13 +20,11 @@ func TestEnvHandler(t *testing.T) {
 
 	handler.ServeHTTP(rr, req)
 
-	// Check the status code is what we expect.
 	if status := rr.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v",
 			status, http.StatusOK)
 	}
 
-	// Check the response body is what we expect.
 	expected := ".*hostname.*"
 	r := regexp.MustCompile(expected)
 	if !r.MatchString(rr.Body.String()) {
