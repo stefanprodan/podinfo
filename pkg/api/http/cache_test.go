@@ -272,9 +272,7 @@ func TestCloseReleasesCacheKeyPair(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewServer returned %v", err)
 	}
-	if n := watchers(); n != before+1 {
-		t.Fatalf("%d key pair watchers are running, want %d", n, before+1)
-	}
+	waitFor(t, "the key pair watcher to start", func() bool { return watchers() == before+1 })
 
 	if err := srv.Close(); err != nil {
 		t.Fatalf("Close returned %v", err)
