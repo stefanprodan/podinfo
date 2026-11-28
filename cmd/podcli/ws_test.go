@@ -1,19 +1,18 @@
 package main
 
 import (
-	"net"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
 func TestWsConnectError(t *testing.T) {
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	addr := ln.Addr().String()
-	ln.Close()
+	srv := httptest.NewServer(http.NotFoundHandler())
+	t.Cleanup(srv.Close)
+	t.Cleanup(func() { origin = "" })
 
-	if err := wsCmd.RunE(wsCmd, []string{addr + "/ws/echo"}); err == nil {
-		t.Error("got no error for a refused connection")
+	if err := wsCmd.RunE(wsCmd, []string{strings.TrimPrefix(srv.URL, "http://") + "/ws/echo"}); err == nil {
+		t.Error("got no error for a rejected handshake")
 	}
 }
