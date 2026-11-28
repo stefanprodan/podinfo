@@ -23,6 +23,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
+	"github.com/stefanprodan/podinfo/pkg/store"
 	"github.com/stefanprodan/podinfo/pkg/telemetry"
 )
 
@@ -65,7 +66,7 @@ func newLoggingServer(t *testing.T, level zapcore.Level) (*Server, *logRecorder,
 		telemetry.NewTraceIDCore(zapcore.NewCore(zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig()), zapcore.Lock(zapcore.AddSync(&buf)), level)),
 		otelzap.NewCore("test", otelzap.WithLoggerProvider(lp)),
 	), zap.IncreaseLevel(level))
-	srv.config.DataPath = filepath.Join(t.TempDir(), "missing")
+	srv.store = store.New(filepath.Join(t.TempDir(), "missing"), telemetry.Tracer())
 	return srv, recorder, &buf
 }
 
@@ -83,7 +84,7 @@ func TestLogCorrelation(t *testing.T) {
 	}{
 		{name: "request started", tracing: true, method: "GET", path: "/env", msg: "request started"},
 		{name: "payload received", tracing: true, method: "POST", path: "/api/echo", body: testPayload, msg: "payload received"},
-		{name: "store read failed", tracing: true, method: "GET", path: "/store/" + hash("missing"), msg: "reading file failed"},
+		{name: "store read failed", tracing: true, method: "GET", path: "/store/" + store.Hash([]byte("missing")), msg: "reading file failed"},
 		{name: "cache set failed", tracing: true, cache: true, method: "POST", path: "/cache/key1", body: "value1", msg: "cache set failed"},
 		{name: "remote span without tracing", method: "GET", path: "/env", msg: "request started"},
 	}

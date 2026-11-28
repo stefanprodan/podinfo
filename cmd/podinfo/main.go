@@ -22,6 +22,7 @@ import (
 	"github.com/stefanprodan/podinfo/pkg/api/http"
 	"github.com/stefanprodan/podinfo/pkg/keypair"
 	"github.com/stefanprodan/podinfo/pkg/signals"
+	"github.com/stefanprodan/podinfo/pkg/store"
 	"github.com/stefanprodan/podinfo/pkg/telemetry"
 	"github.com/stefanprodan/podinfo/pkg/version"
 	go_grpc "google.golang.org/grpc"
@@ -193,6 +194,10 @@ func main() {
 		zap.String("revision", viper.GetString("revision")),
 		zap.String("port", srvCfg.Port),
 	)
+
+	if err := store.Sweep(srvCfg.DataPath); err != nil {
+		logger.Warn("removing the temporary store files failed", zap.Error(err), zap.String("path", srvCfg.DataPath))
+	}
 
 	// start HTTP server
 	srv, err := http.NewServer(&srvCfg, logger)

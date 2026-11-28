@@ -85,6 +85,8 @@ gRPC API:
 * `/pod.v1.PodService/Pod` returns the runtime information, the environment variables and the request metadata of one pod, with secret values masked
 * `/panic.v1.PanicService/Panic` crashes the process with gRPC status code as '1 CANCELLED'
 * `/status.v1.StatusService/Status` returns the gRPC Status code given in the request body
+* `/store.v1.StoreService/Write` writes the content to disk at /data/hash and returns the SHA1 hash of the content
+* `/store.v1.StoreService/Read` returns the content of the file /data/hash, or `NOT_FOUND` if it does not exist
 * `/token.v1.TokenService/TokenGenerate` issues a JWT token valid for one minute
 * `/token.v1.TokenService/TokenValidate` validates the JWT token
 

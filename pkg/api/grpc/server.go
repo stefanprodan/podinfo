@@ -23,10 +23,13 @@ import (
 	panicv1 "github.com/stefanprodan/podinfo/pkg/api/grpc/panic/v1"
 	podv1 "github.com/stefanprodan/podinfo/pkg/api/grpc/pod/v1"
 	statusv1 "github.com/stefanprodan/podinfo/pkg/api/grpc/status/v1"
+	storev1 "github.com/stefanprodan/podinfo/pkg/api/grpc/store/v1"
 	tokenv1 "github.com/stefanprodan/podinfo/pkg/api/grpc/token/v1"
 	versionv1 "github.com/stefanprodan/podinfo/pkg/api/grpc/version/v1"
 	"github.com/stefanprodan/podinfo/pkg/keypair"
 	"github.com/stefanprodan/podinfo/pkg/spiffe"
+	"github.com/stefanprodan/podinfo/pkg/store"
+	"github.com/stefanprodan/podinfo/pkg/telemetry"
 )
 
 type Server struct {
@@ -49,6 +52,7 @@ type Config struct {
 	Unhealthy   bool   `mapstructure:"unhealthy"`
 	Unready     bool   `mapstructure:"unready"`
 	JWTSecret   string `mapstructure:"jwt-secret"`
+	DataPath    string `mapstructure:"data-path"`
 }
 
 func NewServer(config *Config, logger *zap.Logger) *Server {
@@ -118,6 +122,7 @@ func (s *Server) newServer(opts ...grpc.ServerOption) (*grpc.Server, *health.Ser
 	infov1.RegisterInfoServiceServer(srv, &infoServer{config: s.config})
 	podv1.RegisterPodServiceServer(srv, &podServer{config: s.config})
 	statusv1.RegisterStatusServiceServer(srv, &StatusServer{config: s.config, logger: s.logger})
+	storev1.RegisterStoreServiceServer(srv, &storeServer{store: store.New(s.config.DataPath, telemetry.Tracer()), logger: s.logger})
 	tokenv1.RegisterTokenServiceServer(srv, &TokenServer{config: s.config, logger: s.logger})
 	envv1.RegisterEnvServiceServer(srv, &EnvServer{config: s.config, logger: s.logger})
 	cachev1.RegisterCacheServiceServer(srv, &cacheServer{cache: s.cache, logger: s.logger})

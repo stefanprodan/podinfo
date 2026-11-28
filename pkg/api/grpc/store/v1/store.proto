@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package store.v1;
+
+option go_package = "github.com/stefanprodan/podinfo/pkg/api/grpc/store/v1;storev1";
+
+service StoreService {
+  // Writes the content to --data-path in a file named by its SHA1 hash.
+  rpc Write(WriteRequest) returns (WriteResponse) {}
+  // Returns InvalidArgument for a hash that is not a lowercase SHA1 hex digest
+  // and NotFound when no file has that hash.
+  rpc Read(ReadRequest) returns (ReadResponse) {}
+}
+
+message WriteRequest {
+  bytes content = 1;
+}
+
+message WriteResponse {
+  // SHA1 hex digest of the content.
+  string hash = 1;
+}
+
+message ReadRequest {
+  string hash = 1;
+}
+
+message ReadResponse {
+  bytes content = 1;
+}

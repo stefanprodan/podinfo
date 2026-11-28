@@ -8,6 +8,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
+	"github.com/stefanprodan/podinfo/pkg/store"
 	"github.com/stefanprodan/podinfo/pkg/telemetry"
 )
 
@@ -39,7 +40,7 @@ func NewMockServer() *Server {
 		logger:  logger,
 		config:  config,
 		ui:      page,
-		tracer:  telemetry.Tracer(),
+		store:   store.New(config.DataPath, telemetry.Tracer()),
 		backend: newBackendClient(http.DefaultTransport),
 
 		metrics: newPrometheusMiddleware(reg, reg),
