@@ -20,7 +20,7 @@ The project is structured as a Go module with the following components:
 │   ├── podcli/     # podinfo CLI
 │   └── podinfo/    # podinfo server
 ├── deploy/         # Kustomize demo with frontend, backend and cache
-├── docs/           # Maintenance guide
+├── docs/           # API reference and guides, indexed in README.md
 ├── kustomize/      # Kustomize overlay
 ├── otel/           # Docker Compose setup for OpenTelemetry
 ├── pkg/            # Go packages

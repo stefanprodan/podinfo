@@ -108,7 +108,7 @@ build-container: ## Build the container image.
 .PHONY: build-chart
 build-chart: ## Lint and package the Helm chart.
 	helm lint charts/*
-	helm package charts/*
+	helm package charts/* -d bin
 
 .PHONY: build-timoni
 build-timoni: ## Build the Timoni module with the debug values.

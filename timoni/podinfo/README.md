@@ -305,6 +305,9 @@ generated ones, e.g. `OTEL_METRICS_EXPORTER=none` to export traces and logs
 only; load the `OTEL_EXPORTER_OTLP_HEADERS` credentials from an existing
 Secret with `envFrom`.
 
+The [OpenTelemetry guide](https://github.com/stefanprodan/podinfo/blob/master/docs/opentelemetry.md) lists the variables podinfo
+reads and what it exports.
+
 ### Caching values
 
 | Key | Type | Default | Description |
@@ -321,13 +324,8 @@ The cache credentials are read from the `PODINFO_CACHE_USERNAME`,
 `PODINFO_CACHE_PASSWORD` and `PODINFO_CACHE_SENTINEL_PASSWORD` environment
 variables; load them from an existing Secret with `envFrom`.
 
-The client dials the addresses that the cluster nodes and Sentinels
-announce, not the hostnames in the URL. With TLS, the servers must
-announce hostnames instead of pod IPs, or the certificate verification
-fails: set `cluster-announce-hostname` and
-`cluster-preferred-endpoint-type hostname` on the cluster nodes, and
-`replica-announce-ip` on the servers with `sentinel resolve-hostnames yes`
-and `sentinel announce-hostnames yes` on the Sentinels.
+With TLS, the cluster nodes and Sentinels must announce hostnames, see the
+[cache guide](https://github.com/stefanprodan/podinfo/blob/master/docs/cache.md#cluster-and-sentinel-with-tls).
 
 ### UI values
 

@@ -236,11 +236,8 @@ cacheOptions:
     secretName: redis-tls
 ```
 
-The client dials the addresses that the cluster nodes and Sentinels announce, not the hostnames in the URL.
-With TLS, the servers must announce hostnames instead of pod IPs, or the certificate verification fails:
-
-- Cluster: `cluster-announce-hostname <hostname>` and `cluster-preferred-endpoint-type hostname`
-- Sentinel: `replica-announce-ip <hostname>` on the servers, `sentinel resolve-hostnames yes` and `sentinel announce-hostnames yes` on the Sentinels
+With TLS, the cluster nodes and Sentinels must announce hostnames, see the
+[cache guide](https://github.com/stefanprodan/podinfo/blob/master/docs/cache.md#cluster-and-sentinel-with-tls).
 
 ## OpenTelemetry
 
@@ -269,3 +266,5 @@ extraEnvs:
   - name: OTEL_METRICS_EXPORTER
     value: none
 ```
+
+The [OpenTelemetry guide](https://github.com/stefanprodan/podinfo/blob/master/docs/opentelemetry.md) lists the variables podinfo reads and what it exports.
