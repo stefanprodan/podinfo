@@ -180,7 +180,6 @@ func TestCacheMTLS(t *testing.T) {
 			dir := t.TempDir()
 			writeClientPair(t, dir, first)
 			srv := newCacheMockServer(t, &Config{CacheServer: "rediss://" + m.Addr(), CacheCluster: cluster, CacheCAFile: caFile, CacheCertPath: dir})
-			t.Cleanup(func() { close(srv.cacheClosed) })
 			if rr := serveCache(srv, "POST", "value1"); rr.Code != http.StatusAccepted {
 				t.Fatalf("POST returned %d, want %d", rr.Code, http.StatusAccepted)
 			}
@@ -192,7 +191,6 @@ func TestCacheMTLS(t *testing.T) {
 			}
 
 			anonymous := newCacheMockServer(t, &Config{CacheServer: "rediss://" + m.Addr(), CacheCluster: cluster, CacheCAFile: caFile})
-			t.Cleanup(func() { close(anonymous.cacheClosed) })
 			if rr := serveCache(anonymous, "POST", "value1"); rr.Code != http.StatusInternalServerError {
 				t.Errorf("POST without a client certificate returned %d, want %d", rr.Code, http.StatusInternalServerError)
 			}
@@ -514,7 +512,7 @@ func TestNewServer_CacheMode(t *testing.T) {
 			if err != nil {
 				t.Fatalf("NewServer returned %v", err)
 			}
-			defer srv.cache.Close()
+			defer srv.Close()
 			if _, ok := srv.cache.(*redis.ClusterClient); ok != tt.cluster {
 				t.Errorf("cluster client is %v, want %v", ok, tt.cluster)
 			}
@@ -602,7 +600,14 @@ func newCacheMockServer(t *testing.T, config *Config) *Server {
 	srv := NewMockServer()
 	srv.config.Hostname = config.Hostname
 	srv.openCache(opts)
-	t.Cleanup(func() { srv.cache.Close() })
+	t.Cleanup(func() {
+		srv.cache.Close()
+		select {
+		case <-srv.cacheClosed:
+		default:
+			close(srv.cacheClosed)
+		}
+	})
 	srv.router.HandleFunc("/cache/{key}", srv.cacheWriteHandler).Methods("POST")
 	srv.router.HandleFunc("/cache/{key}", srv.cacheDeleteHandler).Methods("DELETE")
 	srv.router.HandleFunc("/cache/{key}", srv.cacheReadHandler).Methods("GET")
@@ -653,7 +658,7 @@ func TestCacheTracing(t *testing.T) {
 			}
 			srv := newInstrumentedServer("/")
 			srv.openCache(opts)
-			t.Cleanup(func() { srv.cache.Close() })
+			t.Cleanup(func() { _ = srv.Close() })
 
 			rr := httptest.NewRecorder()
 			srv.handler.ServeHTTP(rr, httptest.NewRequest("POST", "/cache/key1", strings.NewReader(payload)))
@@ -728,7 +733,6 @@ func TestCacheHandshake(t *testing.T) {
 				return false
 			})
 			srv := newCacheMockServer(t, &Config{CacheServer: "redis://" + m.Addr(), CacheCluster: cluster})
-			t.Cleanup(func() { close(srv.cacheClosed) })
 
 			if rr := serveCache(srv, "POST", "value1"); rr.Code != http.StatusAccepted {
 				t.Fatalf("POST returned %d, want %d", rr.Code, http.StatusAccepted)
