@@ -20,6 +20,7 @@ The project is structured as a Go module with the following components:
 │   ├── podcli/     # podinfo CLI
 │   └── podinfo/    # podinfo server
 ├── deploy/         # Kustomize demo with frontend, backend and cache
+├── docs/           # Maintenance guide
 ├── kustomize/      # Kustomize overlay
 ├── otel/           # Docker Compose setup for OpenTelemetry
 ├── pkg/            # Go packages
@@ -60,6 +61,7 @@ The project is structured as a Go module with the following components:
 - Run `make run` to start podinfo locally on port 9898, with gRPC on port 9999
 - Run `make run-ui-demo` to review the web UI against a fake API
 - Run `make build-chart` and `make build-timoni` after modifying the Helm chart or the Timoni module
+- Follow the [maintenance guide](docs/maintenance.md) to update pinned versions and to cut a release
 
 ## Commits and Pull Requests for AI Agents
 

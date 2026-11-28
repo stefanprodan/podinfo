@@ -142,7 +142,7 @@ prep-release: ## Create the release PR for TAG (defaults to the next minor).
 	fi && \
 	git checkout -b release-$$next && \
 	$(MAKE) set-version TAG=$$next && \
-	git commit -am "Release $$next" && \
+	git commit -s -am "Release $$next" && \
 	git push origin release-$$next && \
 	gh pr create --title "Release $$next" --body "Prepare for $$next release" --base master --head release-$$next
 
