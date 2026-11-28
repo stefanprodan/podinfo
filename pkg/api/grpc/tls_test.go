@@ -13,6 +13,8 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -24,7 +26,10 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
+	"google.golang.org/grpc/metadata"
 
+	headerv1 "github.com/stefanprodan/podinfo/pkg/api/grpc/header/v1"
+	podv1 "github.com/stefanprodan/podinfo/pkg/api/grpc/pod/v1"
 	"github.com/stefanprodan/podinfo/pkg/keypair"
 	"github.com/stefanprodan/podinfo/pkg/spiffe"
 	"github.com/stefanprodan/podinfo/pkg/spiffe/spiffetest"
@@ -257,5 +262,87 @@ func TestGrpcSPIFFEMTLS_Unready(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 	if got := serviceStatus(t, healthSrv); got != grpc_health_v1.HealthCheckResponse_NOT_SERVING {
 		t.Fatalf("--unready: got %s, want NOT_SERVING", got)
+	}
+}
+
+// echoedSPIFFEIDs returns the x-spiffe-id values echoed by the Header and Pod
+// services to a client that sends a forged x-spiffe-id.
+func echoedSPIFFEIDs(t *testing.T, address string, creds credentials.TransportCredentials) (header, pod []string) {
+	t.Helper()
+	conn, err := grpc.NewClient(address, grpc.WithTransportCredentials(creds))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { conn.Close() })
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	t.Cleanup(cancel)
+	ctx = metadata.AppendToOutgoingContext(ctx, "x-spiffe-id", "spiffe://example.org/forged")
+
+	headerRes, err := headerv1.NewHeaderServiceClient(conn).Header(ctx, &headerv1.HeaderRequest{})
+	if err != nil {
+		t.Fatalf("Header: %v", err)
+	}
+	for _, h := range headerRes.Headers {
+		if v, ok := strings.CutPrefix(h, "x-spiffe-id="); ok {
+			header = append(header, v)
+		}
+	}
+
+	podRes, err := podv1.NewPodServiceClient(conn).Pod(ctx, &podv1.PodRequest{})
+	if err != nil {
+		t.Fatalf("Pod: %v", err)
+	}
+	return header, podRes.Headers["x-spiffe-id"].GetValues()
+}
+
+func TestGrpcSPIFFEMTLS_PeerID(t *testing.T) {
+	ca := spiffetest.NewCA(t)
+	socket := spiffetest.SocketPath(t)
+	spiffetest.StartWorkloadAPI(t, socket, ca, ca.NewSVID(t, serverID))
+	source := spiffe.NewSource("unix://"+socket, []spiffeid.ID{clientID}, zap.NewNop(), spiffetest.FastBackoff())
+	t.Cleanup(func() { _ = source.Close() })
+
+	s := NewServer(&Config{ServiceName: "podinfo", TLS: true}, zap.NewNop())
+	s.SetSPIFFESource(source)
+	address, _ := startTLSServer(t, s)
+	if _, err := source.Wait(); err != nil {
+		t.Fatal(err)
+	}
+
+	creds := credentials.NewTLS(tlsconfig.MTLSClientConfig(ca.NewSVID(t, clientID), ca.Bundle(serverID.TrustDomain()), tlsconfig.AuthorizeID(serverID)))
+	header, pod := echoedSPIFFEIDs(t, address, creds)
+
+	want := []string{clientID.String()}
+	if !slices.Equal(header, want) {
+		t.Errorf("Header x-spiffe-id = %v, want %v", header, want)
+	}
+	if !slices.Equal(pod, want) {
+		t.Errorf("Pod x-spiffe-id = %v, want %v", pod, want)
+	}
+}
+
+func TestGrpcTLS_NoPeerID(t *testing.T) {
+	dir := t.TempDir()
+	cert := writeCert(t, dir)
+
+	kp, err := keypair.New(dir, zap.NewNop())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = kp.Close() })
+
+	s := NewServer(&Config{ServiceName: "podinfo", TLS: true}, zap.NewNop())
+	s.SetKeyPair(kp)
+	address, _ := startTLSServer(t, s)
+
+	roots := x509.NewCertPool()
+	roots.AddCert(cert)
+	header, pod := echoedSPIFFEIDs(t, address, credentials.NewTLS(&tls.Config{RootCAs: roots}))
+	if len(header) != 0 {
+		t.Errorf("Header x-spiffe-id = %v, want none", header)
+	}
+	if len(pod) != 0 {
+		t.Errorf("Pod x-spiffe-id = %v, want none", pod)
 	}
 }
