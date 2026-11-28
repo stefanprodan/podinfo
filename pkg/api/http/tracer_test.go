@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/zap"
 
+	"github.com/stefanprodan/podinfo/pkg/store"
 	"github.com/stefanprodan/podinfo/pkg/telemetry"
 )
 
@@ -259,7 +260,7 @@ func TestErrorResponseStatus(t *testing.T) {
 		{method: "POST", path: "/token", body: large(), code: http.StatusRequestEntityTooLarge, message: "request body too large"},
 		{method: "POST", path: "/echo", body: large(), code: http.StatusRequestEntityTooLarge, message: "request body too large"},
 		{method: "GET", path: "/store/invalid", code: http.StatusBadRequest, message: "invalid hash"},
-		{method: "GET", path: "/store/" + hash("missing"), code: http.StatusInternalServerError, message: "reading file failed"},
+		{method: "GET", path: "/store/" + store.Hash([]byte("missing")), code: http.StatusNotFound, message: "file not found"},
 		{method: "POST", path: "/store", body: strings.NewReader("data"), code: http.StatusInternalServerError, message: "writing file failed"},
 		{method: "GET", path: "/status/99999999999999999999", code: http.StatusBadRequest, message: "invalid status code"},
 		{method: "GET", path: "/status/99", code: http.StatusBadRequest, message: "invalid status code"},
@@ -270,7 +271,7 @@ func TestErrorResponseStatus(t *testing.T) {
 		t.Run(tt.method+" "+tt.path, func(t *testing.T) {
 			spans := setupTracing(t)
 			srv := newInstrumentedServer("/")
-			srv.config.DataPath = filepath.Join(t.TempDir(), "missing")
+			srv.store = store.New(filepath.Join(t.TempDir(), "missing"), telemetry.Tracer())
 
 			if tt.body == nil {
 				tt.body = http.NoBody
@@ -325,11 +326,12 @@ func TestErrorResponseStatus(t *testing.T) {
 func TestStoreSpans(t *testing.T) {
 	spans := setupTracing(t)
 	srv := newInstrumentedServer("/")
-	srv.config.DataPath = t.TempDir()
+	dataDir := t.TempDir()
+	srv.store = store.New(dataDir, telemetry.Tracer())
 
 	srv.handler.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("POST", "/store", strings.NewReader("data")))
-	srv.handler.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/store/"+hash("data"), nil))
-	srv.handler.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/store/"+hash("missing"), nil))
+	srv.handler.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/store/"+store.Hash([]byte("data")), nil))
+	srv.handler.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/store/"+store.Hash([]byte("missing")), nil))
 
 	ended := spans.GetSpans()
 	servers := spansOfKind(ended, trace.SpanKindServer)
@@ -352,7 +354,7 @@ func TestStoreSpans(t *testing.T) {
 		if span.Parent.SpanID() != servers[i].SpanContext.SpanID() {
 			t.Errorf("span %q is not a child of the server span", span.Name)
 		}
-		if file, _ := attr(span.Attributes, "file.path"); !strings.HasPrefix(file.AsString(), srv.config.DataPath) {
+		if file, _ := attr(span.Attributes, "file.path"); !strings.HasPrefix(file.AsString(), dataDir) {
 			t.Errorf("file.path %q", file.AsString())
 		}
 	}

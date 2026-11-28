@@ -5,6 +5,8 @@ replicaCount: 1
 logLevel: info
 backend: #http://backend-podinfo:9898/echo
 backends: []
+# gRPC echo backend URLs, grpc://host:port or grpcs://host:port for TLS
+grpcBackends: []
 
 image:
   repository: ghcr.io/stefanprodan/podinfo

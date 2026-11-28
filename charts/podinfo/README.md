@@ -58,6 +58,7 @@ The following tables lists the configurable parameters of the podinfo chart and 
 | `logLevel`                                     | `info`                         | Log level: `debug`, `info`, `warn`, `error`                                                        |
 | `backend`                                      | `None`                         | Echo backend URL                                                                                   |
 | `backends`                                     | `[]`                           | Array of echo backend URLs                                                                         |
+| `grpcBackends`                                 | `[]`                           | Array of gRPC echo backend URLs, `grpc://host:port` or `grpcs://host:port` for TLS                 |
 | `cache`                                        | `None`                         | Redis or Valkey URL in the format `redis://<host>:<port>`, `rediss://` for TLS                     |
 | `cacheOptions.cluster`                         | `false`                        | Connect in cluster mode, implied when the URL has more than one address                            |
 | `cacheOptions.sentinelPrimary`                 | `""`                           | Name of the primary monitored by Sentinel, the URL addresses are then the Sentinels                |
@@ -116,8 +117,8 @@ The following tables lists the configurable parameters of the podinfo chart and 
 | `spiffe.endpointSocket`                        | `unix:///spiffe-workload-api/spire-agent.sock` | SPIFFE Workload API socket                                                                         |
 | `spiffe.csiDriver`                             | `csi.spiffe.io`                | CSI driver that mounts the Workload API socket                                                     |
 | `spiffe.authorizedIDs`                         | `[]`                           | Client SPIFFE IDs allowed to connect, when empty any ID in the trust domain is allowed             |
-| `spiffe.backendMTLS`                           | `false`                        | Call the `https` backends with SPIFFE mTLS                                                         |
-| `spiffe.backendIDs`                            | `[]`                           | Server SPIFFE IDs accepted from `https` backends, when empty any ID in the trust domain is accepted |
+| `spiffe.backendMTLS`                           | `false`                        | Call the `https` and `grpcs` backends with SPIFFE mTLS                                             |
+| `spiffe.backendIDs`                            | `[]`                           | Server SPIFFE IDs accepted from the backends, when empty any ID in the trust domain is accepted    |
 | `extraArgs`                                    | `[]`                           | Additional command line arguments to pass to podinfo container                                     |
 | `extraEnvs`                                    | `[]`                           | Extra environment variables for the podinfo container; an `OTEL_*` variable replaces the generated one |
 | `otel.enabled`                                 | `false`                        | Export traces, metrics and logs over OTLP                                                          |

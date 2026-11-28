@@ -192,6 +192,10 @@ paths:
       responses:
         "202":
           description: Accepted
+        "400":
+          description: key too long
+          schema:
+            $ref: '#/definitions/http.ErrorMessage'
         "500":
           description: cache delete failed
           schema:
@@ -220,6 +224,10 @@ paths:
           description: OK
           schema:
             type: string
+        "400":
+          description: key too long
+          schema:
+            $ref: '#/definitions/http.ErrorMessage'
         "404":
           description: key not found
         "500":
@@ -249,7 +257,7 @@ paths:
         "202":
           description: Accepted
         "400":
-          description: invalid request body
+          description: invalid request body or key too long
           schema:
             $ref: '#/definitions/http.ErrorMessage'
         "413":
@@ -515,8 +523,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "202":
+          description: Accepted
           schema:
             $ref: '#/definitions/http.MapResponse'
         "400":
@@ -554,6 +562,10 @@ paths:
             type: string
         "400":
           description: invalid hash
+          schema:
+            $ref: '#/definitions/http.ErrorMessage'
+        "404":
+          description: file not found
           schema:
             $ref: '#/definitions/http.ErrorMessage'
         "500":

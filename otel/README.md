@@ -8,7 +8,7 @@ a single container with an OpenTelemetry Collector, Tempo, Loki, Prometheus and 
 
 | Service    | Ports                          | Role                                                |
 |------------|--------------------------------|-----------------------------------------------------|
-| `frontend` | 9898 (HTTP), 9999 (gRPC)       | podinfo, forwards `POST /echo` to the backend       |
+| `frontend` | 9898 (HTTP), 9999 (gRPC)       | podinfo, forwards HTTP and gRPC echo to the backend |
 | `backend`  | not published                  | podinfo, answers the frontend                       |
 | `lgtm`     | 3000 (Grafana)                 | receives OTLP on 4318 from both podinfo instances   |
 
@@ -42,7 +42,8 @@ curl -s -H 'traceparent: 00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01
   -d 'hello' http://localhost:9898/echo
 ```
 
-Make a gRPC call to the frontend with [grpcurl](https://github.com/fullstorydev/grpcurl):
+Send a gRPC request that goes through the frontend to the backend, with a known trace ID, using
+[grpcurl](https://github.com/fullstorydev/grpcurl):
 
 ```shell
 grpcurl -plaintext -H 'traceparent: 00-1af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01' \
@@ -68,8 +69,9 @@ Open <http://localhost:3000> (anonymous admin access).
 **Traces.** Go to Explore, pick Tempo, choose the TraceQL query type and paste
 `0af7651916cd43dd8448eb211c80319c`. The trace has three spans: the frontend
 `POST /echo` server span, its `POST` client span and the backend `POST /echo`
-server span. Trace `1af7651916cd43dd8448eb211c80319c` holds one span, the gRPC
-server span `echo.v1.EchoService/Echo`.
+server span. Trace `1af7651916cd43dd8448eb211c80319c` has the same shape with
+gRPC spans named `echo.v1.EchoService/Echo`: the frontend server span, its
+client span and the backend server span.
 Both traces start with a parent span that only exists in the `traceparent` header,
 so Tempo search lists them as `<root span not yet received>`.
 
@@ -89,5 +91,6 @@ or gRPC call rate.
 trace and span ID of the server span. In the trace view, Related logs shows the
 frontend lines for the trace (`request started`, `payload received from backend`),
 and the Links menu on the backend span opens the backend lines (`request started`,
-`payload received`). The gRPC call logs `received message body from client`.
+`payload received`). The gRPC call logs `received message body from client` on both instances
+and `payload received from backend` on the frontend.
 Expand a log line and click `Trace: <trace ID>` under Links to open the trace in Tempo.

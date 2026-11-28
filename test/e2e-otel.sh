@@ -146,6 +146,7 @@ helm upgrade --install frontend ./charts/podinfo \
     --set image.repository=test/podinfo \
     --set image.tag=latest \
     --set backend="http://backend-podinfo:9898/echo" \
+    --set 'grpcBackends={grpc://backend-podinfo:9999}' \
     --set logLevel=debug \
     --set otel.enabled=true \
     --set otel.endpoint="http://otel-collector.${OTEL_NAMESPACE}:4318" \
@@ -173,7 +174,10 @@ values: {
 }
 EOF
 cat > "${TMP_DIR}/frontend.cue" <<EOF
-values: ui: backend: "http://backend.${TIMONI_NAMESPACE}/echo"
+values: ui: {
+	backend:     "http://backend.${TIMONI_NAMESPACE}/echo"
+	grpcBackend: "grpc://backend.${TIMONI_NAMESPACE}:9999"
+}
 EOF
 timoni -n "${TIMONI_NAMESPACE}" apply backend ./timoni/podinfo -f "${TMP_DIR}/values.cue" --timeout 3m
 timoni -n "${TIMONI_NAMESPACE}" apply frontend ./timoni/podinfo -f "${TMP_DIR}/values.cue" -f "${TMP_DIR}/frontend.cue" --timeout 3m
@@ -247,19 +251,22 @@ has() { awk -F'\t' "$1 { found = 1; exit } END { exit !found }" "${RECORDS}"; }
 
 # check <namespace> <frontend> <backend> <http trace ID> <grpc trace ID> prints the first failed assertion.
 check() {
-    local ns=$1 fe=$2 be=$3 http_trace=$4 grpc_trace=$5 svc deploy pod node
-    has "\$1==\"span\" && \$2==\"${fe}\" && \$3==\"${http_trace}\" && \$6==\"Server\"" \
-        || { echo "no ${fe} server span in trace ${http_trace}"; return 1; }
-    has "\$1==\"span\" && \$2==\"${fe}\" && \$3==\"${http_trace}\" && \$6==\"Client\"" \
-        || { echo "no ${fe} client span in trace ${http_trace}"; return 1; }
-    has "\$1==\"span\" && \$2==\"${be}\" && \$3==\"${http_trace}\" && \$6==\"Server\"" \
-        || { echo "no ${be} server span in trace ${http_trace}"; return 1; }
-    local client_ids
-    client_ids=$(awk -F'\t' -v s="${fe}" -v t="${http_trace}" '$1=="span" && $2==s && $3==t && $6=="Client" {print $4}' "${RECORDS}" | paste -sd'|' -)
-    has "\$1==\"span\" && \$2==\"${be}\" && \$3==\"${http_trace}\" && \$6==\"Server\" && \$5 ~ /^(${client_ids})\$/" \
-        || { echo "the ${be} server span is not a child of the ${fe} client span"; return 1; }
-    has "\$1==\"span\" && \$2==\"${fe}\" && \$3==\"${grpc_trace}\" && \$6==\"Server\" && \$7==\"echo.v1.EchoService/Echo\"" \
-        || { echo "no ${fe} gRPC server span in trace ${grpc_trace}"; return 1; }
+    local ns=$1 fe=$2 be=$3 http_trace=$4 grpc_trace=$5 svc deploy pod node trace client_ids
+    for trace in "${http_trace}" "${grpc_trace}"; do
+        has "\$1==\"span\" && \$2==\"${fe}\" && \$3==\"${trace}\" && \$6==\"Server\"" \
+            || { echo "no ${fe} server span in trace ${trace}"; return 1; }
+        has "\$1==\"span\" && \$2==\"${fe}\" && \$3==\"${trace}\" && \$6==\"Client\"" \
+            || { echo "no ${fe} client span in trace ${trace}"; return 1; }
+        has "\$1==\"span\" && \$2==\"${be}\" && \$3==\"${trace}\" && \$6==\"Server\"" \
+            || { echo "no ${be} server span in trace ${trace}"; return 1; }
+        client_ids=$(awk -F'\t' -v s="${fe}" -v t="${trace}" '$1=="span" && $2==s && $3==t && $6=="Client" {print $4}' "${RECORDS}" | paste -sd'|' -)
+        has "\$1==\"span\" && \$2==\"${be}\" && \$3==\"${trace}\" && \$6==\"Server\" && \$5 ~ /^(${client_ids})\$/" \
+            || { echo "the ${be} server span is not a child of the ${fe} client span in trace ${trace}"; return 1; }
+    done
+    for svc in "${fe}" "${be}"; do
+        has "\$1==\"span\" && \$2==\"${svc}\" && \$3==\"${grpc_trace}\" && \$6==\"Server\" && \$7==\"echo.v1.EchoService/Echo\"" \
+            || { echo "no ${svc} gRPC server span in trace ${grpc_trace}"; return 1; }
+    done
     for svc in "${fe}" "${be}"; do
         has "\$1==\"metric\" && \$2==\"${svc}\" && \$3==\"http.server.request.duration\"" \
             || { echo "no http.server.request.duration metric from ${svc}"; return 1; }
@@ -298,8 +305,8 @@ while true; do
     fi
     sleep 5
 done
-info "spans from both services share the trace, with the backend server span under the frontend client span"
-info "gRPC server spans, HTTP and gRPC metrics and log records with the trace ID arrived from both installs"
+info "HTTP and gRPC spans from both services share the trace, with the backend server span under the frontend client span"
+info "HTTP and gRPC metrics and log records with the trace ID arrived from both installs"
 info "the resources carry the service names and the Kubernetes attributes"
 
 log "SUCCESS: all podinfo OpenTelemetry checks passed"

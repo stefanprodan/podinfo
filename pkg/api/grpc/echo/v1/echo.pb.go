@@ -66,10 +66,12 @@ func (x *EchoRequest) GetBody() string {
 }
 
 type EchoResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Body          string                 `protobuf:"bytes,1,opt,name=body,proto3" json:"body,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Body  string                 `protobuf:"bytes,1,opt,name=body,proto3" json:"body,omitempty"`
+	// One per --grpc-backend-url, in order; empty when no backends are set.
+	BackendResponses []*BackendResponse `protobuf:"bytes,2,rep,name=backend_responses,json=backendResponses,proto3" json:"backend_responses,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *EchoResponse) Reset() {
@@ -109,15 +111,90 @@ func (x *EchoResponse) GetBody() string {
 	return ""
 }
 
+func (x *EchoResponse) GetBackendResponses() []*BackendResponse {
+	if x != nil {
+		return x.BackendResponses
+	}
+	return nil
+}
+
+type BackendResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Backend address as set with --grpc-backend-url.
+	Url string `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
+	// Body echoed by the backend; empty when the call failed.
+	Body string `protobuf:"bytes,2,opt,name=body,proto3" json:"body,omitempty"`
+	// Why the call failed; empty on success.
+	Error         string `protobuf:"bytes,3,opt,name=error,proto3" json:"error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BackendResponse) Reset() {
+	*x = BackendResponse{}
+	mi := &file_echo_v1_echo_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BackendResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BackendResponse) ProtoMessage() {}
+
+func (x *BackendResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_echo_v1_echo_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BackendResponse.ProtoReflect.Descriptor instead.
+func (*BackendResponse) Descriptor() ([]byte, []int) {
+	return file_echo_v1_echo_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *BackendResponse) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
+func (x *BackendResponse) GetBody() string {
+	if x != nil {
+		return x.Body
+	}
+	return ""
+}
+
+func (x *BackendResponse) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
 var File_echo_v1_echo_proto protoreflect.FileDescriptor
 
 const file_echo_v1_echo_proto_rawDesc = "" +
 	"\n" +
 	"\x12echo/v1/echo.proto\x12\aecho.v1\"!\n" +
 	"\vEchoRequest\x12\x12\n" +
-	"\x04body\x18\x01 \x01(\tR\x04body\"\"\n" +
+	"\x04body\x18\x01 \x01(\tR\x04body\"i\n" +
 	"\fEchoResponse\x12\x12\n" +
-	"\x04body\x18\x01 \x01(\tR\x04body2D\n" +
+	"\x04body\x18\x01 \x01(\tR\x04body\x12E\n" +
+	"\x11backend_responses\x18\x02 \x03(\v2\x18.echo.v1.BackendResponseR\x10backendResponses\"M\n" +
+	"\x0fBackendResponse\x12\x10\n" +
+	"\x03url\x18\x01 \x01(\tR\x03url\x12\x12\n" +
+	"\x04body\x18\x02 \x01(\tR\x04body\x12\x14\n" +
+	"\x05error\x18\x03 \x01(\tR\x05error2D\n" +
 	"\vEchoService\x125\n" +
 	"\x04Echo\x12\x14.echo.v1.EchoRequest\x1a\x15.echo.v1.EchoResponse\"\x00B=Z;github.com/stefanprodan/podinfo/pkg/api/grpc/echo/v1;echov1b\x06proto3"
 
@@ -133,19 +210,21 @@ func file_echo_v1_echo_proto_rawDescGZIP() []byte {
 	return file_echo_v1_echo_proto_rawDescData
 }
 
-var file_echo_v1_echo_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_echo_v1_echo_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_echo_v1_echo_proto_goTypes = []any{
-	(*EchoRequest)(nil),  // 0: echo.v1.EchoRequest
-	(*EchoResponse)(nil), // 1: echo.v1.EchoResponse
+	(*EchoRequest)(nil),     // 0: echo.v1.EchoRequest
+	(*EchoResponse)(nil),    // 1: echo.v1.EchoResponse
+	(*BackendResponse)(nil), // 2: echo.v1.BackendResponse
 }
 var file_echo_v1_echo_proto_depIdxs = []int32{
-	0, // 0: echo.v1.EchoService.Echo:input_type -> echo.v1.EchoRequest
-	1, // 1: echo.v1.EchoService.Echo:output_type -> echo.v1.EchoResponse
-	1, // [1:2] is the sub-list for method output_type
-	0, // [0:1] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	2, // 0: echo.v1.EchoResponse.backend_responses:type_name -> echo.v1.BackendResponse
+	0, // 1: echo.v1.EchoService.Echo:input_type -> echo.v1.EchoRequest
+	1, // 2: echo.v1.EchoService.Echo:output_type -> echo.v1.EchoResponse
+	2, // [2:3] is the sub-list for method output_type
+	1, // [1:2] is the sub-list for method input_type
+	1, // [1:1] is the sub-list for extension type_name
+	1, // [1:1] is the sub-list for extension extendee
+	0, // [0:1] is the sub-list for field type_name
 }
 
 func init() { file_echo_v1_echo_proto_init() }
@@ -159,7 +238,7 @@ func file_echo_v1_echo_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_echo_v1_echo_proto_rawDesc), len(file_echo_v1_echo_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

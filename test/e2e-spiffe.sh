@@ -7,6 +7,8 @@ SPIRE_CRDS_CHART_VERSION="${SPIRE_CRDS_CHART_VERSION:-0.6.1}"
 SPIRE_CHART_VERSION="${SPIRE_CHART_VERSION:-0.30.3}"
 SPIFFE_DOMAIN="example.org"
 PODINFO_ID="spiffe://${SPIFFE_DOMAIN}/ns/${NAMESPACE}/sa/podinfo"
+FRONTEND_ID="spiffe://${SPIFFE_DOMAIN}/ns/${NAMESPACE}/sa/frontend"
+GRPCURL_VERSION="${GRPCURL_VERSION:-v1.9.3}"
 OTHER_ID="spiffe://${SPIFFE_DOMAIN}/ns/${NAMESPACE}/sa/other"
 
 log()  { printf '\n\033[1;34m==> %s\033[0m\n' "$*"; }
@@ -20,6 +22,7 @@ cleanup() {
         kubectl -n "${NAMESPACE}" get pods -o wide || true
         kubectl -n "${NAMESPACE}" describe pods || true
         kubectl -n "${NAMESPACE}" logs deploy/podinfo --tail=100 || true
+        kubectl -n "${NAMESPACE}" logs deploy/frontend --tail=100 || true
         kubectl -n "${NAMESPACE}" logs pod/other-client --all-containers || true
         kubectl get clusterspiffeids -o yaml || true
         kubectl -n spire-system get pods -o wide || true
@@ -77,7 +80,7 @@ helm upgrade --install podinfo ./charts/podinfo \
     --set tls.enabled=true \
     --set service.grpcTLS=true \
     --set spiffe.enabled=true \
-    --set "spiffe.authorizedIDs={${PODINFO_ID}}"
+    --set "spiffe.authorizedIDs={${PODINFO_ID},${FRONTEND_ID}}"
 
 kubectl -n "${NAMESPACE}" wait --for=jsonpath='{.status.phase}'=Running pod -l app.kubernetes.io/name=podinfo --timeout=3m
 # give the probes time to run: liveness must pass, readiness must not
@@ -196,5 +199,51 @@ kubectl -n "${NAMESPACE}" logs pod/other-client -c curl | grep -q "unauthorized 
 kubectl -n "${NAMESPACE}" logs "${POD}" | jq -e --arg id "${OTHER_ID}" 'select(.spiffe_id == $id)' >/dev/null \
     && fail "podinfo served a request for ${OTHER_ID}"
 info "client ${OTHER_ID} was rejected"
+
+# install_frontend <backend ID> installs a frontend that calls podinfo over SPIFFE mTLS.
+install_frontend() {
+    helm upgrade --install frontend ./charts/podinfo \
+        --namespace "${NAMESPACE}" \
+        --set fullnameOverride=frontend \
+        --set image.repository=test/podinfo \
+        --set image.tag=latest \
+        --set logLevel=debug \
+        --set serviceAccount.enabled=true \
+        --set tls.enabled=true \
+        --set spiffe.enabled=true \
+        --set spiffe.backendMTLS=true \
+        --set "spiffe.backendIDs={$1}" \
+        --set "backends={https://podinfo.${NAMESPACE}:9899/api/echo}" \
+        --set "grpcBackends={grpcs://podinfo.${NAMESPACE}:9999}" \
+        --wait --timeout 3m
+}
+
+http_echo() {
+    kubectl -n "${NAMESPACE}" exec deploy/frontend -- curl -s --max-time 30 -d ping http://localhost:9898/api/echo
+}
+
+grpc_echo() {
+    kubectl -n "${NAMESPACE}" delete pod grpc-client --ignore-not-found >/dev/null
+    kubectl -n "${NAMESPACE}" run grpc-client --image="fullstorydev/grpcurl:${GRPCURL_VERSION}" --restart=Never -- \
+        -plaintext -max-time 30 -d '{"body":"ping"}' "frontend.${NAMESPACE}:9999" echo.v1.EchoService/Echo >/dev/null
+    kubectl -n "${NAMESPACE}" wait --for=jsonpath='{.status.phase}'=Succeeded pod/grpc-client --timeout=2m >/dev/null \
+        || fail "the gRPC client did not succeed"
+    kubectl -n "${NAMESPACE}" logs pod/grpc-client
+}
+
+log "Checking the backend calls over SPIFFE mTLS"
+install_frontend "${PODINFO_ID}"
+[[ "$(http_echo | jq -r '.[0]')" == "ping" ]] || fail "the HTTP echo did not return the backend response"
+[[ "$(grpc_echo | jq -r '.backendResponses[0].body')" == "ping" ]] || fail "the gRPC echo did not return the backend response"
+kubectl -n "${NAMESPACE}" logs "${POD}" | jq -e --arg id "${FRONTEND_ID}" \
+    'select(.msg == "request started" and .spiffe_id == $id)' >/dev/null \
+    || fail "podinfo did not log the frontend SPIFFE ID"
+info "the frontend called podinfo over HTTPS and gRPC with ${FRONTEND_ID}"
+
+log "Checking that a backend SVID not in backendIDs is rejected"
+install_frontend "${OTHER_ID}"
+http_echo | jq -r '.[0]' | grep -q "unexpected ID" || fail "the HTTP echo accepted the backend"
+grpc_echo | jq -r '.backendResponses[0].error' | grep -q "unexpected ID" || fail "the gRPC echo accepted the backend"
+info "the frontend rejected the backend ${PODINFO_ID}"
 
 log "SUCCESS: all podinfo SPIFFE mTLS checks passed"

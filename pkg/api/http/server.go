@@ -16,10 +16,10 @@ import (
 	"github.com/stefanprodan/podinfo/pkg/api/http/docs"
 	"github.com/stefanprodan/podinfo/pkg/fscache"
 	"github.com/stefanprodan/podinfo/pkg/keypair"
+	"github.com/stefanprodan/podinfo/pkg/store"
 	"github.com/stefanprodan/podinfo/pkg/telemetry"
 	httpSwagger "github.com/swaggo/http-swagger"
 	"github.com/swaggo/swag"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -93,7 +93,7 @@ type Server struct {
 	cacheStopped chan struct{}
 	cacheKeyPair *keypair.KeyPair
 	handler      http.Handler
-	tracer       trace.Tracer
+	store        *store.Store
 	backend      *http.Client
 	spiffe       *spiffeState
 	artifact     *artifact
@@ -131,7 +131,7 @@ func NewServer(config *Config, logger *zap.Logger) (*Server, error) {
 		config:  config,
 		spiffe:  spiffe,
 		ui:      page,
-		tracer:  telemetry.Tracer(),
+		store:   store.New(config.DataPath, telemetry.Tracer()),
 		backend: newBackendClient(http.DefaultTransport),
 
 		metrics: defaultPrometheusMiddleware(),
@@ -412,6 +412,12 @@ type MapResponse map[string]string
 // SetKeyPair makes the HTTPS server serve the --cert-path key pair.
 func (s *Server) SetKeyPair(kp *keypair.KeyPair) {
 	s.keyPair = kp
+}
+
+// Cache returns the --cache-server client, or nil when no cache server is set.
+// It stays open until Close.
+func (s *Server) Cache() redis.UniversalClient {
+	return s.cache
 }
 
 // Close releases the cache client and its key pair watcher, the config watcher and the SPIFFE source once the HTTP and gRPC servers have stopped.

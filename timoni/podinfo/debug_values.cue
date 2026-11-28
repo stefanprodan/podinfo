@@ -39,8 +39,9 @@ values: {
 	podAnnotations: "prometheus.io/scrape": "false"
 
 	ui: {
-		message: "Hello from Timoni"
-		backend: "http://backend.default.svc.cluster.local/echo"
+		message:     "Hello from Timoni"
+		backend:     "http://backend.default.svc.cluster.local/echo"
+		grpcBackend: "grpc://backend.default.svc.cluster.local:9999"
 	}
 
 	caching: {

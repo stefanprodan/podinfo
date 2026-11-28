@@ -73,8 +73,11 @@ Errors are returned with their HTTP status code and a JSON body with the `code` 
 gRPC API:
 
 * `/grpc.health.v1.Health/Check` health checking
-* `/echo.v1.EchoService/Echo` echos the received content
+* `/echo.v1.EchoService/Echo` echos the received content and calls `Echo` on the `--grpc-backend-url` backends
 * `/version.v1.VersionService/Version` returns podinfo version and Git commit hash
+* `/cache.v1.CacheService/Set` saves the value under the key in Redis or Valkey
+* `/cache.v1.CacheService/Get` returns the value of the key from Redis or Valkey, or `NOT_FOUND` if the key does not exist
+* `/cache.v1.CacheService/Delete` deletes the key from Redis or Valkey
 * `/delay.v1.DelayService/Delay` returns a successful response after the given seconds in the body of gRPC request
 * `/env.v1.EnvService/Env` returns environment variables as a JSON array, with secret values masked
 * `/header.v1.HeaderService/Header` returns the headers present in the gRPC request, with credential values masked. Any custom header can also be given as a part of request and that can be returned using this API
@@ -82,8 +85,14 @@ gRPC API:
 * `/pod.v1.PodService/Pod` returns the runtime information, the environment variables and the request metadata of one pod, with secret values masked
 * `/panic.v1.PanicService/Panic` crashes the process with gRPC status code as '1 CANCELLED'
 * `/status.v1.StatusService/Status` returns the gRPC Status code given in the request body
+* `/store.v1.StoreService/Write` writes the content to disk at /data/hash and returns the SHA1 hash of the content
+* `/store.v1.StoreService/Read` returns the content of the file /data/hash, or `NOT_FOUND` if it does not exist
 * `/token.v1.TokenService/TokenGenerate` issues a JWT token valid for one minute
 * `/token.v1.TokenService/TokenValidate` validates the JWT token
+
+Both APIs accept request bodies, cache values and store files up to 10 MiB, and cache keys up to 1 KiB without a slash.
+An echo backend response over 64 MiB is reported as a failed backend call.
+gRPC clients that read values or files over 4 MiB must raise their receive limit, for example `grpcurl -max-msg-sz 10486784`.
 
 Web UI:
 
@@ -192,7 +201,7 @@ with traces, logs and metrics correlated in Grafana.
 
 ### Cache
 
-The `/cache/{key}` endpoints store values in Redis or Valkey:
+The `/cache/{key}` endpoints and the gRPC `cache.v1.CacheService` share one client that stores values in Redis or Valkey:
 
 ```bash
 podinfo --cache-server=redis://redis:6379
@@ -208,7 +217,7 @@ podinfo --cache-server=redis://redis:6379
 | `PODINFO_CACHE_USERNAME`, `PODINFO_CACHE_PASSWORD`          | Credentials, instead of putting them in the URL                                                     |
 | `PODINFO_CACHE_SENTINEL_PASSWORD`                           | Password of the Sentinels                                                                           |
 
-Without `--cache-server` the endpoints return HTTP 503. An invalid cache configuration is a startup error.
+Without `--cache-server` the endpoints return HTTP 503 and the gRPC service returns `UNAVAILABLE`. An invalid cache configuration is a startup error.
 
 ### SPIFFE mTLS
 
@@ -220,8 +229,8 @@ rotates it automatically, and only accepts clients that present an SVID from the
 |----------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|
 | `--spiffe-endpoint-socket` | Workload API address, e.g. `unix:///spiffe-workload-api/spire-agent.sock`, requires `--secure-port`                                         |
 | `--spiffe-authorized-ids`  | Client SPIFFE IDs allowed to connect, when empty any ID in podinfo's trust domain is allowed                                                |
-| `--spiffe-backend-mtls`    | Call the `https` backends with SPIFFE mTLS, requires `--spiffe-endpoint-socket`                                                             |
-| `--spiffe-backend-ids`     | Server SPIFFE IDs accepted from `https` backends, when empty any ID in podinfo's trust domain is accepted, requires `--spiffe-backend-mtls` |
+| `--spiffe-backend-mtls`    | Call the `https` and `grpcs` backends with SPIFFE mTLS, requires `--spiffe-endpoint-socket`                                                 |
+| `--spiffe-backend-ids`     | Server SPIFFE IDs accepted from the backends, when empty any ID in podinfo's trust domain is accepted, requires `--spiffe-backend-mtls`     |
 
 Podinfo starts the HTTP port and passes the liveness probe right away, and keeps retrying the Workload API
 until the SVID is issued. The readiness probe fails until the HTTPS port is serving with the SVID.
@@ -248,6 +257,11 @@ podinfo --secure-port=9899 --spiffe-endpoint-socket=unix:///spiffe-workload-api/
   --spiffe-backend-mtls \
   --spiffe-backend-ids=spiffe://example.org/ns/demo/sa/backend
 ```
+
+The gRPC `Echo` service calls the backends set with `--grpc-backend-url`, in plaintext for `grpc://host:port`
+and with TLS verified against the system roots for `grpcs://host:port`. With `--spiffe-backend-mtls`, the `grpcs://`
+backends are called over SPIFFE mTLS like the `https://` ones and must serve gRPC with `--grpc-tls`.
+`--grpc-client-timeout` limits the duration of a backend call.
 
 On a cluster with SPIRE and the [SPIFFE CSI driver](https://github.com/spiffe/spiffe-csi),
 register the podinfo pods with the SPIRE controller manager:

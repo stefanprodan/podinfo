@@ -8,7 +8,6 @@ import (
 	"github.com/felixge/httpsnoop"
 	"github.com/gorilla/mux"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
-	"go.opentelemetry.io/otel/codes"
 	semconv "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -104,12 +103,4 @@ func (t backendURLTransport) RoundTrip(r *http.Request) (*http.Response, error) 
 		trace.SpanFromContext(r.Context()).SetAttributes(semconv.URLFull(u))
 	}
 	return t.next.RoundTrip(r)
-}
-
-func endSpan(span trace.Span, err error) {
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-	}
-	span.End()
 }

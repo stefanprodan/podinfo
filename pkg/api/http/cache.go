@@ -20,6 +20,7 @@ import (
 	"github.com/redis/go-redis/v9/maintnotifications"
 	"go.uber.org/zap"
 
+	"github.com/stefanprodan/podinfo/pkg/api/limits"
 	"github.com/stefanprodan/podinfo/pkg/keypair"
 	"github.com/stefanprodan/podinfo/pkg/telemetry"
 	"github.com/stefanprodan/podinfo/pkg/version"
@@ -34,25 +35,22 @@ import (
 // @Param key path string true "Key to save to"
 // @Router /cache/{key} [post]
 // @Success 202
-// @Failure 400 {object} http.ErrorMessage "invalid request body"
+// @Failure 400 {object} http.ErrorMessage "invalid request body or key too long"
 // @Failure 413 {object} http.ErrorMessage "request body too large"
 // @Failure 500 {object} http.ErrorMessage "cache set failed"
 // @Failure 503 {object} http.ErrorMessage "cache server is offline"
 func (s *Server) cacheWriteHandler(w http.ResponseWriter, r *http.Request) {
-	if s.cache == nil {
-		s.ErrorResponse(w, r, "cache server is offline", http.StatusServiceUnavailable)
+	key, ok := s.cacheKey(w, r)
+	if !ok {
 		return
 	}
-
-	key := mux.Vars(r)["key"]
 	body, ok := s.readLimitedBody(w, r)
 	if !ok {
 		return
 	}
 
 	if err := s.cache.Set(r.Context(), key, body, 0).Err(); err != nil {
-		s.logger.Warn("cache set failed", zap.Error(err), telemetry.Context(r.Context()))
-		s.ErrorResponse(w, r, "cache set failed", http.StatusInternalServerError)
+		s.cacheFailed(w, r, "cache set failed", err)
 		return
 	}
 
@@ -68,19 +66,17 @@ func (s *Server) cacheWriteHandler(w http.ResponseWriter, r *http.Request) {
 // @Param key path string true "Key to delete"
 // @Router /cache/{key} [delete]
 // @Success 202
+// @Failure 400 {object} http.ErrorMessage "key too long"
 // @Failure 500 {object} http.ErrorMessage "cache delete failed"
 // @Failure 503 {object} http.ErrorMessage "cache server is offline"
 func (s *Server) cacheDeleteHandler(w http.ResponseWriter, r *http.Request) {
-	if s.cache == nil {
-		s.ErrorResponse(w, r, "cache server is offline", http.StatusServiceUnavailable)
+	key, ok := s.cacheKey(w, r)
+	if !ok {
 		return
 	}
 
-	key := mux.Vars(r)["key"]
-
 	if err := s.cache.Del(r.Context(), key).Err(); err != nil {
-		s.logger.Warn("cache delete failed", zap.Error(err), telemetry.Context(r.Context()))
-		s.ErrorResponse(w, r, "cache delete failed", http.StatusInternalServerError)
+		s.cacheFailed(w, r, "cache delete failed", err)
 		return
 	}
 
@@ -96,16 +92,15 @@ func (s *Server) cacheDeleteHandler(w http.ResponseWriter, r *http.Request) {
 // @Param key path string true "Key to load from cache"
 // @Router /cache/{key} [get]
 // @Success 200 {string} string value
+// @Failure 400 {object} http.ErrorMessage "key too long"
 // @Failure 404 "key not found"
 // @Failure 500 {object} http.ErrorMessage "cache get failed"
 // @Failure 503 {object} http.ErrorMessage "cache server is offline"
 func (s *Server) cacheReadHandler(w http.ResponseWriter, r *http.Request) {
-	if s.cache == nil {
-		s.ErrorResponse(w, r, "cache server is offline", http.StatusServiceUnavailable)
+	key, ok := s.cacheKey(w, r)
+	if !ok {
 		return
 	}
-
-	key := mux.Vars(r)["key"]
 
 	data, err := s.cache.Get(r.Context(), key).Bytes()
 	if errors.Is(err, redis.Nil) {
@@ -114,14 +109,42 @@ func (s *Server) cacheReadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		s.logger.Warn("cache get failed", zap.Error(err), telemetry.Context(r.Context()))
-		s.ErrorResponse(w, r, "cache get failed", http.StatusInternalServerError)
+		s.cacheFailed(w, r, "cache get failed", err)
 		return
 	}
 
 	setRawResponseHeaders(w)
 	w.WriteHeader(http.StatusOK)
 	w.Write(data)
+}
+
+// cacheKey returns the key of a cache request. It answers 503 without a
+// cache and 400 for a key over limits.MaxCacheKeySize.
+func (s *Server) cacheKey(w http.ResponseWriter, r *http.Request) (string, bool) {
+	if s.cache == nil {
+		s.ErrorResponse(w, r, "cache server is offline", http.StatusServiceUnavailable)
+		return "", false
+	}
+	key := mux.Vars(r)["key"]
+	if len(key) > limits.MaxCacheKeySize {
+		s.ErrorResponse(w, r, "key too long", http.StatusBadRequest)
+		return "", false
+	}
+	return key, true
+}
+
+// statusClientClosedRequest is the de facto status for a request the client gave up on.
+const statusClientClosedRequest = 499
+
+// cacheFailed answers a failed cache command: 499 when the client canceled
+// or timed out, 500 otherwise.
+func (s *Server) cacheFailed(w http.ResponseWriter, r *http.Request, msg string, err error) {
+	if r.Context().Err() != nil {
+		s.ErrorResponse(w, r, "client closed request", statusClientClosedRequest)
+		return
+	}
+	s.logger.Warn(msg, zap.Error(err), telemetry.Context(r.Context()))
+	s.ErrorResponse(w, r, msg, http.StatusInternalServerError)
 }
 
 func newCacheOptions(config *Config, logger *zap.Logger) (*redis.UniversalOptions, *keypair.KeyPair, error) {

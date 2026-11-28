@@ -4,16 +4,21 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/gorilla/mux"
+
+	"github.com/stefanprodan/podinfo/pkg/store"
+	"github.com/stefanprodan/podinfo/pkg/telemetry"
 )
 
 func TestStoreReadHandler_ContentType(t *testing.T) {
 	dataDir := t.TempDir()
 	srv := NewMockServer()
-	srv.config.DataPath = dataDir
+	srv.store = store.New(dataDir, telemetry.Tracer())
 
 	// Write an HTML payload to the store.
 	writeReq, err := http.NewRequest("POST", "/store", strings.NewReader("<html><script>alert(1)</script></html>"))
@@ -28,7 +33,7 @@ func TestStoreReadHandler_ContentType(t *testing.T) {
 	}
 
 	// Read it back and verify Content-Type is application/octet-stream, not text/html.
-	hash := hash("<html><script>alert(1)</script></html>")
+	hash := store.Hash([]byte("<html><script>alert(1)</script></html>"))
 	readReq, err := http.NewRequest("GET", "/store/"+hash, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -38,8 +43,8 @@ func TestStoreReadHandler_ContentType(t *testing.T) {
 	readRR := httptest.NewRecorder()
 	http.HandlerFunc(srv.storeReadHandler).ServeHTTP(readRR, readReq)
 
-	if readRR.Code != http.StatusAccepted {
-		t.Fatalf("store read returned status %d, want %d", readRR.Code, http.StatusAccepted)
+	if readRR.Code != http.StatusOK {
+		t.Fatalf("store read returned status %d, want %d", readRR.Code, http.StatusOK)
 	}
 
 	expectedHeaders := map[string]string{
@@ -56,7 +61,7 @@ func TestStoreReadHandler_ContentType(t *testing.T) {
 
 func TestStoreReadHandler_PathTraversal(t *testing.T) {
 	srv := NewMockServer()
-	srv.config.DataPath = t.TempDir()
+	srv.store = store.New(t.TempDir(), telemetry.Tracer())
 
 	traversalPaths := []string{
 		"../../../../etc/passwd",
@@ -84,7 +89,7 @@ func TestStoreReadHandler_PathTraversal(t *testing.T) {
 
 func TestStoreWriteHandler(t *testing.T) {
 	srv := NewMockServer()
-	srv.config.DataPath = t.TempDir()
+	srv.store = store.New(t.TempDir(), telemetry.Tracer())
 
 	payload := "hello world"
 	req, _ := http.NewRequest("POST", "/store", strings.NewReader(payload))
@@ -97,14 +102,14 @@ func TestStoreWriteHandler(t *testing.T) {
 
 	var result map[string]string
 	json.Unmarshal(rr.Body.Bytes(), &result)
-	if result["hash"] != hash(payload) {
-		t.Errorf("hash = %q, want %q", result["hash"], hash(payload))
+	if result["hash"] != store.Hash([]byte(payload)) {
+		t.Errorf("hash = %q, want %q", result["hash"], store.Hash([]byte(payload)))
 	}
 }
 
 func TestStoreWriteHandler_InvalidPath(t *testing.T) {
 	srv := NewMockServer()
-	srv.config.DataPath = "/nonexistent/path/that/does/not/exist"
+	srv.store = store.New("/nonexistent/path/that/does/not/exist", telemetry.Tracer())
 
 	req, _ := http.NewRequest("POST", "/store", strings.NewReader("data"))
 	rr := httptest.NewRecorder()
@@ -117,14 +122,32 @@ func TestStoreWriteHandler_InvalidPath(t *testing.T) {
 
 func TestStoreReadHandler_NotFound(t *testing.T) {
 	srv := NewMockServer()
-	srv.config.DataPath = t.TempDir()
+	srv.store = store.New(t.TempDir(), telemetry.Tracer())
 	srv.router.HandleFunc("/store/{hash}", srv.storeReadHandler)
 
 	req, _ := http.NewRequest("GET", "/store/aabbccddee11223344556677889900aabbccddee", nil)
 	rr := httptest.NewRecorder()
 	srv.router.ServeHTTP(rr, req)
 
-	if !strings.Contains(rr.Body.String(), "reading file failed") {
-		t.Errorf("expected read error, got: %s", rr.Body.String())
+	if rr.Code != http.StatusNotFound || !strings.Contains(rr.Body.String(), "file not found") {
+		t.Errorf("got %d %s, want %d with file not found", rr.Code, rr.Body.String(), http.StatusNotFound)
+	}
+}
+
+func TestStoreReadHandler_ReadError(t *testing.T) {
+	dataDir := t.TempDir()
+	hash := strings.Repeat("b", 40)
+	if err := os.Mkdir(filepath.Join(dataDir, hash), 0755); err != nil {
+		t.Fatal(err)
+	}
+	srv := NewMockServer()
+	srv.store = store.New(dataDir, telemetry.Tracer())
+	srv.router.HandleFunc("/store/{hash}", srv.storeReadHandler)
+
+	rr := httptest.NewRecorder()
+	srv.router.ServeHTTP(rr, httptest.NewRequest("GET", "/store/"+hash, nil))
+
+	if rr.Code != http.StatusInternalServerError || !strings.Contains(rr.Body.String(), "reading file failed") {
+		t.Errorf("got %d %s, want %d with reading file failed", rr.Code, rr.Body.String(), http.StatusInternalServerError)
 	}
 }

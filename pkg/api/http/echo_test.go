@@ -1,6 +1,8 @@
 package http
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -14,6 +16,8 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
+
+	"github.com/stefanprodan/podinfo/pkg/api/limits"
 )
 
 func TestEchoHandler(t *testing.T) {
@@ -144,6 +148,63 @@ func TestEchoHandler_BackendUnreachable(t *testing.T) {
 	}
 	if !strings.Contains(rr.Body.String(), "call failed") {
 		t.Errorf("expected call failed in body, got: %s", rr.Body.String())
+	}
+}
+
+type fillReader struct{}
+
+func (fillReader) Read(p []byte) (int, error) {
+	for i := range p {
+		p[i] = 'a'
+	}
+	return len(p), nil
+}
+
+func TestEchoHandler_BackendResponseTooLarge(t *testing.T) {
+	srv := NewMockServer()
+	srv.logger = zap.NewNop()
+	srv.backend = newBackendClient(roundTripperFunc(func(r *http.Request) (*http.Response, error) {
+		size := int64(limits.MaxBackendResponseSize)
+		if r.URL.Host == "large.test" {
+			size++
+		}
+		return &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(io.LimitReader(fillReader{}, size))}, nil
+	}))
+
+	for _, tt := range []struct {
+		backend  string
+		tooLarge bool
+	}{
+		{backend: "http://max.test/echo"},
+		{backend: "http://large.test/echo", tooLarge: true},
+	} {
+		srv.config.BackendURL = []string{tt.backend}
+		rr := httptest.NewRecorder()
+		http.HandlerFunc(srv.echoHandler).ServeHTTP(rr, httptest.NewRequest("POST", "/echo", strings.NewReader("hello")))
+		if got := bytes.Contains(rr.Body.Bytes(), []byte("response body too large")); got != tt.tooLarge {
+			t.Errorf("%s: response too large = %v, want %v", tt.backend, got, tt.tooLarge)
+		}
+	}
+}
+
+func TestEchoHandler_ClientGone(t *testing.T) {
+	logs, observed := observer.New(zapcore.ErrorLevel)
+	srv := NewMockServer()
+	srv.logger = zap.New(logs)
+	srv.backend = newBackendClient(roundTripperFunc(func(r *http.Request) (*http.Response, error) {
+		return nil, r.Context().Err()
+	}))
+	srv.config.BackendURL = []string{"http://backend.test/echo"}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	rr := httptest.NewRecorder()
+	http.HandlerFunc(srv.echoHandler).ServeHTTP(rr, httptest.NewRequest("POST", "/echo", strings.NewReader("hello")).WithContext(ctx))
+	if rr.Code != statusClientClosedRequest {
+		t.Errorf("got status %d, want %d", rr.Code, statusClientClosedRequest)
+	}
+	if n := observed.Len(); n != 0 {
+		t.Errorf("got %d errors for a canceled request: %v", n, observed.All())
 	}
 }
 

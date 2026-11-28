@@ -31,13 +31,15 @@ import (
 	selector: timoniv1.#Selector & {#Name: metadata.name}
 
 	// Podinfo UI settings: the background color, the greeting
-	// message and the URL of the backend service called
-	// by the `/api/echo` endpoint. For blue/green deployments,
-	// blue is "#1f4e8c" and green is "#17694f".
+	// message, the URL of the backend service called
+	// by the `/api/echo` endpoint and the URL of the backend
+	// service called by the gRPC Echo service. For blue/green
+	// deployments, blue is "#1f4e8c" and green is "#17694f".
 	ui: {
-		color:    *"#1f4e8c" | string
-		message?: string
-		backend?: string
+		color:        *"#1f4e8c" | string
+		message?:     string
+		backend?:     string
+		grpcBackend?: string & =~"^grpcs?://[^/?#@,]+:[0-9]+$"
 	}
 
 	// The log level of the podinfo container.
