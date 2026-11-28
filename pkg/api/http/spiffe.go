@@ -28,6 +28,9 @@ type spiffeState struct {
 	// When empty, any ID in the server's own trust domain is accepted.
 	backendIDs []spiffeid.ID
 
+	// listen opens the listener of the secure server.
+	listen func(network, address string) (net.Listener, error)
+
 	mu sync.Mutex
 	// backendTransport presents the SVID to https backends.
 	backendTransport *http.Transport
@@ -69,6 +72,7 @@ func newSPIFFEState(config *Config, logger *zap.Logger, options ...workloadapi.C
 		source:      spiffe.NewSource(config.SPIFFEEndpointSocket, ids, logger, options...),
 		backendMTLS: config.SPIFFEBackendMTLS,
 		backendIDs:  backendIDs,
+		listen:      net.Listen,
 	}, nil
 }
 
@@ -107,7 +111,7 @@ func (s *Server) serveSPIFFE(srv *http.Server) {
 	}
 	srv.TLSConfig = st.source.ServerTLSConfig()
 
-	ln, err := net.Listen("tcp", srv.Addr)
+	ln, err := st.listen("tcp", srv.Addr)
 	if err != nil {
 		s.logger.Fatal("HTTPS server crashed", zap.Error(err))
 	}
