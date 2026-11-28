@@ -659,8 +659,8 @@ const docTemplate = `{
                 ],
                 "summary": "Upload file",
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "202": {
+                        "description": "Accepted",
                         "schema": {
                             "$ref": "#/definitions/http.MapResponse"
                         }
@@ -717,6 +717,12 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "invalid hash",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorMessage"
+                        }
+                    },
+                    "404": {
+                        "description": "file not found",
                         "schema": {
                             "$ref": "#/definitions/http.ErrorMessage"
                         }

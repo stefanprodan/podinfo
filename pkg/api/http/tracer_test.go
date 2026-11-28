@@ -260,7 +260,7 @@ func TestErrorResponseStatus(t *testing.T) {
 		{method: "POST", path: "/token", body: large(), code: http.StatusRequestEntityTooLarge, message: "request body too large"},
 		{method: "POST", path: "/echo", body: large(), code: http.StatusRequestEntityTooLarge, message: "request body too large"},
 		{method: "GET", path: "/store/invalid", code: http.StatusBadRequest, message: "invalid hash"},
-		{method: "GET", path: "/store/" + store.Hash([]byte("missing")), code: http.StatusInternalServerError, message: "reading file failed"},
+		{method: "GET", path: "/store/" + store.Hash([]byte("missing")), code: http.StatusNotFound, message: "file not found"},
 		{method: "POST", path: "/store", body: strings.NewReader("data"), code: http.StatusInternalServerError, message: "writing file failed"},
 		{method: "GET", path: "/status/99999999999999999999", code: http.StatusBadRequest, message: "invalid status code"},
 		{method: "GET", path: "/status/99", code: http.StatusBadRequest, message: "invalid status code"},

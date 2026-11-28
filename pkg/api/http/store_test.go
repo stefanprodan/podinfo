@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -41,8 +43,8 @@ func TestStoreReadHandler_ContentType(t *testing.T) {
 	readRR := httptest.NewRecorder()
 	http.HandlerFunc(srv.storeReadHandler).ServeHTTP(readRR, readReq)
 
-	if readRR.Code != http.StatusAccepted {
-		t.Fatalf("store read returned status %d, want %d", readRR.Code, http.StatusAccepted)
+	if readRR.Code != http.StatusOK {
+		t.Fatalf("store read returned status %d, want %d", readRR.Code, http.StatusOK)
 	}
 
 	expectedHeaders := map[string]string{
@@ -127,7 +129,25 @@ func TestStoreReadHandler_NotFound(t *testing.T) {
 	rr := httptest.NewRecorder()
 	srv.router.ServeHTTP(rr, req)
 
-	if !strings.Contains(rr.Body.String(), "reading file failed") {
-		t.Errorf("expected read error, got: %s", rr.Body.String())
+	if rr.Code != http.StatusNotFound || !strings.Contains(rr.Body.String(), "file not found") {
+		t.Errorf("got %d %s, want %d with file not found", rr.Code, rr.Body.String(), http.StatusNotFound)
+	}
+}
+
+func TestStoreReadHandler_ReadError(t *testing.T) {
+	dataDir := t.TempDir()
+	hash := strings.Repeat("b", 40)
+	if err := os.Mkdir(filepath.Join(dataDir, hash), 0755); err != nil {
+		t.Fatal(err)
+	}
+	srv := NewMockServer()
+	srv.store = store.New(dataDir, telemetry.Tracer())
+	srv.router.HandleFunc("/store/{hash}", srv.storeReadHandler)
+
+	rr := httptest.NewRecorder()
+	srv.router.ServeHTTP(rr, httptest.NewRequest("GET", "/store/"+hash, nil))
+
+	if rr.Code != http.StatusInternalServerError || !strings.Contains(rr.Body.String(), "reading file failed") {
+		t.Errorf("got %d %s, want %d with reading file failed", rr.Code, rr.Body.String(), http.StatusInternalServerError)
 	}
 }

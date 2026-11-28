@@ -2,6 +2,7 @@ package http
 
 import (
 	"errors"
+	"io/fs"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -18,7 +19,7 @@ import (
 // @Accept json
 // @Produce json
 // @Router /store [post]
-// @Success 200 {object} http.MapResponse
+// @Success 202 {object} http.MapResponse
 // @Failure 400 {object} http.ErrorMessage "invalid request body"
 // @Failure 413 {object} http.ErrorMessage "request body too large"
 // @Failure 500 {object} http.ErrorMessage "writing file failed"
@@ -47,6 +48,7 @@ func (s *Server) storeWriteHandler(w http.ResponseWriter, r *http.Request) {
 // @Router /store/{hash} [get]
 // @Success 200 {string} string "file"
 // @Failure 400 {object} http.ErrorMessage "invalid hash"
+// @Failure 404 {object} http.ErrorMessage "file not found"
 // @Failure 500 {object} http.ErrorMessage "reading file failed"
 func (s *Server) storeReadHandler(w http.ResponseWriter, r *http.Request) {
 	content, err := s.store.Read(r.Context(), mux.Vars(r)["hash"])
@@ -56,10 +58,13 @@ func (s *Server) storeReadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	if err != nil {
 		s.logger.Warn("reading file failed", zap.Error(err), telemetry.Context(r.Context()))
+		if errors.Is(err, fs.ErrNotExist) {
+			s.ErrorResponse(w, r, "file not found", http.StatusNotFound)
+			return
+		}
 		s.ErrorResponse(w, r, "reading file failed", http.StatusInternalServerError)
 		return
 	}
 	setRawResponseHeaders(w)
-	w.WriteHeader(http.StatusAccepted)
 	w.Write(content)
 }
