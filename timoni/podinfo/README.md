@@ -97,7 +97,10 @@ bundle: {
 			module: url: "oci://ghcr.io/stefanprodan/modules/podinfo"
 			namespace: "podinfo"
 			values: {
-				ui: backend: "http://backend.podinfo.svc.cluster.local/echo"
+				ui: {
+					backend:     "http://backend.podinfo.svc.cluster.local/echo"
+					grpcBackend: "grpc://backend.podinfo.svc.cluster.local:9999"
+				}
 				replicas: 2
 				podDisruptionBudget: enabled: true
 				httpRoute: {
@@ -333,3 +336,4 @@ and `sentinel announce-hostnames yes` on the Sentinels.
 | `ui.color` | `string` | `#1f4e8c` | Background color, green is `#17694f` |
 | `ui.message` | `string` | unset | Greeting message |
 | `ui.backend` | `string` | unset | Backend service URL called by the `/api/echo` endpoint |
+| `ui.grpcBackend` | `string` | unset | Backend service URL called by the gRPC `Echo` service, `grpc://host:port` or `grpcs://host:port` for TLS verified against the system roots |

@@ -209,6 +209,12 @@ import (
 									value: _config.ui.backend
 								}
 							},
+							if _config.ui.grpcBackend != _|_ {
+								{
+									name:  "PODINFO_GRPC_BACKEND_URL"
+									value: _config.ui.grpcBackend
+								}
+							},
 							for e in _otelEnv {e},
 							if _config.env != _|_ for e in _config.env {e},
 						]
