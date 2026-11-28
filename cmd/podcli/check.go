@@ -68,7 +68,7 @@ var checkgRPCCmd = &cobra.Command{
 	Use:     `grpc [address]`,
 	Short:   "gRPC health check",
 	Example: `  check grpc localhost:8080 --service=podinfo --retry=1 --delay=2s --timeout=2s`,
-	RunE:    runCheckgPRC,
+	RunE:    runCheckGRPC,
 }
 
 var checkWsCmd = &cobra.Command{
@@ -293,7 +293,7 @@ func runCheckWs(cmd *cobra.Command, args []string) error {
 	})
 }
 
-func runCheckgPRC(cmd *cobra.Command, args []string) error {
+func runCheckGRPC(cmd *cobra.Command, args []string) error {
 	if len(args) < 1 {
 		return fmt.Errorf("address is required! example: check grpc localhost:8080")
 	}

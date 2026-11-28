@@ -41,13 +41,13 @@ kubectl rollout status --namespace secure deployment/frontend --timeout=3m
 
 # curl gets the JSON info: the UI is served only to a browser User-Agent
 echo
-echo "http enpdoint:"
+echo "http endpoint:"
 echo "curl http://localhost"
 echo
 curl http://localhost
 
 echo
-echo "https (secure) enpdoint:"
+echo "https (secure) endpoint:"
 echo "curl --insecure https://localhost"
 echo
 curl --insecure https://localhost

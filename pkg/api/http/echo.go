@@ -105,7 +105,7 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					if r.Context().Err() == nil {
 						s.logger.Error(
-							"reading the backend request body failed",
+							"reading the backend response body failed",
 							zap.Error(err),
 							zap.String("url", display),
 							telemetry.Context(r.Context()))
