@@ -216,6 +216,7 @@ func main() {
 		grpcSrv := grpc.NewServer(&grpcCfg, logger)
 		grpcSrv.SetSPIFFESource(srv.SPIFFESource())
 		grpcSrv.SetKeyPair(keyPair)
+		grpcSrv.SetCache(srv.Cache())
 		grpcServer, grpcHealth = grpcSrv.ListenAndServe()
 	}
 

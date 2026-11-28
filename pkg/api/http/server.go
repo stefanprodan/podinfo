@@ -414,6 +414,12 @@ func (s *Server) SetKeyPair(kp *keypair.KeyPair) {
 	s.keyPair = kp
 }
 
+// Cache returns the --cache-server client, or nil when no cache server is set.
+// It stays open until Close.
+func (s *Server) Cache() redis.UniversalClient {
+	return s.cache
+}
+
 // Close releases the cache client and its key pair watcher, the config watcher and the SPIFFE source once the HTTP and gRPC servers have stopped.
 func (s *Server) Close() error {
 	if s.cacheStop != nil {

@@ -5,6 +5,7 @@ import (
 	"net"
 	"strconv"
 
+	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -13,6 +14,7 @@ import (
 	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
 
+	cachev1 "github.com/stefanprodan/podinfo/pkg/api/grpc/cache/v1"
 	delayv1 "github.com/stefanprodan/podinfo/pkg/api/grpc/delay/v1"
 	echov1 "github.com/stefanprodan/podinfo/pkg/api/grpc/echo/v1"
 	envv1 "github.com/stefanprodan/podinfo/pkg/api/grpc/env/v1"
@@ -32,6 +34,7 @@ type Server struct {
 	config  *Config
 	spiffe  *spiffe.Source
 	keyPair *keypair.KeyPair
+	cache   redis.UniversalClient
 }
 
 type Config struct {
@@ -64,6 +67,12 @@ func (s *Server) SetSPIFFESource(source *spiffe.Source) {
 // SetKeyPair makes --grpc-tls serve the --cert-path key pair.
 func (s *Server) SetKeyPair(kp *keypair.KeyPair) {
 	s.keyPair = kp
+}
+
+// SetCache serves the cache service with the given client, or reports the
+// cache offline when it is nil. The caller closes it after the server stops.
+func (s *Server) SetCache(client redis.UniversalClient) {
+	s.cache = client
 }
 
 // ListenAndServe starts the gRPC server and returns it with its health server.
@@ -111,6 +120,7 @@ func (s *Server) newServer(opts ...grpc.ServerOption) (*grpc.Server, *health.Ser
 	statusv1.RegisterStatusServiceServer(srv, &StatusServer{config: s.config, logger: s.logger})
 	tokenv1.RegisterTokenServiceServer(srv, &TokenServer{config: s.config, logger: s.logger})
 	envv1.RegisterEnvServiceServer(srv, &EnvServer{config: s.config, logger: s.logger})
+	cachev1.RegisterCacheServiceServer(srv, &cacheServer{cache: s.cache, logger: s.logger})
 	reflection.Register(srv)
 
 	healthSrv := health.NewServer()

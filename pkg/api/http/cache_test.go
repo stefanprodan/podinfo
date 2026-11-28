@@ -495,6 +495,25 @@ func TestNewServer_InvalidCache(t *testing.T) {
 	}
 }
 
+func TestServerCache(t *testing.T) {
+	if c := NewMockServer().Cache(); c != nil {
+		t.Errorf("Cache returned %v without --cache-server, want nil", c)
+	}
+
+	m := miniredis.RunT(t)
+	srv, err := NewServer(&Config{CacheServer: "redis://" + m.Addr()}, zap.NewNop())
+	if err != nil {
+		t.Fatalf("NewServer returned %v", err)
+	}
+	t.Cleanup(func() { _ = srv.Close() })
+	if err := m.Set("key1", "value1"); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := srv.Cache().Get(t.Context(), "key1").Result(); err != nil || got != "value1" {
+		t.Errorf("Get returned %q, %v, want %q", got, err, "value1")
+	}
+}
+
 func newCacheMockServer(t *testing.T, config *Config) *Server {
 	t.Helper()
 	opts, kp, err := newCacheOptions(config, zap.NewNop())

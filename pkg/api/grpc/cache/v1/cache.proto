@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package cache.v1;
+
+option go_package = "github.com/stefanprodan/podinfo/pkg/api/grpc/cache/v1;cachev1";
+
+// All RPCs return Unavailable when podinfo runs without --cache-server
+// and InvalidArgument for an empty key.
+service CacheService {
+  // Returns NotFound when the key does not exist.
+  rpc Get(GetRequest) returns (GetResponse) {}
+  // Saves the value without expiry.
+  rpc Set(SetRequest) returns (SetResponse) {}
+  // Succeeds when the key does not exist.
+  rpc Delete(DeleteRequest) returns (DeleteResponse) {}
+}
+
+message GetRequest {
+  string key = 1;
+}
+
+message GetResponse {
+  bytes value = 1;
+}
+
+message SetRequest {
+  string key = 1;
+  bytes value = 2;
+}
+
+message SetResponse {}
+
+message DeleteRequest {
+  string key = 1;
+}
+
+message DeleteResponse {}

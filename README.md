@@ -75,6 +75,9 @@ gRPC API:
 * `/grpc.health.v1.Health/Check` health checking
 * `/echo.v1.EchoService/Echo` echos the received content
 * `/version.v1.VersionService/Version` returns podinfo version and Git commit hash
+* `/cache.v1.CacheService/Set` saves the value under the key in Redis or Valkey
+* `/cache.v1.CacheService/Get` returns the value of the key from Redis or Valkey, or `NOT_FOUND` if the key does not exist
+* `/cache.v1.CacheService/Delete` deletes the key from Redis or Valkey
 * `/delay.v1.DelayService/Delay` returns a successful response after the given seconds in the body of gRPC request
 * `/env.v1.EnvService/Env` returns environment variables as a JSON array, with secret values masked
 * `/header.v1.HeaderService/Header` returns the headers present in the gRPC request, with credential values masked. Any custom header can also be given as a part of request and that can be returned using this API
@@ -192,7 +195,7 @@ with traces, logs and metrics correlated in Grafana.
 
 ### Cache
 
-The `/cache/{key}` endpoints store values in Redis or Valkey:
+The `/cache/{key}` endpoints and the gRPC `cache.v1.CacheService` share one client that stores values in Redis or Valkey:
 
 ```bash
 podinfo --cache-server=redis://redis:6379
@@ -208,7 +211,7 @@ podinfo --cache-server=redis://redis:6379
 | `PODINFO_CACHE_USERNAME`, `PODINFO_CACHE_PASSWORD`          | Credentials, instead of putting them in the URL                                                     |
 | `PODINFO_CACHE_SENTINEL_PASSWORD`                           | Password of the Sentinels                                                                           |
 
-Without `--cache-server` the endpoints return HTTP 503. An invalid cache configuration is a startup error.
+Without `--cache-server` the endpoints return HTTP 503 and the gRPC service returns `UNAVAILABLE`. An invalid cache configuration is a startup error.
 
 ### SPIFFE mTLS
 
