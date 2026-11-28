@@ -1,4 +1,3 @@
-// Package spiffe shares an X.509 SVID from the SPIFFE Workload API between the podinfo servers.
 package spiffe
 
 import (

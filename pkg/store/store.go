@@ -1,5 +1,3 @@
-// Package store keeps content-addressed files under --data-path, named by the
-// SHA1 hash of their content.
 package store
 
 import (

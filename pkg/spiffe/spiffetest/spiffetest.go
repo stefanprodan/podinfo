@@ -1,4 +1,3 @@
-// Package spiffetest provides a test CA and a fake SPIFFE Workload API.
 package spiffetest
 
 import (
