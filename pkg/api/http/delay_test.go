@@ -16,8 +16,10 @@ func TestWaitHandlersReturnOnDisconnect(t *testing.T) {
 	srv := NewMockServer()
 	srv.router.HandleFunc("/delay/{wait}", srv.delayHandler)
 	srv.router.HandleFunc("/chunked/{wait}", srv.chunkedHandler)
+	started := make(chan struct{}, 1)
 	done := make(chan struct{}, 1)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		started <- struct{}{}
 		srv.router.ServeHTTP(w, r)
 		done <- struct{}{}
 	}))
@@ -27,10 +29,10 @@ func TestWaitHandlersReturnOnDisconnect(t *testing.T) {
 		name, method, path string
 		length             int
 	}{
-		{"delay partial body", "GET", "/delay/10", 100},
-		{"delay full body", "GET", "/delay/10", 1},
-		{"chunked partial body", "POST", "/chunked/10", 100},
-		{"chunked full body", "POST", "/chunked/10", 1},
+		{"delay partial body", "GET", "/delay/60", 100},
+		{"delay full body", "GET", "/delay/60", 1},
+		{"chunked partial body", "POST", "/chunked/60", 100},
+		{"chunked full body", "POST", "/chunked/60", 1},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			conn, err := net.Dial("tcp", ts.Listener.Addr().String())
@@ -38,12 +40,16 @@ func TestWaitHandlersReturnOnDisconnect(t *testing.T) {
 				t.Fatal(err)
 			}
 			fmt.Fprintf(conn, "%s %s HTTP/1.1\r\nHost: podinfo\r\nContent-Length: %d\r\n\r\nx", tc.method, tc.path, tc.length)
-			time.Sleep(50 * time.Millisecond)
+			select {
+			case <-started:
+			case <-time.After(10 * time.Second):
+				t.Fatal("handler not started")
+			}
 			conn.Close()
 
 			select {
 			case <-done:
-			case <-time.After(2 * time.Second):
+			case <-time.After(10 * time.Second):
 				t.Fatal("handler still waiting after the client disconnected")
 			}
 		})
