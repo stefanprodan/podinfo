@@ -103,6 +103,9 @@ func (f writerFunc) Write(p []byte) (int, error) {
 }
 
 func TestTraceIDCoreAllocs(t *testing.T) {
+	if raceEnabled {
+		t.Skip("sync.Pool drops a random quarter of the objects put back under the race detector, so zap allocates a random number of times per record")
+	}
 	core := zapcore.NewCore(zapcore.NewJSONEncoder(zapcore.EncoderConfig{MessageKey: "msg"}), zapcore.AddSync(io.Discard), zapcore.InfoLevel)
 	plain, wrapped := zap.New(core), zap.New(NewTraceIDCore(core))
 
