@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"regexp"
+	"slices"
 	"testing"
 	"time"
 )
@@ -151,29 +152,65 @@ func TestRandomDelayMiddleware_FixedDelay(t *testing.T) {
 }
 
 func TestRandomErrorMiddleware(t *testing.T) {
-	handler := randomErrorMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
+	tests := []struct {
+		name   string
+		draws  []int
+		want   int
+		passed bool
+	}{
+		{name: "internal server error", draws: []int{0, 0}, want: http.StatusInternalServerError},
+		{name: "bad request", draws: []int{0, 1}, want: http.StatusBadRequest},
+		{name: "conflict", draws: []int{0, 2}, want: http.StatusConflict},
+		{name: "passed through", draws: []int{1}, want: http.StatusAccepted, passed: true},
+		{name: "passed through on the last draw", draws: []int{2}, want: http.StatusAccepted, passed: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := NewRandomErrorMiddleware()
+			draws := tt.draws
+			m.intn = func(n int) int {
+				if len(draws) == 0 {
+					t.Fatal("unexpected draw")
+				}
+				if n != 3 {
+					t.Errorf("draw out of %d, want 3", n)
+				}
+				d := draws[0]
+				draws = draws[1:]
+				return d
+			}
+			passed := false
+			handler := m.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				passed = true
+				w.WriteHeader(http.StatusAccepted)
+			}))
+
+			rr := httptest.NewRecorder()
+			handler.ServeHTTP(rr, httptest.NewRequest("GET", "/", nil))
+
+			if rr.Code != tt.want {
+				t.Errorf("got status %d, want %d", rr.Code, tt.want)
+			}
+			if passed != tt.passed {
+				t.Errorf("next handler called: %v, want %v", passed, tt.passed)
+			}
+			if len(draws) != 0 {
+				t.Errorf("%d draws left unused", len(draws))
+			}
+		})
+	}
+}
+
+func TestRandomErrorMiddleware_DefaultSource(t *testing.T) {
+	handler := NewRandomErrorMiddleware().Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusAccepted)
 	}))
 
-	gotOK := false
-	gotError := false
-	for i := 0; i < 50; i++ {
-		req, _ := http.NewRequest("GET", "/", nil)
-		rr := httptest.NewRecorder()
-		handler.ServeHTTP(rr, req)
-		if rr.Code == http.StatusOK {
-			gotOK = true
-		} else {
-			gotError = true
-		}
-		if gotOK && gotError {
-			break
-		}
-	}
-	if !gotOK {
-		t.Error("never got a successful response")
-	}
-	if !gotError {
-		t.Error("never got an error response")
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, httptest.NewRequest("GET", "/", nil))
+
+	codes := []int{http.StatusAccepted, http.StatusInternalServerError, http.StatusBadRequest, http.StatusConflict}
+	if !slices.Contains(codes, rr.Code) {
+		t.Errorf("got status %d, want one of %v", rr.Code, codes)
 	}
 }

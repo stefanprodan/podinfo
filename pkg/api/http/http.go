@@ -20,12 +20,20 @@ import (
 // arbitrarily large body and exhaust process memory (and, for /store, disk).
 const maxRequestBodySize = limits.MaxBodySize
 
-func randomErrorMiddleware(next http.Handler) http.Handler {
+type RandomErrorMiddleware struct {
+	intn func(n int) int
+}
+
+func NewRandomErrorMiddleware() *RandomErrorMiddleware {
+	return &RandomErrorMiddleware{intn: rand.Intn}
+}
+
+func (m *RandomErrorMiddleware) Handler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if rand.Int31n(3) == 0 {
+		if m.intn(3) == 0 {
 
 			errors := []int{http.StatusInternalServerError, http.StatusBadRequest, http.StatusConflict}
-			w.WriteHeader(errors[rand.Intn(len(errors))])
+			w.WriteHeader(errors[m.intn(len(errors))])
 			return
 		}
 		next.ServeHTTP(w, r)

@@ -249,7 +249,7 @@ func (s *Server) registerMiddlewares() {
 		s.router.Use(randomDelayer.Handler)
 	}
 	if s.config.RandomError {
-		s.router.Use(randomErrorMiddleware)
+		s.router.Use(NewRandomErrorMiddleware().Handler)
 	}
 }
 
