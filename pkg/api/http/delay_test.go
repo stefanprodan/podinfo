@@ -131,6 +131,25 @@ func TestRandomDelayMiddleware_Milliseconds(t *testing.T) {
 	}
 }
 
+func TestRandomDelayMiddleware_FixedDelay(t *testing.T) {
+	m := NewRandomDelayMiddleware(1, 1, "ms")
+	handler := m.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	req, _ := http.NewRequest("GET", "/", nil)
+	rr := httptest.NewRecorder()
+	start := time.Now()
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Errorf("got status %d, want %d", rr.Code, http.StatusOK)
+	}
+	if elapsed := time.Since(start); elapsed < time.Millisecond {
+		t.Errorf("got delay %s, want at least 1ms", elapsed)
+	}
+}
+
 func TestRandomErrorMiddleware(t *testing.T) {
 	handler := randomErrorMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)

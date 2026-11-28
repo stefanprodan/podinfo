@@ -38,7 +38,10 @@ func (m *RandomDelayMiddleware) Handler(next http.Handler) http.Handler {
 			unit = time.Second
 		}
 
-		delay := rand.Intn(m.max-m.min) + m.min
+		delay := m.min
+		if m.max > m.min {
+			delay += rand.Intn(m.max - m.min)
+		}
 		time.Sleep(time.Duration(delay) * unit)
 		next.ServeHTTP(w, r)
 	})

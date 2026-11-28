@@ -165,6 +165,9 @@ func main() {
 	}
 
 	// validate random delay options
+	if viper.GetInt("random-delay-min") < 0 || viper.GetInt("random-delay-max") < 0 {
+		logger.Panic("`--random-delay-min` and `--random-delay-max` should not be negative")
+	}
 	if viper.GetInt("random-delay-max") < viper.GetInt("random-delay-min") {
 		logger.Panic("`--random-delay-max` should be greater than `--random-delay-min`")
 	}
