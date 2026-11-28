@@ -180,12 +180,16 @@ func newCacheOptions(config *Config, logger *zap.Logger) (*redis.UniversalOption
 		addrs[0] = net.JoinHostPort(u.Hostname(), "6379")
 	}
 
-	for key, values := range u.Query() {
+	query, err := url.ParseQuery(u.RawQuery)
+	if err != nil {
+		return nil, nil, errors.New("invalid cache server URL query, want addr=host:port pairs separated by '&'")
+	}
+	for key, values := range query {
 		if key != "addr" {
 			return nil, nil, fmt.Errorf("unsupported cache server URL parameter %q", key)
 		}
 		for _, addr := range values {
-			if host, port, err := net.SplitHostPort(addr); err != nil || host == "" || port == "" {
+			if !validCacheAddr(addr) {
 				return nil, nil, fmt.Errorf("invalid cache server address %q, want host:port", addr)
 			}
 			addrs = append(addrs, addr)
@@ -247,6 +251,15 @@ func newCacheOptions(config *Config, logger *zap.Logger) (*redis.UniversalOption
 	}
 	opts.TLSConfig.GetClientCertificate = kp.GetClientCertificate
 	return opts, kp, nil
+}
+
+func validCacheAddr(addr string) bool {
+	host, port, err := net.SplitHostPort(addr)
+	if err != nil || host == "" {
+		return false
+	}
+	n, err := strconv.ParseUint(port, 10, 16)
+	return err == nil && n > 0
 }
 
 func (s *Server) openCache(opts *redis.UniversalOptions) {
