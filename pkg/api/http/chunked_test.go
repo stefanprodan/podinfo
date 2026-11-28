@@ -26,6 +26,9 @@ func TestChunkedHandler(t *testing.T) {
 		t.Errorf("handler returned wrong status code: got %v want %v",
 			status, http.StatusOK)
 	}
+	if ct := rr.Result().Header.Get("Content-Type"); ct != "application/json; charset=utf-8" {
+		t.Errorf("got Content-Type %q, want application/json; charset=utf-8", ct)
+	}
 
 	// Check the response body is what we expect.
 	expected := ".*delay.*0.*"
@@ -33,6 +36,26 @@ func TestChunkedHandler(t *testing.T) {
 	if !r.MatchString(rr.Body.String()) {
 		t.Fatalf("handler returned unexpected body:\ngot \n%v \nwant \n%s",
 			rr.Body.String(), expected)
+	}
+}
+
+func TestChunkedHandler_HeadersBeforeBody(t *testing.T) {
+	srv := NewMockServer()
+	srv.router.HandleFunc("/chunked/{wait}", srv.chunkedHandler)
+	ts := httptest.NewServer(srv.router)
+	defer ts.Close()
+
+	resp, err := ts.Client().Get(ts.URL + "/chunked/60")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("got status %d, want %d", resp.StatusCode, http.StatusOK)
+	}
+	if ct := resp.Header.Get("Content-Type"); ct != "application/json; charset=utf-8" {
+		t.Errorf("got Content-Type %q, want application/json; charset=utf-8", ct)
 	}
 }
 
