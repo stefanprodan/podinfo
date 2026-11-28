@@ -160,7 +160,7 @@ func newCacheOptions(config *Config, logger *zap.Logger) (*redis.UniversalOption
 
 	u, err := url.Parse(config.CacheServer)
 	if err != nil {
-		return nil, nil, fmt.Errorf("invalid cache server URL: %w", errors.Unwrap(err))
+		return nil, nil, fmt.Errorf("invalid cache server URL: %w", redactURLError(err, ""))
 	}
 
 	var secure bool

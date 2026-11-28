@@ -477,6 +477,29 @@ func TestNewCacheOptions_Invalid(t *testing.T) {
 	}
 }
 
+func TestNewCacheOptions_InvalidURLHidesPassword(t *testing.T) {
+	tests := []string{
+		"redis://user:s3cr3t/abc@host:6379",
+		"redis://user:s3%ZZcr3t@host",
+		"redis://user:s3cr3t@host:port",
+		"redis://host:6379?addr=node-1:6379&password=s3%ZZcr3t",
+		"redis://host:6379?addr=node-1:6379;password=s3cr3t",
+	}
+	for _, server := range tests {
+		t.Run(server, func(t *testing.T) {
+			_, _, err := newCacheOptions(&Config{CacheServer: server}, zap.NewNop())
+			if err == nil {
+				t.Fatal("newCacheOptions returned no error")
+			}
+			for _, part := range []string{"s3", "cr3t", "ZZ", "abc"} {
+				if strings.Contains(err.Error(), part) {
+					t.Errorf("error %q quotes %q from the URL", err, part)
+				}
+			}
+		})
+	}
+}
+
 func TestNewServer_CacheMode(t *testing.T) {
 	tests := map[string]struct {
 		config  Config
