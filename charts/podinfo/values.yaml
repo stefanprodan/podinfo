@@ -1,25 +1,32 @@
 # Default values for podinfo.
+# The "@schema" comments feed values.schema.json, regenerate it with "make chart-schema".
 
-replicaCount: 1
-logLevel: info
+nameOverride: ""
+fullnameOverride: ""
+namespaceOverride: ""
+
+replicaCount: 1 # @schema type:[integer, string];minimum:0
+logLevel: info # @schema enum:[debug, info, warn, error, fatal, panic]
+# @schema type:[string, null]
 host: #0.0.0.0
+# @schema type:[string, null]
 backend: #http://backend-podinfo:9898/echo
-backends: []
+backends: [] # @schema item: string
 # gRPC echo backend URLs, grpc://host:port or grpcs://host:port for TLS
-grpcBackends: []
+grpcBackends: [] # @schema item: string
 
 image:
   repository: ghcr.io/stefanprodan/podinfo
-  tag: 6.17.0
-  pullPolicy: IfNotPresent
+  tag: 6.17.0 # @schema type:[string, number]
+  pullPolicy: IfNotPresent # @schema enum:[Always, IfNotPresent, Never]
   pullSecrets: []
 
-prefix: /
+prefix: / # @schema type:[string, null]
 
 ui:
   # the background color, blue is "#1f4e8c" and green is "#17694f"
-  color: "#1f4e8c"
-  message: ""
+  color: "#1f4e8c" # @schema type:[string, number, boolean]
+  message: "" # @schema type:[string, number, boolean]
   logo: ""
 
 # failure conditions
@@ -34,27 +41,28 @@ faults:
 # Kubernetes Service settings
 service:
   enabled: true
-  annotations: {}
-  additionalLabels: { }
-  type: ClusterIP
-  metricsPort: 9797
-  httpPort: 9898
-  externalPort: 9898
-  grpcPort: 9999
+  annotations: {} # @schema additionalProperties: true
+  additionalLabels: {} # @schema additionalProperties: true
+  type: ClusterIP # @schema enum:[ClusterIP, NodePort, LoadBalancer]
+  metricsPort: 9797 # @schema type:[integer, string, null];minimum:0;maximum:65535
+  httpPort: 9898 # @schema type:[integer, string];minimum:1;maximum:65535
+  externalPort: 9898 # @schema type:[integer, string];minimum:1;maximum:65535
+  grpcPort: 9999 # @schema type:[integer, string, null];minimum:0;maximum:65535
   grpcService: podinfo
   # serve the gRPC port with TLS using the tls secret, or with SPIFFE mTLS when spiffe.enabled
   # requires tls.enabled
   grpcTLS: false
-  nodePort: 31198
+  nodePort: 31198 # @schema type:[integer, string, null];minimum:0;maximum:65535
   # the port used to bind the http port to the host
   # NOTE: requires privileged container with NET_BIND_SERVICE capability -- this is useful for testing
   # in local clusters such as kind without port forwarding
+  # @schema type:[integer, string, null];minimum:0;maximum:65535
   hostPort:
   # Stable from Kubernetes v1.33+ with a value of PreferClose. Additional values are PreferSameZone and PreferSameNode from v1.34+. Empty string means it's disabled.
   trafficDistribution: ""
-  externalTrafficPolicy: ""
+  externalTrafficPolicy: "" # @schema enum:["", Cluster, Local]
 
-# enable h2c protocol (non-TLS version of HTTP/2)
+# serve HTTP/2 without TLS (h2c) on the HTTP port
 h2c:
   enabled: false
 
@@ -82,28 +90,30 @@ otel:
   # the OTLP endpoint, e.g. http://otel-collector:4318, required when enabled
   endpoint: ""
   # the OTLP protocol: http/protobuf (default, port 4318) or grpc (port 4317)
-  protocol: ""
+  protocol: "" # @schema enum:["", http/protobuf, grpc]
   # the service name, defaults to the release fullname
   serviceName: ""
   # extra resource attributes, merged over the Kubernetes attributes set from the downward API
-  resourceAttributes: {}
+  resourceAttributes: {} # @schema additionalProperties: true
   # the traces sampler, e.g. parentbased_traceidratio, defaults to parentbased_always_on
-  sampler: ""
+  sampler: "" # @schema enum:["", always_on, always_off, traceidratio, parentbased_always_on, parentbased_always_off, parentbased_traceidratio]
   # the sampler argument, e.g. "0.1" for parentbased_traceidratio, requires sampler
-  samplerArg: ""
+  samplerArg: "" # @schema type:[string, number]
 
 # enable tls on the podinfo service
 tls:
   enabled: false
   # the name of the secret used to mount the certificate key pair
+  # @schema type:[string, null]
   secretName:
   # the path where the certificate key pair will be mounted
   certPath: /data/cert
   # the port used to host the tls endpoint on the service
-  port: 9899
+  port: 9899 # @schema type:[integer, string];minimum:1;maximum:65535
   # the port used to bind the tls port to the host
   # NOTE: requires privileged container with NET_BIND_SERVICE capability -- this is useful for testing
   # in local clusters such as kind without port forwarding
+  # @schema type:[integer, string, null];minimum:0;maximum:65535
   hostPort:
 
 # serve the tls port with SPIFFE mTLS (SPIRE and the SPIFFE CSI driver required)
@@ -117,22 +127,22 @@ spiffe:
   csiDriver: csi.spiffe.io
   # the client SPIFFE IDs allowed to connect, when empty any ID in podinfo's trust domain is allowed
   # NOTE: the Helm test client runs with podinfo's service account, include its ID when setting this list
-  authorizedIDs: []
+  authorizedIDs: [] # @schema item: string
   # call the https and grpcs backends with SPIFFE mTLS, presenting podinfo's SVID
   backendMTLS: false
   # the server SPIFFE IDs accepted from the backends, when empty any ID in podinfo's trust domain is accepted
   # requires backendMTLS
-  backendIDs: []
+  backendIDs: [] # @schema item: string
 
 # create a certificate manager certificate (cert-manager required)
 certificate:
   create: false
   # the issuer used to issue the certificate
-  issuerRef:
+  issuerRef: # @schema additionalProperties: true
     kind: ClusterIssuer
     name: self-signed
   # the hostname / subject alternative names for the certificate
-  dnsNames:
+  dnsNames: # @schema item: string
     - podinfo
 
 # Helm hooks (for testing purposes)
@@ -141,69 +151,69 @@ hooks:
     job:
       enabled: false
       hookDeletePolicy: hook-succeeded,hook-failed
-      ttlSecondsAfterFinished:
-      sleepSeconds:
-      exitCode: 0
+      ttlSecondsAfterFinished: # @schema type:[integer, null];minimum:0
+      sleepSeconds: # @schema type:[integer, null];minimum:0
+      exitCode: 0 # @schema type:[integer, null];minimum:0;maximum:255
   postInstall:
     job:
       enabled: false
       hookDeletePolicy: hook-succeeded,hook-failed
-      ttlSecondsAfterFinished:
-      sleepSeconds:
-      exitCode: 0
+      ttlSecondsAfterFinished: # @schema type:[integer, null];minimum:0
+      sleepSeconds: # @schema type:[integer, null];minimum:0
+      exitCode: 0 # @schema type:[integer, null];minimum:0;maximum:255
   preDelete:
     job:
       enabled: false
       hookDeletePolicy: hook-succeeded,hook-failed
-      ttlSecondsAfterFinished:
-      sleepSeconds:
-      exitCode: 0
+      ttlSecondsAfterFinished: # @schema type:[integer, null];minimum:0
+      sleepSeconds: # @schema type:[integer, null];minimum:0
+      exitCode: 0 # @schema type:[integer, null];minimum:0;maximum:255
   postDelete:
     job:
       enabled: false
       hookDeletePolicy: hook-succeeded,hook-failed
-      ttlSecondsAfterFinished:
-      sleepSeconds:
-      exitCode: 0
+      ttlSecondsAfterFinished: # @schema type:[integer, null];minimum:0
+      sleepSeconds: # @schema type:[integer, null];minimum:0
+      exitCode: 0 # @schema type:[integer, null];minimum:0;maximum:255
   preUpgrade:
     job:
       enabled: false
       hookDeletePolicy: hook-succeeded,hook-failed
-      ttlSecondsAfterFinished:
-      sleepSeconds:
-      exitCode: 0
+      ttlSecondsAfterFinished: # @schema type:[integer, null];minimum:0
+      sleepSeconds: # @schema type:[integer, null];minimum:0
+      exitCode: 0 # @schema type:[integer, null];minimum:0;maximum:255
   postUpgrade:
     job:
       enabled: false
       hookDeletePolicy: hook-succeeded,hook-failed
-      ttlSecondsAfterFinished:
-      sleepSeconds:
-      exitCode: 0
+      ttlSecondsAfterFinished: # @schema type:[integer, null];minimum:0
+      sleepSeconds: # @schema type:[integer, null];minimum:0
+      exitCode: 0 # @schema type:[integer, null];minimum:0;maximum:255
   preRollback:
     job:
       enabled: false
       hookDeletePolicy: hook-succeeded,hook-failed
-      ttlSecondsAfterFinished:
-      sleepSeconds:
-      exitCode: 0
+      ttlSecondsAfterFinished: # @schema type:[integer, null];minimum:0
+      sleepSeconds: # @schema type:[integer, null];minimum:0
+      exitCode: 0 # @schema type:[integer, null];minimum:0;maximum:255
   postRollback:
     job:
       enabled: false
       hookDeletePolicy: hook-succeeded,hook-failed
-      ttlSecondsAfterFinished:
-      sleepSeconds:
-      exitCode: 0
+      ttlSecondsAfterFinished: # @schema type:[integer, null];minimum:0
+      sleepSeconds: # @schema type:[integer, null];minimum:0
+      exitCode: 0 # @schema type:[integer, null];minimum:0;maximum:255
 
 # metrics-server add-on required
 hpa:
   enabled: false
-  maxReplicas: 10
+  maxReplicas: 10 # @schema minimum:1
   # average total CPU usage per pod (1-100)
-  cpu:
+  cpu: # @schema type:[integer, null];minimum:1
   # average memory usage per pod (100Mi-1Gi)
-  memory:
+  memory: # @schema type:[string, integer, null]
   # average http requests per second per pod (k8s-prometheus-adapter)
-  requests:
+  requests: # @schema type:[string, number, null]
 
 # Redis or Valkey URL in the format redis://<host>:<port>, rediss:// for TLS, valkey:// and valkeys:// as aliases
 cache: ""
@@ -231,13 +241,13 @@ cacheOptions:
 redis:
   enabled: false
   repository: docker.io/redis
-  tag: 8.8.0
+  tag: 8.8.0 # @schema type:[string, number]
   imagePullSecrets: []
   # serve Redis over mutual TLS, podinfo presents a client certificate (cert-manager required)
   tls:
     enabled: false
     # the CA issuer that signs the Redis and podinfo certificates, a CA created by the chart when empty
-    issuerRef: {}
+    issuerRef: {} # @schema additionalProperties: true
     # the lifetime of the Redis server certificate, Redis reads it only at startup
     duration: 8760h
 
@@ -246,15 +256,15 @@ serviceAccount:
   enabled: false
   # The name of the service account to use.
   # If not set and create is true, a name is generated using the fullname template
-  name:
+  name: # @schema type:[string, null]
   # List of image pull secrets if pulling from private registries
   imagePullSecrets: []
 
 # set container security context
-securityContext: {}
+securityContext: {} # @schema additionalProperties: true
 
 # set pod security context
-podSecurityContext: {}
+podSecurityContext: {} # @schema additionalProperties: true
 
 # -- Expose the service via Kubernetes Ingress
 # Requires an Ingress controller
@@ -262,15 +272,15 @@ podSecurityContext: {}
 ingress:
   enabled: false
   className: ""
-  additionalLabels: {}
-  annotations: {}
+  additionalLabels: {} # @schema additionalProperties: true
+  annotations: {} # @schema additionalProperties: true
     # kubernetes.io/ingress.class: nginx
     # kubernetes.io/tls-acme: "true"
   hosts:
     - host: podinfo.local
       paths:
         - path: /
-          pathType: ImplementationSpecific
+          pathType: ImplementationSpecific # @schema enum:[Exact, Prefix, ImplementationSpecific]
   tls: []
   #  - secretName: chart-example-tls
   #    hosts:
@@ -283,23 +293,18 @@ httpRoute:
   # HTTPRoute enabled.
   enabled: false
   # Add additional labels to the HTTPRoute.
-  additionalLabels: {}
+  additionalLabels: {} # @schema additionalProperties: true
   # HTTPRoute annotations.
-  annotations: {}
+  annotations: {} # @schema additionalProperties: true
   # Which Gateways this Route is attached to.
   parentRefs:
-    - name: gateway
-      sectionName: http
-      # namespace: default
+    - {name: gateway, sectionName: http} # @schema additionalProperties: true
   # Hostnames matching HTTP header.
-  hostnames:
+  hostnames: # @schema item: string
     - podinfo.local
   # List of rules and filters applied.
   rules:
-    - matches:
-        - path:
-            type: PathPrefix
-            value: /
+    - {matches: [{path: {type: PathPrefix, value: /}}]} # @schema skipProperties: true;additionalProperties: true
 
 # -- Expose the gRPC service via Gateway GRPCRoute
 # Requires a Gateway controller with GRPCRoute support
@@ -308,48 +313,46 @@ grpcRoute:
   # GRPCRoute enabled.
   enabled: false
   # Add additional labels to the GRPCRoute.
-  additionalLabels: {}
+  additionalLabels: {} # @schema additionalProperties: true
   # GRPCRoute annotations.
-  annotations: {}
+  annotations: {} # @schema additionalProperties: true
   # Which Gateways this Route is attached to.
   parentRefs:
-    - name: gateway
-      sectionName: http
-      # namespace: default
+    - {name: gateway, sectionName: http} # @schema additionalProperties: true
   # Hostnames matching HTTP header.
-  hostnames:
+  hostnames: # @schema item: string
     - podinfo.local
   # List of rules applied.
   rules:
-    - {}
+    - {} # @schema additionalProperties: true
 
 # create Prometheus Operator monitor
 serviceMonitor:
   enabled: false
   interval: 15s
-  additionalLabels: {}
+  additionalLabels: {} # @schema additionalProperties: true
 
-resources:
+resources: # @schema skipProperties: true;additionalProperties: true
   limits:
   requests:
     cpu: 1m
     memory: 16Mi
 
-nodeSelector: {}
+nodeSelector: {} # @schema additionalProperties: true
 
 tolerations: []
 
-affinity: {}
+affinity: {} # @schema additionalProperties: true
 
 priorityClassName: ""
 
-podAnnotations: {}
+podAnnotations: {} # @schema additionalProperties: true
 
 # https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/
 topologySpreadConstraints: []
 
 # Disruption budget will be configured only when the replicaCount is greater than 1
-podDisruptionBudget: {}
+podDisruptionBudget: {} # @schema additionalProperties: true
 #  maxUnavailable: 1
 
 # https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes

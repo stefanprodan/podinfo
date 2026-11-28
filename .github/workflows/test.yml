@@ -50,10 +50,14 @@ jobs:
         run: make proto-lint
       - name: Check gRPC stubs
         run: make proto && git diff --exit-code pkg/api/grpc
+      - name: Check Helm chart schema
+        run: make chart-schema && git diff --exit-code charts/podinfo
       - name: Validate Helm chart
         run: |
           helm lint ./charts/podinfo/
+          helm lint ./charts/podinfo/ -f ./charts/podinfo/values-prod.yaml
           helm template ./charts/podinfo/ | flux-schema validate -s ecosystem --verbose
+          helm template ./charts/podinfo/ -f ./charts/podinfo/values-prod.yaml | flux-schema validate -s ecosystem --verbose
       - name: Validate Kustomize overlay
         run: |
           kubectl kustomize ./kustomize/ | flux-schema validate -s ecosystem --verbose

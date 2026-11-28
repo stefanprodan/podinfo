@@ -1,0 +1,1122 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "affinity": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "backend": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "backends": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "cache": {
+      "type": "string"
+    },
+    "cacheOptions": {
+      "type": "object",
+      "properties": {
+        "ca": {
+          "type": "object",
+          "properties": {
+            "configMapName": {
+              "type": "string"
+            },
+            "key": {
+              "type": "string"
+            },
+            "secretName": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "cert": {
+          "type": "object",
+          "properties": {
+            "secretName": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "cluster": {
+          "type": "boolean"
+        },
+        "credentialsSecretName": {
+          "type": "string"
+        },
+        "sentinelPrimary": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "certificate": {
+      "type": "object",
+      "properties": {
+        "create": {
+          "type": "boolean"
+        },
+        "dnsNames": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "issuerRef": {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "config": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "extraArgs": {
+      "type": "array"
+    },
+    "extraEnvs": {
+      "type": "array"
+    },
+    "faults": {
+      "type": "object",
+      "properties": {
+        "delay": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": "boolean"
+        },
+        "testFail": {
+          "type": "boolean"
+        },
+        "testTimeout": {
+          "type": "boolean"
+        },
+        "unhealthy": {
+          "type": "boolean"
+        },
+        "unready": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "fullnameOverride": {
+      "type": "string"
+    },
+    "grpcBackends": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "grpcRoute": {
+      "type": "object",
+      "properties": {
+        "additionalLabels": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "hostnames": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "parentRefs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "sectionName": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": true
+          }
+        },
+        "rules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "h2c": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "hooks": {
+      "type": "object",
+      "properties": {
+        "postDelete": {
+          "type": "object",
+          "properties": {
+            "job": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "exitCode": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "maximum": 255,
+                  "minimum": 0
+                },
+                "hookDeletePolicy": {
+                  "type": "string"
+                },
+                "sleepSeconds": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0
+                },
+                "ttlSecondsAfterFinished": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "postInstall": {
+          "type": "object",
+          "properties": {
+            "job": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "exitCode": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "maximum": 255,
+                  "minimum": 0
+                },
+                "hookDeletePolicy": {
+                  "type": "string"
+                },
+                "sleepSeconds": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0
+                },
+                "ttlSecondsAfterFinished": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "postRollback": {
+          "type": "object",
+          "properties": {
+            "job": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "exitCode": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "maximum": 255,
+                  "minimum": 0
+                },
+                "hookDeletePolicy": {
+                  "type": "string"
+                },
+                "sleepSeconds": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0
+                },
+                "ttlSecondsAfterFinished": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "postUpgrade": {
+          "type": "object",
+          "properties": {
+            "job": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "exitCode": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "maximum": 255,
+                  "minimum": 0
+                },
+                "hookDeletePolicy": {
+                  "type": "string"
+                },
+                "sleepSeconds": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0
+                },
+                "ttlSecondsAfterFinished": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "preDelete": {
+          "type": "object",
+          "properties": {
+            "job": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "exitCode": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "maximum": 255,
+                  "minimum": 0
+                },
+                "hookDeletePolicy": {
+                  "type": "string"
+                },
+                "sleepSeconds": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0
+                },
+                "ttlSecondsAfterFinished": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "preInstall": {
+          "type": "object",
+          "properties": {
+            "job": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "exitCode": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "maximum": 255,
+                  "minimum": 0
+                },
+                "hookDeletePolicy": {
+                  "type": "string"
+                },
+                "sleepSeconds": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0
+                },
+                "ttlSecondsAfterFinished": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "preRollback": {
+          "type": "object",
+          "properties": {
+            "job": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "exitCode": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "maximum": 255,
+                  "minimum": 0
+                },
+                "hookDeletePolicy": {
+                  "type": "string"
+                },
+                "sleepSeconds": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0
+                },
+                "ttlSecondsAfterFinished": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "preUpgrade": {
+          "type": "object",
+          "properties": {
+            "job": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "exitCode": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "maximum": 255,
+                  "minimum": 0
+                },
+                "hookDeletePolicy": {
+                  "type": "string"
+                },
+                "sleepSeconds": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0
+                },
+                "ttlSecondsAfterFinished": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "host": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "hpa": {
+      "type": "object",
+      "properties": {
+        "cpu": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "maxReplicas": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "memory": {
+          "type": [
+            "string",
+            "integer",
+            "null"
+          ]
+        },
+        "requests": {
+          "type": [
+            "string",
+            "number",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "httpRoute": {
+      "type": "object",
+      "properties": {
+        "additionalLabels": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "hostnames": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "parentRefs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "sectionName": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": true
+          }
+        },
+        "rules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "image": {
+      "type": "object",
+      "properties": {
+        "pullPolicy": {
+          "type": "string",
+          "enum": [
+            "Always",
+            "IfNotPresent",
+            "Never"
+          ]
+        },
+        "pullSecrets": {
+          "type": "array"
+        },
+        "repository": {
+          "type": "string"
+        },
+        "tag": {
+          "type": [
+            "string",
+            "number"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "ingress": {
+      "type": "object",
+      "properties": {
+        "additionalLabels": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "className": {
+          "type": "string"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "hosts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "host": {
+                "type": "string"
+              },
+              "paths": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string"
+                    },
+                    "pathType": {
+                      "type": "string",
+                      "enum": [
+                        "Exact",
+                        "Prefix",
+                        "ImplementationSpecific"
+                      ]
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "tls": {
+          "type": "array"
+        }
+      },
+      "additionalProperties": false
+    },
+    "logLevel": {
+      "type": "string",
+      "enum": [
+        "debug",
+        "info",
+        "warn",
+        "error",
+        "fatal",
+        "panic"
+      ]
+    },
+    "nameOverride": {
+      "type": "string"
+    },
+    "namespaceOverride": {
+      "type": "string"
+    },
+    "nodeSelector": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "otel": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "endpoint": {
+          "type": "string"
+        },
+        "protocol": {
+          "type": "string",
+          "enum": [
+            "",
+            "http/protobuf",
+            "grpc"
+          ]
+        },
+        "resourceAttributes": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "sampler": {
+          "type": "string",
+          "enum": [
+            "",
+            "always_on",
+            "always_off",
+            "traceidratio",
+            "parentbased_always_on",
+            "parentbased_always_off",
+            "parentbased_traceidratio"
+          ]
+        },
+        "samplerArg": {
+          "type": [
+            "string",
+            "number"
+          ]
+        },
+        "serviceName": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "podAnnotations": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "podDisruptionBudget": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "podSecurityContext": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "prefix": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "priorityClassName": {
+      "type": "string"
+    },
+    "probes": {
+      "type": "object",
+      "properties": {
+        "liveness": {
+          "type": "object",
+          "properties": {
+            "failureThreshold": {
+              "type": "integer"
+            },
+            "initialDelaySeconds": {
+              "type": "integer"
+            },
+            "periodSeconds": {
+              "type": "integer"
+            },
+            "successThreshold": {
+              "type": "integer"
+            },
+            "timeoutSeconds": {
+              "type": "integer"
+            }
+          },
+          "additionalProperties": false
+        },
+        "readiness": {
+          "type": "object",
+          "properties": {
+            "failureThreshold": {
+              "type": "integer"
+            },
+            "initialDelaySeconds": {
+              "type": "integer"
+            },
+            "periodSeconds": {
+              "type": "integer"
+            },
+            "successThreshold": {
+              "type": "integer"
+            },
+            "timeoutSeconds": {
+              "type": "integer"
+            }
+          },
+          "additionalProperties": false
+        },
+        "startup": {
+          "type": "object",
+          "properties": {
+            "enable": {
+              "type": "boolean"
+            },
+            "failureThreshold": {
+              "type": "integer"
+            },
+            "initialDelaySeconds": {
+              "type": "integer"
+            },
+            "periodSeconds": {
+              "type": "integer"
+            },
+            "successThreshold": {
+              "type": "integer"
+            },
+            "timeoutSeconds": {
+              "type": "integer"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "redis": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "imagePullSecrets": {
+          "type": "array"
+        },
+        "repository": {
+          "type": "string"
+        },
+        "tag": {
+          "type": [
+            "string",
+            "number"
+          ]
+        },
+        "tls": {
+          "type": "object",
+          "properties": {
+            "duration": {
+              "type": "string"
+            },
+            "enabled": {
+              "type": "boolean"
+            },
+            "issuerRef": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "replicaCount": {
+      "type": [
+        "integer",
+        "string"
+      ],
+      "minimum": 0
+    },
+    "resources": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "securityContext": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "service": {
+      "type": "object",
+      "properties": {
+        "additionalLabels": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "externalPort": {
+          "type": [
+            "integer",
+            "string"
+          ],
+          "maximum": 65535,
+          "minimum": 1
+        },
+        "externalTrafficPolicy": {
+          "type": "string",
+          "enum": [
+            "",
+            "Cluster",
+            "Local"
+          ]
+        },
+        "grpcPort": {
+          "type": [
+            "integer",
+            "string",
+            "null"
+          ],
+          "maximum": 65535,
+          "minimum": 0
+        },
+        "grpcService": {
+          "type": "string"
+        },
+        "grpcTLS": {
+          "type": "boolean"
+        },
+        "hostPort": {
+          "type": [
+            "integer",
+            "string",
+            "null"
+          ],
+          "maximum": 65535,
+          "minimum": 0
+        },
+        "httpPort": {
+          "type": [
+            "integer",
+            "string"
+          ],
+          "maximum": 65535,
+          "minimum": 1
+        },
+        "metricsPort": {
+          "type": [
+            "integer",
+            "string",
+            "null"
+          ],
+          "maximum": 65535,
+          "minimum": 0
+        },
+        "nodePort": {
+          "type": [
+            "integer",
+            "string",
+            "null"
+          ],
+          "maximum": 65535,
+          "minimum": 0
+        },
+        "trafficDistribution": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "ClusterIP",
+            "NodePort",
+            "LoadBalancer"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "serviceAccount": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "imagePullSecrets": {
+          "type": "array"
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "serviceMonitor": {
+      "type": "object",
+      "properties": {
+        "additionalLabels": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "interval": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "spiffe": {
+      "type": "object",
+      "properties": {
+        "authorizedIDs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "backendIDs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "backendMTLS": {
+          "type": "boolean"
+        },
+        "csiDriver": {
+          "type": "string"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "endpointSocket": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "tls": {
+      "type": "object",
+      "properties": {
+        "certPath": {
+          "type": "string"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "hostPort": {
+          "type": [
+            "integer",
+            "string",
+            "null"
+          ],
+          "maximum": 65535,
+          "minimum": 0
+        },
+        "port": {
+          "type": [
+            "integer",
+            "string"
+          ],
+          "maximum": 65535,
+          "minimum": 1
+        },
+        "secretName": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "tolerations": {
+      "type": "array"
+    },
+    "topologySpreadConstraints": {
+      "type": "array"
+    },
+    "ui": {
+      "type": "object",
+      "properties": {
+        "color": {
+          "type": [
+            "string",
+            "number",
+            "boolean"
+          ]
+        },
+        "logo": {
+          "type": "string"
+        },
+        "message": {
+          "type": [
+            "string",
+            "number",
+            "boolean"
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": true
+}

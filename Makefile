@@ -35,6 +35,11 @@ build-charts:
 	helm lint charts/*
 	helm package charts/*
 
+# values.schema.json is generated from values.yaml and its "@schema" comments
+# the root stays open for the keys Helm passes to a subchart, such as the dependency condition
+chart-schema:
+	cd charts/podinfo && go run github.com/losisin/helm-values-schema-json/v2@v2.4.0 -f values.yaml -o values.schema.json --draft 7 --indent 2 --no-additional-properties --schema-root.additional-properties
+
 build-container:
 	docker build -t $(DOCKER_IMAGE_NAME):$(VERSION) .
 
@@ -50,7 +55,6 @@ version-set:
 	current="$(VERSION)" && \
 	perl -i -pe "s/\Q$$current\E/$$next/g" pkg/version/version.go && \
 	perl -i -pe "s/tag: \Q$$current\E/tag: $$next/g" charts/podinfo/values.yaml && \
-	perl -i -pe "s/tag: \Q$$current\E/tag: $$next/g" charts/podinfo/values-prod.yaml && \
 	perl -i -pe "s/appVersion: \Q$$current\E/appVersion: $$next/g" charts/podinfo/Chart.yaml && \
 	perl -i -pe "s/version: \Q$$current\E/version: $$next/g" charts/podinfo/Chart.yaml && \
 	perl -0777 -i -pe "s/(repository: \*\"ghcr.io\/stefanprodan\/podinfo\" \| string\n\s*tag:\s*\*\")\Q$$current\E\"/\$${1}$$next\"/" timoni/podinfo/images.cue && \
