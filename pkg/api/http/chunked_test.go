@@ -7,6 +7,10 @@ import (
 	"regexp"
 	"testing"
 	"time"
+
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func TestChunkedHandler(t *testing.T) {
@@ -60,7 +64,9 @@ func TestChunkedHandler_HeadersBeforeBody(t *testing.T) {
 }
 
 func TestChunkedHandlerCanceled(t *testing.T) {
+	logs, observed := observer.New(zapcore.ErrorLevel)
 	srv := NewMockServer()
+	srv.logger = zap.New(logs)
 	srv.router.HandleFunc("/chunked/{wait}", srv.chunkedHandler)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -74,8 +80,14 @@ func TestChunkedHandlerCanceled(t *testing.T) {
 	if elapsed := time.Since(start); elapsed > 10*time.Second {
 		t.Errorf("handler took %s after cancellation, want prompt return", elapsed)
 	}
+	if rr.Code != http.StatusOK || !rr.Flushed {
+		t.Errorf("got status %d, flushed %v, want %d flushed before the wait", rr.Code, rr.Flushed, http.StatusOK)
+	}
 	if rr.Body.Len() != 0 {
 		t.Errorf("got body %q, want none", rr.Body.String())
+	}
+	if n := observed.Len(); n != 0 {
+		t.Errorf("got %d errors for a canceled request: %v", n, observed.All())
 	}
 }
 

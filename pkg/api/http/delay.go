@@ -66,7 +66,11 @@ func (s *Server) delayHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !s.drainBody(w, r) || !wait(r.Context(), delay) {
+	if !s.drainBody(w, r) {
+		return
+	}
+	if !wait(r.Context(), delay) {
+		s.ErrorResponse(w, r, "client closed request", statusClientClosedRequest)
 		return
 	}
 

@@ -8,8 +8,14 @@ import (
 	"net/http/httptest"
 	"regexp"
 	"slices"
+	"strings"
 	"testing"
 	"time"
+
+	"github.com/felixge/httpsnoop"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func TestWaitHandlersReturnOnDisconnect(t *testing.T) {
@@ -17,22 +23,21 @@ func TestWaitHandlersReturnOnDisconnect(t *testing.T) {
 	srv.router.HandleFunc("/delay/{wait}", srv.delayHandler)
 	srv.router.HandleFunc("/chunked/{wait}", srv.chunkedHandler)
 	started := make(chan struct{}, 1)
-	done := make(chan struct{}, 1)
+	done := make(chan int, 1)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		started <- struct{}{}
-		srv.router.ServeHTTP(w, r)
-		done <- struct{}{}
+		done <- httpsnoop.CaptureMetrics(srv.router, w, r).Code
 	}))
 	defer ts.Close()
 
 	for _, tc := range []struct {
 		name, method, path string
-		length             int
+		length, code       int
 	}{
-		{"delay partial body", "GET", "/delay/60", 100},
-		{"delay full body", "GET", "/delay/60", 1},
-		{"chunked partial body", "POST", "/chunked/60", 100},
-		{"chunked full body", "POST", "/chunked/60", 1},
+		{"delay partial body", "GET", "/delay/60", 100, http.StatusBadRequest},
+		{"delay full body", "GET", "/delay/60", 1, statusClientClosedRequest},
+		{"chunked partial body", "POST", "/chunked/60", 100, http.StatusBadRequest},
+		{"chunked full body", "POST", "/chunked/60", 1, http.StatusOK},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			conn, err := net.Dial("tcp", ts.Listener.Addr().String())
@@ -48,7 +53,10 @@ func TestWaitHandlersReturnOnDisconnect(t *testing.T) {
 			conn.Close()
 
 			select {
-			case <-done:
+			case code := <-done:
+				if code != tc.code {
+					t.Errorf("got status %d, want %d", code, tc.code)
+				}
 			case <-time.After(10 * time.Second):
 				t.Fatal("handler still waiting after the client disconnected")
 			}
@@ -84,7 +92,9 @@ func TestDelayHandler(t *testing.T) {
 }
 
 func TestDelayHandlerCanceled(t *testing.T) {
+	logs, observed := observer.New(zapcore.ErrorLevel)
 	srv := NewMockServer()
+	srv.logger = zap.New(logs)
 	srv.router.HandleFunc("/delay/{wait}", srv.delayHandler)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -98,8 +108,14 @@ func TestDelayHandlerCanceled(t *testing.T) {
 	if elapsed := time.Since(start); elapsed > 10*time.Second {
 		t.Errorf("handler took %s after cancellation, want prompt return", elapsed)
 	}
-	if rr.Body.Len() != 0 {
-		t.Errorf("got body %q, want none", rr.Body.String())
+	if rr.Code != statusClientClosedRequest {
+		t.Errorf("got status %d, want %d", rr.Code, statusClientClosedRequest)
+	}
+	if !strings.Contains(rr.Body.String(), "client closed request") {
+		t.Errorf("got body %q, want client closed request", rr.Body.String())
+	}
+	if n := observed.Len(); n != 0 {
+		t.Errorf("got %d errors for a canceled request: %v", n, observed.All())
 	}
 }
 
