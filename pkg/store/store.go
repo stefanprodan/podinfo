@@ -3,7 +3,7 @@ package store
 import (
 	"context"
 	"crypto/rand"
-	"crypto/sha1"
+	"crypto/sha1" //nolint:gosec // SHA1 names the stored files, it is not a security control
 	"encoding/hex"
 	"errors"
 	"io/fs"
@@ -25,7 +25,7 @@ var hashPattern = regexp.MustCompile(`^[a-f0-9]{40}$`)
 
 // Hash returns the SHA1 hex digest of content, which names its file.
 func Hash(content []byte) string {
-	h := sha1.Sum(content)
+	h := sha1.Sum(content) //nolint:gosec // SHA1 names the stored files, it is not a security control
 	return hex.EncodeToString(h[:])
 }
 
@@ -86,13 +86,13 @@ func Sweep(dir string) error {
 // readers never see a partial file.
 func writeFile(file string, content []byte) (err error) {
 	name := filepath.Join(filepath.Dir(file), tempPrefix+rand.Text())
-	tmp, err := os.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0644)
+	tmp, err := os.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644) //nolint:gosec // the file name is a random suffix in the store directory
 	if err != nil {
 		return err
 	}
 	defer func() {
 		if err != nil {
-			os.Remove(name)
+			_ = os.Remove(name)
 		}
 	}()
 	if _, err = tmp.Write(content); err == nil {
@@ -115,7 +115,7 @@ func (s *Store) Read(ctx context.Context, hash string) ([]byte, error) {
 	}
 	var content []byte
 	err := s.do(ctx, "store read", hash, func(file string) (err error) {
-		content, err = os.ReadFile(file)
+		content, err = os.ReadFile(file) //nolint:gosec // the file name is a validated hash in the store directory
 		return err
 	})
 	if err != nil {

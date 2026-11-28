@@ -10,7 +10,7 @@ import (
 // faultInjection is 1 while the server answers 500 on the application
 // endpoints, to test client-side circuit breakers and outlier detection
 // against a single failing replica.
-var faultInjection int32
+var faultInjection atomic.Int32
 
 // faultInjectionExcluded reports whether the path bypasses fault injection.
 // The probes, metrics, pprof and the control endpoints keep working, so
@@ -33,12 +33,12 @@ func writeInjectedFault(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(http.StatusInternalServerError)
-	io.WriteString(w, `{"status":"fault injection enabled"}`+"\n")
+	_, _ = io.WriteString(w, `{"status":"fault injection enabled"}`+"\n")
 }
 
 func faultInjectionMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if atomic.LoadInt32(&faultInjection) == 1 && !faultInjectionExcluded(r.URL.Path) {
+		if faultInjection.Load() == 1 && !faultInjectionExcluded(r.URL.Path) {
 			writeInjectedFault(w)
 			return
 		}
@@ -52,14 +52,14 @@ func (s *Server) faultInjectionMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		p := r.URL.Path
 		if prefix := s.config.Prefix; prefix != "" && prefix != "/" {
-			if trimmed := strings.TrimPrefix(p, prefix); trimmed != p {
+			if trimmed, ok := strings.CutPrefix(p, prefix); ok {
 				if trimmed == "" {
 					trimmed = "/"
 				}
 				p = trimmed
 			}
 		}
-		if atomic.LoadInt32(&faultInjection) == 1 && !faultInjectionExcluded(p) {
+		if faultInjection.Load() == 1 && !faultInjectionExcluded(p) {
 			writeInjectedFault(w)
 			return
 		}
@@ -75,7 +75,7 @@ func (s *Server) faultInjectionMiddleware(next http.Handler) http.Handler {
 // @Router /fault_injection/enable [post]
 // @Success 202 {object} map[string]string
 func (s *Server) enableFaultInjectionHandler(w http.ResponseWriter, r *http.Request) {
-	atomic.StoreInt32(&faultInjection, 1)
+	faultInjection.Store(1)
 	s.JSONResponseCode(w, r, map[string]string{"fault_injection": "enabled"}, http.StatusAccepted)
 }
 
@@ -87,7 +87,7 @@ func (s *Server) enableFaultInjectionHandler(w http.ResponseWriter, r *http.Requ
 // @Router /fault_injection/disable [post]
 // @Success 202 {object} map[string]string
 func (s *Server) disableFaultInjectionHandler(w http.ResponseWriter, r *http.Request) {
-	atomic.StoreInt32(&faultInjection, 0)
+	faultInjection.Store(0)
 	s.JSONResponseCode(w, r, map[string]string{"fault_injection": "disabled"}, http.StatusAccepted)
 }
 
@@ -99,7 +99,7 @@ func (s *Server) disableFaultInjectionHandler(w http.ResponseWriter, r *http.Req
 // @Success 200 {object} map[string]string
 func (s *Server) faultInjectionStatusHandler(w http.ResponseWriter, r *http.Request) {
 	state := "disabled"
-	if atomic.LoadInt32(&faultInjection) == 1 {
+	if faultInjection.Load() == 1 {
 		state = "enabled"
 	}
 	s.JSONResponse(w, r, map[string]string{"fault_injection": state})

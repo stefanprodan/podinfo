@@ -64,24 +64,30 @@ func (m *metrics) streamInterceptor(srv any, ss grpc.ServerStream, info *grpc.St
 	return err
 }
 
-func (s *Server) recoverPanic(ctx context.Context, method string, err *error) {
-	if r := recover(); r != nil {
-		s.logger.Error("gRPC handler panic",
-			zap.String("method", method),
-			zap.Any("panic", r),
-			zap.Stack("stack"),
-			telemetry.Context(ctx))
-		*err = status.Error(codes.Internal, "internal server error")
-	}
+func (s *Server) panicError(ctx context.Context, method string, r any) error {
+	s.logger.Error("gRPC handler panic",
+		zap.String("method", method),
+		zap.Any("panic", r),
+		zap.Stack("stack"),
+		telemetry.Context(ctx))
+	return status.Error(codes.Internal, "internal server error")
 }
 
 func (s *Server) unaryRecoveryInterceptor(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
-	defer s.recoverPanic(ctx, info.FullMethod, &err)
+	defer func() {
+		if r := recover(); r != nil {
+			err = s.panicError(ctx, info.FullMethod, r)
+		}
+	}()
 	return handler(ctx, req)
 }
 
 func (s *Server) streamRecoveryInterceptor(srv any, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) (err error) {
-	defer s.recoverPanic(ss.Context(), info.FullMethod, &err)
+	defer func() {
+		if r := recover(); r != nil {
+			err = s.panicError(ss.Context(), info.FullMethod, r)
+		}
+	}()
 	return handler(srv, ss)
 }
 

@@ -63,7 +63,7 @@ func TestEchoHandler_ContentType(t *testing.T) {
 	handler := http.HandlerFunc(srv.echoHandler)
 
 	payload := "<html><script>alert(1)</script></html>"
-	req, err := http.NewRequest("POST", "/echo", strings.NewReader(payload))
+	req, err := http.NewRequest(http.MethodPost, "/echo", strings.NewReader(payload))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -87,17 +87,17 @@ func TestEchoHandler_ContentType(t *testing.T) {
 }
 
 func TestEchoHandler_WithBackend(t *testing.T) {
-	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`"backend response"`))
+		_, _ = w.Write([]byte(`"backend response"`))
 	}))
 	defer backend.Close()
 
 	srv := NewMockServer()
 	srv.config.BackendURL = []string{backend.URL}
 
-	req, _ := http.NewRequest("POST", "/echo", strings.NewReader("hello"))
-	req.Header.Set("x-request-id", "test-123")
+	req, _ := http.NewRequest(http.MethodPost, "/echo", strings.NewReader("hello"))
+	req.Header.Set("X-Request-ID", "test-123")
 	rr := httptest.NewRecorder()
 	http.HandlerFunc(srv.echoHandler).ServeHTTP(rr, req)
 
@@ -113,7 +113,7 @@ func TestEchoHandler_WithBackend(t *testing.T) {
 }
 
 func TestEchoHandler_BackendError(t *testing.T) {
-	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 	}))
 	defer backend.Close()
@@ -121,7 +121,7 @@ func TestEchoHandler_BackendError(t *testing.T) {
 	srv := NewMockServer()
 	srv.config.BackendURL = []string{backend.URL}
 
-	req, _ := http.NewRequest("POST", "/echo", strings.NewReader("hello"))
+	req, _ := http.NewRequest(http.MethodPost, "/echo", strings.NewReader("hello"))
 	rr := httptest.NewRecorder()
 	http.HandlerFunc(srv.echoHandler).ServeHTTP(rr, req)
 
@@ -137,7 +137,7 @@ func TestEchoHandler_BackendUnreachable(t *testing.T) {
 	srv := NewMockServer()
 	srv.config.BackendURL = []string{"http://127.0.0.1:1"}
 
-	req, _ := http.NewRequest("POST", "/echo", strings.NewReader("hello"))
+	req, _ := http.NewRequest(http.MethodPost, "/echo", strings.NewReader("hello"))
 	rr := httptest.NewRecorder()
 	http.HandlerFunc(srv.echoHandler).ServeHTTP(rr, req)
 
@@ -178,7 +178,7 @@ func TestEchoHandler_BackendResponseTooLarge(t *testing.T) {
 	} {
 		srv.config.BackendURL = []string{tt.backend}
 		rr := httptest.NewRecorder()
-		http.HandlerFunc(srv.echoHandler).ServeHTTP(rr, httptest.NewRequest("POST", "/echo", strings.NewReader("hello")))
+		http.HandlerFunc(srv.echoHandler).ServeHTTP(rr, httptest.NewRequest(http.MethodPost, "/echo", strings.NewReader("hello")))
 		if got := bytes.Contains(rr.Body.Bytes(), []byte("response body too large")); got != tt.tooLarge {
 			t.Errorf("%s: response too large = %v, want %v", tt.backend, got, tt.tooLarge)
 		}
@@ -197,7 +197,7 @@ func TestEchoHandler_ClientGone(t *testing.T) {
 	cancel()
 
 	rr := httptest.NewRecorder()
-	http.HandlerFunc(srv.echoHandler).ServeHTTP(rr, httptest.NewRequest("POST", "/echo", strings.NewReader("hello")).WithContext(ctx))
+	http.HandlerFunc(srv.echoHandler).ServeHTTP(rr, httptest.NewRequest(http.MethodPost, "/echo", strings.NewReader("hello")).WithContext(ctx))
 	if rr.Code != statusClientClosedRequest {
 		t.Errorf("got status %d, want %d", rr.Code, statusClientClosedRequest)
 	}
@@ -207,20 +207,20 @@ func TestEchoHandler_ClientGone(t *testing.T) {
 }
 
 func TestEchoHandler_MultipleBackends(t *testing.T) {
-	backend1 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`"resp1"`))
+	backend1 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`"resp1"`))
 	}))
 	defer backend1.Close()
 
-	backend2 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`"resp2"`))
+	backend2 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`"resp2"`))
 	}))
 	defer backend2.Close()
 
 	srv := NewMockServer()
 	srv.config.BackendURL = []string{backend1.URL, backend2.URL}
 
-	req, _ := http.NewRequest("POST", "/echo", strings.NewReader("hello"))
+	req, _ := http.NewRequest(http.MethodPost, "/echo", strings.NewReader("hello"))
 	rr := httptest.NewRecorder()
 	http.HandlerFunc(srv.echoHandler).ServeHTTP(rr, req)
 
@@ -253,7 +253,7 @@ func TestEchoHandler_LogPayload(t *testing.T) {
 			srv := NewMockServer()
 			srv.logger = zap.New(core)
 
-			req := httptest.NewRequest("POST", "/api/echo", strings.NewReader(c.body))
+			req := httptest.NewRequest(http.MethodPost, "/api/echo", strings.NewReader(c.body))
 			http.HandlerFunc(srv.echoHandler).ServeHTTP(httptest.NewRecorder(), req)
 
 			entries := logs.FilterMessage("payload received").All()
@@ -286,7 +286,7 @@ func TestEchoHandler_LogPayloadInfoLevel(t *testing.T) {
 	srv := NewMockServer()
 	srv.logger = zap.New(core)
 
-	req := httptest.NewRequest("POST", "/api/echo", strings.NewReader(`{"a":1}`))
+	req := httptest.NewRequest(http.MethodPost, "/api/echo", strings.NewReader(`{"a":1}`))
 	http.HandlerFunc(srv.echoHandler).ServeHTTP(httptest.NewRecorder(), req)
 
 	if n := logs.FilterMessage("payload received").Len(); n != 0 {
@@ -323,14 +323,16 @@ func TestEchoBackendFailureHidesCredentials(t *testing.T) {
 			srv.backend = newBackendClient(c.transport)
 
 			rr := httptest.NewRecorder()
-			req := httptest.NewRequest("POST", "/api/echo", strings.NewReader("hello"))
+			req := httptest.NewRequest(http.MethodPost, "/api/echo", strings.NewReader("hello"))
 			http.HandlerFunc(srv.echoHandler).ServeHTTP(rr, req)
 
 			if !strings.Contains(rr.Body.String(), c.want) {
 				t.Errorf("response %q does not contain %q", rr.Body.String(), c.want)
 			}
-			out := []string{rr.Body.String()}
-			for _, e := range logs.All() {
+			entries := logs.All()
+			out := make([]string, 0, 1+2*len(entries))
+			out = append(out, rr.Body.String())
+			for _, e := range entries {
 				out = append(out, e.Message, fmt.Sprint(e.ContextMap()))
 			}
 			for _, s := range out {

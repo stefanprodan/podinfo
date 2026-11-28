@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -37,7 +38,7 @@ func TestCacheWriteHandler_NoCache(t *testing.T) {
 	srv := NewMockServer()
 	srv.router.HandleFunc("/cache/{key}", srv.cacheWriteHandler)
 
-	req, _ := http.NewRequest("POST", "/cache/key1", strings.NewReader("value1"))
+	req, _ := http.NewRequest(http.MethodPost, "/cache/key1", strings.NewReader("value1"))
 	rr := httptest.NewRecorder()
 	srv.router.ServeHTTP(rr, req)
 
@@ -50,7 +51,7 @@ func TestCacheDeleteHandler_NoCache(t *testing.T) {
 	srv := NewMockServer()
 	srv.router.HandleFunc("/cache/{key}", srv.cacheDeleteHandler).Methods("DELETE")
 
-	req, _ := http.NewRequest("DELETE", "/cache/key1", nil)
+	req, _ := http.NewRequest(http.MethodDelete, "/cache/key1", nil)
 	rr := httptest.NewRecorder()
 	srv.router.ServeHTTP(rr, req)
 
@@ -63,7 +64,7 @@ func TestCacheReadHandler_NoCache(t *testing.T) {
 	srv := NewMockServer()
 	srv.router.HandleFunc("/cache/{key}", srv.cacheReadHandler).Methods("GET")
 
-	req, _ := http.NewRequest("GET", "/cache/key1", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/cache/key1", nil)
 	rr := httptest.NewRecorder()
 	srv.router.ServeHTTP(rr, req)
 
@@ -246,7 +247,7 @@ func TestCloseReleasesCache(t *testing.T) {
 	if err := srv.Close(); err != nil {
 		t.Fatalf("Close returned %v", err)
 	}
-	if err := srv.cache.Ping(t.Context()).Err(); err != redis.ErrClosed {
+	if err := srv.cache.Ping(t.Context()).Err(); !errors.Is(err, redis.ErrClosed) {
 		t.Errorf("cache client returned %v after Close, want %v", err, redis.ErrClosed)
 	}
 	select {
@@ -477,9 +478,9 @@ func TestNewCacheOptions_InvalidURLHidesPassword(t *testing.T) {
 		"redis://host:6379?addr=node-1:6379&password=s3%ZZcr3t",
 		"redis://host:6379?addr=node-1:6379;password=s3cr3t",
 	}
-	for _, server := range tests {
-		t.Run(server, func(t *testing.T) {
-			_, _, err := newCacheOptions(&Config{CacheServer: server}, zap.NewNop())
+	for _, rawURL := range tests {
+		t.Run(rawURL, func(t *testing.T) {
+			_, _, err := newCacheOptions(&Config{CacheServer: rawURL}, zap.NewNop())
 			if err == nil {
 				t.Fatal("newCacheOptions returned no error")
 			}
@@ -550,7 +551,7 @@ func TestCacheHandlers_KeyTooLong(t *testing.T) {
 
 	key := strings.Repeat("k", limits.MaxCacheKeySize)
 	rr := httptest.NewRecorder()
-	srv.router.ServeHTTP(rr, httptest.NewRequest("POST", "/cache/"+key, strings.NewReader("value1")))
+	srv.router.ServeHTTP(rr, httptest.NewRequest(http.MethodPost, "/cache/"+key, strings.NewReader("value1")))
 	if rr.Code != http.StatusAccepted || !m.Exists(key) {
 		t.Errorf("POST with a %d byte key returned %d", len(key), rr.Code)
 	}
@@ -597,7 +598,7 @@ func newCacheMockServer(t *testing.T, config *Config) *Server {
 	srv.config.Hostname = config.Hostname
 	srv.openCache(opts)
 	t.Cleanup(func() {
-		srv.cache.Close()
+		_ = srv.cache.Close()
 		select {
 		case <-srv.cacheClosed:
 		default:
@@ -657,12 +658,12 @@ func TestCacheTracing(t *testing.T) {
 			t.Cleanup(func() { _ = srv.Close() })
 
 			rr := httptest.NewRecorder()
-			srv.handler.ServeHTTP(rr, httptest.NewRequest("POST", "/cache/key1", strings.NewReader(payload)))
+			srv.handler.ServeHTTP(rr, httptest.NewRequest(http.MethodPost, "/cache/key1", strings.NewReader(payload)))
 			if rr.Code != http.StatusAccepted {
 				t.Fatalf("POST returned %d, want %d", rr.Code, http.StatusAccepted)
 			}
 			rr = httptest.NewRecorder()
-			srv.handler.ServeHTTP(rr, httptest.NewRequest("GET", "/cache/key1", nil))
+			srv.handler.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/cache/key1", nil))
 			if rr.Code != http.StatusOK {
 				t.Fatalf("GET returned %d, want %d", rr.Code, http.StatusOK)
 			}
@@ -675,13 +676,13 @@ func TestCacheTracing(t *testing.T) {
 			commands := map[string]string{}
 			for _, s := range ended {
 				for _, a := range s.Attributes {
-					if strings.Contains(a.Value.Emit(), payload) {
+					if strings.Contains(a.Value.String(), payload) {
 						t.Errorf("span %q attribute %s holds the payload", s.Name, a.Key)
 					}
 				}
 				for _, e := range s.Events {
 					for _, a := range e.Attributes {
-						if strings.Contains(a.Value.Emit(), payload) {
+						if strings.Contains(a.Value.String(), payload) {
 							t.Errorf("span %q event %q attribute %s holds the payload", s.Name, e.Name, a.Key)
 						}
 					}

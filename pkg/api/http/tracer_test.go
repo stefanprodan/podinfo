@@ -90,9 +90,9 @@ func attr(attrs []attribute.KeyValue, key attribute.Key) (attribute.Value, bool)
 
 func spansOfKind(spans tracetest.SpanStubs, kind trace.SpanKind) tracetest.SpanStubs {
 	var out tracetest.SpanStubs
-	for _, s := range spans {
-		if s.SpanKind == kind {
-			out = append(out, s)
+	for i := range spans {
+		if spans[i].SpanKind == kind {
+			out = append(out, spans[i])
 		}
 	}
 	return out
@@ -171,7 +171,11 @@ func TestServerSpan(t *testing.T) {
 					if m.Name != "http.server.request.duration" {
 						continue
 					}
-					for _, dp := range m.Data.(metricdata.Histogram[float64]).DataPoints {
+					hist, ok := m.Data.(metricdata.Histogram[float64])
+					if !ok {
+						t.Fatalf("metric data is %T, want a histogram", m.Data)
+					}
+					for _, dp := range hist.DataPoints {
 						found = true
 						route, ok := dp.Attributes.Value("http.route")
 						if tt.route == "" && ok || route.AsString() != tt.route {
@@ -209,7 +213,7 @@ func TestServerAddress(t *testing.T) {
 	reader := setupMetrics(t)
 	srv := newInstrumentedServer("/")
 
-	req := httptest.NewRequest("GET", "/version", nil)
+	req := httptest.NewRequest(http.MethodGet, "/version", nil)
 	req.Host = "attacker.example"
 	srv.handler.ServeHTTP(httptest.NewRecorder(), req)
 
@@ -231,7 +235,11 @@ func TestServerAddress(t *testing.T) {
 			if m.Name != "http.server.request.duration" {
 				continue
 			}
-			for _, dp := range m.Data.(metricdata.Histogram[float64]).DataPoints {
+			hist, ok := m.Data.(metricdata.Histogram[float64])
+			if !ok {
+				t.Fatalf("metric data is %T, want a histogram", m.Data)
+			}
+			for _, dp := range hist.DataPoints {
 				found = true
 				if got, _ := dp.Attributes.Value("server.address"); got.AsString() != srv.config.Hostname {
 					t.Errorf("metric server.address %q, want %q", got.AsString(), srv.config.Hostname)
@@ -329,9 +337,9 @@ func TestStoreSpans(t *testing.T) {
 	dataDir := t.TempDir()
 	srv.store = store.New(dataDir, telemetry.Tracer())
 
-	srv.handler.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("POST", "/store", strings.NewReader("data")))
-	srv.handler.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/store/"+store.Hash([]byte("data")), nil))
-	srv.handler.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/store/"+store.Hash([]byte("missing")), nil))
+	srv.handler.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodPost, "/store", strings.NewReader("data")))
+	srv.handler.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/store/"+store.Hash([]byte("data")), nil))
+	srv.handler.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/store/"+store.Hash([]byte("missing")), nil))
 
 	ended := spans.GetSpans()
 	servers := spansOfKind(ended, trace.SpanKindServer)
@@ -372,7 +380,7 @@ func newRecordingBackend(t *testing.T) (*httptest.Server, func() []recordedReque
 		mu.Lock()
 		requests = append(requests, recordedRequest{header: r.Header.Clone()})
 		mu.Unlock()
-		w.Write([]byte(`"backend"`))
+		_, _ = w.Write([]byte(`"backend"`))
 	}))
 	t.Cleanup(backend.Close)
 	return backend, func() []recordedRequest {
@@ -388,22 +396,21 @@ func (f roundTripperFunc) RoundTrip(r *http.Request) (*http.Response, error) {
 	return f(r)
 }
 
-func echoWithTraceHeaders(srv *Server) *httptest.ResponseRecorder {
-	req := httptest.NewRequest("POST", "/api/echo", strings.NewReader("hello"))
-	req.Header.Set("traceparent", testTraceparent)
-	req.Header.Set("x-request-id", "req-1")
-	req.Header.Set("x-b3-traceid", testTraceID)
-	req.Header.Set("x-b3-spanid", testParentID)
-	req.Header.Set("x-b3-sampled", "1")
-	req.Header.Set("x-ot-span-context", "stale")
+func echoWithTraceHeaders(srv *Server) {
+	req := httptest.NewRequest(http.MethodPost, "/api/echo", strings.NewReader("hello"))
+	req.Header.Set("Traceparent", testTraceparent)
+	req.Header.Set("X-Request-ID", "req-1")
+	req.Header.Set("X-B3-Traceid", testTraceID)
+	req.Header.Set("X-B3-Spanid", testParentID)
+	req.Header.Set("X-B3-Sampled", "1")
+	req.Header.Set("X-Ot-Span-Context", "stale")
 	rr := httptest.NewRecorder()
 	srv.handler.ServeHTTP(rr, req)
-	return rr
 }
 
 func assertForwardedHeaders(t *testing.T, h http.Header) {
 	t.Helper()
-	if got := h.Get("x-request-id"); got != "req-1" {
+	if got := h.Get("X-Request-ID"); got != "req-1" {
 		t.Errorf("x-request-id %q, want %q", got, "req-1")
 	}
 	for _, name := range []string{"x-b3-traceid", "x-b3-spanid", "x-b3-sampled", "x-ot-span-context"} {
@@ -453,7 +460,7 @@ func TestEchoPropagation(t *testing.T) {
 			t.Errorf("client span name %q, want %q", client.Name, "POST")
 		}
 		want := "00-" + testTraceID + "-" + client.SpanContext.SpanID().String() + "-01"
-		if tp := req.header.Get("traceparent"); tp != want {
+		if tp := req.header.Get("Traceparent"); tp != want {
 			t.Errorf("backend traceparent %q, want %q", tp, want)
 		}
 	}
@@ -464,8 +471,9 @@ func TestEchoPropagationWithoutTracing(t *testing.T) {
 		name  string
 		setup func(t *testing.T)
 	}{
-		{name: "noop tracer provider", setup: func(t *testing.T) {}},
+		{name: "noop tracer provider", setup: func(_ *testing.T) {}},
 		{name: "SDK disabled", setup: func(t *testing.T) {
+			t.Helper()
 			t.Setenv("OTEL_SDK_DISABLED", "true")
 			otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator())
 			if _, err := telemetry.Setup(context.Background(), "", zap.NewNop()); err != nil {
@@ -488,7 +496,7 @@ func TestEchoPropagationWithoutTracing(t *testing.T) {
 				t.Fatalf("backend got %d requests, want 1", len(got))
 			}
 			assertForwardedHeaders(t, got[0].header)
-			if tp := got[0].header.Get("traceparent"); tp != testTraceparent {
+			if tp := got[0].header.Get("Traceparent"); tp != testTraceparent {
 				t.Errorf("backend traceparent %q, want %q", tp, testTraceparent)
 			}
 		})
@@ -524,7 +532,7 @@ func TestEchoBackendErrorOnServerSpan(t *testing.T) {
 			}))
 
 			rr := httptest.NewRecorder()
-			srv.handler.ServeHTTP(rr, httptest.NewRequest("POST", "/api/echo", strings.NewReader("hello")))
+			srv.handler.ServeHTTP(rr, httptest.NewRequest(http.MethodPost, "/api/echo", strings.NewReader("hello")))
 
 			if rr.Code != http.StatusOK || !strings.Contains(rr.Body.String(), tt.body) {
 				t.Fatalf("got %d %q, want 200 with %q", rr.Code, rr.Body.String(), tt.body)
@@ -555,12 +563,12 @@ func TestEchoBackendErrorOnServerSpan(t *testing.T) {
 			for _, s := range ended {
 				var values []string
 				for _, a := range s.Attributes {
-					values = append(values, a.Value.Emit())
+					values = append(values, a.Value.String())
 				}
 				for _, e := range s.Events {
 					values = append(values, e.Name)
 					for _, a := range e.Attributes {
-						values = append(values, a.Value.Emit())
+						values = append(values, a.Value.String())
 					}
 				}
 				values = append(values, s.Status.Description)

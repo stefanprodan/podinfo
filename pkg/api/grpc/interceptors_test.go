@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+	"errors"
 	"io"
 	"testing"
 
@@ -47,20 +48,30 @@ func newInstrumentedServer(m *metrics) *grpc.Server {
 	s := &Server{logger: zap.NewNop(), config: &Config{}}
 	srv := grpc.NewServer(s.serverOptions(m)...)
 	echov1.RegisterEchoServiceServer(srv, panicEchoServer{})
-	statusv1.RegisterStatusServiceServer(srv, &StatusServer{config: s.config, logger: s.logger})
+	statusv1.RegisterStatusServiceServer(srv, &statusServer{config: s.config, logger: s.logger})
 	grpc_health_v1.RegisterHealthServer(srv, panicHealthServer{health.NewServer()})
 	reflection.Register(srv)
 	return srv
 }
 
+func histogram(t *testing.T, m *metrics, method string, code codes.Code) *dto.Histogram {
+	t.Helper()
+
+	h, ok := m.histogram.WithLabelValues(method, code.String()).(prometheus.Metric)
+	if !ok {
+		t.Fatal("histogram is not a prometheus.Metric")
+	}
+	var metric dto.Metric
+	if err := h.Write(&metric); err != nil {
+		t.Fatalf("histogram write %v", err)
+	}
+	return metric.GetHistogram()
+}
+
 func histogramCount(t *testing.T, m *metrics, method string, code codes.Code) uint64 {
 	t.Helper()
 
-	var metric dto.Metric
-	if err := m.histogram.WithLabelValues(method, code.String()).(prometheus.Metric).Write(&metric); err != nil {
-		t.Fatalf("histogram write %v", err)
-	}
-	return metric.GetHistogram().GetSampleCount()
+	return histogram(t, m, method, code).GetSampleCount()
 }
 
 func TestGrpcMetrics(t *testing.T) {
@@ -151,12 +162,9 @@ func TestGrpcTracing(t *testing.T) {
 func histogramExemplars(t *testing.T, m *metrics, method string, code codes.Code) (uint64, []map[string]string) {
 	t.Helper()
 
-	var metric dto.Metric
-	if err := m.histogram.WithLabelValues(method, code.String()).(prometheus.Metric).Write(&metric); err != nil {
-		t.Fatalf("histogram write %v", err)
-	}
+	h := histogram(t, m, method, code)
 	var exemplars []map[string]string
-	for _, b := range metric.GetHistogram().GetBucket() {
+	for _, b := range h.GetBucket() {
 		if e := b.GetExemplar(); e != nil {
 			labels := map[string]string{}
 			for _, l := range e.GetLabel() {
@@ -165,7 +173,7 @@ func histogramExemplars(t *testing.T, m *metrics, method string, code codes.Code
 			exemplars = append(exemplars, labels)
 		}
 	}
-	return metric.GetHistogram().GetSampleCount(), exemplars
+	return h.GetSampleCount(), exemplars
 }
 
 func listServices(t *testing.T, conn *grpc.ClientConn) {
@@ -186,7 +194,7 @@ func listServices(t *testing.T, conn *grpc.ClientConn) {
 	if err := stream.CloseSend(); err != nil {
 		t.Fatalf("ServerReflectionInfo CloseSend returned %v", err)
 	}
-	if _, err := stream.Recv(); err != io.EOF {
+	if _, err := stream.Recv(); !errors.Is(err, io.EOF) {
 		t.Fatalf("ServerReflectionInfo Recv returned %v, want EOF", err)
 	}
 }
@@ -281,7 +289,11 @@ func TestGrpcExemplars(t *testing.T) {
 					if metric.Name != "rpc.server.call.duration" {
 						continue
 					}
-					for _, dp := range metric.Data.(metricdata.Histogram[float64]).DataPoints {
+					hist, ok := metric.Data.(metricdata.Histogram[float64])
+					if !ok {
+						t.Fatalf("metric data is %T, want a float64 histogram", metric.Data)
+					}
+					for _, dp := range hist.DataPoints {
 						method, _ := dp.Attributes.Value("rpc.method")
 						methods = append(methods, method.AsString())
 					}

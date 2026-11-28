@@ -55,7 +55,7 @@ func TestGrpcStoreRoundTrip(t *testing.T) {
 func TestGrpcStoreReadErrors(t *testing.T) {
 	dataPath := t.TempDir()
 	unreadable := strings.Repeat("b", 40)
-	if err := os.Mkdir(filepath.Join(dataPath, unreadable), 0755); err != nil {
+	if err := os.Mkdir(filepath.Join(dataPath, unreadable), 0o750); err != nil {
 		t.Fatal(err)
 	}
 	client := newStoreClient(t, dataPath)

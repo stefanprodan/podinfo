@@ -43,7 +43,7 @@ func (s *Server) readyzHandler(w http.ResponseWriter, r *http.Request) {
 // @Tags Kubernetes
 // @Router /readyz/enable [post]
 // @Success 202
-func (s *Server) enableReadyHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) enableReadyHandler(w http.ResponseWriter, _ *http.Request) {
 	atomic.StoreInt32(&ready, 1)
 	w.WriteHeader(http.StatusAccepted)
 }
@@ -54,7 +54,7 @@ func (s *Server) enableReadyHandler(w http.ResponseWriter, r *http.Request) {
 // @Tags Kubernetes
 // @Router /readyz/disable [post]
 // @Success 202
-func (s *Server) disableReadyHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) disableReadyHandler(w http.ResponseWriter, _ *http.Request) {
 	atomic.StoreInt32(&ready, 0)
 	w.WriteHeader(http.StatusAccepted)
 }

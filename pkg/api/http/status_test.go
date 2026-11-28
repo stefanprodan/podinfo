@@ -13,7 +13,7 @@ import (
 )
 
 func TestStatusHandler(t *testing.T) {
-	req, err := http.NewRequest("GET", "/status/404", nil)
+	req, err := http.NewRequest(http.MethodGet, "/status/404", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -65,7 +65,7 @@ func TestStatusHandler_Various(t *testing.T) {
 			t.Fatalf("/status/%s: %v", c.code, err)
 		}
 		body, err := io.ReadAll(resp.Body)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		if err != nil {
 			t.Fatalf("/status/%s: %v", c.code, err)
 		}

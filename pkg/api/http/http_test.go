@@ -10,14 +10,14 @@ func TestVersionMiddleware(t *testing.T) {
 	srv := NewMockServer()
 	handler := versionMiddleware(http.HandlerFunc(srv.infoHandler))
 
-	req, _ := http.NewRequest("GET", "/", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/", nil)
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
 
-	if req.Header.Get("X-API-Version") == "" {
+	if req.Header.Get("X-Api-Version") == "" {
 		t.Error("X-API-Version not set by middleware")
 	}
-	if req.Header.Get("X-API-Revision") == "" {
+	if req.Header.Get("X-Api-Revision") == "" {
 		t.Error("X-API-Revision not set by middleware")
 	}
 }

@@ -19,10 +19,9 @@ import (
 )
 
 func TestGrpcToken(t *testing.T) {
-
 	lis := bufconn.Listen(1024 * 1024)
 	t.Cleanup(func() {
-		lis.Close()
+		_ = lis.Close()
 	})
 
 	srv := grpc.NewServer()
@@ -31,7 +30,7 @@ func TestGrpcToken(t *testing.T) {
 	})
 	config := &Config{}
 	config.JWTSecret = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"
-	tokenv1.RegisterTokenServiceServer(srv, &TokenServer{config: config})
+	tokenv1.RegisterTokenServiceServer(srv, &tokenServer{config: config})
 
 	go func() {
 		if err := srv.Serve(lis); err != nil {
@@ -48,7 +47,7 @@ func TestGrpcToken(t *testing.T) {
 		t.Fatalf("grpc.NewClient %v", err)
 	}
 	t.Cleanup(func() {
-		conn.Close()
+		_ = conn.Close()
 	})
 
 	client := tokenv1.NewTokenServiceClient(conn)
@@ -59,20 +58,20 @@ func TestGrpcToken(t *testing.T) {
 	}
 
 	var token = tokenv1.TokenGenerateResponse{
-		Token:     res.Token,
-		ExpiresAt: res.ExpiresAt,
+		Token:     res.GetToken(),
+		ExpiresAt: res.GetExpiresAt(),
 	}
 
-	if token.Token == "" {
+	if token.GetToken() == "" {
 		t.Fatalf("Handler returned no token")
 	}
 }
 
 func TestGrpcTokenValidate(t *testing.T) {
 	const secret = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"
-	srv := &TokenServer{config: &Config{JWTSecret: secret}}
+	srv := &tokenServer{config: &Config{JWTSecret: secret}}
 
-	sign := func(method jwt.SigningMethod, key interface{}, issuer string, expiresAt time.Time) string {
+	sign := func(method jwt.SigningMethod, key any, issuer string, expiresAt time.Time) string {
 		claims := &jwtCustomClaims{
 			"test",
 			jwt.RegisteredClaims{
@@ -140,7 +139,7 @@ func TestGrpcTokenValidate(t *testing.T) {
 			if res.GetToken() != "test" {
 				t.Errorf("TokenValidate returned token name %q, want %q", res.GetToken(), "test")
 			}
-			if want := jwt.NewNumericDate(future).Time.String(); res.GetExpiresAt() != want {
+			if want := jwt.NewNumericDate(future).String(); res.GetExpiresAt() != want {
 				t.Errorf("TokenValidate returned expires at %q, want %q", res.GetExpiresAt(), want)
 			}
 		})

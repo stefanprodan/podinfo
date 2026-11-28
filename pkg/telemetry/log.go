@@ -21,7 +21,7 @@ func NewTraceIDCore(core zapcore.Core) zapcore.Core {
 
 type traceIDCore struct {
 	zapcore.Core
-	ctx context.Context
+	ctx context.Context //nolint:containedctx // carries the context field from With to Write
 }
 
 func (c *traceIDCore) With(fields []zapcore.Field) zapcore.Core {
@@ -58,11 +58,11 @@ func splitContext(fields []zapcore.Field) (context.Context, []zapcore.Field) {
 	if i < 0 {
 		return nil, fields
 	}
-	ctx := fields[i].Interface.(context.Context)
+	var ctx context.Context
 	rest := fields[:i:i]
-	for _, f := range fields[i+1:] {
-		if isContext(f) {
-			ctx = f.Interface.(context.Context)
+	for _, f := range fields[i:] {
+		if c, ok := f.Interface.(context.Context); ok {
+			ctx = c //nolint:fatcontext // the last context field wins, nothing is nested
 			continue
 		}
 		rest = append(rest, f)

@@ -26,11 +26,11 @@ func TestTraceIDCore(t *testing.T) {
 	tests := []struct {
 		name string
 		log  func(*zap.Logger)
-		want context.Context
+		want context.Context //nolint:containedctx // test case expectation
 	}{
 		{name: "none", log: func(l *zap.Logger) { l.Info("msg") }},
 		{name: "invalid span context", log: func(l *zap.Logger) { l.Info("msg", Context(context.Background())) }},
-		{name: "nil context", log: func(l *zap.Logger) { l.Info("msg", Context(nil)) }},
+		{name: "nil context", log: func(l *zap.Logger) { l.Info("msg", Context(nil)) }}, //nolint:staticcheck // covers a nil context field
 		{name: "field", log: func(l *zap.Logger) { l.Info("msg", Context(first)) }, want: first},
 		{name: "last field wins", log: func(l *zap.Logger) { l.Info("msg", Context(first), Context(second)) }, want: second},
 		{name: "with", log: func(l *zap.Logger) { l.With(Context(first)).Info("msg") }, want: first},

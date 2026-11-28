@@ -15,10 +15,9 @@ import (
 )
 
 func TestGrpcInfo(t *testing.T) {
-
 	lis := bufconn.Listen(1024 * 1024)
 	t.Cleanup(func() {
-		lis.Close()
+		_ = lis.Close()
 	})
 
 	s := NewMockGrpcServer()
@@ -44,7 +43,7 @@ func TestGrpcInfo(t *testing.T) {
 		t.Fatalf("grpc.NewClient %v", err)
 	}
 	t.Cleanup(func() {
-		conn.Close()
+		_ = conn.Close()
 	})
 
 	client := infov1.NewInfoServiceClient(conn)
@@ -58,6 +57,6 @@ func TestGrpcInfo(t *testing.T) {
 	r := regexp.MustCompile(expected)
 	if !r.MatchString(res.String()) {
 		t.Fatalf("Returned unexpected body:\ngot \n%v \nwant \n%s",
-			res.Color, expected)
+			res.GetColor(), expected)
 	}
 }

@@ -18,10 +18,9 @@ import (
 )
 
 func TestGrpcHeader(t *testing.T) {
-
 	lis := bufconn.Listen(1024 * 1024)
 	t.Cleanup(func() {
-		lis.Close()
+		_ = lis.Close()
 	})
 
 	srv := grpc.NewServer()
@@ -29,7 +28,7 @@ func TestGrpcHeader(t *testing.T) {
 		srv.Stop()
 	})
 
-	headerv1.RegisterHeaderServiceServer(srv, &HeaderServer{})
+	headerv1.RegisterHeaderServiceServer(srv, &headerServer{})
 
 	go func() {
 		if err := srv.Serve(lis); err != nil {
@@ -46,7 +45,7 @@ func TestGrpcHeader(t *testing.T) {
 		t.Fatalf("grpc.NewClient %v", err)
 	}
 	t.Cleanup(func() {
-		conn.Close()
+		_ = conn.Close()
 	})
 
 	headers := metadata.New(map[string]string{
@@ -72,11 +71,11 @@ func TestGrpcHeader(t *testing.T) {
 
 func TestGrpcHeader_ForgedSPIFFEID(t *testing.T) {
 	lis := bufconn.Listen(1024 * 1024)
-	t.Cleanup(func() { lis.Close() })
+	t.Cleanup(func() { _ = lis.Close() })
 
 	srv := grpc.NewServer()
 	t.Cleanup(srv.Stop)
-	headerv1.RegisterHeaderServiceServer(srv, &HeaderServer{})
+	headerv1.RegisterHeaderServiceServer(srv, &headerServer{})
 	go func() { _ = srv.Serve(lis) }()
 
 	dialer := func(context.Context, string) (net.Conn, error) { return lis.Dial() }
@@ -84,7 +83,7 @@ func TestGrpcHeader_ForgedSPIFFEID(t *testing.T) {
 	if err != nil {
 		t.Fatalf("grpc.NewClient %v", err)
 	}
-	t.Cleanup(func() { conn.Close() })
+	t.Cleanup(func() { _ = conn.Close() })
 
 	ctx := metadata.AppendToOutgoingContext(context.Background(), "x-test", "podinfo", "x-spiffe-id", "spiffe://example.org/forged")
 	res, err := headerv1.NewHeaderServiceClient(conn).Header(ctx, &headerv1.HeaderRequest{})
@@ -92,10 +91,10 @@ func TestGrpcHeader_ForgedSPIFFEID(t *testing.T) {
 		t.Fatalf("Header: %v", err)
 	}
 
-	if !slices.Contains(res.Headers, "x-test=podinfo") {
-		t.Errorf("headers = %v, want x-test=podinfo", res.Headers)
+	if !slices.Contains(res.GetHeaders(), "x-test=podinfo") {
+		t.Errorf("headers = %v, want x-test=podinfo", res.GetHeaders())
 	}
-	for _, h := range res.Headers {
+	for _, h := range res.GetHeaders() {
 		if strings.HasPrefix(h, "x-spiffe-id=") {
 			t.Errorf("client-supplied x-spiffe-id echoed: %s", h)
 		}

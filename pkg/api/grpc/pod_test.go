@@ -20,7 +20,7 @@ func TestGrpcPod(t *testing.T) {
 	t.Setenv("PODINFO_TEST_PASSWORD", "s3cret")
 
 	lis := bufconn.Listen(1024 * 1024)
-	t.Cleanup(func() { lis.Close() })
+	t.Cleanup(func() { _ = lis.Close() })
 
 	srv := grpc.NewServer()
 	t.Cleanup(srv.Stop)
@@ -32,7 +32,7 @@ func TestGrpcPod(t *testing.T) {
 	if err != nil {
 		t.Fatalf("grpc.NewClient %v", err)
 	}
-	t.Cleanup(func() { conn.Close() })
+	t.Cleanup(func() { _ = conn.Close() })
 
 	ctx := metadata.AppendToOutgoingContext(context.Background(), "x-test", "podinfo", "x-spiffe-id", "spiffe://example.org/forged", "authorization", "Bearer s3cret")
 	res, err := podv1.NewPodServiceClient(conn).Pod(ctx, &podv1.PodRequest{})
@@ -40,30 +40,30 @@ func TestGrpcPod(t *testing.T) {
 		t.Fatalf("Pod: %v", err)
 	}
 
-	if res.Hostname != "localhost" {
-		t.Errorf("hostname = %q, want %q", res.Hostname, "localhost")
+	if res.GetHostname() != "localhost" {
+		t.Errorf("hostname = %q, want %q", res.GetHostname(), "localhost")
 	}
-	if res.Runtime == "" || res.NumCpu == "" {
+	if res.GetRuntime() == "" || res.GetNumCpu() == "" {
 		t.Errorf("runtime fields missing: %v", res)
 	}
-	if got := res.Env["PODINFO_TEST_PLAIN"]; got != "plain" {
+	if got := res.GetEnv()["PODINFO_TEST_PLAIN"]; got != "plain" {
 		t.Errorf("env PODINFO_TEST_PLAIN = %q, want %q", got, "plain")
 	}
-	if got := res.Env["PODINFO_TEST_PASSWORD"]; got != "[REDACTED]" {
+	if got := res.GetEnv()["PODINFO_TEST_PASSWORD"]; got != "[REDACTED]" {
 		t.Errorf("env PODINFO_TEST_PASSWORD = %q, want it masked", got)
 	}
-	if got := res.Headers["x-test"].GetValues(); !slices.Equal(got, []string{"podinfo"}) {
+	if got := res.GetHeaders()["x-test"].GetValues(); !slices.Equal(got, []string{"podinfo"}) {
 		t.Errorf("header x-test = %v, want [podinfo]", got)
 	}
-	if got := res.Headers["authorization"].GetValues(); !slices.Equal(got, []string{"[REDACTED]"}) {
+	if got := res.GetHeaders()["authorization"].GetValues(); !slices.Equal(got, []string{"[REDACTED]"}) {
 		t.Errorf("header authorization = %v, want it masked", got)
 	}
-	for name := range res.Headers {
+	for name := range res.GetHeaders() {
 		if strings.HasPrefix(name, ":") {
 			t.Errorf("pseudo-header %s echoed", name)
 		}
 	}
-	if got, ok := res.Headers["x-spiffe-id"]; ok {
+	if got, ok := res.GetHeaders()["x-spiffe-id"]; ok {
 		t.Errorf("client-supplied x-spiffe-id echoed: %v", got)
 	}
 }

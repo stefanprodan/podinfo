@@ -56,7 +56,7 @@ func runMain(t *testing.T, args ...string) (string, error) {
 	defer cancel()
 	dir := t.TempDir()
 	args = append([]string{"--host=127.0.0.1", "--port=0", "--artifact-path=", "--data-path=" + dir, "--config-path=" + dir}, args...)
-	cmd := exec.CommandContext(ctx, os.Args[0], args...)
+	cmd := exec.CommandContext(ctx, os.Args[0], args...) //nolint:gosec // re-executes the test binary
 	cmd.Env = []string{runMainEnv + "=1", "OTEL_SDK_DISABLED=true"}
 	out, err := cmd.CombinedOutput()
 	return string(out), err
@@ -88,7 +88,9 @@ func TestResetInvalidPorts(t *testing.T) {
 	if err := fs.Parse([]string{"--port-metrics=9797"}); err != nil {
 		t.Fatal(err)
 	}
-	viper.BindPFlags(fs)
+	if err := viper.BindPFlags(fs); err != nil {
+		t.Fatal(err)
+	}
 	viper.SetEnvPrefix("PODINFO")
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	viper.AutomaticEnv()
@@ -168,7 +170,7 @@ func captureStderr(t *testing.T, build func() *zap.Logger) (*zap.Logger, func() 
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() { f.Close() })
+	t.Cleanup(func() { _ = f.Close() })
 	stderr := os.Stderr
 	os.Stderr = f
 	logger := build()
@@ -227,7 +229,8 @@ func TestInitZapLevel(t *testing.T) {
 
 			var stderr, exported []string
 			for _, line := range lines() {
-				stderr = append(stderr, line["msg"].(string))
+				msg, _ := line["msg"].(string)
+				stderr = append(stderr, msg)
 			}
 			for _, r := range recorder.get() {
 				exported = append(exported, r.Body().AsString())
@@ -248,9 +251,12 @@ func TestInitZapSampling(t *testing.T) {
 		logger.Info("sampled", zap.Int("i", i))
 	}
 
-	var stderr, exported []int64
-	for _, line := range lines() {
-		stderr = append(stderr, int64(line["i"].(float64)))
+	records := lines()
+	stderr := make([]int64, 0, len(records))
+	var exported []int64
+	for _, line := range records {
+		n, _ := line["i"].(float64)
+		stderr = append(stderr, int64(n))
 	}
 	for _, r := range recorder.get() {
 		r.WalkAttributes(func(kv attribute.KeyValue) bool {
@@ -260,7 +266,7 @@ func TestInitZapSampling(t *testing.T) {
 			return true
 		})
 	}
-	var want []int64
+	want := make([]int64, 0, 101)
 	for i := range int64(100) {
 		want = append(want, i)
 	}
@@ -334,7 +340,7 @@ func TestWithTelemetryFatal(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = tel.Shutdown(context.Background()) })
 	var codes []int
-	logger, out := captureStderr(t, func() *zap.Logger {
+	logger, out := captureStderr(t, func() *zap.Logger { //nolint:staticcheck // logger.Fatal returns, the fatal hook does not exit
 		return withTelemetry(mustParseLevel(t, "info"), tel, time.Minute, func(code int) { codes = append(codes, code) })
 	})
 
@@ -364,7 +370,8 @@ func TestInitZapTraceContext(t *testing.T) {
 	remoteCtx := propagation.TraceContext{}.Extract(context.Background(), propagation.HeaderCarrier{
 		"Traceparent": []string{"00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"},
 	})
-	remoteCtx, _ = noop.NewTracerProvider().Tracer("test").Start(remoteCtx, "test")
+	remoteCtx, remoteSpan := noop.NewTracerProvider().Tracer("test").Start(remoteCtx, "test")
+	defer remoteSpan.End()
 	field := zap.String("key", "value")
 
 	tests := []struct {

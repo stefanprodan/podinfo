@@ -12,7 +12,7 @@ import (
 // @Description crashes the process with exit code 255
 // @Tags HTTP API
 // @Router /panic [get]
-func (s *Server) panicHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) panicHandler(_ http.ResponseWriter, r *http.Request) {
 	s.logger.Info("Panic command received", telemetry.Context(r.Context()))
 	os.Exit(255)
 }

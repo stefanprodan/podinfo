@@ -12,15 +12,18 @@ import (
 	"github.com/stefanprodan/podinfo/pkg/telemetry"
 )
 
+// NewMockServer returns a Server for tests, with a fixed config, a development
+// logger and its own Prometheus registry. It has no routes registered and no
+// cache.
 func NewMockServer() *Server {
 	config := &Config{
 		Port:                  "9898",
 		ServerShutdownTimeout: 5 * time.Second,
-		HttpServerTimeout:     30 * time.Second,
+		HTTPServerTimeout:     30 * time.Second,
 		BackendURL:            []string{},
 		ConfigPath:            "/config",
 		DataPath:              "/data",
-		HttpClientTimeout:     30 * time.Second,
+		HTTPClientTimeout:     30 * time.Second,
 		UIColor:               "blue",
 		UIMessage:             "Greetings",
 		Hostname:              "localhost",

@@ -31,7 +31,7 @@ type Source struct {
 	logger        *zap.Logger
 	options       []workloadapi.ClientOption
 
-	ctx    context.Context
+	ctx    context.Context //nolint:containedctx // cancels the wait for the first SVID started by Start
 	cancel context.CancelFunc
 
 	started atomic.Bool

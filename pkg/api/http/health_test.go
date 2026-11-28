@@ -11,7 +11,7 @@ import (
 func TestHealthzHandler(t *testing.T) {
 	atomic.StoreInt32(&healthy, 0)
 
-	req, err := http.NewRequest("GET", "/healthz", nil)
+	req, err := http.NewRequest(http.MethodGet, "/healthz", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -31,7 +31,7 @@ func TestHealthzHandler(t *testing.T) {
 func TestReadyzHandler(t *testing.T) {
 	atomic.StoreInt32(&ready, 0)
 
-	req, err := http.NewRequest("GET", "/readyz", nil)
+	req, err := http.NewRequest(http.MethodGet, "/readyz", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -53,7 +53,7 @@ func TestHealthzHandler_Healthy(t *testing.T) {
 	atomic.StoreInt32(&healthy, 1)
 	defer atomic.StoreInt32(&healthy, 0)
 
-	req, _ := http.NewRequest("GET", "/healthz", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/healthz", nil)
 	rr := httptest.NewRecorder()
 	http.HandlerFunc(srv.healthzHandler).ServeHTTP(rr, req)
 
@@ -70,7 +70,7 @@ func TestReadyzHandler_Ready(t *testing.T) {
 	atomic.StoreInt32(&ready, 1)
 	defer atomic.StoreInt32(&ready, 0)
 
-	req, _ := http.NewRequest("GET", "/readyz", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/readyz", nil)
 	rr := httptest.NewRecorder()
 	http.HandlerFunc(srv.readyzHandler).ServeHTTP(rr, req)
 
@@ -83,7 +83,7 @@ func TestEnableReadyHandler(t *testing.T) {
 	srv := NewMockServer()
 	atomic.StoreInt32(&ready, 0)
 
-	req, _ := http.NewRequest("POST", "/readyz/enable", nil)
+	req, _ := http.NewRequest(http.MethodPost, "/readyz/enable", nil)
 	rr := httptest.NewRecorder()
 	http.HandlerFunc(srv.enableReadyHandler).ServeHTTP(rr, req)
 
@@ -100,7 +100,7 @@ func TestDisableReadyHandler(t *testing.T) {
 	srv := NewMockServer()
 	atomic.StoreInt32(&ready, 1)
 
-	req, _ := http.NewRequest("POST", "/readyz/disable", nil)
+	req, _ := http.NewRequest(http.MethodPost, "/readyz/disable", nil)
 	rr := httptest.NewRecorder()
 	http.HandlerFunc(srv.disableReadyHandler).ServeHTTP(rr, req)
 

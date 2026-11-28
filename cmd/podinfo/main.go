@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -80,7 +81,7 @@ func main() {
 
 	err := fs.Parse(os.Args[1:])
 	switch {
-	case err == pflag.ErrHelp:
+	case errors.Is(err, pflag.ErrHelp):
 		os.Exit(0)
 	case err != nil:
 		fmt.Fprintf(os.Stderr, "Error: %s\n\n", err.Error())
@@ -91,30 +92,9 @@ func main() {
 		os.Exit(0)
 	}
 
-	viper.BindPFlags(fs)
-	viper.RegisterAlias("backendUrl", "backend-url")
-	hostname, _ := os.Hostname()
-	viper.SetDefault("jwt-secret", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9")
-	viper.SetDefault("cache-username", "")
-	viper.SetDefault("cache-password", "")
-	viper.SetDefault("cache-sentinel-password", "")
-	viper.Set("hostname", hostname)
-	viper.Set("version", version.VERSION)
-	viper.Set("revision", version.REVISION)
-	viper.SetEnvPrefix("PODINFO")
-	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
-	viper.AutomaticEnv()
-
-	if _, fileErr := os.Stat(filepath.Join(viper.GetString("config-path"), viper.GetString("config"))); fileErr == nil {
-		viper.SetConfigName(strings.Split(viper.GetString("config"), ".")[0])
-		viper.AddConfigPath(viper.GetString("config-path"))
-		if readErr := viper.ReadInConfig(); readErr != nil {
-			fmt.Printf("Error reading config file, %v\n", readErr)
-		}
-	}
-
-	if viper.GetString("ui-logo") == "" {
-		viper.Set("ui-logo", path.Join("/", viper.GetString("prefix"), "ui/cuddle_clap.gif"))
+	if err := loadConfig(fs); err != nil {
+		fmt.Fprintf(os.Stderr, "Error binding flags: %s\n", err.Error())
+		os.Exit(1)
 	}
 
 	level, err := parseLevel(viper.GetString("level"))
@@ -148,21 +128,7 @@ func main() {
 
 	resetInvalidPorts(fs, "port", "secure-port", "grpc-port", "port-metrics")
 
-	if viper.GetInt("random-delay-min") < 0 || viper.GetInt("random-delay-max") < 0 {
-		logger.Panic("`--random-delay-min` and `--random-delay-max` should not be negative")
-	}
-	if viper.GetInt("random-delay-max") < viper.GetInt("random-delay-min") {
-		logger.Panic("`--random-delay-max` should be greater than `--random-delay-min`")
-	}
-
-	switch delayUnit := viper.GetString("random-delay-unit"); delayUnit {
-	case
-		"s",
-		"ms":
-		break
-	default:
-		logger.Panic("`random-delay-unit` accepted values are: s|ms")
-	}
+	validateRandomDelay(logger)
 
 	var grpcCfg grpc.Config
 	if err := viper.Unmarshal(&grpcCfg); err != nil {
@@ -237,6 +203,50 @@ func main() {
 		if err := keyPair.Close(); err != nil {
 			logger.Warn("closing the TLS key pair watcher failed", zap.Error(err))
 		}
+	}
+}
+
+func loadConfig(fs *pflag.FlagSet) error {
+	if err := viper.BindPFlags(fs); err != nil {
+		return err
+	}
+	viper.RegisterAlias("backendUrl", "backend-url")
+	hostname, _ := os.Hostname()
+	viper.SetDefault("jwt-secret", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9")
+	viper.SetDefault("cache-username", "")
+	viper.SetDefault("cache-password", "")
+	viper.SetDefault("cache-sentinel-password", "")
+	viper.Set("hostname", hostname)
+	viper.Set("version", version.VERSION)
+	viper.Set("revision", version.REVISION)
+	viper.SetEnvPrefix("PODINFO")
+	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
+	viper.AutomaticEnv()
+
+	if _, fileErr := os.Stat(filepath.Join(viper.GetString("config-path"), viper.GetString("config"))); fileErr == nil {
+		viper.SetConfigName(strings.Split(viper.GetString("config"), ".")[0])
+		viper.AddConfigPath(viper.GetString("config-path"))
+		if readErr := viper.ReadInConfig(); readErr != nil {
+			fmt.Printf("Error reading config file, %v\n", readErr)
+		}
+	}
+
+	if viper.GetString("ui-logo") == "" {
+		viper.Set("ui-logo", path.Join("/", viper.GetString("prefix"), "ui/cuddle_clap.gif"))
+	}
+
+	return nil
+}
+
+func validateRandomDelay(logger *zap.Logger) {
+	if viper.GetInt("random-delay-min") < 0 || viper.GetInt("random-delay-max") < 0 {
+		logger.Panic("`--random-delay-min` and `--random-delay-max` should not be negative")
+	}
+	if viper.GetInt("random-delay-max") < viper.GetInt("random-delay-min") {
+		logger.Panic("`--random-delay-max` should be greater than `--random-delay-min`")
+	}
+	if unit := viper.GetString("random-delay-unit"); unit != "s" && unit != "ms" {
+		logger.Panic("`random-delay-unit` accepted values are: s|ms")
 	}
 }
 
@@ -322,7 +332,7 @@ var stressMemoryPayload []byte
 func beginStressTest(cpus int, mem int, logger *zap.Logger) {
 	if cpus > 0 {
 		logger.Info("starting CPU stress", zap.Int("cores", cpus))
-		for i := 0; i < cpus; i++ {
+		for range cpus {
 			go func() {
 				for {
 					runtime.Gosched()
@@ -332,8 +342,8 @@ func beginStressTest(cpus int, mem int, logger *zap.Logger) {
 	}
 
 	if mem > 0 {
-		path := "/tmp/podinfo.data"
-		f, err := os.Create(path)
+		name := "/tmp/podinfo.data"
+		f, err := os.Create(name)
 
 		if err != nil {
 			logger.Error("memory stress failed", zap.Error(err))
@@ -343,9 +353,9 @@ func beginStressTest(cpus int, mem int, logger *zap.Logger) {
 			logger.Error("memory stress failed", zap.Error(err))
 		}
 
-		stressMemoryPayload, err = os.ReadFile(path)
-		f.Close()
-		os.Remove(path)
+		stressMemoryPayload, err = os.ReadFile(name)
+		_ = f.Close()
+		_ = os.Remove(name)
 		if err != nil {
 			logger.Error("memory stress failed", zap.Error(err))
 		}

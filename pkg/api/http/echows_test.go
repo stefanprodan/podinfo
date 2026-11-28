@@ -22,10 +22,11 @@ func TestEchoWsHandler(t *testing.T) {
 	defer server.Close()
 
 	wsURL := "ws" + strings.TrimPrefix(server.URL, "http") + "/ws/echo"
-	ws, _, err := websocket.DefaultDialer.Dial(wsURL, nil)
+	ws, resp, err := websocket.DefaultDialer.Dial(wsURL, nil)
 	if err != nil {
 		t.Fatalf("websocket dial failed: %v", err)
 	}
+	defer resp.Body.Close()
 	defer ws.Close()
 
 	msg := "hello websocket"
@@ -49,10 +50,11 @@ func TestEchoWsReadLimit(t *testing.T) {
 	defer server.Close()
 
 	wsURL := "ws" + strings.TrimPrefix(server.URL, "http") + "/ws/echo"
-	ws, _, err := websocket.DefaultDialer.Dial(wsURL, nil)
+	ws, resp, err := websocket.DefaultDialer.Dial(wsURL, nil)
 	if err != nil {
 		t.Fatalf("websocket dial failed: %v", err)
 	}
+	defer resp.Body.Close()
 	defer ws.Close()
 
 	oversize := make([]byte, wsMaxMessageSize+1)
@@ -62,7 +64,9 @@ func TestEchoWsReadLimit(t *testing.T) {
 
 	// The server answers with a 1009 (message too big) close frame. The loop
 	// skips the periodic status frames, and the read deadline bounds it.
-	ws.SetReadDeadline(time.Now().Add(5 * time.Second))
+	if err := ws.SetReadDeadline(time.Now().Add(5 * time.Second)); err != nil {
+		t.Fatal(err)
+	}
 	for {
 		if _, _, err = ws.ReadMessage(); err != nil {
 			break
@@ -116,7 +120,7 @@ func startedBy(id, fn string) int {
 		buf = make([]byte, 2*len(buf))
 	}
 	var count int
-	for _, g := range strings.Split(string(buf), "\n\n") {
+	for g := range strings.SplitSeq(string(buf), "\n\n") {
 		if strings.Contains(g, fn) && strings.Contains(g, " in goroutine "+id+"\n") {
 			count++
 		}
@@ -136,10 +140,11 @@ func TestEchoWsWriterFailureReleasesHandler(t *testing.T) {
 	}))
 	defer server.Close()
 
-	ws, _, err := websocket.DefaultDialer.Dial("ws"+strings.TrimPrefix(server.URL, "http"), nil)
+	ws, resp, err := websocket.DefaultDialer.Dial("ws"+strings.TrimPrefix(server.URL, "http"), nil)
 	if err != nil {
 		t.Fatalf("websocket dial failed: %v", err)
 	}
+	defer resp.Body.Close()
 	defer ws.Close()
 
 	if err := ws.WriteMessage(websocket.TextMessage, []byte("hello")); err != nil {

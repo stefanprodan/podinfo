@@ -18,13 +18,13 @@ import (
 
 const spiffeIDKey = "x-spiffe-id"
 
-type HeaderServer struct {
+type headerServer struct {
 	pb.UnimplementedHeaderServiceServer
 	config *Config
 	logger *zap.Logger
 }
 
-func (s *HeaderServer) Header(ctx context.Context, in *pb.HeaderRequest) (*pb.HeaderResponse, error) {
+func (s *headerServer) Header(ctx context.Context, _ *pb.HeaderRequest) (*pb.HeaderResponse, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		return nil, status.Error(codes.DataLoss, "failed to get metadata")
@@ -37,7 +37,6 @@ func (s *HeaderServer) Header(ctx context.Context, in *pb.HeaderRequest) (*pb.He
 	}
 
 	return &pb.HeaderResponse{Headers: res}, nil
-
 }
 
 // echoedMetadata returns the request metadata with credentials masked and

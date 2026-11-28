@@ -6,6 +6,7 @@ import (
 	"compress/gzip"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -20,7 +21,7 @@ func writeFiles(t *testing.T, dir string, files map[string]string) {
 	t.Helper()
 	for name, content := range files {
 		p := filepath.Join(dir, name)
-		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(p), 0o750); err != nil {
 			t.Fatal(err)
 		}
 		if err := os.WriteFile(p, []byte(content), 0o600); err != nil {
@@ -39,7 +40,7 @@ func untar(t *testing.T, data []byte) map[string]string {
 	files := map[string]string{}
 	for {
 		hdr, err := tr.Next()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {
@@ -78,7 +79,7 @@ func TestArtifactHandler(t *testing.T) {
 	srv := newArtifactServer(t, dir)
 
 	rr := httptest.NewRecorder()
-	srv.router.ServeHTTP(rr, httptest.NewRequest("GET", "/artifact", nil))
+	srv.router.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/artifact", nil))
 
 	if rr.Code != http.StatusOK {
 		t.Fatalf("got status %d, want 200", rr.Code)
@@ -115,9 +116,9 @@ func TestArtifactHandler_Head(t *testing.T) {
 	srv := newArtifactServer(t, dir)
 
 	get := httptest.NewRecorder()
-	srv.router.ServeHTTP(get, httptest.NewRequest("GET", "/artifact", nil))
+	srv.router.ServeHTTP(get, httptest.NewRequest(http.MethodGet, "/artifact", nil))
 	head := httptest.NewRecorder()
-	srv.router.ServeHTTP(head, httptest.NewRequest("HEAD", "/artifact", nil))
+	srv.router.ServeHTTP(head, httptest.NewRequest(http.MethodHead, "/artifact", nil))
 
 	if head.Code != http.StatusOK {
 		t.Fatalf("HEAD got status %d, want 200", head.Code)
@@ -195,7 +196,7 @@ func TestArtifactHandler_MissingDir(t *testing.T) {
 	srv := newArtifactServer(t, filepath.Join(t.TempDir(), "missing"))
 
 	rr := httptest.NewRecorder()
-	srv.router.ServeHTTP(rr, httptest.NewRequest("GET", "/artifact", nil))
+	srv.router.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/artifact", nil))
 	if rr.Code != http.StatusNotFound {
 		t.Fatalf("got status %d, want 404", rr.Code)
 	}
@@ -205,7 +206,7 @@ func TestArtifactHandler_Disabled(t *testing.T) {
 	srv := newArtifactServer(t, "")
 
 	rr := httptest.NewRecorder()
-	srv.router.ServeHTTP(rr, httptest.NewRequest("GET", "/artifact", nil))
+	srv.router.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/artifact", nil))
 	if rr.Code != http.StatusNotFound {
 		t.Fatalf("got status %d, want 404", rr.Code)
 	}
@@ -224,7 +225,7 @@ func TestArtifactHandler_Prefix(t *testing.T) {
 	srv.registerHandlers()
 
 	rr := httptest.NewRecorder()
-	srv.router.ServeHTTP(rr, httptest.NewRequest("GET", "/foo/artifact", nil))
+	srv.router.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/foo/artifact", nil))
 	if rr.Code != http.StatusOK {
 		t.Fatalf("GET /foo/artifact got status %d, want 200", rr.Code)
 	}

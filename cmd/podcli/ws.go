@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -28,22 +29,21 @@ var wsCmd = &cobra.Command{
 	Use:     `ws [address]`,
 	Short:   "Websocket client",
 	Example: `  ws localhost:9898/ws/echo`,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(_ *cobra.Command, args []string) error {
 		if len(args) < 1 {
-			return fmt.Errorf("address is required")
+			return errors.New("address is required")
 		}
 
 		address := args[0]
 		if !strings.HasPrefix(address, "ws://") && !strings.HasPrefix(address, "wss://") {
-			address = fmt.Sprintf("ws://%s", address)
+			address = "ws://" + address
 		}
 
 		dest, err := url.Parse(address)
 		if err != nil {
 			return err
 		}
-		if origin != "" {
-		} else {
+		if origin == "" {
 			originURL := *dest
 			if dest.Scheme == "wss" {
 				originURL.Scheme = "https"
@@ -65,11 +65,11 @@ type session struct {
 	errChan chan error
 }
 
-func connect(url, origin string, rlConf *readline.Config) error {
+func connect(address, origin string, rlConf *readline.Config) error {
 	headers := make(http.Header)
 	headers.Add("Origin", origin)
 
-	ws, _, err := websocket.DefaultDialer.Dial(url, headers)
+	ws, _, err := websocket.DefaultDialer.Dial(address, headers) //nolint:bodyclose // gorilla/websocket documents that the response body does not need closing
 	if err != nil {
 		return err
 	}
@@ -95,7 +95,7 @@ func connect(url, origin string, rlConf *readline.Config) error {
 func (s *session) readConsole() {
 	for {
 		line, err := s.rl.Readline()
-		if err == io.EOF || err == readline.ErrInterrupt {
+		if errors.Is(err, io.EOF) || errors.Is(err, readline.ErrInterrupt) {
 			logger.Info("websocket closed", zap.Error(err))
 			s.errChan <- nil
 			return
@@ -124,7 +124,7 @@ func (s *session) readWebsocket() {
 	for {
 		msgType, buf, err := s.ws.ReadMessage()
 		if err != nil {
-			fmt.Fprint(s.rl.Stdout(), rxSprintf("< %s\n", err.Error()))
+			_, _ = fmt.Fprint(s.rl.Stdout(), rxSprintf("< %s\n", err.Error()))
 			os.Exit(1)
 			return
 		}
@@ -140,6 +140,6 @@ func (s *session) readWebsocket() {
 			return
 		}
 
-		fmt.Fprint(s.rl.Stdout(), rxSprintf("< %s\n", text))
+		_, _ = fmt.Fprint(s.rl.Stdout(), rxSprintf("< %s\n", text))
 	}
 }

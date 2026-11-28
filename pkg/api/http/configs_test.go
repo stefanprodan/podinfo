@@ -14,7 +14,7 @@ import (
 
 func TestConfigReadHandler(t *testing.T) {
 	srv := NewMockServer()
-	req, _ := http.NewRequest("GET", "/configs", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/configs", nil)
 	rr := httptest.NewRecorder()
 	http.HandlerFunc(srv.configReadHandler).ServeHTTP(rr, req)
 
@@ -39,7 +39,7 @@ func TestConfigReadHandlerFiles(t *testing.T) {
 
 	srv := NewMockServer()
 	srv.configs = configs
-	req, _ := http.NewRequest("GET", "/configs", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/configs", nil)
 	rr := httptest.NewRecorder()
 	http.HandlerFunc(srv.configReadHandler).ServeHTTP(rr, req)
 

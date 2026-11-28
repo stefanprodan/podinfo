@@ -56,14 +56,14 @@ func (s *Server) echoWsHandler(w http.ResponseWriter, r *http.Request) {
 	defer c.Close()
 	done := make(chan struct{})
 	defer close(done)
-	in := make(chan interface{})
+	in := make(chan any)
 	writerDone := make(chan struct{})
-	go func() {
+	go func(ctx context.Context) {
 		defer close(writerDone)
 		defer c.Close()
-		s.writeWs(r.Context(), c, in, done)
-	}()
-	send := func(msg interface{}) bool {
+		s.writeWs(ctx, c, in, done)
+	}(r.Context())
+	send := func(msg any) bool {
 		select {
 		case in <- msg:
 			return true
@@ -95,7 +95,7 @@ func (s *Server) echoWsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Server) sendHostWs(ctx context.Context, send func(interface{}) bool, done chan struct{}) {
+func (s *Server) sendHostWs(ctx context.Context, send func(any) bool, done chan struct{}) {
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
 	for {
@@ -118,7 +118,7 @@ func (s *Server) sendHostWs(ctx context.Context, send func(interface{}) bool, do
 	}
 }
 
-func (s *Server) writeWs(ctx context.Context, ws *websocket.Conn, in chan interface{}, done chan struct{}) {
+func (s *Server) writeWs(ctx context.Context, ws *websocket.Conn, in chan any, done chan struct{}) {
 	ping := time.NewTicker(wsPingInterval)
 	defer ping.Stop()
 	for {

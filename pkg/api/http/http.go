@@ -24,14 +24,16 @@ type RandomErrorMiddleware struct {
 	intn func(n int) int
 }
 
+// NewRandomErrorMiddleware returns a middleware that makes the server
+// unreliable on purpose.
 func NewRandomErrorMiddleware() *RandomErrorMiddleware {
 	return &RandomErrorMiddleware{intn: rand.Intn}
 }
 
+// Handler returns next wrapped so that a failed request never reaches it.
 func (m *RandomErrorMiddleware) Handler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if m.intn(3) == 0 {
-
 			errors := []int{http.StatusInternalServerError, http.StatusBadRequest, http.StatusConflict}
 			w.WriteHeader(errors[m.intn(len(errors))])
 			return
@@ -42,14 +44,16 @@ func (m *RandomErrorMiddleware) Handler(next http.Handler) http.Handler {
 
 func versionMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		r.Header.Set("X-API-Version", version.VERSION)
-		r.Header.Set("X-API-Revision", version.REVISION)
+		r.Header.Set("X-Api-Version", version.VERSION)
+		r.Header.Set("X-Api-Revision", version.REVISION)
 
 		next.ServeHTTP(w, r)
 	})
 }
 
-func (s *Server) JSONResponse(w http.ResponseWriter, r *http.Request, result interface{}) {
+// JSONResponse writes result as indented JSON with status 200. It answers 500
+// with an empty body when result cannot be marshalled.
+func (s *Server) JSONResponse(w http.ResponseWriter, r *http.Request, result any) {
 	body, err := json.Marshal(result)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -60,10 +64,11 @@ func (s *Server) JSONResponse(w http.ResponseWriter, r *http.Request, result int
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(http.StatusOK)
-	w.Write(prettyJSON(body))
+	_, _ = w.Write(prettyJSON(body))
 }
 
-func (s *Server) JSONResponseCode(w http.ResponseWriter, r *http.Request, result interface{}, responseCode int) {
+// JSONResponseCode is JSONResponse with the given status code.
+func (s *Server) JSONResponseCode(w http.ResponseWriter, r *http.Request, result any, responseCode int) {
 	body, err := json.Marshal(result)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -74,14 +79,17 @@ func (s *Server) JSONResponseCode(w http.ResponseWriter, r *http.Request, result
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(responseCode)
-	w.Write(prettyJSON(body))
+	_, _ = w.Write(prettyJSON(body))
 }
 
+// ErrorMessage is the JSON body of an error response.
 type ErrorMessage struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
 }
 
+// ErrorResponse writes msg and code as an ErrorMessage with status code. A
+// 5xx code is also recorded as an error on the request span.
 func (s *Server) ErrorResponse(w http.ResponseWriter, r *http.Request, msg string, code int) {
 	data := ErrorMessage{
 		Code:    code,
@@ -102,7 +110,7 @@ func (s *Server) ErrorResponse(w http.ResponseWriter, r *http.Request, msg strin
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(code)
-	w.Write(prettyJSON(body))
+	_, _ = w.Write(prettyJSON(body))
 }
 
 // readLimitedBody reads the request body up to maxRequestBodySize. It answers
@@ -111,8 +119,7 @@ func (s *Server) readLimitedBody(w http.ResponseWriter, r *http.Request) ([]byte
 	r.Body = http.MaxBytesReader(w, r.Body, maxRequestBodySize)
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		var maxErr *http.MaxBytesError
-		if errors.As(err, &maxErr) {
+		if _, ok := errors.AsType[*http.MaxBytesError](err); ok {
 			s.ErrorResponse(w, r, "request body too large", http.StatusRequestEntityTooLarge)
 			return nil, false
 		}
@@ -132,6 +139,6 @@ func setRawResponseHeaders(w http.ResponseWriter) {
 
 func prettyJSON(b []byte) []byte {
 	var out bytes.Buffer
-	json.Indent(&out, b, "", "  ")
+	_ = json.Indent(&out, b, "", "  ")
 	return out.Bytes()
 }

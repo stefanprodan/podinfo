@@ -20,6 +20,8 @@ type RandomDelayMiddleware struct {
 	unit string
 }
 
+// NewRandomDelayMiddleware returns a middleware that sleeps between minDelay
+// and maxDelay. delayUnit is "s" or "ms", any other value counts as seconds.
 func NewRandomDelayMiddleware(minDelay, maxDelay int, delayUnit string) *RandomDelayMiddleware {
 	return &RandomDelayMiddleware{
 		min:  minDelay,
@@ -28,6 +30,7 @@ func NewRandomDelayMiddleware(minDelay, maxDelay int, delayUnit string) *RandomD
 	}
 }
 
+// Handler returns next wrapped so that every request sleeps first.
 func (m *RandomDelayMiddleware) Handler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var unit time.Duration
@@ -42,7 +45,7 @@ func (m *RandomDelayMiddleware) Handler(next http.Handler) http.Handler {
 
 		delay := m.min
 		if m.max > m.min {
-			delay += rand.Intn(m.max - m.min)
+			delay += rand.Intn(m.max - m.min) //nolint:gosec // the delay needs no secure randomness
 		}
 		time.Sleep(time.Duration(delay) * unit)
 		next.ServeHTTP(w, r)

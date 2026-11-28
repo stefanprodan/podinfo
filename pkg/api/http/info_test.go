@@ -8,7 +8,7 @@ import (
 )
 
 func TestInfoHandler(t *testing.T) {
-	req, err := http.NewRequest("GET", "/api/info", nil)
+	req, err := http.NewRequest(http.MethodGet, "/api/info", nil)
 	if err != nil {
 		t.Fatal(err)
 	}

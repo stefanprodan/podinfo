@@ -38,9 +38,11 @@ var (
 	ready   int32
 )
 
+// Config holds the settings of the HTTP server. The mapstructure tags name
+// the command flags they are read from.
 type Config struct {
-	HttpClientTimeout     time.Duration `mapstructure:"http-client-timeout"`
-	HttpServerTimeout     time.Duration `mapstructure:"http-server-timeout"`
+	HTTPClientTimeout     time.Duration `mapstructure:"http-client-timeout"`
+	HTTPServerTimeout     time.Duration `mapstructure:"http-server-timeout"`
 	ServerShutdownTimeout time.Duration `mapstructure:"server-shutdown-timeout"`
 	BackendURL            []string      `mapstructure:"backend-url"`
 	UILogo                string        `mapstructure:"ui-logo"`
@@ -80,6 +82,7 @@ type Config struct {
 	ArtifactPath          string        `mapstructure:"artifact-path"`
 }
 
+// Server runs the podinfo HTTP API, the web UI and the metrics endpoint.
 type Server struct {
 	router       *mux.Router
 	logger       *zap.Logger
@@ -101,6 +104,9 @@ type Server struct {
 	metrics      *prometheusMiddleware
 }
 
+// NewServer returns a Server for config and connects to the cache when one is
+// configured. It normalizes config.Prefix in place, and returns an error when
+// the UI, SPIFFE or cache settings are invalid.
 func NewServer(config *Config, logger *zap.Logger) (*Server, error) {
 	config.Prefix = normalizePrefix(config.Prefix)
 
@@ -298,9 +304,9 @@ func (s *Server) startServer() *http.Server {
 
 	srv := &http.Server{
 		Addr:         s.config.Host + ":" + s.config.Port,
-		WriteTimeout: s.config.HttpServerTimeout,
-		ReadTimeout:  s.config.HttpServerTimeout,
-		IdleTimeout:  2 * s.config.HttpServerTimeout,
+		WriteTimeout: s.config.HTTPServerTimeout,
+		ReadTimeout:  s.config.HTTPServerTimeout,
+		IdleTimeout:  2 * s.config.HTTPServerTimeout,
 		Handler:      s.handler,
 	}
 
@@ -327,9 +333,9 @@ func (s *Server) startSecureServer() *http.Server {
 
 	srv := &http.Server{
 		Addr:         s.config.Host + ":" + s.config.SecurePort,
-		WriteTimeout: s.config.HttpServerTimeout,
-		ReadTimeout:  s.config.HttpServerTimeout,
-		IdleTimeout:  2 * s.config.HttpServerTimeout,
+		WriteTimeout: s.config.HTTPServerTimeout,
+		ReadTimeout:  s.config.HTTPServerTimeout,
+		IdleTimeout:  2 * s.config.HTTPServerTimeout,
 		Handler:      s.handler,
 	}
 
@@ -364,34 +370,37 @@ func (s *Server) startMetricsServer() {
 func (s *Server) metricsServer() *http.Server {
 	return &http.Server{
 		Addr:              fmt.Sprintf("%s:%v", s.config.Host, s.config.PortMetrics),
-		ReadHeaderTimeout: s.config.HttpServerTimeout,
+		ReadHeaderTimeout: s.config.HTTPServerTimeout,
 		Handler:           s.metricsMux(),
 	}
 }
 
 func (s *Server) metricsMux() http.Handler {
-	mux := http.NewServeMux()
-	mux.Handle("/debug/pprof/", pprofHandler())
-	mux.Handle("/metrics", s.metrics.metricsHandler())
-	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+	serveMux := http.NewServeMux()
+	serveMux.Handle("/debug/pprof/", pprofHandler())
+	serveMux.Handle("/metrics", s.metrics.metricsHandler())
+	serveMux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
+		_, _ = w.Write([]byte("OK"))
 	})
-	return mux
+	return serveMux
 }
 
 // pprofHandler serves the runtime profiles without the cmdline endpoint,
 // which would disclose the process arguments, credentials included.
 func pprofHandler() http.Handler {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/debug/pprof/", pprof.Index)
-	mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
-	mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
-	mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
-	return mux
+	serveMux := http.NewServeMux()
+	serveMux.HandleFunc("/debug/pprof/", pprof.Index)
+	serveMux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	serveMux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	serveMux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+	return serveMux
 }
 
+// ArrayResponse names a JSON array of strings in the Swagger spec.
 type ArrayResponse []string
+
+// MapResponse names a JSON object with string values in the Swagger spec.
 type MapResponse map[string]string
 
 // SetKeyPair makes the HTTPS server serve the --cert-path key pair.

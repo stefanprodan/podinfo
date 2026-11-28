@@ -31,6 +31,8 @@ func (s *Server) podHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// PodResponse is the body of /api/pod: the runtime information, the
+// environment and the request headers, with secrets masked.
 type PodResponse struct {
 	Hostname     string              `json:"hostname"`
 	Version      string              `json:"version"`

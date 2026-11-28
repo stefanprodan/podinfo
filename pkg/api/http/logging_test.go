@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"net/http"
 	"net/http/httptest"
 	"path/filepath"
 	"slices"
@@ -111,7 +112,7 @@ func TestLogCorrelation(t *testing.T) {
 			srv.setupHandler()
 
 			req := httptest.NewRequest(tt.method, tt.path, strings.NewReader(tt.body))
-			req.Header.Set("traceparent", testTraceparent)
+			req.Header.Set("Traceparent", testTraceparent)
 			srv.handler.ServeHTTP(httptest.NewRecorder(), req)
 
 			want := trace.SpanContextFromContext(propagation.TraceContext{}.Extract(context.Background(), propagation.HeaderCarrier(req.Header)))
@@ -155,7 +156,7 @@ func TestLogPayloadInfoLevel(t *testing.T) {
 	srv, recorder, buf := newLoggingServer(t, zapcore.InfoLevel)
 	srv.setupHandler()
 
-	req := httptest.NewRequest("POST", "/api/echo", strings.NewReader(testPayload))
+	req := httptest.NewRequest(http.MethodPost, "/api/echo", strings.NewReader(testPayload))
 	srv.handler.ServeHTTP(httptest.NewRecorder(), req)
 
 	if _, ok := recorder.find("payload received"); ok {
@@ -165,7 +166,7 @@ func TestLogPayloadInfoLevel(t *testing.T) {
 	defer recorder.mu.Unlock()
 	for _, r := range recorder.records {
 		r.WalkAttributes(func(kv attribute.KeyValue) bool {
-			if strings.Contains(kv.Value.Emit(), "payload-4bf92f35") {
+			if strings.Contains(kv.Value.String(), "payload-4bf92f35") {
 				t.Errorf("record %q exports the request body in %s", r.Body().AsString(), kv.Key)
 			}
 			return true

@@ -1,9 +1,11 @@
 package fscache
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -177,8 +179,8 @@ func TestWatcherConsistentGenerations(t *testing.T) {
 	writeGeneration := func(i int) string {
 		gen := fmt.Sprintf("..gen%d", i)
 		mkdir(t, filepath.Join(dir, gen))
-		writeFile(t, filepath.Join(dir, gen, "a"), fmt.Sprint(i))
-		writeFile(t, filepath.Join(dir, gen, "b"), fmt.Sprint(i))
+		writeFile(t, filepath.Join(dir, gen, "a"), strconv.Itoa(i))
+		writeFile(t, filepath.Join(dir, gen, "b"), strconv.Itoa(i))
 		return gen
 	}
 	symlink(t, writeGeneration(0), filepath.Join(dir, dataLink))
@@ -187,7 +189,7 @@ func TestWatcherConsistentGenerations(t *testing.T) {
 
 	var mixed atomic.Int32
 	check := func(files map[string][]byte) {
-		if string(files["a"]) != string(files["b"]) {
+		if !bytes.Equal(files["a"], files["b"]) {
 			mixed.Add(1)
 		}
 	}
@@ -275,6 +277,7 @@ func TestWatcherRootRecreate(t *testing.T) {
 }
 
 func testRootRecreate(t *testing.T, suffix string) {
+	t.Helper()
 	dir := filepath.Join(t.TempDir(), "root")
 	mkdir(t, dir)
 	writeFile(t, filepath.Join(dir, "a"), "1")
@@ -310,7 +313,7 @@ func TestWatcherMaxWait(t *testing.T) {
 			case <-stop:
 				return
 			case <-time.After(5 * time.Millisecond):
-				writeFile(t, filepath.Join(dir, "a"), fmt.Sprint(i))
+				writeFile(t, filepath.Join(dir, "a"), strconv.Itoa(i))
 			}
 		}
 	})
@@ -411,7 +414,10 @@ func TestWatcherCloseBlockedCallback(t *testing.T) {
 	closed := make(chan error, 1)
 	go func() { closed <- w.Close() }()
 	select {
-	case <-closed:
+	case err := <-closed:
+		if err != nil {
+			t.Fatal(err)
+		}
 	case <-time.After(waitTimeout):
 		t.Fatal("a blocked callback blocked Close")
 	}

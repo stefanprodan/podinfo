@@ -47,10 +47,10 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 		var wg sync.WaitGroup
 		wg.Add(len(s.config.BackendURL))
 		for i, b := range s.config.BackendURL {
-			go func(index int, backend string) {
+			go func(ctx context.Context, index int, backend string) {
 				defer wg.Done()
 
-				ctx, cancel := context.WithTimeout(r.Context(), s.config.HttpClientTimeout)
+				callCtx, cancel := context.WithTimeout(ctx, s.config.HTTPClientTimeout)
 				defer cancel()
 				display, ok := backendURL(backend)
 				var attrs []attribute.KeyValue
@@ -59,25 +59,25 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 				}
 				urlAttr := trace.WithAttributes(attrs...)
 
-				backendReq, err := http.NewRequestWithContext(ctx, "POST", backend, bytes.NewReader(body))
+				backendReq, err := http.NewRequestWithContext(callCtx, http.MethodPost, backend, bytes.NewReader(body))
 				if err != nil {
 					err = redactURLError(err, display)
-					s.logger.Error("backend call failed", zap.Error(err), zap.String("url", display), telemetry.Context(r.Context()))
+					s.logger.Error("backend call failed", zap.Error(err), zap.String("url", display), telemetry.Context(ctx))
 					span.RecordError(errBackendCall, urlAttr)
 					result[index] = fmt.Sprintf("backend %v call failed %v", display, err)
 					return
 				}
 
-				if id := r.Header.Get("x-request-id"); id != "" {
-					backendReq.Header.Set("x-request-id", id)
+				if id := r.Header.Get("X-Request-ID"); id != "" {
+					backendReq.Header.Set("X-Request-ID", id)
 				}
-				backendReq.Header.Set("X-API-Version", version.VERSION)
-				backendReq.Header.Set("X-API-Revision", version.REVISION)
+				backendReq.Header.Set("X-Api-Version", version.VERSION)
+				backendReq.Header.Set("X-Api-Revision", version.REVISION)
 
 				client, err := s.backendClient(backend)
 				if err != nil {
 					err = redactURLError(err, display)
-					s.logger.Error("backend call failed", zap.Error(err), zap.String("url", display), telemetry.Context(r.Context()))
+					s.logger.Error("backend call failed", zap.Error(err), zap.String("url", display), telemetry.Context(ctx))
 					span.RecordError(errBackendCall, urlAttr)
 					result[index] = fmt.Sprintf("backend %v call failed %v", display, err)
 					return
@@ -86,8 +86,8 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 				resp, err := client.Do(backendReq)
 				if err != nil {
 					err = redactURLError(err, display)
-					if r.Context().Err() == nil {
-						s.logger.Error("backend call failed", zap.Error(err), zap.String("url", display), telemetry.Context(r.Context()))
+					if ctx.Err() == nil {
+						s.logger.Error("backend call failed", zap.Error(err), zap.String("url", display), telemetry.Context(ctx))
 						span.RecordError(errBackendCall, urlAttr)
 					}
 					result[index] = fmt.Sprintf("backend %v call failed %v", display, err)
@@ -96,7 +96,7 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 				defer resp.Body.Close()
 
 				if resp.StatusCode >= 400 {
-					s.logger.Error("backend call failed", zap.Int("status", resp.StatusCode), zap.String("url", display), telemetry.Context(r.Context()))
+					s.logger.Error("backend call failed", zap.Int("status", resp.StatusCode), zap.String("url", display), telemetry.Context(ctx))
 					span.RecordError(fmt.Errorf("backend response status code %v", resp.StatusCode), urlAttr)
 					result[index] = fmt.Sprintf("backend %v response status code %v", display, resp.StatusCode)
 					return
@@ -107,12 +107,12 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 					err = errBackendTooLarge
 				}
 				if err != nil {
-					if r.Context().Err() == nil {
+					if ctx.Err() == nil {
 						s.logger.Error(
 							"reading the backend response body failed",
 							zap.Error(err),
 							zap.String("url", display),
-							telemetry.Context(r.Context()))
+							telemetry.Context(ctx))
 						span.RecordError(errBackendRead, urlAttr)
 					}
 					result[index] = fmt.Sprintf("backend %v call failed %v", display, err)
@@ -120,7 +120,7 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 				}
 
 				if ce := s.logger.Check(zap.DebugLevel, "payload received from backend"); ce != nil {
-					fields := []zap.Field{zap.Int("size", len(rbody)), zap.String("url", display), telemetry.Context(r.Context())}
+					fields := []zap.Field{zap.Int("size", len(rbody)), zap.String("url", display), telemetry.Context(ctx)}
 					if len(rbody) <= maxLoggedPayloadSize {
 						fields = append(fields, zap.String("response", string(rbody)))
 					}
@@ -128,7 +128,7 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 				}
 
 				result[index] = string(rbody)
-			}(i, b)
+			}(r.Context(), i, b)
 		}
 		wg.Wait()
 		if r.Context().Err() != nil {
@@ -138,13 +138,12 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 
 		w.Header().Set("X-Color", s.config.UIColor)
 		s.JSONResponse(w, r, result)
-
 	} else {
 		s.logPayload(r.Context(), body)
 		setRawResponseHeaders(w)
 		w.Header().Set("X-Color", s.config.UIColor)
 		w.WriteHeader(http.StatusAccepted)
-		w.Write(body)
+		_, _ = w.Write(body)
 	}
 }
 
