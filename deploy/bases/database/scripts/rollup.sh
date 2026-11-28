@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-# This is a simulation of a rollup process.
+# Simulates a rollup.
 
 STEPS=${ROLLUP_STEPS:-6}
 echo "Starting rollup with $STEPS steps (estimated run time: $((STEPS * 10))s)"

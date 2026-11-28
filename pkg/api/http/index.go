@@ -60,11 +60,12 @@ func contentSecurityPolicy(logo string) string {
 
 // Index godoc
 // @Summary Index
-// @Description renders podinfo UI
+// @Description renders podinfo UI when the User-Agent starts with Mozilla, other clients get the runtime information of /api/info as JSON
 // @Tags HTTP API
-// @Produce html
+// @Produce html,json
 // @Router / [get]
-// @Success 200 {string} string "OK"
+// @Success 200 {string} string "HTML page"
+// @Failure 500 {string} string "rendering the page failed"
 func (s *Server) indexHandler(w http.ResponseWriter, r *http.Request) {
 	data := struct {
 		Title  string

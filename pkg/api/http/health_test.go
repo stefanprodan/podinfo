@@ -22,7 +22,6 @@ func TestHealthzHandler(t *testing.T) {
 
 	handler.ServeHTTP(rr, req)
 
-	// Check the status code is what we expect.
 	if status := rr.Code; status != http.StatusServiceUnavailable {
 		t.Errorf("handler returned wrong status code: got %v want %v",
 			status, http.StatusServiceUnavailable)
@@ -43,7 +42,6 @@ func TestReadyzHandler(t *testing.T) {
 
 	handler.ServeHTTP(rr, req)
 
-	// Check the status code is what we expect.
 	if status := rr.Code; status != http.StatusServiceUnavailable {
 		t.Errorf("handler returned wrong status code: got %v want %v",
 			status, http.StatusServiceUnavailable)

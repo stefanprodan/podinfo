@@ -11,13 +11,14 @@ import (
 
 // Chunked godoc
 // @Summary Chunked transfer encoding
-// @Description uses transfer-encoding type chunked to give a partial response and then waits for the specified period
+// @Description sends the response headers with transfer-encoding chunked, waits for the specified period, then sends the body
 // @Tags HTTP API
-// @Accept json
 // @Produce json
 // @Param seconds path int true "seconds to wait for"
 // @Router /chunked/{seconds} [get]
-// @Success 200 {object} http.MapResponse
+// @Success 200 {object} map[string]int "the delay in seconds"
+// @Failure 400 {object} http.ErrorMessage "invalid request body"
+// @Failure 413 {object} http.ErrorMessage "request body too large"
 // @Failure 500 {object} http.ErrorMessage "Streaming unsupported!"
 func (s *Server) chunkedHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
@@ -53,10 +54,8 @@ func (s *Server) chunkedHandler(w http.ResponseWriter, r *http.Request) {
 	flusher.Flush()
 }
 
-// randomDelaySeconds returns a random delay in seconds within [10, timeout),
-// used when no explicit wait is provided. timeout is a time.Duration, so it is
-// converted to whole seconds; the upper bound is clamped to keep rand.Intn's
-// argument positive (it panics on a non-positive argument).
+// randomDelaySeconds returns a random delay in [10, timeout) seconds. Timeouts
+// under 12s count as 12s, as rand.Intn panics on a non-positive argument.
 func randomDelaySeconds(timeout time.Duration) int {
 	maxDelay := int(timeout / time.Second)
 	if maxDelay <= 11 {

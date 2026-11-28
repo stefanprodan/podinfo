@@ -35,15 +35,16 @@ func NewShutdown(serverShutdownTimeout, drainDelay time.Duration, logger *zap.Lo
 	}
 }
 
+// Graceful blocks until stopCh is closed, then fails the health checks, waits
+// for the drain delay and shuts the servers down within the shutdown timeout.
 func (s *Shutdown) Graceful(stopCh <-chan struct{}, httpServer *http.Server, httpsServer *http.Server, grpcServer *grpc.Server, grpcHealth *health.Server, healthy *int32, ready *int32) {
-	// wait for SIGTERM or SIGINT
 	<-stopCh
 
 	if s.beforeShutdown != nil {
 		s.beforeShutdown()
 	}
 
-	// all calls to /healthz and /readyz will fail from now on
+	// /healthz and /readyz fail from here on.
 	atomic.StoreInt32(healthy, 0)
 	atomic.StoreInt32(ready, 0)
 	if grpcHealth != nil {
@@ -52,9 +53,9 @@ func (s *Shutdown) Graceful(stopCh <-chan struct{}, httpServer *http.Server, htt
 
 	s.logger.Info("Shutting down servers", zap.Duration("drain", s.drainDelay), zap.Duration("timeout", s.serverShutdownTimeout))
 
-	// There could be a period where a terminating pod may still receive requests. Implementing a brief wait can mitigate this.
-	// See: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-termination
-	// the readiness check interval must be lower than the drain delay
+	// A terminating pod may still receive requests while its endpoint removal
+	// propagates. The readiness probe period must be shorter than the drain delay.
+	// See https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-termination
 	s.sleep(s.drainDelay)
 
 	ctx, cancel := context.WithTimeout(context.Background(), s.serverShutdownTimeout)

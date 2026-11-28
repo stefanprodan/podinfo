@@ -1,6 +1,4 @@
-# Makefile for releasing podinfo
-#
-# The release version is controlled from pkg/version
+# The release version is set in pkg/version/version.go.
 
 TAG?=latest
 NAME:=podinfo
@@ -35,8 +33,8 @@ build-charts:
 	helm lint charts/*
 	helm package charts/*
 
-# values.schema.json is generated from values.yaml and its "@schema" comments
-# the root stays open for the keys Helm passes to a subchart, such as the dependency condition
+# values.schema.json is generated from values.yaml and its "@schema" comments.
+# The root stays open for the keys Helm passes to a subchart, such as the dependency condition.
 chart-schema:
 	cd charts/podinfo && go run github.com/losisin/helm-values-schema-json/v2@v2.4.0 -f values.yaml -o values.schema.json --draft 7 --indent 2 --no-additional-properties --schema-root.additional-properties
 

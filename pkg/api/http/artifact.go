@@ -113,12 +113,13 @@ func (s *Server) loadArtifact() {
 
 // Artifact godoc
 // @Summary Download artifact
-// @Description returns the files from the artifact path as a tar.gz, the digest is set in the X-Artifact-Digest header
+// @Description returns the files from the artifact path as a tar.gz with its sha256 digest in the X-Artifact-Digest header, the route exists only when the artifact path is set
 // @Tags HTTP API
-// @Produce application/gzip
+// @Produce application/gzip,json
 // @Router /artifact [get]
-// @Success 200 {file} file "tar.gz archive"
-// @Failure 404 {object} http.MapResponse
+// @Router /artifact [head]
+// @Success 200 {file} file "tar.gz archive, no body for HEAD"
+// @Failure 404 {object} http.ErrorMessage "artifact not found"
 func (s *Server) artifactHandler(w http.ResponseWriter, r *http.Request) {
 	a := s.artifact
 	if a == nil {

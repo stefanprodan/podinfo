@@ -15,11 +15,11 @@ import (
 	"go.uber.org/zap"
 )
 
-// maxRequestBodySize caps how much of a request body the body-reading handlers
-// buffer into memory. Without this bound an unauthenticated client can POST an
-// arbitrarily large body and exhaust process memory (and, for /store, disk).
+// maxRequestBodySize caps the request body the handlers buffer in memory, so
+// a client cannot exhaust the memory or, through /store, the disk.
 const maxRequestBodySize = limits.MaxBodySize
 
+// RandomErrorMiddleware fails one request in three with a 500, 400 or 409.
 type RandomErrorMiddleware struct {
 	intn func(n int) int
 }
@@ -105,9 +105,8 @@ func (s *Server) ErrorResponse(w http.ResponseWriter, r *http.Request, msg strin
 	w.Write(prettyJSON(body))
 }
 
-// readLimitedBody reads the request body up to maxRequestBodySize. It returns
-// the body and true on success. On an oversized body it writes a 413 response,
-// on any other read error a 400, and returns false so the caller returns early.
+// readLimitedBody reads the request body up to maxRequestBodySize. It answers
+// 413 for a larger body and 400 for any other read error, and returns false.
 func (s *Server) readLimitedBody(w http.ResponseWriter, r *http.Request) ([]byte, bool) {
 	r.Body = http.MaxBytesReader(w, r.Body, maxRequestBodySize)
 	body, err := io.ReadAll(r.Body)

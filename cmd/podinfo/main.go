@@ -30,7 +30,6 @@ import (
 )
 
 func main() {
-	// flags definition
 	fs := pflag.NewFlagSet("default", pflag.ContinueOnError)
 	fs.String("host", "", "Host to bind service to")
 	fs.String("prefix", "/", "URL path prefix for HTTP routes")
@@ -38,7 +37,7 @@ func main() {
 	fs.Int("secure-port", 0, "HTTPS port")
 	fs.Int("port-metrics", 0, "metrics port")
 	fs.Int("grpc-port", 0, "gRPC port")
-	fs.String("grpc-service-name", "podinfo", "gPRC service name")
+	fs.String("grpc-service-name", "podinfo", "gRPC service name")
 	fs.Bool("grpc-tls", false, "serve the gRPC port with TLS using the --cert-path certificate, or with SPIFFE mTLS when --spiffe-endpoint-socket is set")
 	fs.StringSlice("grpc-backend-url", []string{}, "gRPC backend service URL, grpc://host:port or grpcs://host:port for TLS")
 	fs.Duration("grpc-client-timeout", 2*time.Minute, "gRPC backend call timeout duration")
@@ -62,7 +61,7 @@ func main() {
 	fs.String("ui-message", "greetings from podinfo", "UI message")
 	fs.Bool("h2c", false, "serve HTTP/2 without TLS (h2c) on the HTTP port")
 	fs.Bool("random-delay", false, "between 0 and 5 seconds random delay by default")
-	fs.String("random-delay-unit", "s", "either s(seconds) or ms(milliseconds")
+	fs.String("random-delay-unit", "s", "random delay unit, s (seconds) or ms (milliseconds)")
 	fs.Int("random-delay-min", 0, "min for random delay: 0 by default")
 	fs.Int("random-delay-max", 5, "max for random delay: 5 by default")
 	fs.Bool("random-error", false, "1/3 chances of a random response error")
@@ -79,7 +78,6 @@ func main() {
 
 	versionFlag := fs.BoolP("version", "v", false, "get version number")
 
-	// parse flags
 	err := fs.Parse(os.Args[1:])
 	switch {
 	case err == pflag.ErrHelp:
@@ -93,7 +91,6 @@ func main() {
 		os.Exit(0)
 	}
 
-	// bind flags and environment variables
 	viper.BindPFlags(fs)
 	viper.RegisterAlias("backendUrl", "backend-url")
 	hostname, _ := os.Hostname()
@@ -108,7 +105,6 @@ func main() {
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	viper.AutomaticEnv()
 
-	// load config from file
 	if _, fileErr := os.Stat(filepath.Join(viper.GetString("config-path"), viper.GetString("config"))); fileErr == nil {
 		viper.SetConfigName(strings.Split(viper.GetString("config"), ".")[0])
 		viper.AddConfigPath(viper.GetString("config-path"))
@@ -121,7 +117,6 @@ func main() {
 		viper.Set("ui-logo", path.Join("/", viper.GetString("prefix"), "ui/cuddle_clap.gif"))
 	}
 
-	// configure logging
 	level, err := parseLevel(viper.GetString("level"))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error initializing logger: %s\n", err.Error())
@@ -149,12 +144,10 @@ func main() {
 	stdLog := zap.RedirectStdLog(logger)
 	defer stdLog()
 
-	// start stress tests if any
 	beginStressTest(viper.GetInt("stress-cpu"), viper.GetInt("stress-memory"), logger)
 
 	resetInvalidPorts(fs, "port", "secure-port", "grpc-port", "port-metrics")
 
-	// validate random delay options
 	if viper.GetInt("random-delay-min") < 0 || viper.GetInt("random-delay-max") < 0 {
 		logger.Panic("`--random-delay-min` and `--random-delay-max` should not be negative")
 	}
@@ -171,19 +164,16 @@ func main() {
 		logger.Panic("`random-delay-unit` accepted values are: s|ms")
 	}
 
-	// load gRPC server config
 	var grpcCfg grpc.Config
 	if err := viper.Unmarshal(&grpcCfg); err != nil {
 		logger.Panic("config unmarshal failed", zap.Error(err))
 	}
 
-	// load HTTP server config
 	var srvCfg http.Config
 	if err := viper.Unmarshal(&srvCfg); err != nil {
 		logger.Panic("config unmarshal failed", zap.Error(err))
 	}
 
-	// log version and port
 	logger.Info("Starting podinfo",
 		zap.String("version", viper.GetString("version")),
 		zap.String("revision", viper.GetString("revision")),
@@ -194,7 +184,6 @@ func main() {
 		logger.Warn("removing the temporary store files failed", zap.Error(err), zap.String("path", srvCfg.DataPath))
 	}
 
-	// start HTTP server
 	srv, err := http.NewServer(&srvCfg, logger)
 	if err != nil {
 		logger.Fatal("invalid HTTP server config", zap.Error(err))
@@ -209,7 +198,6 @@ func main() {
 		srv.SetKeyPair(keyPair)
 	}
 
-	// start gRPC server
 	var grpcSrv *grpc.Server
 	var grpcServer *go_grpc.Server
 	var grpcHealth *health.Server
@@ -229,7 +217,6 @@ func main() {
 
 	httpServer, httpsServer, healthy, ready := srv.ListenAndServe()
 
-	// graceful shutdown
 	stopCh := signals.SetupSignalHandler()
 	drainDelay := 3 * time.Second
 	if viper.GetString("level") == "debug" {

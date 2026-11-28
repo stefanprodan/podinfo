@@ -26,7 +26,8 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
-// The greeting service definition.
+// Status returns the gRPC status named in the request, such as NotFound,
+// and Unknown for a name that is not a gRPC status code.
 type StatusServiceClient interface {
 	Status(ctx context.Context, in *StatusRequest, opts ...grpc.CallOption) (*StatusResponse, error)
 }
@@ -53,7 +54,8 @@ func (c *statusServiceClient) Status(ctx context.Context, in *StatusRequest, opt
 // All implementations must embed UnimplementedStatusServiceServer
 // for forward compatibility.
 //
-// The greeting service definition.
+// Status returns the gRPC status named in the request, such as NotFound,
+// and Unknown for a name that is not a gRPC status code.
 type StatusServiceServer interface {
 	Status(context.Context, *StatusRequest) (*StatusResponse, error)
 	mustEmbedUnimplementedStatusServiceServer()

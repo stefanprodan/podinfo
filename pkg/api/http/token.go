@@ -16,10 +16,11 @@ type jwtCustomClaims struct {
 
 // Token godoc
 // @Summary Generate JWT token
-// @Description issues a JWT token valid for one minute
+// @Description issues a JWT token valid for one minute for the name in the request body, anonymous when empty
 // @Tags HTTP API
-// @Accept json
+// @Accept plain
 // @Produce json
+// @Param name body string false "name set in the token"
 // @Router /token [post]
 // @Success 200 {object} http.TokenResponse
 // @Failure 400 {object} http.ErrorMessage "invalid request body"
@@ -63,15 +64,15 @@ func (s *Server) tokenGenerateHandler(w http.ResponseWriter, r *http.Request) {
 
 // TokenValidate godoc
 // @Summary Validate JWT token
-// @Description validates the JWT token
+// @Description validates the JWT token and returns its name and expiry
 // @Tags HTTP API
-// @Accept json
 // @Produce json
+// @Param Authorization header string true "Bearer token"
 // @Router /token/validate [get]
 // @Success 200 {object} http.TokenValidationResponse
 // @Failure 401 {object} http.ErrorMessage "invalid or missing token"
-// Get: JWT=$(curl -s -d 'test' localhost:9898/token | jq -r .token)
-// Post: curl -H "Authorization: Bearer ${JWT}" localhost:9898/token/validate
+// Generate: JWT=$(curl -s -d 'test' localhost:9898/token | jq -r .token)
+// Validate: curl -H "Authorization: Bearer ${JWT}" localhost:9898/token/validate
 func (s *Server) tokenValidateHandler(w http.ResponseWriter, r *http.Request) {
 	authorizationHeader := r.Header.Get("authorization")
 	if authorizationHeader == "" {

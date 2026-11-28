@@ -14,11 +14,13 @@ import (
 
 // Store godoc
 // @Summary Upload file
-// @Description writes the posted content to disk at /data/hash and returns the SHA1 hash of the content
+// @Description writes the posted content to a file named by its SHA1 hash in the data path and returns the hash
 // @Tags HTTP API
-// @Accept json
+// @Accept json,plain,octet-stream
 // @Produce json
+// @Param payload body string false "content to store"
 // @Router /store [post]
+// @Router /store [put]
 // @Success 202 {object} http.MapResponse
 // @Failure 400 {object} http.ErrorMessage "invalid request body"
 // @Failure 413 {object} http.ErrorMessage "request body too large"
@@ -40,13 +42,12 @@ func (s *Server) storeWriteHandler(w http.ResponseWriter, r *http.Request) {
 
 // Store godoc
 // @Summary Download file
-// @Description returns the content of the file /data/hash if exists
+// @Description returns the content of the file named by the hash in the data path
 // @Tags HTTP API
-// @Accept json
-// @Produce plain
-// @Param hash path string true "hash value"
+// @Produce octet-stream,json
+// @Param hash path string true "SHA1 hash of the content"
 // @Router /store/{hash} [get]
-// @Success 200 {string} string "file"
+// @Success 200 {file} file "file content"
 // @Failure 400 {object} http.ErrorMessage "invalid hash"
 // @Failure 404 {object} http.ErrorMessage "file not found"
 // @Failure 500 {object} http.ErrorMessage "reading file failed"

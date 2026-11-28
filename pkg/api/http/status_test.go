@@ -24,7 +24,6 @@ func TestStatusHandler(t *testing.T) {
 	srv.router.HandleFunc("/status/{code}", srv.statusHandler)
 	srv.router.ServeHTTP(rr, req)
 
-	// Check the status code is what we expect.
 	if status := rr.Code; status != http.StatusNotFound {
 		t.Errorf("handler returned wrong status code: got %v want %v",
 			status, http.StatusNotFound)

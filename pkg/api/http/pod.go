@@ -13,7 +13,6 @@ import (
 // @Summary Pod runtime, environment and request headers
 // @Description returns the runtime information, the environment variables and the request HTTP headers of the pod that served the request, with secret values masked, plus X-Spiffe-Id when the client presented a SPIFFE X.509 SVID
 // @Tags HTTP API
-// @Accept json
 // @Produce json
 // @Success 200 {object} http.PodResponse
 // @Router /api/pod [get]

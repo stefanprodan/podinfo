@@ -22,14 +22,18 @@ import (
 
 // Echo godoc
 // @Summary Echo
-// @Description forwards the call to the backend service and echos the posted content
+// @Description echos the posted content, or when backend URLs are set posts it to each backend and returns their responses
 // @Tags HTTP API
-// @Accept json
-// @Produce json
+// @Accept json,plain,octet-stream
+// @Produce octet-stream,json
+// @Param payload body string false "content to echo"
+// @Router /echo [post]
 // @Router /api/echo [post]
-// @Success 202 {object} http.MapResponse
+// @Success 202 {file} file "the posted content, without backends"
+// @Success 200 {array} string "the response or the error of each backend"
 // @Failure 400 {object} http.ErrorMessage "invalid request body"
 // @Failure 413 {object} http.ErrorMessage "request body too large"
+// @Failure 499 {object} http.ErrorMessage "client closed request"
 func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 	body, ok := s.readLimitedBody(w, r)
 	if !ok {
@@ -79,7 +83,6 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 
-				// call backend
 				resp, err := client.Do(backendReq)
 				if err != nil {
 					err = redactURLError(err, display)
@@ -92,7 +95,6 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 				}
 				defer resp.Body.Close()
 
-				// copy error status from backend and exit
 				if resp.StatusCode >= 400 {
 					s.logger.Error("backend call failed", zap.Int("status", resp.StatusCode), zap.String("url", display), telemetry.Context(r.Context()))
 					span.RecordError(fmt.Errorf("backend response status code %v", resp.StatusCode), urlAttr)
@@ -100,7 +102,6 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 
-				// forward the received body
 				rbody, err := io.ReadAll(io.LimitReader(resp.Body, limits.MaxBackendResponseSize+1))
 				if err == nil && len(rbody) > limits.MaxBackendResponseSize {
 					err = errBackendTooLarge
@@ -108,7 +109,7 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					if r.Context().Err() == nil {
 						s.logger.Error(
-							"reading the backend request body failed",
+							"reading the backend response body failed",
 							zap.Error(err),
 							zap.String("url", display),
 							telemetry.Context(r.Context()))

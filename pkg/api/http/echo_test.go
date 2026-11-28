@@ -46,13 +46,11 @@ func TestEchoHandler(t *testing.T) {
 		rr := httptest.NewRecorder()
 		handler.ServeHTTP(rr, req)
 
-		// Check the status code is what we expect.
 		if status := rr.Code; status != http.StatusAccepted {
 			t.Errorf("handler returned wrong status code: got %v want %v",
 				status, http.StatusAccepted)
 		}
 
-		// Check the response body is what we expect.
 		if rr.Body.String() != c.expected {
 			t.Fatalf("handler returned unexpected body:\ngot \n%v \nwant \n%s",
 				rr.Body.String(), c.expected)

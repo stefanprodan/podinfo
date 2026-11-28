@@ -1,4 +1,3 @@
-// Package limits holds the size limits shared by the HTTP and gRPC APIs.
 package limits
 
 const (

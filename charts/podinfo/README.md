@@ -54,6 +54,9 @@ The following tables lists the configurable parameters of the podinfo chart and 
 
 | Parameter                                      | Default                        | Description                                                                                        |
 |------------------------------------------------|--------------------------------|----------------------------------------------------------------------------------------------------|
+| `nameOverride`                                 | `""`                           | Replaces the chart name in the resource names and labels                                           |
+| `fullnameOverride`                             | `""`                           | Replaces the full name of the resources                                                            |
+| `namespaceOverride`                            | `""`                           | Namespace of the resources, instead of the release namespace                                       |
 | `replicaCount`                                 | `1`                            | Desired number of pods                                                                             |
 | `logLevel`                                     | `info`                         | Log level: `debug`, `info`, `warn`, `error`, `fatal`, `panic`                                      |
 | `backend`                                      | `None`                         | Echo backend URL                                                                                   |
@@ -94,8 +97,8 @@ The following tables lists the configurable parameters of the podinfo chart and 
 | `service.metricsPort`                          | `9797`                         | Prometheus metrics endpoint port                                                                   |
 | `service.httpPort`                             | `9898`                         | Container HTTP port                                                                                |
 | `service.externalPort`                         | `9898`                         | ClusterIP HTTP port                                                                                |
-| `service.grpcPort`                             | `9999`                         | ClusterIP gPRC port                                                                                |
-| `service.grpcService`                          | `podinfo`                      | gPRC service name                                                                                  |
+| `service.grpcPort`                             | `9999`                         | ClusterIP gRPC port                                                                                |
+| `service.grpcService`                          | `podinfo`                      | gRPC service name                                                                                  |
 | `service.grpcTLS`                              | `false`                        | Serve the gRPC port with TLS (SPIFFE mTLS when `spiffe.enabled`), requires `tls.enabled`           |
 | `service.nodePort`                             | `31198`                        | NodePort for the HTTP endpoint                                                                     |
 | `service.trafficDistribution`                  | `""`                           | Traffic distribution strategy                                                                      |

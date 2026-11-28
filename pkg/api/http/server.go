@@ -259,13 +259,14 @@ func (s *Server) setupHandler() {
 	s.handler = s.instrument(s.router)
 }
 
+// ListenAndServe starts the metrics, HTTP and HTTPS servers. It returns the
+// HTTP and HTTPS servers, nil for a port set to 0, and the healthy and ready states.
 func (s *Server) ListenAndServe() (*http.Server, *http.Server, *int32, *int32) {
 	go s.startMetricsServer()
 
 	s.loadArtifact()
 	s.setupHandler()
 
-	// load configs in memory and start watching for changes in the config dir
 	if stat, err := os.Stat(s.config.ConfigPath); err == nil && stat.IsDir() {
 		configs, err := fscache.New(s.config.ConfigPath, s.logger)
 		if err != nil {
@@ -276,20 +277,16 @@ func (s *Server) ListenAndServe() (*http.Server, *http.Server, *int32, *int32) {
 		}
 	}
 
-	// set the version in the cache on a schedule
 	s.startCacheVersion(30 * time.Second)
 
-	// create the http server
 	srv := s.startServer()
 
-	// create the secure server
 	secureSrv := s.startSecureServer()
 
-	// signal Kubernetes the server is ready to receive traffic
 	if !s.config.Unhealthy {
 		atomic.StoreInt32(&healthy, 1)
 	}
-	// with SPIFFE, the secure server sets ready once it has an SVID
+	// With SPIFFE, the secure server sets ready once it has an SVID.
 	if !s.config.Unready && s.spiffe == nil {
 		atomic.StoreInt32(&ready, 1)
 	}
@@ -298,11 +295,7 @@ func (s *Server) ListenAndServe() (*http.Server, *http.Server, *int32, *int32) {
 }
 
 func (s *Server) startServer() *http.Server {
-
-	// determine if the port is specified
 	if s.config.Port == "0" {
-
-		// move on immediately
 		return nil
 	}
 
@@ -320,7 +313,6 @@ func (s *Server) startServer() *http.Server {
 		srv.Protocols.SetUnencryptedHTTP2(true)
 	}
 
-	// start the server in the background
 	go func() {
 		s.logger.Info("Starting HTTP Server.", zap.String("addr", srv.Addr))
 		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
@@ -328,16 +320,11 @@ func (s *Server) startServer() *http.Server {
 		}
 	}()
 
-	// return the server and routine
 	return srv
 }
 
 func (s *Server) startSecureServer() *http.Server {
-
-	// determine if the port is specified
 	if s.config.SecurePort == "0" {
-
-		// move on immediately
 		return nil
 	}
 
@@ -359,7 +346,6 @@ func (s *Server) startSecureServer() *http.Server {
 	}
 	srv.TLSConfig = s.keyPair.TLSConfig()
 
-	// start the server in the background
 	go func() {
 		s.logger.Info("Starting HTTPS Server.", zap.String("addr", srv.Addr))
 		if err := srv.ListenAndServeTLS("", ""); err != http.ErrServerClosed {
@@ -367,7 +353,6 @@ func (s *Server) startSecureServer() *http.Server {
 		}
 	}()
 
-	// return the server
 	return srv
 }
 
@@ -423,7 +408,8 @@ func (s *Server) Cache() redis.UniversalClient {
 	return s.cache
 }
 
-// Close releases the cache client and its key pair watcher, the config watcher and the SPIFFE source once the HTTP and gRPC servers have stopped.
+// Close releases the cache client and its key pair watcher, the config watcher
+// and the SPIFFE source. Call it after the HTTP and gRPC servers have stopped.
 func (s *Server) Close() error {
 	if s.cacheStop != nil {
 		close(s.cacheStop)

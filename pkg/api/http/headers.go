@@ -8,12 +8,12 @@ import (
 
 // Headers godoc
 // @Summary Headers
-// @Description returns a JSON array with the request HTTP headers, with credential values masked, plus X-Spiffe-Id when the client presented a SPIFFE X.509 SVID
+// @Description returns the request HTTP headers as a JSON object of name to list of values, with credential values masked, plus X-Spiffe-Id when the client presented a SPIFFE X.509 SVID
 // @Tags HTTP API
-// @Accept json
 // @Produce json
 // @Router /headers [get]
-// @Success 200 {object} http.ArrayResponse
+// @Router /headers [post]
+// @Success 200 {object} map[string][]string
 func (s *Server) echoHeadersHandler(w http.ResponseWriter, r *http.Request) {
 	s.JSONResponse(w, r, echoedHeaders(r))
 }

@@ -30,15 +30,18 @@ import (
 // @Summary Save payload in cache
 // @Description writes the posted content in cache
 // @Tags HTTP API
-// @Accept json
+// @Accept json,plain,octet-stream
 // @Produce json
 // @Param key path string true "Key to save to"
+// @Param payload body string false "content to save"
 // @Router /cache/{key} [post]
+// @Router /cache/{key} [put]
 // @Success 202
 // @Failure 400 {object} http.ErrorMessage "invalid request body or key too long"
 // @Failure 413 {object} http.ErrorMessage "request body too large"
+// @Failure 499 {object} http.ErrorMessage "client closed request"
 // @Failure 500 {object} http.ErrorMessage "cache set failed"
-// @Failure 503 {object} http.ErrorMessage "cache server is offline"
+// @Failure 503 {object} http.ErrorMessage "cache server not configured"
 func (s *Server) cacheWriteHandler(w http.ResponseWriter, r *http.Request) {
 	key, ok := s.cacheKey(w, r)
 	if !ok {
@@ -61,14 +64,14 @@ func (s *Server) cacheWriteHandler(w http.ResponseWriter, r *http.Request) {
 // @Summary Delete payload from cache
 // @Description deletes the key and its value from cache
 // @Tags HTTP API
-// @Accept json
 // @Produce json
 // @Param key path string true "Key to delete"
 // @Router /cache/{key} [delete]
 // @Success 202
 // @Failure 400 {object} http.ErrorMessage "key too long"
+// @Failure 499 {object} http.ErrorMessage "client closed request"
 // @Failure 500 {object} http.ErrorMessage "cache delete failed"
-// @Failure 503 {object} http.ErrorMessage "cache server is offline"
+// @Failure 503 {object} http.ErrorMessage "cache server not configured"
 func (s *Server) cacheDeleteHandler(w http.ResponseWriter, r *http.Request) {
 	key, ok := s.cacheKey(w, r)
 	if !ok {
@@ -87,15 +90,15 @@ func (s *Server) cacheDeleteHandler(w http.ResponseWriter, r *http.Request) {
 // @Summary Get payload from cache
 // @Description returns the content from cache if key exists
 // @Tags HTTP API
-// @Accept json
-// @Produce json
+// @Produce octet-stream,json
 // @Param key path string true "Key to load from cache"
 // @Router /cache/{key} [get]
-// @Success 200 {string} string value
+// @Success 200 {file} file "value"
 // @Failure 400 {object} http.ErrorMessage "key too long"
 // @Failure 404 "key not found"
+// @Failure 499 {object} http.ErrorMessage "client closed request"
 // @Failure 500 {object} http.ErrorMessage "cache get failed"
-// @Failure 503 {object} http.ErrorMessage "cache server is offline"
+// @Failure 503 {object} http.ErrorMessage "cache server not configured"
 func (s *Server) cacheReadHandler(w http.ResponseWriter, r *http.Request) {
 	key, ok := s.cacheKey(w, r)
 	if !ok {
@@ -286,14 +289,12 @@ func (s *Server) startCacheVersion(interval time.Duration) {
 		return
 	}
 
-	// set <hostname>=<version> with an expiry time of one minute
 	setVersion := func() {
 		if err := s.cache.Set(context.Background(), s.config.Hostname, version.VERSION, time.Minute).Err(); err != nil {
 			s.logger.Warn("cache server is offline", zap.Error(err))
 		}
 	}
 
-	// set version on a schedule
 	s.cacheStop = make(chan struct{})
 	s.cacheStopped = make(chan struct{})
 	go func() {

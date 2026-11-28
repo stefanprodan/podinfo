@@ -20,7 +20,6 @@ func TestStoreReadHandler_ContentType(t *testing.T) {
 	srv := NewMockServer()
 	srv.store = store.New(dataDir, telemetry.Tracer())
 
-	// Write an HTML payload to the store.
 	writeReq, err := http.NewRequest("POST", "/store", strings.NewReader("<html><script>alert(1)</script></html>"))
 	if err != nil {
 		t.Fatal(err)
@@ -32,7 +31,6 @@ func TestStoreReadHandler_ContentType(t *testing.T) {
 		t.Fatalf("store write returned status %d, want %d", writeRR.Code, http.StatusAccepted)
 	}
 
-	// Read it back and verify Content-Type is application/octet-stream, not text/html.
 	hash := store.Hash([]byte("<html><script>alert(1)</script></html>"))
 	readReq, err := http.NewRequest("GET", "/store/"+hash, nil)
 	if err != nil {
