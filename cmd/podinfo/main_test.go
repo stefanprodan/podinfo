@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"os/exec"
 	"regexp"
 	"slices"
 	"strings"
@@ -36,6 +37,39 @@ import (
 	podinfohttp "github.com/stefanprodan/podinfo/pkg/api/http"
 	"github.com/stefanprodan/podinfo/pkg/telemetry"
 )
+
+const runMainEnv = "TEST_RUN_MAIN"
+
+// TestMain runs main in place of the tests when the test binary is executed
+// by runMain.
+func TestMain(m *testing.M) {
+	if os.Getenv(runMainEnv) == "1" {
+		main()
+		return
+	}
+	os.Exit(m.Run())
+}
+
+func runMain(t *testing.T, args ...string) (string, error) {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	args = append([]string{"--host=127.0.0.1", "--port=0", "--artifact-path=", "--data-path=" + t.TempDir()}, args...)
+	cmd := exec.CommandContext(ctx, os.Args[0], args...)
+	cmd.Env = []string{runMainEnv + "=1", "OTEL_SDK_DISABLED=true"}
+	out, err := cmd.CombinedOutput()
+	return string(out), err
+}
+
+func TestGRPCTLSRequiresPort(t *testing.T) {
+	out, err := runMain(t, "--grpc-tls")
+	if exitErr, ok := errors.AsType[*exec.ExitError](err); !ok || exitErr.ExitCode() != 1 {
+		t.Errorf("got error %v, want exit code 1", err)
+	}
+	if want := "--grpc-tls requires --grpc-port"; !strings.Contains(out, want) {
+		t.Errorf("got output %q, want %q", out, want)
+	}
+}
 
 func TestResetInvalidPorts(t *testing.T) {
 	viper.Reset()

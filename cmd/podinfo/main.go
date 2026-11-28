@@ -216,6 +216,9 @@ func main() {
 	if grpcCfg.Port == 0 && len(grpcCfg.BackendURL) > 0 {
 		logger.Fatal("--grpc-backend-url requires --grpc-port")
 	}
+	if grpcCfg.Port == 0 && grpcCfg.TLS {
+		logger.Fatal("--grpc-tls requires --grpc-port")
+	}
 	if grpcCfg.Port > 0 {
 		grpcSrv = grpc.NewServer(&grpcCfg, logger)
 		grpcSrv.SetSPIFFESource(srv.SPIFFESource())
