@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/hex"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -52,13 +53,9 @@ var wsCmd = &cobra.Command{
 			origin = originURL.String()
 		}
 
-		err = connect(dest.String(), origin, &readline.Config{
+		return connect(dest.String(), origin, &readline.Config{
 			Prompt: "> ",
 		})
-		if err != nil {
-			logger.Info("websocket closed", zap.Error(err))
-		}
-		return nil
 	},
 }
 
@@ -98,6 +95,11 @@ func connect(url, origin string, rlConf *readline.Config) error {
 func (s *session) readConsole() {
 	for {
 		line, err := s.rl.Readline()
+		if err == io.EOF || err == readline.ErrInterrupt {
+			logger.Info("websocket closed", zap.Error(err))
+			s.errChan <- nil
+			return
+		}
 		if err != nil {
 			s.errChan <- err
 			return
