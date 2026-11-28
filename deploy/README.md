@@ -31,15 +31,3 @@ Deploy the demo in the `production` namespace:
 ```bash
 kustomize build ./overlays/production | kubectl apply -f-
 ```
-
-## Testing Locally Using Kind
-
-> NOTE: You can install [kind from here](https://kind.sigs.k8s.io/docs/user/quick-start/#installation)
-
-The following will create a new cluster called "podinfo" and configure host ports on 80 and 443. You can access the
-endpoints on localhost. The example also deploys cert-manager within the cluster along with a self-signed cluster issuer
-used to generate the certificate to validate the secure port.
-
-```sh
-./kind.sh
-```
