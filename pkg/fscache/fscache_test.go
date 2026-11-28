@@ -16,6 +16,7 @@ import (
 const (
 	testDebounce = 20 * time.Millisecond
 	testResync   = time.Hour
+	waitTimeout  = 30 * time.Second
 )
 
 type recorder struct {
@@ -85,12 +86,25 @@ func swapLink(t *testing.T, target, name string) {
 
 func eventually(t *testing.T, msg string, cond func() bool) {
 	t.Helper()
-	deadline := time.Now().Add(5 * time.Second)
+	deadline := time.Now().Add(waitTimeout)
 	for !cond() {
 		if time.Now().After(deadline) {
 			t.Fatal(msg)
 		}
 		time.Sleep(5 * time.Millisecond)
+	}
+}
+
+func withResyncC(c <-chan time.Time) Option {
+	return func(w *Watcher) { w.resyncC = c }
+}
+
+func tick(t *testing.T, c chan<- time.Time) {
+	t.Helper()
+	select {
+	case c <- time.Now():
+	case <-time.After(waitTimeout):
+		t.Fatal("the watcher did not take the resync tick")
 	}
 }
 
@@ -264,8 +278,8 @@ func testRootRecreate(t *testing.T, suffix string) {
 	dir := filepath.Join(t.TempDir(), "root")
 	mkdir(t, dir)
 	writeFile(t, filepath.Join(dir, "a"), "1")
-	resync := 2 * time.Second
-	w, _, logs := newWatcher(t, dir+suffix, WithResync(resync))
+	resync := make(chan time.Time)
+	w, _, logs := newWatcher(t, dir+suffix, WithFiles("a"), withResyncC(resync))
 
 	if err := os.RemoveAll(dir); err != nil {
 		t.Fatal(err)
@@ -277,14 +291,11 @@ func testRootRecreate(t *testing.T, suffix string) {
 
 	mkdir(t, dir)
 	writeFile(t, filepath.Join(dir, "a"), "2")
+	tick(t, resync)
 	eventually(t, "the recreated root was not read", func() bool { return content(w, "a") == "2" })
 
-	start := time.Now()
 	writeFile(t, filepath.Join(dir, "a"), "3")
 	eventually(t, "the recreated root is not watched", func() bool { return content(w, "a") == "3" })
-	if elapsed := time.Since(start); elapsed > resync/4 {
-		t.Fatalf("the edit took %s, want it event-driven, well before the %s resync", elapsed, resync)
-	}
 }
 
 func TestWatcherMaxWait(t *testing.T) {
@@ -310,11 +321,14 @@ func TestWatcherMaxWait(t *testing.T) {
 func TestWatcherReadError(t *testing.T) {
 	dir := t.TempDir()
 	writeFile(t, filepath.Join(dir, "a"), "1")
-	w, _, logs := newWatcher(t, dir, WithResync(10*time.Millisecond))
+	resync := make(chan time.Time)
+	w, _, logs := newWatcher(t, dir, withResyncC(resync))
 
 	symlink(t, "missing", filepath.Join(dir, "broken"))
 	eventually(t, "the read error was not logged", func() bool { return logs.FilterMessageSnippet("failed").Len() > 0 })
-	time.Sleep(100 * time.Millisecond)
+	for range 3 {
+		tick(t, resync)
+	}
 	if n := logs.FilterMessageSnippet("failed").Len(); n != 1 {
 		t.Fatalf("got %d failure logs, want 1", n)
 	}
@@ -325,6 +339,8 @@ func TestWatcherReadError(t *testing.T) {
 	if err := os.Remove(filepath.Join(dir, "broken")); err != nil {
 		t.Fatal(err)
 	}
+	// kqueue reports no event for the removal of a dangling symlink.
+	tick(t, resync)
 	eventually(t, "the recovery was not logged", func() bool { return logs.FilterMessageSnippet("recovered").Len() == 1 })
 }
 
@@ -367,7 +383,7 @@ func TestWatcherCloseFromCallback(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-	case <-time.After(5 * time.Second):
+	case <-time.After(waitTimeout):
 		t.Fatal("Close from a callback deadlocked")
 	}
 }
@@ -389,14 +405,14 @@ func TestWatcherCloseBlockedCallback(t *testing.T) {
 	writeFile(t, filepath.Join(dir, "a"), "1")
 	select {
 	case <-called:
-	case <-time.After(5 * time.Second):
+	case <-time.After(waitTimeout):
 		t.Fatal("the callback was not called")
 	}
 	closed := make(chan error, 1)
 	go func() { closed <- w.Close() }()
 	select {
 	case <-closed:
-	case <-time.After(5 * time.Second):
+	case <-time.After(waitTimeout):
 		t.Fatal("a blocked callback blocked Close")
 	}
 }
