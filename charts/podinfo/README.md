@@ -54,6 +54,9 @@ The following tables lists the configurable parameters of the podinfo chart and 
 
 | Parameter                                      | Default                        | Description                                                                                        |
 |------------------------------------------------|--------------------------------|----------------------------------------------------------------------------------------------------|
+| `nameOverride`                                 | `""`                           | Replaces the chart name in the resource names and labels                                           |
+| `fullnameOverride`                             | `""`                           | Replaces the full name of the resources                                                            |
+| `namespaceOverride`                            | `""`                           | Namespace of the resources, instead of the release namespace                                       |
 | `replicaCount`                                 | `1`                            | Desired number of pods                                                                             |
 | `logLevel`                                     | `info`                         | Log level: `debug`, `info`, `warn`, `error`, `fatal`, `panic`                                      |
 | `backend`                                      | `None`                         | Echo backend URL                                                                                   |
