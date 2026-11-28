@@ -52,6 +52,10 @@ jobs:
         run: make proto && git diff --exit-code pkg/api/grpc
       - name: Check Helm chart schema
         run: make chart-schema && git diff --exit-code charts/podinfo
+      - name: Check Swagger spec
+        run: make swagger && git diff --exit-code pkg/api/http/docs && test -z "$(git status --porcelain pkg/api/http/docs)"
+      - name: Check Swagger UI
+        run: make swagger-ui && git diff --exit-code ui/swagger/dist && test -z "$(git status --porcelain ui/swagger/dist)"
       - name: Validate Helm chart
         run: |
           helm lint ./charts/podinfo/

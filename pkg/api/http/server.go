@@ -13,13 +13,10 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/redis/go-redis/v9"
-	"github.com/stefanprodan/podinfo/pkg/api/http/docs"
 	"github.com/stefanprodan/podinfo/pkg/fscache"
 	"github.com/stefanprodan/podinfo/pkg/keypair"
 	"github.com/stefanprodan/podinfo/pkg/store"
 	"github.com/stefanprodan/podinfo/pkg/telemetry"
-	httpSwagger "github.com/swaggo/http-swagger"
-	"github.com/swaggo/swag"
 	"go.uber.org/zap"
 )
 
@@ -100,16 +97,21 @@ type Server struct {
 	configs      *fscache.Watcher
 	keyPair      *keypair.KeyPair
 	ui           *uiPage
+	swagger      *swaggerDocs
 	metrics      *prometheusMiddleware
 }
 
 func NewServer(config *Config, logger *zap.Logger) (*Server, error) {
 	config.Prefix = normalizePrefix(config.Prefix)
-	docs.SwaggerInfo.BasePath = config.Prefix
 
 	page, err := newUIPage(config)
 	if err != nil {
 		return nil, fmt.Errorf("loading the UI failed: %w", err)
+	}
+
+	swagger, err := newSwaggerDocs(config.Prefix)
+	if err != nil {
+		return nil, err
 	}
 
 	spiffe, err := newSPIFFEState(config, logger)
@@ -131,6 +133,7 @@ func NewServer(config *Config, logger *zap.Logger) (*Server, error) {
 		config:  config,
 		spiffe:  spiffe,
 		ui:      page,
+		swagger: swagger,
 		store:   store.New(config.DataPath, telemetry.Tracer()),
 		backend: newBackendClient(http.DefaultTransport),
 
@@ -225,16 +228,10 @@ func (s *Server) registerHandlers() {
 	s.router.HandleFunc(s.prefixedPath("/ws/echo"), s.echoWsHandler)
 	s.router.HandleFunc(s.prefixedPath("/chunked"), s.chunkedHandler)
 	s.router.HandleFunc(s.prefixedPath("/chunked/{wait:[0-9]+}"), s.chunkedHandler)
-	s.router.PathPrefix(s.prefixedPath("/swagger/")).Handler(httpSwagger.Handler(
-		httpSwagger.URL(s.prefixedPath("/swagger/doc.json")),
-	))
-	s.router.HandleFunc(s.prefixedPath("/swagger.json"), func(w http.ResponseWriter, r *http.Request) {
-		doc, err := swag.ReadDoc()
-		if err != nil {
-			s.logger.Error("swagger error", zap.Error(err), zap.String("path", s.prefixedPath("/swagger.json")), telemetry.Context(r.Context()))
-		}
-		w.Write([]byte(doc))
-	})
+	s.router.HandleFunc(s.prefixedPath("/swagger.json"), s.swaggerHandler).Methods("GET", "HEAD")
+	s.router.HandleFunc(s.prefixedPath("/swagger/doc.json"), s.swaggerHandler).Methods("GET", "HEAD")
+	s.router.Handle(s.prefixedPath("/swagger"), http.RedirectHandler(s.prefixedPath("/swagger/"), http.StatusMovedPermanently)).Methods("GET", "HEAD")
+	s.router.PathPrefix(s.prefixedPath("/swagger/")).Handler(s.swaggerUIHandler()).Methods("GET", "HEAD")
 }
 
 func (s *Server) registerMiddlewares() {
