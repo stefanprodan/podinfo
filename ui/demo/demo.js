@@ -1,4 +1,4 @@
-// Fake API for reviewing the UI with `make ui-demo`; not embedded in the binary.
+// Fake API for reviewing the UI with `make run-ui-demo`; not embedded in the binary.
 // Plays a Flagger canary release from 6.17.0, which predates /api/pod and answers it
 // with 404, to 7.0.0: the canary pods take a growing share of traffic up to half, the
 // primary is promoted to the new version, then the API goes away for a few seconds.

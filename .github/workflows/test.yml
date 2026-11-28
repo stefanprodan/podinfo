@@ -44,18 +44,16 @@ jobs:
           setup_only: true
       - name: Run unit tests
         run: make test
-      - name: Lint UI
-        run: make ui-lint
-      - name: Lint protos
-        run: make proto-lint
-      - name: Check gRPC stubs
-        run: make proto && git diff --exit-code pkg/api/grpc
-      - name: Check Helm chart schema
-        run: make chart-schema && git diff --exit-code charts/podinfo
-      - name: Check Swagger spec
-        run: make swagger && git diff --exit-code pkg/api/http/docs && test -z "$(git status --porcelain pkg/api/http/docs)"
-      - name: Check Swagger UI
-        run: make swagger-ui && git diff --exit-code ui/swagger/dist && test -z "$(git status --porcelain ui/swagger/dist)"
+      - name: Check if working tree is dirty
+        run: |
+          if [[ $(git diff --stat) != '' ]]; then
+            echo 'run make test and commit changes'
+            exit 1
+          fi
+      - name: Run linters
+        run: make lint
+      - name: Check generated files
+        run: make gen && git diff --exit-code && test -z "$(git status --porcelain)"
       - name: Validate Helm chart
         run: |
           helm lint ./charts/podinfo/
@@ -73,9 +71,3 @@ jobs:
         run: |
           timoni mod vet .
           timoni build podinfo . -f debug_values.cue | flux-schema validate -s ecosystem --verbose
-      - name: Check if working tree is dirty
-        run: |
-          if [[ $(git diff --stat) != '' ]]; then
-            echo 'run make test and commit changes'
-            exit 1
-          fi

@@ -105,7 +105,7 @@ and when the API stopped answering. It is set up with flags:
 | `--ui-message` | Greeting, defaults to `greetings from podinfo`                                           |
 | `--ui-logo`    | Image URL, defaults to the embedded one                                                  |
 
-To see the UI during a canary release without a cluster, run `make ui-demo` and open `http://localhost:9898`.
+To see the UI during a canary release without a cluster, run `make run-ui-demo` and open `http://localhost:9898`.
 
 To access the Swagger UI open `<podinfo-host>/swagger/index.html` in a browser.
 
