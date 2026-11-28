@@ -88,12 +88,12 @@ func (s *TokenServer) TokenValidate(ctx context.Context, req *pb.TokenValidateRe
 		return nil, status.Error(codes.Unauthenticated, "invalid issuer")
 	}
 
-	result := pb.TokenValidateResponse{
-		Token: claims.Name,
-	}
-	if claims.ExpiresAt != nil {
-		result.ExpiresAt = claims.ExpiresAt.Time.String()
+	if claims.ExpiresAt == nil {
+		return nil, status.Error(codes.Unauthenticated, "token expiry required")
 	}
 
-	return &result, nil
+	return &pb.TokenValidateResponse{
+		Token:     claims.Name,
+		ExpiresAt: claims.ExpiresAt.Time.String(),
+	}, nil
 }
