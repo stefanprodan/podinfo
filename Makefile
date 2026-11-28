@@ -97,10 +97,19 @@ proto-lint:
 	buf format --exit-code --diff
 
 swagger:
-	go install github.com/swaggo/swag/cmd/swag@latest
-	go get github.com/swaggo/swag/gen@latest
-	go get github.com/swaggo/swag/cmd/swag@latest
-	cd pkg/api/http && $$(go env GOPATH)/bin/swag init -g server.go
+	go tool swag init -g server.go -d pkg/api/http -o pkg/api/http/docs --outputTypes json
+
+SWAGGER_UI_VERSION:=5.36.0
+SWAGGER_UI_SHA512:=2edebf29bd205e62dd89a6cb86fb28e157493fd57ba89581d33874833797515dfe08c393ccc9afa494525cdec40237f08b1c26a22f5ecc36cb1e27b10bb940f4
+
+# Vendor the Swagger UI bundle and stylesheet from the swagger-ui-dist npm package.
+swagger-ui:
+	@tgz=$$(mktemp) && trap "rm -f $$tgz" EXIT && \
+	curl -sSfL https://registry.npmjs.org/swagger-ui-dist/-/swagger-ui-dist-$(SWAGGER_UI_VERSION).tgz -o $$tgz && \
+	echo "$(SWAGGER_UI_SHA512)  $$tgz" | shasum -a 512 -c - >/dev/null && \
+	rm -rf ui/swagger/dist && mkdir ui/swagger/dist && \
+	tar -xzf $$tgz -C ui/swagger/dist --strip-components=1 package/swagger-ui-bundle.js package/swagger-ui-bundle.js.LICENSE.txt package/swagger-ui.css package/LICENSE package/NOTICE && \
+	echo "Swagger UI $(SWAGGER_UI_VERSION) vendored in ui/swagger/dist"
 
 .PHONY: timoni-build
 timoni-build:

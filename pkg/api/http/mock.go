@@ -32,6 +32,11 @@ func NewMockServer() *Server {
 		panic(err)
 	}
 
+	swagger, err := newSwaggerDocs(config.Prefix)
+	if err != nil {
+		panic(err)
+	}
+
 	logger, _ := zap.NewDevelopment()
 	reg := prometheus.NewRegistry()
 
@@ -40,6 +45,7 @@ func NewMockServer() *Server {
 		logger:  logger,
 		config:  config,
 		ui:      page,
+		swagger: swagger,
 		store:   store.New(config.DataPath, telemetry.Tracer()),
 		backend: newBackendClient(http.DefaultTransport),
 

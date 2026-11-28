@@ -19,6 +19,7 @@ release/
 build/
 gcloud/
 dist/
+!ui/swagger/dist/
 bin/
 cue/cue.mod/gen/
 cue/go.mod

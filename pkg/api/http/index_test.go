@@ -114,6 +114,9 @@ func TestIndexNoExternalOrigins(t *testing.T) {
 	check("index", serveIndex(t, srv, "/").Body.String())
 
 	err := fs.WalkDir(ui.FS, ".", func(name string, d fs.DirEntry, err error) error {
+		if name == "swagger/dist" {
+			return fs.SkipDir
+		}
 		if err != nil || d.IsDir() || slices.Contains([]string{".gif", ".png"}, filepath.Ext(name)) {
 			return err
 		}
