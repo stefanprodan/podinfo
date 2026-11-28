@@ -11,13 +11,14 @@ import (
 
 // Chunked godoc
 // @Summary Chunked transfer encoding
-// @Description uses transfer-encoding type chunked to give a partial response and then waits for the specified period
+// @Description sends the response headers with transfer-encoding chunked, waits for the specified period, then sends the body
 // @Tags HTTP API
-// @Accept json
 // @Produce json
 // @Param seconds path int true "seconds to wait for"
 // @Router /chunked/{seconds} [get]
-// @Success 200 {object} http.MapResponse
+// @Success 200 {object} map[string]int "the delay in seconds"
+// @Failure 400 {object} http.ErrorMessage "invalid request body"
+// @Failure 413 {object} http.ErrorMessage "request body too large"
 // @Failure 500 {object} http.ErrorMessage "Streaming unsupported!"
 func (s *Server) chunkedHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)

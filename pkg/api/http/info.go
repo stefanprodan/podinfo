@@ -13,7 +13,6 @@ import (
 // @Summary Runtime information
 // @Description returns the runtime information
 // @Tags HTTP API
-// @Accept json
 // @Produce json
 // @Success 200 {object} http.RuntimeResponse
 // @Router /api/info [get]

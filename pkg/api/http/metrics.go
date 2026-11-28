@@ -48,13 +48,7 @@ var defaultPrometheusMiddleware = sync.OnceValue(func() *prometheusMiddleware {
 	return newPrometheusMiddleware(prometheus.DefaultRegisterer, prometheus.DefaultGatherer)
 })
 
-// Metrics godoc
-// @Summary Prometheus metrics
-// @Description returns HTTP requests duration and Go runtime metrics
-// @Tags Kubernetes
-// @Produce plain
-// @Router /metrics [get]
-// @Success 200 {string} string "OK"
+// Handler records the duration and the count of the requests served by next.
 func (p *prometheusMiddleware) Handler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		path := p.getRouteName(r)
@@ -93,6 +87,14 @@ func urlToLabel(path string) string {
 	return result
 }
 
+// Metrics godoc
+// @Summary Prometheus metrics
+// @Description returns HTTP requests duration and Go runtime metrics
+// @Tags Kubernetes
+// @Produce plain
+// @Router /metrics [get]
+// @Success 200 {string} string "metrics in the Prometheus text format"
+// @Failure 500 {string} string "gathering the metrics failed"
 func (p *prometheusMiddleware) metricsHandler() http.Handler {
 	return promhttp.InstrumentMetricHandler(
 		p.registerer,

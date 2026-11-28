@@ -53,12 +53,13 @@ func (m *RandomDelayMiddleware) Handler(next http.Handler) http.Handler {
 // @Summary Delay
 // @Description waits for the specified period
 // @Tags HTTP API
-// @Accept json
 // @Produce json
 // @Param seconds path int true "seconds to wait for"
 // @Router /delay/{seconds} [get]
-// @Success 200 {object} http.MapResponse
-// @Failure 400 {object} http.ErrorMessage "invalid delay"
+// @Success 200 {object} map[string]int "the delay in seconds"
+// @Failure 400 {object} http.ErrorMessage "invalid delay or request body"
+// @Failure 413 {object} http.ErrorMessage "request body too large"
+// @Failure 499 {object} http.ErrorMessage "client closed request"
 func (s *Server) delayHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 

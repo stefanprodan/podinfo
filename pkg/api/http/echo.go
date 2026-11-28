@@ -22,14 +22,18 @@ import (
 
 // Echo godoc
 // @Summary Echo
-// @Description forwards the call to the backend service and echos the posted content
+// @Description echos the posted content, or when backend URLs are set posts it to each backend and returns their responses
 // @Tags HTTP API
-// @Accept json
-// @Produce json
+// @Accept json,plain,octet-stream
+// @Produce octet-stream,json
+// @Param payload body string false "content to echo"
+// @Router /echo [post]
 // @Router /api/echo [post]
-// @Success 202 {object} http.MapResponse
+// @Success 202 {file} file "the posted content, without backends"
+// @Success 200 {array} string "the response or the error of each backend"
 // @Failure 400 {object} http.ErrorMessage "invalid request body"
 // @Failure 413 {object} http.ErrorMessage "request body too large"
+// @Failure 499 {object} http.ErrorMessage "client closed request"
 func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 	body, ok := s.readLimitedBody(w, r)
 	if !ok {

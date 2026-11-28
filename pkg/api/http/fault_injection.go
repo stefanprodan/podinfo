@@ -69,12 +69,11 @@ func (s *Server) faultInjectionMiddleware(next http.Handler) http.Handler {
 
 // EnableFaultInjection godoc
 // @Summary Enable fault injection
-// @Description makes the server respond with HTTP 500 for all non-probe endpoints
+// @Description makes the server respond with HTTP 500 and a JSON body on all endpoints except the probes, the metrics, pprof and the fault injection ones
 // @Tags Fault Injection
-// @Accept json
 // @Produce json
 // @Router /fault_injection/enable [post]
-// @Success 202 {string} string "OK"
+// @Success 202 {object} map[string]string
 func (s *Server) enableFaultInjectionHandler(w http.ResponseWriter, r *http.Request) {
 	atomic.StoreInt32(&faultInjection, 1)
 	s.JSONResponseCode(w, r, map[string]string{"fault_injection": "enabled"}, http.StatusAccepted)
@@ -84,10 +83,9 @@ func (s *Server) enableFaultInjectionHandler(w http.ResponseWriter, r *http.Requ
 // @Summary Disable fault injection
 // @Description restores normal responses
 // @Tags Fault Injection
-// @Accept json
 // @Produce json
 // @Router /fault_injection/disable [post]
-// @Success 202 {string} string "OK"
+// @Success 202 {object} map[string]string
 func (s *Server) disableFaultInjectionHandler(w http.ResponseWriter, r *http.Request) {
 	atomic.StoreInt32(&faultInjection, 0)
 	s.JSONResponseCode(w, r, map[string]string{"fault_injection": "disabled"}, http.StatusAccepted)
@@ -96,7 +94,6 @@ func (s *Server) disableFaultInjectionHandler(w http.ResponseWriter, r *http.Req
 // FaultInjectionStatus godoc
 // @Summary Get fault injection status
 // @Tags Fault Injection
-// @Accept json
 // @Produce json
 // @Router /fault_injection/status [get]
 // @Success 200 {object} map[string]string

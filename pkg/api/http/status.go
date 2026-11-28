@@ -10,13 +10,14 @@ import (
 
 // Status godoc
 // @Summary Status code
-// @Description sets the response status code to the specified code
+// @Description sets the response status code to the specified code, 204 and 304 have no body
 // @Tags HTTP API
-// @Accept json
 // @Produce json
-// @Param code path int true "status code to return"
+// @Param code path int true "status code to return, 200 to 999"
 // @Router /status/{code} [get]
-// @Success 200 {object} http.MapResponse
+// @Router /status/{code} [post]
+// @Router /status/{code} [put]
+// @Success default {object} map[string]int "the specified status code"
 // @Failure 400 {object} http.ErrorMessage "invalid status code"
 func (s *Server) statusHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)

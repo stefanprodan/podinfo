@@ -24,9 +24,10 @@ const docTemplate = `{
     "paths": {
         "/": {
             "get": {
-                "description": "renders podinfo UI",
+                "description": "renders podinfo UI when the User-Agent starts with Mozilla, other clients get the runtime information of /api/info as JSON",
                 "produces": [
-                    "text/html"
+                    "text/html",
+                    "application/json"
                 ],
                 "tags": [
                     "HTTP API"
@@ -34,7 +35,13 @@ const docTemplate = `{
                 "summary": "Index",
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "HTML page",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "rendering the page failed",
                         "schema": {
                             "type": "string"
                         }
@@ -44,22 +51,44 @@ const docTemplate = `{
         },
         "/api/echo": {
             "post": {
-                "description": "forwards the call to the backend service and echos the posted content",
+                "description": "echos the posted content, or when backend URLs are set posts it to each backend and returns their responses",
                 "consumes": [
-                    "application/json"
+                    "application/json",
+                    "text/plain",
+                    "application/octet-stream"
                 ],
                 "produces": [
+                    "application/octet-stream",
                     "application/json"
                 ],
                 "tags": [
                     "HTTP API"
                 ],
                 "summary": "Echo",
-                "responses": {
-                    "202": {
-                        "description": "Accepted",
+                "parameters": [
+                    {
+                        "description": "content to echo",
+                        "name": "payload",
+                        "in": "body",
                         "schema": {
-                            "$ref": "#/definitions/http.MapResponse"
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "the response or the error of each backend",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "202": {
+                        "description": "the posted content, without backends",
+                        "schema": {
+                            "type": "file"
                         }
                     },
                     "400": {
@@ -73,6 +102,12 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/http.ErrorMessage"
                         }
+                    },
+                    "499": {
+                        "description": "client closed request",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorMessage"
+                        }
                     }
                 }
             }
@@ -80,9 +115,6 @@ const docTemplate = `{
         "/api/info": {
             "get": {
                 "description": "returns the runtime information",
-                "consumes": [
-                    "application/json"
-                ],
                 "produces": [
                     "application/json"
                 ],
@@ -103,9 +135,6 @@ const docTemplate = `{
         "/api/pod": {
             "get": {
                 "description": "returns the runtime information, the environment variables and the request HTTP headers of the pod that served the request, with secret values masked, plus X-Spiffe-Id when the client presented a SPIFFE X.509 SVID",
-                "consumes": [
-                    "application/json"
-                ],
                 "produces": [
                     "application/json"
                 ],
@@ -125,9 +154,10 @@ const docTemplate = `{
         },
         "/artifact": {
             "get": {
-                "description": "returns the files from the artifact path as a tar.gz, the digest is set in the X-Artifact-Digest header",
+                "description": "returns the files from the artifact path as a tar.gz with its sha256 digest in the X-Artifact-Digest header, the route exists only when the artifact path is set",
                 "produces": [
-                    "application/gzip"
+                    "application/gzip",
+                    "application/json"
                 ],
                 "tags": [
                     "HTTP API"
@@ -135,15 +165,40 @@ const docTemplate = `{
                 "summary": "Download artifact",
                 "responses": {
                     "200": {
-                        "description": "tar.gz archive",
+                        "description": "tar.gz archive, no body for HEAD",
                         "schema": {
                             "type": "file"
                         }
                     },
                     "404": {
-                        "description": "Not Found",
+                        "description": "artifact not found",
                         "schema": {
-                            "$ref": "#/definitions/http.MapResponse"
+                            "$ref": "#/definitions/http.ErrorMessage"
+                        }
+                    }
+                }
+            },
+            "head": {
+                "description": "returns the files from the artifact path as a tar.gz with its sha256 digest in the X-Artifact-Digest header, the route exists only when the artifact path is set",
+                "produces": [
+                    "application/gzip",
+                    "application/json"
+                ],
+                "tags": [
+                    "HTTP API"
+                ],
+                "summary": "Download artifact",
+                "responses": {
+                    "200": {
+                        "description": "tar.gz archive, no body for HEAD",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "404": {
+                        "description": "artifact not found",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorMessage"
                         }
                     }
                 }
@@ -152,10 +207,8 @@ const docTemplate = `{
         "/cache/{key}": {
             "get": {
                 "description": "returns the content from cache if key exists",
-                "consumes": [
-                    "application/json"
-                ],
                 "produces": [
+                    "application/octet-stream",
                     "application/json"
                 ],
                 "tags": [
@@ -173,9 +226,9 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "value",
                         "schema": {
-                            "type": "string"
+                            "type": "file"
                         }
                     },
                     "400": {
@@ -187,6 +240,12 @@ const docTemplate = `{
                     "404": {
                         "description": "key not found"
                     },
+                    "499": {
+                        "description": "client closed request",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorMessage"
+                        }
+                    },
                     "500": {
                         "description": "cache get failed",
                         "schema": {
@@ -194,17 +253,19 @@ const docTemplate = `{
                         }
                     },
                     "503": {
-                        "description": "cache server is offline",
+                        "description": "cache server not configured",
                         "schema": {
                             "$ref": "#/definitions/http.ErrorMessage"
                         }
                     }
                 }
             },
-            "post": {
+            "put": {
                 "description": "writes the posted content in cache",
                 "consumes": [
-                    "application/json"
+                    "application/json",
+                    "text/plain",
+                    "application/octet-stream"
                 ],
                 "produces": [
                     "application/json"
@@ -220,6 +281,14 @@ const docTemplate = `{
                         "name": "key",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "description": "content to save",
+                        "name": "payload",
+                        "in": "body",
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
@@ -238,6 +307,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/http.ErrorMessage"
                         }
                     },
+                    "499": {
+                        "description": "client closed request",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorMessage"
+                        }
+                    },
                     "500": {
                         "description": "cache set failed",
                         "schema": {
@@ -245,7 +320,74 @@ const docTemplate = `{
                         }
                     },
                     "503": {
-                        "description": "cache server is offline",
+                        "description": "cache server not configured",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorMessage"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "writes the posted content in cache",
+                "consumes": [
+                    "application/json",
+                    "text/plain",
+                    "application/octet-stream"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "HTTP API"
+                ],
+                "summary": "Save payload in cache",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Key to save to",
+                        "name": "key",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "content to save",
+                        "name": "payload",
+                        "in": "body",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted"
+                    },
+                    "400": {
+                        "description": "invalid request body or key too long",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorMessage"
+                        }
+                    },
+                    "413": {
+                        "description": "request body too large",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorMessage"
+                        }
+                    },
+                    "499": {
+                        "description": "client closed request",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "cache set failed",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorMessage"
+                        }
+                    },
+                    "503": {
+                        "description": "cache server not configured",
                         "schema": {
                             "$ref": "#/definitions/http.ErrorMessage"
                         }
@@ -254,9 +396,6 @@ const docTemplate = `{
             },
             "delete": {
                 "description": "deletes the key and its value from cache",
-                "consumes": [
-                    "application/json"
-                ],
                 "produces": [
                     "application/json"
                 ],
@@ -283,6 +422,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/http.ErrorMessage"
                         }
                     },
+                    "499": {
+                        "description": "client closed request",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorMessage"
+                        }
+                    },
                     "500": {
                         "description": "cache delete failed",
                         "schema": {
@@ -290,7 +435,7 @@ const docTemplate = `{
                         }
                     },
                     "503": {
-                        "description": "cache server is offline",
+                        "description": "cache server not configured",
                         "schema": {
                             "$ref": "#/definitions/http.ErrorMessage"
                         }
@@ -300,10 +445,7 @@ const docTemplate = `{
         },
         "/chunked/{seconds}": {
             "get": {
-                "description": "uses transfer-encoding type chunked to give a partial response and then waits for the specified period",
-                "consumes": [
-                    "application/json"
-                ],
+                "description": "sends the response headers with transfer-encoding chunked, waits for the specified period, then sends the body",
                 "produces": [
                     "application/json"
                 ],
@@ -322,9 +464,24 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "the delay in seconds",
                         "schema": {
-                            "$ref": "#/definitions/http.MapResponse"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "integer"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "invalid request body",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorMessage"
+                        }
+                    },
+                    "413": {
+                        "description": "request body too large",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorMessage"
                         }
                     },
                     "500": {
@@ -336,12 +493,32 @@ const docTemplate = `{
                 }
             }
         },
+        "/configs": {
+            "get": {
+                "description": "returns the files in the config path as a JSON object of file name to content, empty when the config path is not a directory",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "HTTP API"
+                ],
+                "summary": "Config files",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/delay/{seconds}": {
             "get": {
                 "description": "waits for the specified period",
-                "consumes": [
-                    "application/json"
-                ],
                 "produces": [
                     "application/json"
                 ],
@@ -360,13 +537,91 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "the delay in seconds",
                         "schema": {
-                            "$ref": "#/definitions/http.MapResponse"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "integer"
+                            }
                         }
                     },
                     "400": {
-                        "description": "invalid delay",
+                        "description": "invalid delay or request body",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorMessage"
+                        }
+                    },
+                    "413": {
+                        "description": "request body too large",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorMessage"
+                        }
+                    },
+                    "499": {
+                        "description": "client closed request",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorMessage"
+                        }
+                    }
+                }
+            }
+        },
+        "/echo": {
+            "post": {
+                "description": "echos the posted content, or when backend URLs are set posts it to each backend and returns their responses",
+                "consumes": [
+                    "application/json",
+                    "text/plain",
+                    "application/octet-stream"
+                ],
+                "produces": [
+                    "application/octet-stream",
+                    "application/json"
+                ],
+                "tags": [
+                    "HTTP API"
+                ],
+                "summary": "Echo",
+                "parameters": [
+                    {
+                        "description": "content to echo",
+                        "name": "payload",
+                        "in": "body",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "the response or the error of each backend",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "202": {
+                        "description": "the posted content, without backends",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid request body",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorMessage"
+                        }
+                    },
+                    "413": {
+                        "description": "request body too large",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorMessage"
+                        }
+                    },
+                    "499": {
+                        "description": "client closed request",
                         "schema": {
                             "$ref": "#/definitions/http.ErrorMessage"
                         }
@@ -377,9 +632,27 @@ const docTemplate = `{
         "/env": {
             "get": {
                 "description": "returns the environment variables as a JSON array, with secret values masked",
-                "consumes": [
+                "produces": [
                     "application/json"
                 ],
+                "tags": [
+                    "HTTP API"
+                ],
+                "summary": "Environment",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "returns the environment variables as a JSON array, with secret values masked",
                 "produces": [
                     "application/json"
                 ],
@@ -403,9 +676,6 @@ const docTemplate = `{
         "/fault_injection/disable": {
             "post": {
                 "description": "restores normal responses",
-                "consumes": [
-                    "application/json"
-                ],
                 "produces": [
                     "application/json"
                 ],
@@ -415,9 +685,12 @@ const docTemplate = `{
                 "summary": "Disable fault injection",
                 "responses": {
                     "202": {
-                        "description": "OK",
+                        "description": "Accepted",
                         "schema": {
-                            "type": "string"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
@@ -425,10 +698,7 @@ const docTemplate = `{
         },
         "/fault_injection/enable": {
             "post": {
-                "description": "makes the server respond with HTTP 500 for all non-probe endpoints",
-                "consumes": [
-                    "application/json"
-                ],
+                "description": "makes the server respond with HTTP 500 and a JSON body on all endpoints except the probes, the metrics, pprof and the fault injection ones",
                 "produces": [
                     "application/json"
                 ],
@@ -438,9 +708,12 @@ const docTemplate = `{
                 "summary": "Enable fault injection",
                 "responses": {
                     "202": {
-                        "description": "OK",
+                        "description": "Accepted",
                         "schema": {
-                            "type": "string"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
@@ -448,9 +721,6 @@ const docTemplate = `{
         },
         "/fault_injection/status": {
             "get": {
-                "consumes": [
-                    "application/json"
-                ],
                 "produces": [
                     "application/json"
                 ],
@@ -473,10 +743,7 @@ const docTemplate = `{
         },
         "/headers": {
             "get": {
-                "description": "returns a JSON array with the request HTTP headers, with credential values masked, plus X-Spiffe-Id when the client presented a SPIFFE X.509 SVID",
-                "consumes": [
-                    "application/json"
-                ],
+                "description": "returns the request HTTP headers as a JSON object of name to list of values, with credential values masked, plus X-Spiffe-Id when the client presented a SPIFFE X.509 SVID",
                 "produces": [
                     "application/json"
                 ],
@@ -488,9 +755,36 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "type": "string"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "returns the request HTTP headers as a JSON object of name to list of values, with credential values masked, plus X-Spiffe-Id when the client presented a SPIFFE X.509 SVID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "HTTP API"
+                ],
+                "summary": "Headers",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
                             }
                         }
                     }
@@ -500,9 +794,6 @@ const docTemplate = `{
         "/healthz": {
             "get": {
                 "description": "used by Kubernetes liveness probe",
-                "consumes": [
-                    "application/json"
-                ],
                 "produces": [
                     "application/json"
                 ],
@@ -514,8 +805,14 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "string"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
+                    },
+                    "503": {
+                        "description": "unhealthy"
                     }
                 }
             }
@@ -532,7 +829,13 @@ const docTemplate = `{
                 "summary": "Prometheus metrics",
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "metrics in the Prometheus text format",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "gathering the metrics failed",
                         "schema": {
                             "type": "string"
                         }
@@ -553,9 +856,6 @@ const docTemplate = `{
         "/readyz": {
             "get": {
                 "description": "used by Kubernetes readiness probe",
-                "consumes": [
-                    "application/json"
-                ],
                 "produces": [
                     "application/json"
                 ],
@@ -567,64 +867,49 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "string"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
+                    },
+                    "503": {
+                        "description": "not ready"
                     }
                 }
             }
         },
         "/readyz/disable": {
             "post": {
-                "description": "signals the Kubernetes LB to stop sending requests to this instance",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
+                "description": "makes the readiness check fail, so Kubernetes stops sending traffic to this instance",
                 "tags": [
                     "Kubernetes"
                 ],
                 "summary": "Disable ready state",
                 "responses": {
                     "202": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "string"
-                        }
+                        "description": "Accepted"
                     }
                 }
             }
         },
         "/readyz/enable": {
             "post": {
-                "description": "signals the Kubernetes LB that this instance is ready to receive traffic",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
+                "description": "makes the readiness check pass, so Kubernetes sends traffic to this instance",
                 "tags": [
                     "Kubernetes"
                 ],
                 "summary": "Enable ready state",
                 "responses": {
                     "202": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "string"
-                        }
+                        "description": "Accepted"
                     }
                 }
             }
         },
         "/status/{code}": {
             "get": {
-                "description": "sets the response status code to the specified code",
-                "consumes": [
-                    "application/json"
-                ],
+                "description": "sets the response status code to the specified code, 204 and 304 have no body",
                 "produces": [
                     "application/json"
                 ],
@@ -635,33 +920,110 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "status code to return",
+                        "description": "status code to return, 200 to 999",
                         "name": "code",
                         "in": "path",
                         "required": true
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/http.MapResponse"
-                        }
-                    },
                     "400": {
                         "description": "invalid status code",
                         "schema": {
                             "$ref": "#/definitions/http.ErrorMessage"
+                        }
+                    },
+                    "default": {
+                        "description": "the specified status code",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "integer"
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "sets the response status code to the specified code, 204 and 304 have no body",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "HTTP API"
+                ],
+                "summary": "Status code",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "status code to return, 200 to 999",
+                        "name": "code",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "400": {
+                        "description": "invalid status code",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorMessage"
+                        }
+                    },
+                    "default": {
+                        "description": "the specified status code",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "integer"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "sets the response status code to the specified code, 204 and 304 have no body",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "HTTP API"
+                ],
+                "summary": "Status code",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "status code to return, 200 to 999",
+                        "name": "code",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "400": {
+                        "description": "invalid status code",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorMessage"
+                        }
+                    },
+                    "default": {
+                        "description": "the specified status code",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "integer"
+                            }
                         }
                     }
                 }
             }
         },
         "/store": {
-            "post": {
-                "description": "writes the posted content to disk at /data/hash and returns the SHA1 hash of the content",
+            "put": {
+                "description": "writes the posted content to a file named by its SHA1 hash in the data path and returns the hash",
                 "consumes": [
-                    "application/json"
+                    "application/json",
+                    "text/plain",
+                    "application/octet-stream"
                 ],
                 "produces": [
                     "application/json"
@@ -670,6 +1032,67 @@ const docTemplate = `{
                     "HTTP API"
                 ],
                 "summary": "Upload file",
+                "parameters": [
+                    {
+                        "description": "content to store",
+                        "name": "payload",
+                        "in": "body",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "$ref": "#/definitions/http.MapResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid request body",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorMessage"
+                        }
+                    },
+                    "413": {
+                        "description": "request body too large",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "writing file failed",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorMessage"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "writes the posted content to a file named by its SHA1 hash in the data path and returns the hash",
+                "consumes": [
+                    "application/json",
+                    "text/plain",
+                    "application/octet-stream"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "HTTP API"
+                ],
+                "summary": "Upload file",
+                "parameters": [
+                    {
+                        "description": "content to store",
+                        "name": "payload",
+                        "in": "body",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
                 "responses": {
                     "202": {
                         "description": "Accepted",
@@ -700,12 +1123,10 @@ const docTemplate = `{
         },
         "/store/{hash}": {
             "get": {
-                "description": "returns the content of the file /data/hash if exists",
-                "consumes": [
-                    "application/json"
-                ],
+                "description": "returns the content of the file named by the hash in the data path",
                 "produces": [
-                    "text/plain"
+                    "application/octet-stream",
+                    "application/json"
                 ],
                 "tags": [
                     "HTTP API"
@@ -714,7 +1135,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "hash value",
+                        "description": "SHA1 hash of the content",
                         "name": "hash",
                         "in": "path",
                         "required": true
@@ -722,9 +1143,9 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "file",
+                        "description": "file content",
                         "schema": {
-                            "type": "string"
+                            "type": "file"
                         }
                     },
                     "400": {
@@ -750,9 +1171,9 @@ const docTemplate = `{
         },
         "/token": {
             "post": {
-                "description": "issues a JWT token valid for one minute",
+                "description": "issues a JWT token valid for one minute for the name in the request body, anonymous when empty",
                 "consumes": [
-                    "application/json"
+                    "text/plain"
                 ],
                 "produces": [
                     "application/json"
@@ -761,6 +1182,16 @@ const docTemplate = `{
                     "HTTP API"
                 ],
                 "summary": "Generate JWT token",
+                "parameters": [
+                    {
+                        "description": "name set in the token",
+                        "name": "name",
+                        "in": "body",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -791,10 +1222,7 @@ const docTemplate = `{
         },
         "/token/validate": {
             "get": {
-                "description": "validates the JWT token",
-                "consumes": [
-                    "application/json"
-                ],
+                "description": "validates the JWT token and returns its name and expiry",
                 "produces": [
                     "application/json"
                 ],
@@ -802,6 +1230,15 @@ const docTemplate = `{
                     "HTTP API"
                 ],
                 "summary": "Validate JWT token",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -839,23 +1276,35 @@ const docTemplate = `{
             }
         },
         "/ws/echo": {
-            "post": {
-                "description": "echos content via websockets",
-                "consumes": [
-                    "application/json"
-                ],
+            "get": {
+                "description": "upgrades the connection to a websocket, answers each message with a JSON message holding the time and the content, and sends the hostname every five seconds",
                 "produces": [
-                    "application/json"
+                    "text/plain"
                 ],
                 "tags": [
                     "HTTP API"
                 ],
                 "summary": "Echo over websockets",
                 "responses": {
-                    "202": {
-                        "description": "Accepted",
+                    "101": {
+                        "description": "Switching Protocols"
+                    },
+                    "400": {
+                        "description": "not a websocket handshake",
                         "schema": {
-                            "$ref": "#/definitions/http.MapResponse"
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "request origin not allowed",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "426": {
+                        "description": "websocket not found in the Upgrade header",
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 }

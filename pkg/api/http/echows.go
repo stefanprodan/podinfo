@@ -30,12 +30,14 @@ const (
 
 // EchoWS godoc
 // @Summary Echo over websockets
-// @Description echos content via websockets
+// @Description upgrades the connection to a websocket, answers each message with a JSON message holding the time and the content, and sends the hostname every five seconds
 // @Tags HTTP API
-// @Accept json
-// @Produce json
-// @Router /ws/echo [post]
-// @Success 202 {object} http.MapResponse
+// @Produce plain
+// @Router /ws/echo [get]
+// @Success 101 "Switching Protocols"
+// @Failure 400 {string} string "not a websocket handshake"
+// @Failure 403 {string} string "request origin not allowed"
+// @Failure 426 {string} string "websocket not found in the Upgrade header"
 // Test: go run ./cmd/podcli ws localhost:9898/ws/echo
 func (s *Server) echoWsHandler(w http.ResponseWriter, r *http.Request) {
 	c, err := wsCon.Upgrade(w, r, nil)
