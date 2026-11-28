@@ -11,7 +11,6 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"runtime"
 	"slices"
 	"strings"
 	"sync"
@@ -260,22 +259,19 @@ func TestCloseReleasesCache(t *testing.T) {
 func TestCloseReleasesCacheKeyPair(t *testing.T) {
 	dir := t.TempDir()
 	writeClientPair(t, dir, spiffetest.NewCA(t))
-	watchers := func() int {
-		buf := make([]byte, 1<<20)
-		return strings.Count(string(buf[:runtime.Stack(buf, true)]), "fscache.(*Watcher).run(")
-	}
-	before := watchers()
+	id := goroutineID()
+	watchers := func() int { return startedBy(id, "fscache.(*Watcher).run(") }
 
 	srv, err := NewServer(&Config{CacheServer: "rediss://cache:6379", CacheCertPath: dir}, NewMockServer().logger)
 	if err != nil {
 		t.Fatalf("NewServer returned %v", err)
 	}
-	waitFor(t, "the key pair watcher to start", func() bool { return watchers() == before+1 })
+	waitFor(t, "the key pair watcher to start", func() bool { return watchers() == 1 })
 
 	if err := srv.Close(); err != nil {
 		t.Fatalf("Close returned %v", err)
 	}
-	waitFor(t, "the key pair watcher to stop", func() bool { return watchers() == before })
+	waitFor(t, "the key pair watcher to stop", func() bool { return watchers() == 0 })
 }
 
 func TestNewCacheOptions(t *testing.T) {
