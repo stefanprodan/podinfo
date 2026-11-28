@@ -21,7 +21,7 @@ import (
 	"google.golang.org/grpc/test/bufconn"
 
 	podinfogrpc "github.com/stefanprodan/podinfo/pkg/api/grpc"
-	"github.com/stefanprodan/podinfo/pkg/api/grpc/delay"
+	delayv1 "github.com/stefanprodan/podinfo/pkg/api/grpc/delay/v1"
 )
 
 func TestGraceful(t *testing.T) {
@@ -44,7 +44,7 @@ func TestGraceful(t *testing.T) {
 		lis.Close()
 	})
 	grpcSrv := grpc.NewServer(grpc.UnaryInterceptor(interceptor))
-	delay.RegisterDelayServiceServer(grpcSrv, &podinfogrpc.DelayServer{})
+	delayv1.RegisterDelayServiceServer(grpcSrv, &podinfogrpc.DelayServer{})
 	healthSrv := health.NewServer()
 	healthSrv.SetServingStatus("podinfo", grpc_health_v1.HealthCheckResponse_SERVING)
 	grpc_health_v1.RegisterHealthServer(grpcSrv, healthSrv)
@@ -80,7 +80,7 @@ func TestGraceful(t *testing.T) {
 
 	delayErr := make(chan error, 1)
 	go func() {
-		_, err := delay.NewDelayServiceClient(conn).Delay(context.Background(), &delay.DelayRequest{Seconds: 30})
+		_, err := delayv1.NewDelayServiceClient(conn).Delay(context.Background(), &delayv1.DelayRequest{Seconds: 30})
 		delayErr <- err
 	}()
 	httpResult := make(chan error, 1)

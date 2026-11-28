@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package status.v1;
+
+option go_package = "github.com/stefanprodan/podinfo/pkg/api/grpc/status/v1;statusv1";
+
+// The greeting service definition.
+service StatusService {
+  rpc Status(StatusRequest) returns (StatusResponse) {}
+}
+
+message StatusRequest {
+  string code = 1;
+}
+
+message StatusResponse {
+  string status = 1;
+}

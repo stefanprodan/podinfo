@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/stefanprodan/podinfo/pkg/api/grpc/status"
+	statusv1 "github.com/stefanprodan/podinfo/pkg/api/grpc/status/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -28,7 +28,7 @@ func TestGrpcStatusError(t *testing.T) {
 		srv.Stop()
 	})
 
-	status.RegisterStatusServiceServer(srv, &StatusServer{})
+	statusv1.RegisterStatusServiceServer(srv, &StatusServer{})
 
 	go func() {
 		if err := srv.Serve(lis); err != nil {
@@ -48,9 +48,9 @@ func TestGrpcStatusError(t *testing.T) {
 		conn.Close()
 	})
 
-	client := status.NewStatusServiceClient(conn)
+	client := statusv1.NewStatusServiceClient(conn)
 
-	res, err := client.Status(context.Background(), &status.StatusRequest{Code: "NotFound"})
+	res, err := client.Status(context.Background(), &statusv1.StatusRequest{Code: "NotFound"})
 
 	if err != nil {
 		if e, ok := st.FromError(err); ok {
@@ -77,7 +77,7 @@ func TestGrpcStatusOk(t *testing.T) {
 		srv.Stop()
 	})
 
-	status.RegisterStatusServiceServer(srv, &StatusServer{})
+	statusv1.RegisterStatusServiceServer(srv, &StatusServer{})
 
 	go func() {
 		if err := srv.Serve(lis); err != nil {
@@ -97,9 +97,9 @@ func TestGrpcStatusOk(t *testing.T) {
 		conn.Close()
 	})
 
-	client := status.NewStatusServiceClient(conn)
+	client := statusv1.NewStatusServiceClient(conn)
 
-	res, err := client.Status(context.Background(), &status.StatusRequest{Code: "Ok"})
+	res, err := client.Status(context.Background(), &statusv1.StatusRequest{Code: "Ok"})
 	if err != nil {
 		t.Fatalf("Status returned %s, want %s", fmt.Sprint(st.Code(err)), fmt.Sprint(codes.OK))
 	}

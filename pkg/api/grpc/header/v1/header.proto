@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package header.v1;
+
+option go_package = "github.com/stefanprodan/podinfo/pkg/api/grpc/header/v1;headerv1";
+
+message HeaderRequest {}
+
+message HeaderResponse {
+  repeated string headers = 1;
+}
+
+service HeaderService {
+  rpc Header(HeaderRequest) returns (HeaderResponse) {}
+}

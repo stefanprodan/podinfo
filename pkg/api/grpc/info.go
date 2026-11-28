@@ -5,7 +5,7 @@ import (
 	"runtime"
 	"strconv"
 
-	pb "github.com/stefanprodan/podinfo/pkg/api/grpc/info"
+	pb "github.com/stefanprodan/podinfo/pkg/api/grpc/info/v1"
 	"github.com/stefanprodan/podinfo/pkg/version"
 )
 

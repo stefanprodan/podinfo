@@ -5,7 +5,7 @@ import (
 
 	"go.uber.org/zap"
 
-	pb "github.com/stefanprodan/podinfo/pkg/api/grpc/env"
+	pb "github.com/stefanprodan/podinfo/pkg/api/grpc/env/v1"
 	"github.com/stefanprodan/podinfo/pkg/environ"
 )
 

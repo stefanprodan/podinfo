@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/stefanprodan/podinfo/pkg/api/grpc/info"
+	infov1 "github.com/stefanprodan/podinfo/pkg/api/grpc/info/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
@@ -27,7 +27,7 @@ func TestGrpcInfo(t *testing.T) {
 		srv.Stop()
 	})
 
-	info.RegisterInfoServiceServer(srv, &infoServer{config: s.config})
+	infov1.RegisterInfoServiceServer(srv, &infoServer{config: s.config})
 
 	go func() {
 		if err := srv.Serve(lis); err != nil {
@@ -47,8 +47,8 @@ func TestGrpcInfo(t *testing.T) {
 		conn.Close()
 	})
 
-	client := info.NewInfoServiceClient(conn)
-	res, err := client.Info(context.Background(), &info.InfoRequest{})
+	client := infov1.NewInfoServiceClient(conn)
+	res, err := client.Info(context.Background(), &infov1.InfoRequest{})
 
 	if _, ok := status.FromError(err); !ok {
 		t.Errorf("Info returned type %T, want %T", err, status.Error)

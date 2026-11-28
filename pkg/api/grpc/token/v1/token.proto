@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package token.v1;
+
+option go_package = "github.com/stefanprodan/podinfo/pkg/api/grpc/token/v1;tokenv1";
+
+service TokenService {
+  rpc TokenGenerate(TokenGenerateRequest) returns (TokenGenerateResponse) {}
+  rpc TokenValidate(TokenValidateRequest) returns (TokenValidateResponse) {}
+}
+
+message TokenGenerateRequest {}
+
+message TokenGenerateResponse {
+  string token = 1;
+  string expires_at = 2;
+  string message = 3;
+}
+
+message TokenValidateRequest {}
+
+message TokenValidateResponse {
+  string token = 1;
+  string expires_at = 2;
+  string message = 3;
+}

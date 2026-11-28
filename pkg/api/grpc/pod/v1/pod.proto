@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package pod.v1;
+
+option go_package = "github.com/stefanprodan/podinfo/pkg/api/grpc/pod/v1;podv1";
+
+message PodRequest {}
+
+message Values {
+  repeated string values = 1;
+}
+
+message PodResponse {
+  string hostname = 1;
+  string version = 2;
+  string revision = 3;
+  string goos = 4;
+  string goarch = 5;
+  string runtime = 6;
+  string num_goroutine = 7;
+  string num_cpu = 8;
+  map<string, string> env = 9;
+  map<string, Values> headers = 10;
+}
+
+service PodService {
+  rpc Pod(PodRequest) returns (PodResponse) {}
+}

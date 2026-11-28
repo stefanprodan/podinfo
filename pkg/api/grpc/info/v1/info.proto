@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package info.v1;
+
+option go_package = "github.com/stefanprodan/podinfo/pkg/api/grpc/info/v1;infov1";
+
+message InfoRequest {}
+
+message InfoResponse {
+  string hostname = 1;
+  string version = 2;
+  string revision = 3;
+  string color = 4;
+  string logo = 5;
+  string message = 6;
+  string goos = 7;
+  string goarch = 8;
+  string runtime = 9;
+  string numgoroutine = 10;
+  string numcpu = 11;
+}
+
+service InfoService {
+  rpc Info(InfoRequest) returns (InfoResponse) {}
+}

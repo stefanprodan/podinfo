@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package echo.v1;
+
+option go_package = "github.com/stefanprodan/podinfo/pkg/api/grpc/echo/v1;echov1";
+
+message EchoRequest {
+  string body = 1;
+}
+
+message EchoResponse {
+  string body = 1;
+}
+
+service EchoService {
+  rpc Echo(EchoRequest) returns (EchoResponse) {}
+}

@@ -23,15 +23,15 @@ import (
 	"google.golang.org/grpc/reflection/grpc_reflection_v1"
 	grpcstatus "google.golang.org/grpc/status"
 
-	"github.com/stefanprodan/podinfo/pkg/api/grpc/echo"
-	"github.com/stefanprodan/podinfo/pkg/api/grpc/status"
+	echov1 "github.com/stefanprodan/podinfo/pkg/api/grpc/echo/v1"
+	statusv1 "github.com/stefanprodan/podinfo/pkg/api/grpc/status/v1"
 )
 
 type panicEchoServer struct {
-	echo.UnimplementedEchoServiceServer
+	echov1.UnimplementedEchoServiceServer
 }
 
-func (panicEchoServer) Echo(context.Context, *echo.Message) (*echo.Message, error) {
+func (panicEchoServer) Echo(context.Context, *echov1.EchoRequest) (*echov1.EchoResponse, error) {
 	panic("boom")
 }
 
@@ -46,8 +46,8 @@ func (panicHealthServer) Watch(*grpc_health_v1.HealthCheckRequest, grpc_health_v
 func newInstrumentedServer(m *metrics) *grpc.Server {
 	s := &Server{logger: zap.NewNop(), config: &Config{}}
 	srv := grpc.NewServer(s.serverOptions(m)...)
-	echo.RegisterEchoServiceServer(srv, panicEchoServer{})
-	status.RegisterStatusServiceServer(srv, &StatusServer{config: s.config, logger: s.logger})
+	echov1.RegisterEchoServiceServer(srv, panicEchoServer{})
+	statusv1.RegisterStatusServiceServer(srv, &StatusServer{config: s.config, logger: s.logger})
 	grpc_health_v1.RegisterHealthServer(srv, panicHealthServer{health.NewServer()})
 	reflection.Register(srv)
 	return srv
@@ -64,11 +64,11 @@ func histogramCount(t *testing.T, m *metrics, method string, code codes.Code) ui
 }
 
 func TestGrpcMetrics(t *testing.T) {
-	const method = "/status.StatusService/Status"
+	const method = "/status.v1.StatusService/Status"
 	m := newMetrics(prometheus.NewRegistry())
-	client := status.NewStatusServiceClient(newBufconnClient(t, newInstrumentedServer(m)))
+	client := statusv1.NewStatusServiceClient(newBufconnClient(t, newInstrumentedServer(m)))
 
-	_, err := client.Status(context.Background(), &status.StatusRequest{Code: "NotFound"})
+	_, err := client.Status(context.Background(), &statusv1.StatusRequest{Code: "NotFound"})
 	if grpcstatus.Code(err) != codes.NotFound {
 		t.Fatalf("Status returned %v, want %v", err, codes.NotFound)
 	}
@@ -82,11 +82,11 @@ func TestGrpcMetrics(t *testing.T) {
 }
 
 func TestGrpcUnaryRecovery(t *testing.T) {
-	const method = "/echo.EchoService/Echo"
+	const method = "/echo.v1.EchoService/Echo"
 	m := newMetrics(prometheus.NewRegistry())
 	conn := newBufconnClient(t, newInstrumentedServer(m))
 
-	_, err := echo.NewEchoServiceClient(conn).Echo(context.Background(), &echo.Message{Body: "test"})
+	_, err := echov1.NewEchoServiceClient(conn).Echo(context.Background(), &echov1.EchoRequest{Body: "test"})
 	if grpcstatus.Code(err) != codes.Internal {
 		t.Fatalf("Echo returned %v, want %v", err, codes.Internal)
 	}
@@ -131,7 +131,7 @@ func TestGrpcTracing(t *testing.T) {
 	srv := newInstrumentedServer(newMetrics(prometheus.NewRegistry()))
 	conn := newBufconnClient(t, srv)
 	assertHealth(t, grpc_health_v1.NewHealthClient(conn), "", grpc_health_v1.HealthCheckResponse_SERVING)
-	if _, err := status.NewStatusServiceClient(conn).Status(context.Background(), &status.StatusRequest{Code: "Ok"}); err != nil {
+	if _, err := statusv1.NewStatusServiceClient(conn).Status(context.Background(), &statusv1.StatusRequest{Code: "Ok"}); err != nil {
 		t.Fatalf("Status returned error %v", err)
 	}
 	srv.GracefulStop()
@@ -140,7 +140,7 @@ func TestGrpcTracing(t *testing.T) {
 	if len(spans) != 1 {
 		t.Fatalf("got %d spans, want 1", len(spans))
 	}
-	if got, want := spans[0].Name, "status.StatusService/Status"; got != want {
+	if got, want := spans[0].Name, "status.v1.StatusService/Status"; got != want {
 		t.Errorf("span name %q, want %q", got, want)
 	}
 	if got := spans[0].SpanKind; got != trace.SpanKindServer {
@@ -197,7 +197,7 @@ func TestGrpcExemplars(t *testing.T) {
 		code   codes.Code
 		traced bool
 	}{
-		{method: "/status.StatusService/Status", code: codes.OK, traced: true},
+		{method: "/status.v1.StatusService/Status", code: codes.OK, traced: true},
 		{method: "/grpc.reflection.v1.ServerReflection/ServerReflectionInfo", code: codes.OK},
 		{method: "/grpc.health.v1.Health/Watch", code: codes.Internal},
 	}
@@ -228,7 +228,7 @@ func TestGrpcExemplars(t *testing.T) {
 			m := newMetrics(prometheus.NewRegistry())
 			srv := newInstrumentedServer(m)
 			conn := newBufconnClient(t, srv)
-			if _, err := status.NewStatusServiceClient(conn).Status(context.Background(), &status.StatusRequest{Code: "Ok"}); err != nil {
+			if _, err := statusv1.NewStatusServiceClient(conn).Status(context.Background(), &statusv1.StatusRequest{Code: "Ok"}); err != nil {
 				t.Fatalf("Status returned error %v", err)
 			}
 			stream, err := grpc_health_v1.NewHealthClient(conn).Watch(context.Background(), &grpc_health_v1.HealthCheckRequest{})
@@ -287,8 +287,8 @@ func TestGrpcExemplars(t *testing.T) {
 					}
 				}
 			}
-			if len(methods) != 1 || methods[0] != "status.StatusService/Status" {
-				t.Errorf("rpc.server.call.duration recorded for %v, want only status.StatusService/Status", methods)
+			if len(methods) != 1 || methods[0] != "status.v1.StatusService/Status" {
+				t.Errorf("rpc.server.call.duration recorded for %v, want only status.v1.StatusService/Status", methods)
 			}
 		})
 	}

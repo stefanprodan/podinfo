@@ -37,10 +37,19 @@ jobs:
         uses: biomejs/setup-biome@4c91541eaada48f67d7dbd7833600ce162b68f51 # v2.7.1
         with:
           version: 2.6.8
+      - name: Setup Buf
+        uses: bufbuild/buf-action@37ac33d8960807670a6e9719080e885197b09cc6 # v1.7.0
+        with:
+          version: 1.75.0
+          setup_only: true
       - name: Run unit tests
         run: make test
       - name: Lint UI
         run: make ui-lint
+      - name: Lint protos
+        run: make proto-lint
+      - name: Check gRPC stubs
+        run: make proto && git diff --exit-code pkg/api/grpc
       - name: Validate Helm chart
         run: |
           helm lint ./charts/podinfo/

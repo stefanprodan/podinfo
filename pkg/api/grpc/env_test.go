@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stefanprodan/podinfo/pkg/api/grpc/env"
+	envv1 "github.com/stefanprodan/podinfo/pkg/api/grpc/env/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
@@ -29,7 +29,7 @@ func TestGrpcEnv(t *testing.T) {
 		srv.Stop()
 	})
 
-	env.RegisterEnvServiceServer(srv, &EnvServer{})
+	envv1.RegisterEnvServiceServer(srv, &EnvServer{})
 
 	go func() {
 		if err := srv.Serve(lis); err != nil {
@@ -49,8 +49,8 @@ func TestGrpcEnv(t *testing.T) {
 		conn.Close()
 	})
 
-	client := env.NewEnvServiceClient(conn)
-	res, err := client.Env(context.Background(), &env.EnvRequest{})
+	client := envv1.NewEnvServiceClient(conn)
+	res, err := client.Env(context.Background(), &envv1.EnvRequest{})
 
 	if _, ok := status.FromError(err); !ok {
 		t.Errorf("Env returned type %T, want %T", err, status.Error)

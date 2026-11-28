@@ -1,0 +1,6 @@
+version: v2
+modules:
+  - path: pkg/api/grpc
+lint:
+  use:
+    - STANDARD
