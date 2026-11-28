@@ -10,6 +10,17 @@ message EchoRequest {
 
 message EchoResponse {
   string body = 1;
+  // One per --grpc-backend-url, in order; empty when no backends are set.
+  repeated BackendResponse backend_responses = 2;
+}
+
+message BackendResponse {
+  // Backend address as set with --grpc-backend-url.
+  string url = 1;
+  // Body echoed by the backend; empty when the call failed.
+  string body = 2;
+  // Why the call failed; empty on success.
+  string error = 3;
 }
 
 service EchoService {

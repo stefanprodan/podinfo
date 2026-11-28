@@ -1,13 +1,20 @@
 package grpc
 
 import (
+	"crypto/tls"
 	"errors"
+	"fmt"
+	"math"
 	"net"
+	"net/url"
 	"strconv"
+	"time"
 
 	"github.com/redis/go-redis/v9"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/backoff"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/health"
@@ -33,26 +40,32 @@ import (
 )
 
 type Server struct {
-	logger  *zap.Logger
-	config  *Config
-	spiffe  *spiffe.Source
-	keyPair *keypair.KeyPair
-	cache   redis.UniversalClient
+	logger       *zap.Logger
+	config       *Config
+	spiffe       *spiffe.Source
+	keyPair      *keypair.KeyPair
+	cache        redis.UniversalClient
+	backends     []echoBackend
+	backendConns []*grpc.ClientConn
 }
 
 type Config struct {
-	Port        int    `mapstructure:"grpc-port"`
-	TLS         bool   `mapstructure:"grpc-tls"`
-	ServiceName string `mapstructure:"grpc-service-name"`
-	Host        string `mapstructure:"host"`
-	Hostname    string `mapstructure:"hostname"`
-	UILogo      string `mapstructure:"ui-logo"`
-	UIMessage   string `mapstructure:"ui-message"`
-	UIColor     string `mapstructure:"ui-color"`
-	Unhealthy   bool   `mapstructure:"unhealthy"`
-	Unready     bool   `mapstructure:"unready"`
-	JWTSecret   string `mapstructure:"jwt-secret"`
-	DataPath    string `mapstructure:"data-path"`
+	Port              int           `mapstructure:"grpc-port"`
+	TLS               bool          `mapstructure:"grpc-tls"`
+	ServiceName       string        `mapstructure:"grpc-service-name"`
+	BackendURL        []string      `mapstructure:"grpc-backend-url"`
+	ClientTimeout     time.Duration `mapstructure:"grpc-client-timeout"`
+	SPIFFEBackendMTLS bool          `mapstructure:"spiffe-backend-mtls"`
+	SPIFFEBackendIDs  []string      `mapstructure:"spiffe-backend-ids"`
+	Host              string        `mapstructure:"host"`
+	Hostname          string        `mapstructure:"hostname"`
+	UILogo            string        `mapstructure:"ui-logo"`
+	UIMessage         string        `mapstructure:"ui-message"`
+	UIColor           string        `mapstructure:"ui-color"`
+	Unhealthy         bool          `mapstructure:"unhealthy"`
+	Unready           bool          `mapstructure:"unready"`
+	JWTSecret         string        `mapstructure:"jwt-secret"`
+	DataPath          string        `mapstructure:"data-path"`
 }
 
 func NewServer(config *Config, logger *zap.Logger) *Server {
@@ -92,6 +105,10 @@ func (s *Server) ListenAndServe() (*grpc.Server, *health.Server) {
 		s.logger.Fatal("failed to listen", zap.String("address", address), zap.Error(err))
 	}
 
+	if err := s.dialBackends(); err != nil {
+		s.logger.Fatal("invalid gRPC backend config", zap.Error(err))
+	}
+
 	srv, healthSrv := s.newServer(grpc.Creds(creds))
 	if s.spiffeTLS() {
 		s.waitForSVID(healthSrv)
@@ -114,7 +131,7 @@ func (s *Server) ListenAndServe() (*grpc.Server, *health.Server) {
 func (s *Server) newServer(opts ...grpc.ServerOption) (*grpc.Server, *health.Server) {
 	srv := grpc.NewServer(append(s.serverOptions(defaultMetrics()), opts...)...)
 
-	echov1.RegisterEchoServiceServer(srv, &echoServer{config: s.config, logger: s.logger})
+	echov1.RegisterEchoServiceServer(srv, &echoServer{config: s.config, logger: s.logger, backends: s.backends})
 	versionv1.RegisterVersionServiceServer(srv, &VersionServer{config: s.config, logger: s.logger})
 	panicv1.RegisterPanicServiceServer(srv, &PanicServer{config: s.config, logger: s.logger})
 	delayv1.RegisterDelayServiceServer(srv, &DelayServer{config: s.config, logger: s.logger})
@@ -162,6 +179,84 @@ func (s *Server) credentials() (credentials.TransportCredentials, error) {
 		return credentials.NewTLS(s.keyPair.TLSConfig()), nil
 	}
 	return nil, errors.New("--grpc-tls requires a TLS key pair")
+}
+
+// dialBackends creates the Echo client of each --grpc-backend-url.
+// Connections are established on the first call.
+func (s *Server) dialBackends() error {
+	for i, backend := range s.config.BackendURL {
+		conn, err := s.dialBackend(backend)
+		if err != nil {
+			// The URL is left out, it may hold credentials.
+			return fmt.Errorf("invalid --grpc-backend-url at index %d: %w", i, err)
+		}
+		s.backendConns = append(s.backendConns, conn)
+		s.backends = append(s.backends, echoBackend{url: backend, client: echov1.NewEchoServiceClient(conn)})
+	}
+	return nil
+}
+
+var errBackendURL = errors.New("want grpc://host:port or grpcs://host:port")
+
+func (s *Server) dialBackend(backend string) (*grpc.ClientConn, error) {
+	u, err := url.Parse(backend)
+	if err != nil || u.Hostname() == "" || u.User != nil || u.Path != "" || u.RawQuery != "" || u.Fragment != "" {
+		return nil, errBackendURL
+	}
+	if port, err := strconv.Atoi(u.Port()); err != nil || port < 1 || port > 65535 {
+		return nil, errBackendURL
+	}
+	creds, err := s.backendCredentials(u.Scheme)
+	if err != nil {
+		return nil, err
+	}
+	// The dns scheme keeps hosts named like a resolver (dns, unix) from
+	// being parsed as one. A backend with backends answers with more than
+	// the request body, so the response size is not limited.
+	return grpc.NewClient("dns:///"+u.Host,
+		grpc.WithTransportCredentials(creds),
+		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
+		grpc.WithConnectParams(backendConnectParams),
+		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(math.MaxInt32)))
+}
+
+// backendConnectParams caps the reconnect backoff at 5s instead of the
+// default 2m, so calls recover soon after a backend comes back.
+var backendConnectParams = grpc.ConnectParams{
+	Backoff:           backoff.Config{BaseDelay: time.Second, Multiplier: 1.6, Jitter: 0.2, MaxDelay: 5 * time.Second},
+	MinConnectTimeout: 5 * time.Second,
+}
+
+// backendCredentials returns the transport credentials for a backend URL
+// scheme: plaintext for grpc, and for grpcs TLS verified against the system
+// roots or SPIFFE mTLS when --spiffe-backend-mtls is set.
+func (s *Server) backendCredentials(scheme string) (credentials.TransportCredentials, error) {
+	switch {
+	case scheme == "grpc":
+		return insecure.NewCredentials(), nil
+	case scheme != "grpcs":
+		return nil, errBackendURL
+	case !s.config.SPIFFEBackendMTLS:
+		return credentials.NewTLS(&tls.Config{MinVersion: tls.VersionTLS12}), nil
+	case s.spiffe == nil:
+		return nil, errors.New("--spiffe-backend-mtls requires --spiffe-endpoint-socket")
+	}
+	ids, err := spiffe.ParseIDs("--spiffe-backend-ids", s.config.SPIFFEBackendIDs)
+	if err != nil {
+		return nil, err
+	}
+	s.spiffe.Start()
+	return credentials.NewTLS(s.spiffe.ClientTLSConfig(ids)), nil
+}
+
+// Close closes the backend connections. Call it after the server stops.
+func (s *Server) Close() error {
+	var errs []error
+	for _, conn := range s.backendConns {
+		errs = append(errs, conn.Close())
+	}
+	s.backendConns = nil
+	return errors.Join(errs...)
 }
 
 // waitForSVID reports the service NOT_SERVING until the SPIFFE SVID is issued,

@@ -73,7 +73,7 @@ Errors are returned with their HTTP status code and a JSON body with the `code` 
 gRPC API:
 
 * `/grpc.health.v1.Health/Check` health checking
-* `/echo.v1.EchoService/Echo` echos the received content
+* `/echo.v1.EchoService/Echo` echos the received content and calls `Echo` on the `--grpc-backend-url` backends
 * `/version.v1.VersionService/Version` returns podinfo version and Git commit hash
 * `/cache.v1.CacheService/Set` saves the value under the key in Redis or Valkey
 * `/cache.v1.CacheService/Get` returns the value of the key from Redis or Valkey, or `NOT_FOUND` if the key does not exist
@@ -228,8 +228,8 @@ rotates it automatically, and only accepts clients that present an SVID from the
 |----------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|
 | `--spiffe-endpoint-socket` | Workload API address, e.g. `unix:///spiffe-workload-api/spire-agent.sock`, requires `--secure-port`                                         |
 | `--spiffe-authorized-ids`  | Client SPIFFE IDs allowed to connect, when empty any ID in podinfo's trust domain is allowed                                                |
-| `--spiffe-backend-mtls`    | Call the `https` backends with SPIFFE mTLS, requires `--spiffe-endpoint-socket`                                                             |
-| `--spiffe-backend-ids`     | Server SPIFFE IDs accepted from `https` backends, when empty any ID in podinfo's trust domain is accepted, requires `--spiffe-backend-mtls` |
+| `--spiffe-backend-mtls`    | Call the `https` and `grpcs` backends with SPIFFE mTLS, requires `--spiffe-endpoint-socket`                                                 |
+| `--spiffe-backend-ids`     | Server SPIFFE IDs accepted from the backends, when empty any ID in podinfo's trust domain is accepted, requires `--spiffe-backend-mtls`     |
 
 Podinfo starts the HTTP port and passes the liveness probe right away, and keeps retrying the Workload API
 until the SVID is issued. The readiness probe fails until the HTTPS port is serving with the SVID.
@@ -256,6 +256,11 @@ podinfo --secure-port=9899 --spiffe-endpoint-socket=unix:///spiffe-workload-api/
   --spiffe-backend-mtls \
   --spiffe-backend-ids=spiffe://example.org/ns/demo/sa/backend
 ```
+
+The gRPC `Echo` service calls the backends set with `--grpc-backend-url`, in plaintext for `grpc://host:port`
+and with TLS verified against the system roots for `grpcs://host:port`. With `--spiffe-backend-mtls`, the `grpcs://`
+backends are called over SPIFFE mTLS like the `https://` ones and must serve gRPC with `--grpc-tls`.
+`--grpc-client-timeout` limits the duration of a backend call.
 
 On a cluster with SPIRE and the [SPIFFE CSI driver](https://github.com/spiffe/spiffe-csi),
 register the podinfo pods with the SPIRE controller manager:

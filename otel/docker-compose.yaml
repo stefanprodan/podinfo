@@ -1,7 +1,7 @@
 services:
   frontend:
     build: ..
-    command: ./podinfo --level debug --grpc-port 9999 --backend-url http://backend:9898/echo
+    command: ./podinfo --level debug --grpc-port 9999 --backend-url http://backend:9898/echo --grpc-backend-url grpc://backend:9999
     environment:
       OTEL_SERVICE_NAME: frontend
       OTEL_EXPORTER_OTLP_ENDPOINT: http://lgtm:4318

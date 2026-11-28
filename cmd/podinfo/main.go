@@ -40,6 +40,8 @@ func main() {
 	fs.Int("grpc-port", 0, "gRPC port")
 	fs.String("grpc-service-name", "podinfo", "gPRC service name")
 	fs.Bool("grpc-tls", false, "serve the gRPC port with TLS using the --cert-path certificate, or with SPIFFE mTLS when --spiffe-endpoint-socket is set")
+	fs.StringSlice("grpc-backend-url", []string{}, "gRPC backend service URL, grpc://host:port or grpcs://host:port for TLS")
+	fs.Duration("grpc-client-timeout", 2*time.Minute, "gRPC backend call timeout duration")
 	fs.String("level", "info", "log level debug, info, warn, error, fatal or panic")
 	fs.StringSlice("backend-url", []string{}, "backend service URL")
 	fs.Duration("http-client-timeout", 2*time.Minute, "client timeout duration")
@@ -50,8 +52,8 @@ func main() {
 	fs.String("cert-path", "/data/cert", "certificate path for the HTTPS port and the gRPC port with --grpc-tls")
 	fs.String("spiffe-endpoint-socket", "", "SPIFFE Workload API address, e.g. unix:///spiffe-workload-api/spire-agent.sock; when set, the HTTPS port uses SPIFFE mTLS instead of --cert-path")
 	fs.StringSlice("spiffe-authorized-ids", []string{}, "SPIFFE IDs allowed to connect to the HTTPS port; when empty, any ID in the server's trust domain is allowed")
-	fs.Bool("spiffe-backend-mtls", false, "call https backends with SPIFFE mTLS; requires --spiffe-endpoint-socket")
-	fs.StringSlice("spiffe-backend-ids", []string{}, "SPIFFE IDs accepted from https backends; requires --spiffe-backend-mtls; when empty, any ID in the server's trust domain is accepted")
+	fs.Bool("spiffe-backend-mtls", false, "call https and grpcs backends with SPIFFE mTLS; requires --spiffe-endpoint-socket")
+	fs.StringSlice("spiffe-backend-ids", []string{}, "SPIFFE IDs accepted from https and grpcs backends; requires --spiffe-backend-mtls; when empty, any ID in the server's trust domain is accepted")
 	fs.String("artifact-path", "./kustomize", "directory served as a tar.gz at /artifact; empty disables the route")
 	fs.String("config", "config.yaml", "config file name")
 	fs.String("ui-path", "", "deprecated, directory with an index.html page that replaces the embedded UI")
@@ -215,10 +217,14 @@ func main() {
 	}
 
 	// start gRPC server
+	var grpcSrv *grpc.Server
 	var grpcServer *go_grpc.Server
 	var grpcHealth *health.Server
+	if grpcCfg.Port == 0 && len(grpcCfg.BackendURL) > 0 {
+		logger.Fatal("--grpc-backend-url requires --grpc-port")
+	}
 	if grpcCfg.Port > 0 {
-		grpcSrv := grpc.NewServer(&grpcCfg, logger)
+		grpcSrv = grpc.NewServer(&grpcCfg, logger)
 		grpcSrv.SetSPIFFESource(srv.SPIFFESource())
 		grpcSrv.SetKeyPair(keyPair)
 		grpcSrv.SetCache(srv.Cache())
@@ -236,6 +242,11 @@ func main() {
 	sd := signals.NewShutdown(srvCfg.ServerShutdownTimeout, drainDelay, logger)
 	sd.SetBeforeShutdown(srv.Stop)
 	sd.Graceful(stopCh, httpServer, httpsServer, grpcServer, grpcHealth, healthy, ready)
+	if grpcSrv != nil {
+		if err := grpcSrv.Close(); err != nil {
+			logger.Warn("closing the gRPC backend connections failed", zap.Error(err))
+		}
+	}
 	if err := srv.Close(); err != nil {
 		logger.Warn("releasing HTTP server resources failed", zap.Error(err))
 	}
