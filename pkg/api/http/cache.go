@@ -122,7 +122,7 @@ func (s *Server) cacheReadHandler(w http.ResponseWriter, r *http.Request) {
 // cache and 400 for a key over limits.MaxCacheKeySize.
 func (s *Server) cacheKey(w http.ResponseWriter, r *http.Request) (string, bool) {
 	if s.cache == nil {
-		s.ErrorResponse(w, r, "cache server is offline", http.StatusServiceUnavailable)
+		s.ErrorResponse(w, r, "cache server not configured", http.StatusServiceUnavailable)
 		return "", false
 	}
 	key := mux.Vars(r)["key"]

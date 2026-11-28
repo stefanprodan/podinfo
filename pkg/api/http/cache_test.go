@@ -41,8 +41,8 @@ func TestCacheWriteHandler_NoCache(t *testing.T) {
 	rr := httptest.NewRecorder()
 	srv.router.ServeHTTP(rr, req)
 
-	if !strings.Contains(rr.Body.String(), "cache server is offline") {
-		t.Errorf("expected offline error, got: %s", rr.Body.String())
+	if !strings.Contains(rr.Body.String(), "cache server not configured") {
+		t.Errorf("expected not configured error, got: %s", rr.Body.String())
 	}
 }
 
@@ -54,8 +54,8 @@ func TestCacheDeleteHandler_NoCache(t *testing.T) {
 	rr := httptest.NewRecorder()
 	srv.router.ServeHTTP(rr, req)
 
-	if !strings.Contains(rr.Body.String(), "cache server is offline") {
-		t.Errorf("expected offline error, got: %s", rr.Body.String())
+	if !strings.Contains(rr.Body.String(), "cache server not configured") {
+		t.Errorf("expected not configured error, got: %s", rr.Body.String())
 	}
 }
 
@@ -67,8 +67,8 @@ func TestCacheReadHandler_NoCache(t *testing.T) {
 	rr := httptest.NewRecorder()
 	srv.router.ServeHTTP(rr, req)
 
-	if !strings.Contains(rr.Body.String(), "cache server is offline") {
-		t.Errorf("expected offline error, got: %s", rr.Body.String())
+	if !strings.Contains(rr.Body.String(), "cache server not configured") {
+		t.Errorf("expected not configured error, got: %s", rr.Body.String())
 	}
 }
 

@@ -253,9 +253,9 @@ func TestErrorResponseStatus(t *testing.T) {
 		code    int
 		message string
 	}{
-		{method: "POST", path: "/cache/key", code: http.StatusServiceUnavailable, message: "cache server is offline"},
-		{method: "GET", path: "/cache/key", code: http.StatusServiceUnavailable, message: "cache server is offline"},
-		{method: "DELETE", path: "/cache/key", code: http.StatusServiceUnavailable, message: "cache server is offline"},
+		{method: "POST", path: "/cache/key", code: http.StatusServiceUnavailable, message: "cache server not configured"},
+		{method: "GET", path: "/cache/key", code: http.StatusServiceUnavailable, message: "cache server not configured"},
+		{method: "DELETE", path: "/cache/key", code: http.StatusServiceUnavailable, message: "cache server not configured"},
 		{method: "GET", path: "/token/validate", code: http.StatusUnauthorized, message: "authorization bearer header required"},
 		{method: "POST", path: "/token", body: large(), code: http.StatusRequestEntityTooLarge, message: "request body too large"},
 		{method: "POST", path: "/echo", body: large(), code: http.StatusRequestEntityTooLarge, message: "request body too large"},
