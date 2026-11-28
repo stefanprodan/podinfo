@@ -22,16 +22,16 @@ var (
 )
 
 func main() {
-
 	var err error
 	logger, err = zap.NewDevelopment()
 	if err != nil {
 		log.Fatalf("can't initialize zap logger: %v", err)
 	}
-	defer logger.Sync()
 
 	rootCmd.SetArgs(os.Args[1:])
-	if err := rootCmd.Execute(); err != nil {
+	err = rootCmd.Execute()
+	_ = logger.Sync()
+	if err != nil {
 		e := err.Error()
 		fmt.Println(strings.ToUpper(e[:1]) + e[1:])
 		os.Exit(1)

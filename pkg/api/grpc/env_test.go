@@ -21,7 +21,7 @@ func TestGrpcEnv(t *testing.T) {
 
 	lis := bufconn.Listen(1024 * 1024)
 	t.Cleanup(func() {
-		lis.Close()
+		_ = lis.Close()
 	})
 
 	srv := grpc.NewServer()
@@ -29,7 +29,7 @@ func TestGrpcEnv(t *testing.T) {
 		srv.Stop()
 	})
 
-	envv1.RegisterEnvServiceServer(srv, &EnvServer{})
+	envv1.RegisterEnvServiceServer(srv, &envServer{})
 
 	go func() {
 		if err := srv.Serve(lis); err != nil {
@@ -46,7 +46,7 @@ func TestGrpcEnv(t *testing.T) {
 		t.Fatalf("grpc.NewClient %v", err)
 	}
 	t.Cleanup(func() {
-		conn.Close()
+		_ = conn.Close()
 	})
 
 	client := envv1.NewEnvServiceClient(conn)

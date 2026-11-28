@@ -17,7 +17,7 @@ func newBufconnClient(t *testing.T, srv *grpc.Server) *grpc.ClientConn {
 
 	lis := bufconn.Listen(1024 * 1024)
 	t.Cleanup(func() {
-		lis.Close()
+		_ = lis.Close()
 	})
 	t.Cleanup(srv.Stop)
 
@@ -34,7 +34,7 @@ func newBufconnClient(t *testing.T, srv *grpc.Server) *grpc.ClientConn {
 		t.Fatalf("grpc.NewClient %v", err)
 	}
 	t.Cleanup(func() {
-		conn.Close()
+		_ = conn.Close()
 	})
 
 	return conn

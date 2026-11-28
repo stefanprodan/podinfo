@@ -118,7 +118,7 @@ func (s *Server) cacheReadHandler(w http.ResponseWriter, r *http.Request) {
 
 	setRawResponseHeaders(w)
 	w.WriteHeader(http.StatusOK)
-	w.Write(data)
+	_, _ = w.Write(data) //nolint:gosec // the raw response headers stop browsers from rendering it
 }
 
 // cacheKey returns the key of a cache request. It answers 503 without a
@@ -175,28 +175,9 @@ func newCacheOptions(config *Config, logger *zap.Logger) (*redis.UniversalOption
 		return nil, nil, fmt.Errorf("unsupported cache server URL scheme %q, use redis, rediss, valkey or valkeys", u.Scheme)
 	}
 
-	if u.Hostname() == "" {
-		return nil, nil, errors.New("cache server URL has no host")
-	}
-	addrs := []string{u.Host}
-	if u.Port() == "" {
-		addrs[0] = net.JoinHostPort(u.Hostname(), "6379")
-	}
-
-	query, err := url.ParseQuery(u.RawQuery)
+	addrs, err := cacheAddrs(u)
 	if err != nil {
-		return nil, nil, errors.New("invalid cache server URL query, want addr=host:port pairs separated by '&'")
-	}
-	for key, values := range query {
-		if key != "addr" {
-			return nil, nil, fmt.Errorf("unsupported cache server URL parameter %q", key)
-		}
-		for _, addr := range values {
-			if !validCacheAddr(addr) {
-				return nil, nil, fmt.Errorf("invalid cache server address %q, want host:port", addr)
-			}
-			addrs = append(addrs, addr)
-		}
+		return nil, nil, err
 	}
 
 	var db int
@@ -226,7 +207,8 @@ func newCacheOptions(config *Config, logger *zap.Logger) (*redis.UniversalOption
 		opts.Password = password
 	}
 
-	if secure {
+	switch {
+	case secure:
 		opts.TLSConfig = &tls.Config{MinVersion: tls.VersionTLS12}
 		if config.CacheCAFile != "" {
 			pem, err := os.ReadFile(config.CacheCAFile)
@@ -239,9 +221,9 @@ func newCacheOptions(config *Config, logger *zap.Logger) (*redis.UniversalOption
 			}
 			opts.TLSConfig.RootCAs = roots
 		}
-	} else if config.CacheCAFile != "" {
+	case config.CacheCAFile != "":
 		return nil, nil, errors.New("--cache-ca-file requires a rediss:// or valkeys:// cache server URL")
-	} else if config.CacheCertPath != "" {
+	case config.CacheCertPath != "":
 		return nil, nil, errors.New("--cache-cert-path requires a rediss:// or valkeys:// cache server URL")
 	}
 
@@ -254,6 +236,33 @@ func newCacheOptions(config *Config, logger *zap.Logger) (*redis.UniversalOption
 	}
 	opts.TLSConfig.GetClientCertificate = kp.GetClientCertificate
 	return opts, kp, nil
+}
+
+func cacheAddrs(u *url.URL) ([]string, error) {
+	if u.Hostname() == "" {
+		return nil, errors.New("cache server URL has no host")
+	}
+	addrs := []string{u.Host}
+	if u.Port() == "" {
+		addrs[0] = net.JoinHostPort(u.Hostname(), "6379")
+	}
+
+	query, err := url.ParseQuery(u.RawQuery)
+	if err != nil {
+		return nil, errors.New("invalid cache server URL query, want addr=host:port pairs separated by '&'")
+	}
+	for key, values := range query {
+		if key != "addr" {
+			return nil, fmt.Errorf("unsupported cache server URL parameter %q", key)
+		}
+		for _, addr := range values {
+			if !validCacheAddr(addr) {
+				return nil, fmt.Errorf("invalid cache server address %q, want host:port", addr)
+			}
+			addrs = append(addrs, addr)
+		}
+	}
+	return addrs, nil
 }
 
 func validCacheAddr(addr string) bool {

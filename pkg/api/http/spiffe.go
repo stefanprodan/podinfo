@@ -1,7 +1,7 @@
 package http
 
 import (
-	"fmt"
+	"errors"
 	"net"
 	"net/http"
 	"net/url"
@@ -45,17 +45,17 @@ type spiffeState struct {
 // newSPIFFEState validates the SPIFFE flags and returns nil when SPIFFE is disabled.
 func newSPIFFEState(config *Config, logger *zap.Logger, options ...workloadapi.ClientOption) (*spiffeState, error) {
 	if config.SPIFFEBackendMTLS && config.SPIFFEEndpointSocket == "" {
-		return nil, fmt.Errorf("--spiffe-backend-mtls requires --spiffe-endpoint-socket")
+		return nil, errors.New("--spiffe-backend-mtls requires --spiffe-endpoint-socket")
 	}
 	if len(config.SPIFFEBackendIDs) > 0 && !config.SPIFFEBackendMTLS {
-		return nil, fmt.Errorf("--spiffe-backend-ids requires --spiffe-backend-mtls")
+		return nil, errors.New("--spiffe-backend-ids requires --spiffe-backend-mtls")
 	}
 	if config.SPIFFEEndpointSocket == "" {
 		return nil, nil
 	}
 
 	if config.SecurePort == "" || config.SecurePort == "0" {
-		return nil, fmt.Errorf("--spiffe-endpoint-socket requires --secure-port")
+		return nil, errors.New("--spiffe-endpoint-socket requires --secure-port")
 	}
 
 	ids, err := spiffe.ParseIDs("--spiffe-authorized-ids", config.SPIFFEAuthorizedIDs)
@@ -209,10 +209,10 @@ func (s *Server) backendClient(backendURL string) (*http.Client, error) {
 	s.spiffe.mu.Lock()
 	defer s.spiffe.mu.Unlock()
 	if s.spiffe.closed {
-		return nil, fmt.Errorf("SPIFFE Workload API source closed")
+		return nil, errors.New("SPIFFE Workload API source closed")
 	}
 	if s.spiffe.backendClient == nil {
-		return nil, fmt.Errorf("SPIFFE X.509 SVID not issued yet")
+		return nil, errors.New("SPIFFE X.509 SVID not issued yet")
 	}
 	return s.spiffe.backendClient, nil
 }

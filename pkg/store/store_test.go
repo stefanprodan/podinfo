@@ -40,10 +40,8 @@ func assertSpan(t *testing.T, exporter *tracetest.InMemoryExporter, name, file s
 		t.Errorf("got %d span events, want the recorded error", len(span.Events))
 	}
 	want := attribute.String("file.path", file)
-	for _, attr := range span.Attributes {
-		if attr == want {
-			return
-		}
+	if slices.Contains(span.Attributes, want) {
+		return
 	}
 	t.Errorf("span attributes %v, want %v", span.Attributes, want)
 }
@@ -87,8 +85,8 @@ func TestWriteRead(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if mode := info.Mode().Perm(); mode != 0644 {
-		t.Errorf("file mode %v, want %v", mode, os.FileMode(0644))
+	if mode := info.Mode().Perm(); mode != 0o644 {
+		t.Errorf("file mode %v, want %v", mode, os.FileMode(0o644))
 	}
 	exporter.Reset()
 
@@ -156,14 +154,14 @@ func TestSweep(t *testing.T) {
 		"other":      old,
 	} {
 		file := filepath.Join(dir, name)
-		if err := os.WriteFile(file, []byte("data"), 0644); err != nil {
+		if err := os.WriteFile(file, []byte("data"), 0o600); err != nil {
 			t.Fatal(err)
 		}
 		if err := os.Chtimes(file, mtime, mtime); err != nil {
 			t.Fatal(err)
 		}
 	}
-	if err := os.Mkdir(filepath.Join(dir, ".tmp-dir"), 0755); err != nil {
+	if err := os.Mkdir(filepath.Join(dir, ".tmp-dir"), 0o750); err != nil {
 		t.Fatal(err)
 	}
 
@@ -174,7 +172,7 @@ func TestSweep(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var got []string
+	got := make([]string, 0, len(entries))
 	for _, entry := range entries {
 		got = append(got, entry.Name())
 	}
@@ -203,7 +201,7 @@ func TestWriteError(t *testing.T) {
 func TestReadErrors(t *testing.T) {
 	dir := t.TempDir()
 	isDir := strings.Repeat("b", 40)
-	if err := os.Mkdir(filepath.Join(dir, isDir), 0755); err != nil {
+	if err := os.Mkdir(filepath.Join(dir, isDir), 0o750); err != nil {
 		t.Fatal(err)
 	}
 

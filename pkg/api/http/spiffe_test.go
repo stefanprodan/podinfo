@@ -57,7 +57,11 @@ func newSPIFFEServerWithConfig(t *testing.T, socketPath string, configure func(*
 	srv := NewMockServer()
 	srv.config.Host = "127.0.0.1"
 	ln := listen(t)
-	srv.config.SecurePort = strconv.Itoa(ln.Addr().(*net.TCPAddr).Port)
+	addr, ok := ln.Addr().(*net.TCPAddr)
+	if !ok {
+		t.Fatalf("listener address is %T, want *net.TCPAddr", ln.Addr())
+	}
+	srv.config.SecurePort = strconv.Itoa(addr.Port)
 	srv.config.SPIFFEEndpointSocket = "unix://" + socketPath
 	configure(srv.config)
 
@@ -175,7 +179,7 @@ func startSPIFFEBackend(t *testing.T, ca *spiffetest.CA, authorized ...string) s
 		if err != nil {
 			return false
 		}
-		conn.Close()
+		_ = conn.Close()
 		return true
 	})
 	return "https://" + addr + "/api/echo"
@@ -203,8 +207,8 @@ func startSPIFFEFrontend(t *testing.T, ca *spiffetest.CA, backendURL string, bac
 	return frontend
 }
 
-func callEcho(srv *Server, body string) string {
-	req := httptest.NewRequest("POST", "/api/echo", strings.NewReader(body))
+func callEcho(srv *Server) string {
+	req := httptest.NewRequest(http.MethodPost, "/api/echo", strings.NewReader("hello"))
 	rr := httptest.NewRecorder()
 	http.HandlerFunc(srv.echoHandler).ServeHTTP(rr, req)
 	return rr.Body.String()
@@ -216,7 +220,7 @@ func TestSPIFFEBackendMTLS(t *testing.T) {
 	t.Run("authorized client and backend", func(t *testing.T) {
 		backendURL := startSPIFFEBackend(t, ca, clientID.String())
 		frontend := startSPIFFEFrontend(t, ca, backendURL, serverID)
-		if got := callEcho(frontend, "hello"); !strings.Contains(got, "hello") || strings.Contains(got, "call failed") {
+		if got := callEcho(frontend); !strings.Contains(got, "hello") || strings.Contains(got, "call failed") {
 			t.Fatalf("expected the backend to echo the payload, got: %s", got)
 		}
 	})
@@ -224,7 +228,7 @@ func TestSPIFFEBackendMTLS(t *testing.T) {
 	t.Run("same trust domain default", func(t *testing.T) {
 		backendURL := startSPIFFEBackend(t, ca)
 		frontend := startSPIFFEFrontend(t, ca, backendURL)
-		if got := callEcho(frontend, "hello"); !strings.Contains(got, "hello") || strings.Contains(got, "call failed") {
+		if got := callEcho(frontend); !strings.Contains(got, "hello") || strings.Contains(got, "call failed") {
 			t.Fatalf("expected a same trust domain backend to be accepted, got: %s", got)
 		}
 	})
@@ -232,7 +236,7 @@ func TestSPIFFEBackendMTLS(t *testing.T) {
 	t.Run("backend rejects the client", func(t *testing.T) {
 		backendURL := startSPIFFEBackend(t, ca, otherID.String())
 		frontend := startSPIFFEFrontend(t, ca, backendURL, serverID)
-		if got := callEcho(frontend, "hello"); !strings.Contains(got, "call failed") {
+		if got := callEcho(frontend); !strings.Contains(got, "call failed") {
 			t.Fatalf("expected the backend to reject the client, got: %s", got)
 		}
 	})
@@ -240,7 +244,7 @@ func TestSPIFFEBackendMTLS(t *testing.T) {
 	t.Run("client rejects the backend", func(t *testing.T) {
 		backendURL := startSPIFFEBackend(t, ca, clientID.String())
 		frontend := startSPIFFEFrontend(t, ca, backendURL, otherID)
-		if got := callEcho(frontend, "hello"); !strings.Contains(got, "call failed") {
+		if got := callEcho(frontend); !strings.Contains(got, "call failed") {
 			t.Fatalf("expected the client to reject the backend ID, got: %s", got)
 		}
 	})
@@ -248,7 +252,7 @@ func TestSPIFFEBackendMTLS(t *testing.T) {
 	t.Run("foreign trust domain backend", func(t *testing.T) {
 		backendURL := startSPIFFEBackend(t, spiffetest.NewCA(t), clientID.String())
 		frontend := startSPIFFEFrontend(t, ca, backendURL, serverID)
-		if got := callEcho(frontend, "hello"); !strings.Contains(got, "call failed") {
+		if got := callEcho(frontend); !strings.Contains(got, "call failed") {
 			t.Fatalf("expected the client to reject a backend from another CA, got: %s", got)
 		}
 	})
@@ -264,17 +268,17 @@ func TestSPIFFEBackendTransport(t *testing.T) {
 	}
 
 	// http backends keep the default transport
-	plain := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`"plain"`))
+	plain := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`"plain"`))
 	}))
 	defer plain.Close()
 	srv.config.BackendURL = []string{plain.URL}
-	if got := callEcho(srv, "hello"); !strings.Contains(got, "plain") {
+	if got := callEcho(srv); !strings.Contains(got, "plain") {
 		t.Fatalf("expected the http backend to be called, got: %s", got)
 	}
 
 	srv.config.BackendURL = []string{"https://127.0.0.1:1/api/echo"}
-	if got := callEcho(srv, "hello"); !strings.Contains(got, "not issued yet") {
+	if got := callEcho(srv); !strings.Contains(got, "not issued yet") {
 		t.Fatalf("expected the https backend call to wait for the SVID, got: %s", got)
 	}
 }
@@ -312,7 +316,7 @@ func TestSPIFFEMTLS(t *testing.T) {
 	t.Run("unauthorized client", func(t *testing.T) {
 		resp, err := mtlsClient(ca.NewSVID(t, otherID), bundle).Get(infoURL)
 		if err == nil {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			t.Fatal("expected the request to be rejected")
 		}
 	})
@@ -320,7 +324,7 @@ func TestSPIFFEMTLS(t *testing.T) {
 	t.Run("no client certificate", func(t *testing.T) {
 		resp, err := mtlsClient(nil, bundle).Get(infoURL)
 		if err == nil {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			t.Fatal("expected the request to be rejected")
 		}
 	})
@@ -330,7 +334,7 @@ func TestSPIFFEMTLS(t *testing.T) {
 		client := mtlsClient(evil.NewSVID(t, foreignID), bundle)
 		resp, err := client.Get(infoURL)
 		if err == nil {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			t.Fatal("expected the request to be rejected")
 		}
 	})
@@ -351,8 +355,10 @@ func TestSPIFFEMTLS_TrustDomainDefault(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected a same trust domain client to be allowed: %v", err)
 	}
-	io.Copy(io.Discard, resp.Body)
-	resp.Body.Close()
+	defer resp.Body.Close()
+	if _, err := io.Copy(io.Discard, resp.Body); err != nil {
+		t.Fatal(err)
+	}
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("got status %d", resp.StatusCode)
 	}
@@ -368,7 +374,7 @@ func TestSPIFFEReadiness(t *testing.T) {
 
 	time.Sleep(300 * time.Millisecond)
 	rr := httptest.NewRecorder()
-	srv.readyzHandler(rr, httptest.NewRequest("GET", "/readyz", nil))
+	srv.readyzHandler(rr, httptest.NewRequest(http.MethodGet, "/readyz", nil))
 	if rr.Code != http.StatusServiceUnavailable {
 		t.Fatalf("/readyz before the SVID: got %d, want 503", rr.Code)
 	}
@@ -378,7 +384,7 @@ func TestSPIFFEReadiness(t *testing.T) {
 	waitFor(t, "ready", isReady)
 
 	rr = httptest.NewRecorder()
-	srv.readyzHandler(rr, httptest.NewRequest("GET", "/readyz", nil))
+	srv.readyzHandler(rr, httptest.NewRequest(http.MethodGet, "/readyz", nil))
 	if rr.Code != http.StatusOK {
 		t.Fatalf("/readyz after the SVID: got %d, want 200", rr.Code)
 	}
@@ -400,7 +406,7 @@ func TestSPIFFEReadiness_Unready(t *testing.T) {
 		if err != nil {
 			return false
 		}
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		return true
 	})
 	if isReady() {
@@ -462,11 +468,11 @@ func TestLoggingMiddleware_SPIFFEID(t *testing.T) {
 	core, logs := observer.New(zap.DebugLevel)
 	handler := NewLoggingMiddleware(zap.New(core)).Handler(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 
-	req := httptest.NewRequest("GET", "/artifact", nil)
+	req := httptest.NewRequest(http.MethodGet, "/artifact", nil)
 	req.TLS = &tls.ConnectionState{PeerCertificates: svid.Certificates}
 	handler.ServeHTTP(httptest.NewRecorder(), req)
 
-	req = httptest.NewRequest("GET", "/artifact", nil)
+	req = httptest.NewRequest(http.MethodGet, "/artifact", nil)
 	handler.ServeHTTP(httptest.NewRecorder(), req)
 
 	entries := logs.All()
@@ -485,7 +491,7 @@ func TestEchoHeadersHandler_SPIFFEID(t *testing.T) {
 	srv := NewMockServer()
 
 	// a client-supplied header is never echoed
-	req := httptest.NewRequest("GET", "/headers", nil)
+	req := httptest.NewRequest(http.MethodGet, "/headers", nil)
 	req.Header.Set(spiffeIDHeader, "spiffe://evil.org/spoofed")
 	rr := httptest.NewRecorder()
 	srv.echoHeadersHandler(rr, req)

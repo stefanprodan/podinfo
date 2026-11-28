@@ -1,6 +1,7 @@
 package grpc
 
 import (
+	"context"
 	"crypto/tls"
 	"errors"
 	"fmt"
@@ -39,6 +40,8 @@ import (
 	"github.com/stefanprodan/podinfo/pkg/telemetry"
 )
 
+// Server runs the podinfo gRPC API: the services of this package, health
+// checking and reflection.
 type Server struct {
 	logger       *zap.Logger
 	config       *Config
@@ -49,6 +52,8 @@ type Server struct {
 	backendConns []*grpc.ClientConn
 }
 
+// Config holds the settings of the gRPC server. The mapstructure tags name
+// the command flags they are read from.
 type Config struct {
 	Port              int           `mapstructure:"grpc-port"`
 	TLS               bool          `mapstructure:"grpc-tls"`
@@ -68,6 +73,8 @@ type Config struct {
 	DataPath          string        `mapstructure:"data-path"`
 }
 
+// NewServer returns a Server that does not listen yet. The SPIFFE source, key
+// pair and cache client are optional and must be set before ListenAndServe.
 func NewServer(config *Config, logger *zap.Logger) *Server {
 	return &Server{
 		logger: logger,
@@ -95,7 +102,7 @@ func (s *Server) SetCache(client redis.UniversalClient) {
 // ListenAndServe starts the gRPC server and returns it with its health server.
 func (s *Server) ListenAndServe() (*grpc.Server, *health.Server) {
 	address := net.JoinHostPort(s.config.Host, strconv.Itoa(s.config.Port))
-	listener, err := net.Listen("tcp", address)
+	listener, err := (&net.ListenConfig{}).Listen(context.Background(), "tcp", address)
 	if err != nil {
 		s.logger.Fatal("failed to listen", zap.String("address", address), zap.Error(err))
 	}
@@ -135,16 +142,16 @@ func (s *Server) newServer(opts ...grpc.ServerOption) (*grpc.Server, *health.Ser
 	srv := grpc.NewServer(append(s.serverOptions(defaultMetrics()), opts...)...)
 
 	echov1.RegisterEchoServiceServer(srv, &echoServer{config: s.config, logger: s.logger, backends: s.backends})
-	versionv1.RegisterVersionServiceServer(srv, &VersionServer{config: s.config, logger: s.logger})
-	panicv1.RegisterPanicServiceServer(srv, &PanicServer{config: s.config, logger: s.logger})
-	delayv1.RegisterDelayServiceServer(srv, &DelayServer{config: s.config, logger: s.logger})
-	headerv1.RegisterHeaderServiceServer(srv, &HeaderServer{config: s.config, logger: s.logger})
+	versionv1.RegisterVersionServiceServer(srv, &versionServer{config: s.config, logger: s.logger})
+	panicv1.RegisterPanicServiceServer(srv, &panicServer{config: s.config, logger: s.logger})
+	delayv1.RegisterDelayServiceServer(srv, &delayServer{config: s.config, logger: s.logger})
+	headerv1.RegisterHeaderServiceServer(srv, &headerServer{config: s.config, logger: s.logger})
 	infov1.RegisterInfoServiceServer(srv, &infoServer{config: s.config})
 	podv1.RegisterPodServiceServer(srv, &podServer{config: s.config})
-	statusv1.RegisterStatusServiceServer(srv, &StatusServer{config: s.config, logger: s.logger})
+	statusv1.RegisterStatusServiceServer(srv, &statusServer{config: s.config, logger: s.logger})
 	storev1.RegisterStoreServiceServer(srv, &storeServer{store: store.New(s.config.DataPath, telemetry.Tracer()), logger: s.logger})
-	tokenv1.RegisterTokenServiceServer(srv, &TokenServer{config: s.config, logger: s.logger})
-	envv1.RegisterEnvServiceServer(srv, &EnvServer{config: s.config, logger: s.logger})
+	tokenv1.RegisterTokenServiceServer(srv, &tokenServer{config: s.config, logger: s.logger})
+	envv1.RegisterEnvServiceServer(srv, &envServer{config: s.config, logger: s.logger})
 	cachev1.RegisterCacheServiceServer(srv, &cacheServer{cache: s.cache, logger: s.logger})
 	reflection.Register(srv)
 
@@ -253,7 +260,7 @@ func (s *Server) backendCredentials(scheme string) (credentials.TransportCredent
 
 // Close closes the backend connections. Call it after the server stops.
 func (s *Server) Close() error {
-	var errs []error
+	errs := make([]error, 0, len(s.backendConns))
 	for _, conn := range s.backendConns {
 		errs = append(errs, conn.Close())
 	}

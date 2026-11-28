@@ -12,7 +12,7 @@ func TestPodHandler(t *testing.T) {
 	t.Setenv("PODINFO_TEST_PLAIN", "plain")
 	t.Setenv("PODINFO_TEST_PASSWORD", "s3cret")
 
-	req := httptest.NewRequest("GET", "/api/pod", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/pod", nil)
 	req.Header.Set("X-Test", "podinfo")
 	req.Header.Set(spiffeIDHeader, "spiffe://example.org/forged")
 	req.Header.Set("Authorization", "Bearer s3cret")

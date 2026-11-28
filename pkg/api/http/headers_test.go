@@ -9,7 +9,7 @@ import (
 )
 
 func TestEchoHeadersHandler(t *testing.T) {
-	req, err := http.NewRequest("GET", "/api/headers", nil)
+	req, err := http.NewRequest(http.MethodGet, "/api/headers", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -34,7 +34,7 @@ func TestEchoHeadersHandler(t *testing.T) {
 }
 
 func TestEchoHeadersHandlerMasksCredentials(t *testing.T) {
-	req := httptest.NewRequest("GET", "/headers", nil)
+	req := httptest.NewRequest(http.MethodGet, "/headers", nil)
 	req.Header.Set("Authorization", "Bearer s3cret")
 	req.Header.Set("Cookie", "session=s3cret")
 

@@ -1,7 +1,7 @@
 package http
 
 import (
-	"fmt"
+	"errors"
 	"net/http"
 	"strings"
 	"time"
@@ -74,21 +74,21 @@ func (s *Server) tokenGenerateHandler(w http.ResponseWriter, r *http.Request) {
 // Generate: JWT=$(curl -s -d 'test' localhost:9898/token | jq -r .token)
 // Validate: curl -H "Authorization: Bearer ${JWT}" localhost:9898/token/validate
 func (s *Server) tokenValidateHandler(w http.ResponseWriter, r *http.Request) {
-	authorizationHeader := r.Header.Get("authorization")
+	authorizationHeader := r.Header.Get("Authorization")
 	if authorizationHeader == "" {
 		s.ErrorResponse(w, r, "authorization bearer header required", http.StatusUnauthorized)
 		return
 	}
 	bearerToken := strings.Split(authorizationHeader, " ")
-	if len(bearerToken) != 2 || strings.ToLower(bearerToken[0]) != "bearer" {
+	if len(bearerToken) != 2 || !strings.EqualFold(bearerToken[0], "bearer") {
 		s.ErrorResponse(w, r, "authorization bearer header required", http.StatusUnauthorized)
 		return
 	}
 
 	claims := jwtCustomClaims{}
-	token, err := jwt.ParseWithClaims(bearerToken[1], &claims, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(bearerToken[1], &claims, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("invalid signing method")
+			return nil, errors.New("invalid signing method")
 		}
 		return []byte(s.config.JWTSecret), nil
 	})
@@ -98,11 +98,12 @@ func (s *Server) tokenValidateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if token.Valid {
-		if claims.Issuer != "podinfo" {
+		switch {
+		case claims.Issuer != "podinfo":
 			s.ErrorResponse(w, r, "invalid issuer", http.StatusUnauthorized)
-		} else if claims.ExpiresAt == nil {
+		case claims.ExpiresAt == nil:
 			s.ErrorResponse(w, r, "token expiry required", http.StatusUnauthorized)
-		} else {
+		default:
 			var result = TokenValidationResponse{
 				TokenName: claims.Name,
 				ExpiresAt: claims.ExpiresAt.Time,
@@ -114,11 +115,13 @@ func (s *Server) tokenValidateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// TokenResponse is the body of POST /token.
 type TokenResponse struct {
 	Token     string    `json:"token"`
 	ExpiresAt time.Time `json:"expires_at"`
 }
 
+// TokenValidationResponse is the body of GET /token/validate.
 type TokenValidationResponse struct {
 	TokenName string    `json:"token_name"`
 	ExpiresAt time.Time `json:"expires_at"`

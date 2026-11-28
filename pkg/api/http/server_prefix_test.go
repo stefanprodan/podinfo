@@ -33,7 +33,7 @@ func TestRegisterHandlersWithPrefix(t *testing.T) {
 	srv.config.Prefix = normalizePrefix("/foo")
 	srv.registerHandlers()
 
-	reqRootSlash, err := http.NewRequest("GET", "/foo/", nil)
+	reqRootSlash, err := http.NewRequest(http.MethodGet, "/foo/", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -44,7 +44,7 @@ func TestRegisterHandlersWithPrefix(t *testing.T) {
 		t.Fatalf("GET /foo/ returned %d, want %d", rrRootSlash.Code, http.StatusOK)
 	}
 
-	req, err := http.NewRequest("GET", "/foo/api/info", nil)
+	req, err := http.NewRequest(http.MethodGet, "/foo/api/info", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -55,7 +55,7 @@ func TestRegisterHandlersWithPrefix(t *testing.T) {
 		t.Fatalf("GET /foo/api/info returned %d, want %d", rr.Code, http.StatusOK)
 	}
 
-	reqNoPrefix, err := http.NewRequest("GET", "/api/info", nil)
+	reqNoPrefix, err := http.NewRequest(http.MethodGet, "/api/info", nil)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -34,6 +34,8 @@ func (s *Server) infoHandler(w http.ResponseWriter, r *http.Request) {
 	s.JSONResponse(w, r, data)
 }
 
+// RuntimeResponse is the body of /api/info, and of / for clients that are not
+// browsers.
 type RuntimeResponse struct {
 	Hostname     string `json:"hostname"`
 	Version      string `json:"version"`

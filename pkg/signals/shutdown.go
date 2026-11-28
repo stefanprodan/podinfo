@@ -12,6 +12,9 @@ import (
 	"google.golang.org/grpc/health"
 )
 
+// Shutdown stops the HTTP and gRPC servers the way a Kubernetes rollout needs:
+// it fails the probes, waits for the endpoint removal to propagate, then
+// drains the in-flight requests.
 type Shutdown struct {
 	logger                *zap.Logger
 	serverShutdownTimeout time.Duration
@@ -26,6 +29,8 @@ func (s *Shutdown) SetBeforeShutdown(fn func()) {
 	s.beforeShutdown = fn
 }
 
+// NewShutdown returns a Shutdown that waits drainDelay after failing the
+// probes and then gives the servers serverShutdownTimeout to drain.
 func NewShutdown(serverShutdownTimeout, drainDelay time.Duration, logger *zap.Logger) *Shutdown {
 	return &Shutdown{
 		logger:                logger,

@@ -60,7 +60,7 @@ func buildArtifact(dir string) (*artifact, error) {
 	}
 	tw := tar.NewWriter(gz)
 	for _, p := range files {
-		content, err := os.ReadFile(p)
+		content, err := os.ReadFile(p) //nolint:gosec // p comes from walking the configured directory
 		if err != nil {
 			return nil, err
 		}
@@ -136,6 +136,6 @@ func (s *Server) artifactHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(http.StatusOK)
 	if r.Method != http.MethodHead {
-		w.Write(a.data)
+		_, _ = w.Write(a.data)
 	}
 }

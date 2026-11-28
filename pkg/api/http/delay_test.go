@@ -44,13 +44,17 @@ func TestWaitHandlersReturnOnDisconnect(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			fmt.Fprintf(conn, "%s %s HTTP/1.1\r\nHost: podinfo\r\nContent-Length: %d\r\n\r\nx", tc.method, tc.path, tc.length)
+			if _, err := fmt.Fprintf(conn, "%s %s HTTP/1.1\r\nHost: podinfo\r\nContent-Length: %d\r\n\r\nx", tc.method, tc.path, tc.length); err != nil {
+				t.Fatal(err)
+			}
 			select {
 			case <-started:
 			case <-time.After(10 * time.Second):
 				t.Fatal("handler not started")
 			}
-			conn.Close()
+			if err := conn.Close(); err != nil {
+				t.Fatal(err)
+			}
 
 			select {
 			case code := <-done:
@@ -65,7 +69,7 @@ func TestWaitHandlersReturnOnDisconnect(t *testing.T) {
 }
 
 func TestDelayHandler(t *testing.T) {
-	req, err := http.NewRequest("GET", "/delay/0", nil)
+	req, err := http.NewRequest(http.MethodGet, "/delay/0", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -97,7 +101,7 @@ func TestDelayHandlerCanceled(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	time.AfterFunc(50*time.Millisecond, cancel)
-	req := httptest.NewRequest("GET", "/delay/60", nil).WithContext(ctx)
+	req := httptest.NewRequest(http.MethodGet, "/delay/60", nil).WithContext(ctx)
 	rr := httptest.NewRecorder()
 
 	start := time.Now()
@@ -120,12 +124,12 @@ func TestDelayHandlerCanceled(t *testing.T) {
 func TestRandomDelayMiddleware(t *testing.T) {
 	m := NewRandomDelayMiddleware(0, 1, "ms")
 	called := false
-	handler := m.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := m.Handler(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		called = true
 		w.WriteHeader(http.StatusOK)
 	}))
 
-	req, _ := http.NewRequest("GET", "/", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/", nil)
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
 
@@ -139,11 +143,11 @@ func TestRandomDelayMiddleware(t *testing.T) {
 
 func TestRandomDelayMiddleware_Milliseconds(t *testing.T) {
 	m := NewRandomDelayMiddleware(0, 1, "ms")
-	handler := m.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := m.Handler(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 
-	req, _ := http.NewRequest("GET", "/", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/", nil)
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
 
@@ -154,11 +158,11 @@ func TestRandomDelayMiddleware_Milliseconds(t *testing.T) {
 
 func TestRandomDelayMiddleware_FixedDelay(t *testing.T) {
 	m := NewRandomDelayMiddleware(1, 1, "ms")
-	handler := m.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := m.Handler(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 
-	req, _ := http.NewRequest("GET", "/", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/", nil)
 	rr := httptest.NewRecorder()
 	start := time.Now()
 	handler.ServeHTTP(rr, req)
@@ -200,13 +204,13 @@ func TestRandomErrorMiddleware(t *testing.T) {
 				return d
 			}
 			passed := false
-			handler := m.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			handler := m.Handler(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 				passed = true
 				w.WriteHeader(http.StatusAccepted)
 			}))
 
 			rr := httptest.NewRecorder()
-			handler.ServeHTTP(rr, httptest.NewRequest("GET", "/", nil))
+			handler.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/", nil))
 
 			if rr.Code != tt.want {
 				t.Errorf("got status %d, want %d", rr.Code, tt.want)
@@ -222,12 +226,12 @@ func TestRandomErrorMiddleware(t *testing.T) {
 }
 
 func TestRandomErrorMiddleware_DefaultSource(t *testing.T) {
-	handler := NewRandomErrorMiddleware().Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := NewRandomErrorMiddleware().Handler(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusAccepted)
 	}))
 
 	rr := httptest.NewRecorder()
-	handler.ServeHTTP(rr, httptest.NewRequest("GET", "/", nil))
+	handler.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/", nil))
 
 	codes := []int{http.StatusAccepted, http.StatusInternalServerError, http.StatusBadRequest, http.StatusConflict}
 	if !slices.Contains(codes, rr.Code) {

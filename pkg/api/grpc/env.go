@@ -9,12 +9,12 @@ import (
 	"github.com/stefanprodan/podinfo/pkg/environ"
 )
 
-type EnvServer struct {
+type envServer struct {
 	pb.UnimplementedEnvServiceServer
 	config *Config
 	logger *zap.Logger
 }
 
-func (s *EnvServer) Env(ctx context.Context, envInput *pb.EnvRequest) (*pb.EnvResponse, error) {
+func (s *envServer) Env(_ context.Context, _ *pb.EnvRequest) (*pb.EnvResponse, error) {
 	return &pb.EnvResponse{EnvVars: environ.Redacted()}, nil
 }

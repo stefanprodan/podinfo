@@ -14,7 +14,7 @@ import (
 )
 
 func TestChunkedHandler(t *testing.T) {
-	req, err := http.NewRequest("GET", "/chunked/0", nil)
+	req, err := http.NewRequest(http.MethodGet, "/chunked/0", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -69,7 +69,7 @@ func TestChunkedHandlerCanceled(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	time.AfterFunc(50*time.Millisecond, cancel)
-	req := httptest.NewRequest("GET", "/chunked/60", nil).WithContext(ctx)
+	req := httptest.NewRequest(http.MethodGet, "/chunked/60", nil).WithContext(ctx)
 	rr := httptest.NewRecorder()
 
 	start := time.Now()

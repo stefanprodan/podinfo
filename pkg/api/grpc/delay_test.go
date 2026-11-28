@@ -19,10 +19,9 @@ import (
 )
 
 func TestGrpcDelay(t *testing.T) {
-
 	lis := bufconn.Listen(1024 * 1024)
 	t.Cleanup(func() {
-		lis.Close()
+		_ = lis.Close()
 	})
 
 	srv := grpc.NewServer()
@@ -30,7 +29,7 @@ func TestGrpcDelay(t *testing.T) {
 		srv.Stop()
 	})
 
-	delayv1.RegisterDelayServiceServer(srv, &DelayServer{})
+	delayv1.RegisterDelayServiceServer(srv, &delayServer{})
 
 	go func() {
 		if err := srv.Serve(lis); err != nil {
@@ -47,7 +46,7 @@ func TestGrpcDelay(t *testing.T) {
 		t.Fatalf("grpc.NewClient %v", err)
 	}
 	t.Cleanup(func() {
-		conn.Close()
+		_ = conn.Close()
 	})
 
 	client := delayv1.NewDelayServiceClient(conn)
@@ -63,9 +62,9 @@ func TestGrpcDelay(t *testing.T) {
 
 	expected := "1"
 	r := regexp.MustCompile(expected)
-	if !r.MatchString(strconv.FormatInt(res.Message, 10)) {
+	if !r.MatchString(strconv.FormatInt(res.GetMessage(), 10)) {
 		t.Fatalf("Returned unexpected body:\ngot \n%v \nwant \n%s",
-			res.Message, expected)
+			res.GetMessage(), expected)
 	}
 }
 
@@ -99,7 +98,7 @@ func TestGrpcDelayContext(t *testing.T) {
 			defer cancel()
 
 			start := time.Now()
-			_, err := (&DelayServer{}).Delay(ctx, &delayv1.DelayRequest{Seconds: 3600})
+			_, err := (&delayServer{}).Delay(ctx, &delayv1.DelayRequest{Seconds: 3600})
 			if elapsed := time.Since(start); elapsed > waitTimeout {
 				t.Fatalf("Delay returned after %s", elapsed)
 			}

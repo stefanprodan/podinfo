@@ -9,13 +9,13 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-type StatusServer struct {
+type statusServer struct {
 	pb.UnimplementedStatusServiceServer
 	config *Config
 	logger *zap.Logger
 }
 
-func (s *StatusServer) Status(ctx context.Context, req *pb.StatusRequest) (*pb.StatusResponse, error) {
+func (s *statusServer) Status(_ context.Context, req *pb.StatusRequest) (*pb.StatusResponse, error) {
 	reqCode := req.GetCode()
 
 	grpcCodes := map[string]codes.Code{

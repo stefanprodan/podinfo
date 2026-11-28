@@ -20,9 +20,17 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
 
-	podinfogrpc "github.com/stefanprodan/podinfo/pkg/api/grpc"
 	delayv1 "github.com/stefanprodan/podinfo/pkg/api/grpc/delay/v1"
 )
+
+type blockingDelayServer struct {
+	delayv1.UnimplementedDelayServiceServer
+}
+
+func (blockingDelayServer) Delay(ctx context.Context, _ *delayv1.DelayRequest) (*delayv1.DelayResponse, error) {
+	<-ctx.Done()
+	return nil, status.FromContextError(ctx.Err()).Err()
+}
 
 func TestGraceful(t *testing.T) {
 	const (
@@ -42,10 +50,10 @@ func TestGraceful(t *testing.T) {
 
 	lis := bufconn.Listen(1024 * 1024)
 	t.Cleanup(func() {
-		lis.Close()
+		_ = lis.Close()
 	})
 	grpcSrv := grpc.NewServer(grpc.UnaryInterceptor(interceptor))
-	delayv1.RegisterDelayServiceServer(grpcSrv, &podinfogrpc.DelayServer{})
+	delayv1.RegisterDelayServiceServer(grpcSrv, blockingDelayServer{})
 	healthSrv := health.NewServer()
 	healthSrv.SetServingStatus("podinfo", grpc_health_v1.HealthCheckResponse_SERVING)
 	grpc_health_v1.RegisterHealthServer(grpcSrv, healthSrv)
@@ -61,7 +69,7 @@ func TestGraceful(t *testing.T) {
 		t.Fatalf("grpc.NewClient %v", err)
 	}
 	t.Cleanup(func() {
-		conn.Close()
+		_ = conn.Close()
 	})
 	healthClient := grpc_health_v1.NewHealthClient(conn)
 
@@ -71,7 +79,7 @@ func TestGraceful(t *testing.T) {
 	}
 	httpStarted := make(chan struct{})
 	httpShutdown := make(chan struct{})
-	httpSrv := &http.Server{Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	httpSrv := &http.Server{ReadHeaderTimeout: time.Minute, Handler: http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		close(httpStarted)
 		<-httpShutdown
 		_, _ = io.WriteString(w, "ok")
@@ -90,7 +98,7 @@ func TestGraceful(t *testing.T) {
 	go func() {
 		res, err := http.Get("http://" + httpLis.Addr().String())
 		if err == nil {
-			res.Body.Close()
+			_ = res.Body.Close()
 			if res.StatusCode != http.StatusOK {
 				err = io.ErrUnexpectedEOF
 			}

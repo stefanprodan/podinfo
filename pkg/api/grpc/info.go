@@ -14,7 +14,7 @@ type infoServer struct {
 	config *Config
 }
 
-func (s *infoServer) Info(ctx context.Context, message *pb.InfoRequest) (*pb.InfoResponse, error) {
+func (s *infoServer) Info(_ context.Context, _ *pb.InfoRequest) (*pb.InfoResponse, error) {
 	return &pb.InfoResponse{
 		Hostname:     s.config.Hostname,
 		Version:      version.VERSION,

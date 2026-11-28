@@ -25,7 +25,7 @@ func (s *Server) chunkedHandler(w http.ResponseWriter, r *http.Request) {
 
 	delay, err := strconv.Atoi(vars["wait"])
 	if err != nil {
-		delay = randomDelaySeconds(s.config.HttpServerTimeout)
+		delay = randomDelaySeconds(s.config.HTTPServerTimeout)
 	}
 
 	flusher, ok := w.(http.Flusher)
@@ -61,5 +61,5 @@ func randomDelaySeconds(timeout time.Duration) int {
 	if maxDelay <= 11 {
 		maxDelay = 12
 	}
-	return rand.Intn(maxDelay-10) + 10
+	return rand.Intn(maxDelay-10) + 10 //nolint:gosec // the delay needs no secure randomness
 }

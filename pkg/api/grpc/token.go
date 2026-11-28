@@ -2,7 +2,7 @@ package grpc
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"strings"
 	"time"
 
@@ -16,7 +16,7 @@ import (
 	"github.com/stefanprodan/podinfo/pkg/telemetry"
 )
 
-type TokenServer struct {
+type tokenServer struct {
 	pb.UnimplementedTokenServiceServer
 	config *Config
 	logger *zap.Logger
@@ -27,8 +27,7 @@ type jwtCustomClaims struct {
 	jwt.RegisteredClaims
 }
 
-func (s *TokenServer) TokenGenerate(ctx context.Context, req *pb.TokenGenerateRequest) (*pb.TokenGenerateResponse, error) {
-
+func (s *tokenServer) TokenGenerate(ctx context.Context, _ *pb.TokenGenerateRequest) (*pb.TokenGenerateResponse, error) {
 	user := "anonymous"
 	expiresAt := time.Now().Add(time.Minute * 1)
 
@@ -50,14 +49,14 @@ func (s *TokenServer) TokenGenerate(ctx context.Context, req *pb.TokenGenerateRe
 
 	var result = pb.TokenGenerateResponse{
 		Token:     t,
-		ExpiresAt: claims.ExpiresAt.Time.String(),
+		ExpiresAt: claims.ExpiresAt.String(),
 		Message:   "Token generated successfully",
 	}
 
 	return &result, nil
 }
 
-func (s *TokenServer) TokenValidate(ctx context.Context, req *pb.TokenValidateRequest) (*pb.TokenValidateResponse, error) {
+func (s *tokenServer) TokenValidate(ctx context.Context, _ *pb.TokenValidateRequest) (*pb.TokenValidateResponse, error) {
 	md, _ := metadata.FromIncomingContext(ctx)
 	authorization := md.Get("authorization")
 	if len(authorization) == 0 {
@@ -65,14 +64,14 @@ func (s *TokenServer) TokenValidate(ctx context.Context, req *pb.TokenValidateRe
 	}
 
 	bearerToken := strings.Split(authorization[0], " ")
-	if len(bearerToken) != 2 || strings.ToLower(bearerToken[0]) != "bearer" {
+	if len(bearerToken) != 2 || !strings.EqualFold(bearerToken[0], "bearer") {
 		return nil, status.Error(codes.Unauthenticated, "authorization bearer token required")
 	}
 
 	claims := jwtCustomClaims{}
-	token, err := jwt.ParseWithClaims(bearerToken[1], &claims, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(bearerToken[1], &claims, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("invalid signing method")
+			return nil, errors.New("invalid signing method")
 		}
 		return []byte(s.config.JWTSecret), nil
 	})
@@ -94,6 +93,6 @@ func (s *TokenServer) TokenValidate(ctx context.Context, req *pb.TokenValidateRe
 
 	return &pb.TokenValidateResponse{
 		Token:     claims.Name,
-		ExpiresAt: claims.ExpiresAt.Time.String(),
+		ExpiresAt: claims.ExpiresAt.String(),
 	}, nil
 }

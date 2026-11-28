@@ -63,6 +63,7 @@ func setEnv(t *testing.T, env map[string]string) {
 }
 
 func resetGlobals(t *testing.T) {
+	t.Helper()
 	tp := otel.GetTracerProvider()
 	p := otel.GetTextMapPropagator()
 	lp := otel.GetLoggerProvider()
@@ -276,7 +277,7 @@ func TestSetupDoesNotServePrometheus(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() { ln.Close() })
+	t.Cleanup(func() { _ = ln.Close() })
 	host, port, err := net.SplitHostPort(ln.Addr().String())
 	if err != nil {
 		t.Fatal(err)
@@ -317,12 +318,13 @@ func TestObserve(t *testing.T) {
 		TraceFlags: trace.FlagsSampled,
 		Remote:     true,
 	})
-	remoteCtx, _ := noop.NewTracerProvider().Tracer("test").Start(
+	remoteCtx, remoteSpan := noop.NewTracerProvider().Tracer("test").Start(
 		trace.ContextWithRemoteSpanContext(context.Background(), remote), "test")
+	defer remoteSpan.End()
 
 	tests := []struct {
 		name string
-		ctx  context.Context
+		ctx  context.Context //nolint:containedctx // test case input
 		want trace.SpanContext
 	}{
 		{name: "recording sampled span", ctx: recordingCtx, want: span.SpanContext()},
@@ -459,6 +461,7 @@ type collector struct {
 }
 
 func newCollector(t *testing.T) *collector {
+	t.Helper()
 	c := &collector{requests: map[string][][]byte{}}
 	c.Server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)

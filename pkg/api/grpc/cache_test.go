@@ -30,7 +30,7 @@ func newMiniredisClient(t *testing.T) (*miniredis.Miniredis, redis.UniversalClie
 	t.Helper()
 	m := miniredis.RunT(t)
 	cache := redis.NewClient(&redis.Options{Addr: m.Addr()})
-	t.Cleanup(func() { cache.Close() })
+	t.Cleanup(func() { _ = cache.Close() })
 	return m, cache
 }
 

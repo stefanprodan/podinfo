@@ -11,7 +11,7 @@ import (
 )
 
 func TestTokenHandler(t *testing.T) {
-	req, err := http.NewRequest("POST", "/token", strings.NewReader("test-user"))
+	req, err := http.NewRequest(http.MethodPost, "/token", strings.NewReader("test-user"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -40,7 +40,7 @@ func TestTokenGenerateHandler_EmptyBody(t *testing.T) {
 	srv := NewMockServer()
 	srv.config.JWTSecret = "test-secret"
 
-	req, _ := http.NewRequest("POST", "/token", strings.NewReader(""))
+	req, _ := http.NewRequest(http.MethodPost, "/token", strings.NewReader(""))
 	rr := httptest.NewRecorder()
 	http.HandlerFunc(srv.tokenGenerateHandler).ServeHTTP(rr, req)
 
@@ -49,7 +49,9 @@ func TestTokenGenerateHandler_EmptyBody(t *testing.T) {
 	}
 
 	var result TokenResponse
-	json.Unmarshal(rr.Body.Bytes(), &result)
+	if err := json.Unmarshal(rr.Body.Bytes(), &result); err != nil {
+		t.Fatal(err)
+	}
 	if result.Token == "" {
 		t.Error("expected non-empty token")
 	}
@@ -59,15 +61,17 @@ func TestTokenValidateHandler(t *testing.T) {
 	srv := NewMockServer()
 	srv.config.JWTSecret = "test-secret"
 
-	genReq, _ := http.NewRequest("POST", "/token", strings.NewReader("test-user"))
+	genReq, _ := http.NewRequest(http.MethodPost, "/token", strings.NewReader("test-user"))
 	genRR := httptest.NewRecorder()
 	http.HandlerFunc(srv.tokenGenerateHandler).ServeHTTP(genRR, genReq)
 
 	var tokenResp TokenResponse
-	json.Unmarshal(genRR.Body.Bytes(), &tokenResp)
+	if err := json.Unmarshal(genRR.Body.Bytes(), &tokenResp); err != nil {
+		t.Fatal(err)
+	}
 
 	t.Run("valid token", func(t *testing.T) {
-		req, _ := http.NewRequest("GET", "/token/validate", nil)
+		req, _ := http.NewRequest(http.MethodGet, "/token/validate", nil)
 		req.Header.Set("Authorization", "Bearer "+tokenResp.Token)
 		rr := httptest.NewRecorder()
 		http.HandlerFunc(srv.tokenValidateHandler).ServeHTTP(rr, req)
@@ -76,14 +80,16 @@ func TestTokenValidateHandler(t *testing.T) {
 			t.Fatalf("got status %d, want %d", rr.Code, http.StatusOK)
 		}
 		var result TokenValidationResponse
-		json.Unmarshal(rr.Body.Bytes(), &result)
+		if err := json.Unmarshal(rr.Body.Bytes(), &result); err != nil {
+			t.Fatal(err)
+		}
 		if result.TokenName != "test-user" {
 			t.Errorf("token_name = %q, want %q", result.TokenName, "test-user")
 		}
 	})
 
 	t.Run("missing authorization header", func(t *testing.T) {
-		req, _ := http.NewRequest("GET", "/token/validate", nil)
+		req, _ := http.NewRequest(http.MethodGet, "/token/validate", nil)
 		rr := httptest.NewRecorder()
 		http.HandlerFunc(srv.tokenValidateHandler).ServeHTTP(rr, req)
 
@@ -93,7 +99,7 @@ func TestTokenValidateHandler(t *testing.T) {
 	})
 
 	t.Run("malformed authorization header", func(t *testing.T) {
-		req, _ := http.NewRequest("GET", "/token/validate", nil)
+		req, _ := http.NewRequest(http.MethodGet, "/token/validate", nil)
 		req.Header.Set("Authorization", "InvalidFormat")
 		rr := httptest.NewRecorder()
 		http.HandlerFunc(srv.tokenValidateHandler).ServeHTTP(rr, req)
@@ -104,7 +110,7 @@ func TestTokenValidateHandler(t *testing.T) {
 	})
 
 	t.Run("invalid token", func(t *testing.T) {
-		req, _ := http.NewRequest("GET", "/token/validate", nil)
+		req, _ := http.NewRequest(http.MethodGet, "/token/validate", nil)
 		req.Header.Set("Authorization", "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiZmFrZSIsImlzcyI6InBvZGluZm8iLCJleHAiOjk5OTk5OTk5OTl9.invalidsig")
 		rr := httptest.NewRecorder()
 		http.HandlerFunc(srv.tokenValidateHandler).ServeHTTP(rr, req)
@@ -116,13 +122,13 @@ func TestTokenValidateHandler(t *testing.T) {
 
 	t.Run("token without expiry", func(t *testing.T) {
 		unexpiring, err := jwt.NewWithClaims(jwt.SigningMethodHS256, jwtCustomClaims{
-			Name:             "test-user",
-			RegisteredClaims: jwt.RegisteredClaims{Issuer: "podinfo"},
+			Name:   "test-user",
+			Issuer: "podinfo",
 		}).SignedString([]byte(srv.config.JWTSecret))
 		if err != nil {
 			t.Fatal(err)
 		}
-		req, _ := http.NewRequest("GET", "/token/validate", nil)
+		req, _ := http.NewRequest(http.MethodGet, "/token/validate", nil)
 		req.Header.Set("Authorization", "Bearer "+unexpiring)
 		rr := httptest.NewRecorder()
 		http.HandlerFunc(srv.tokenValidateHandler).ServeHTTP(rr, req)
@@ -136,7 +142,7 @@ func TestTokenValidateHandler(t *testing.T) {
 		otherSrv := NewMockServer()
 		otherSrv.config.JWTSecret = "different-secret"
 
-		req, _ := http.NewRequest("GET", "/token/validate", nil)
+		req, _ := http.NewRequest(http.MethodGet, "/token/validate", nil)
 		req.Header.Set("Authorization", "Bearer "+tokenResp.Token)
 		rr := httptest.NewRecorder()
 		http.HandlerFunc(otherSrv.tokenValidateHandler).ServeHTTP(rr, req)

@@ -16,7 +16,7 @@ import (
 
 func serveIndex(t *testing.T, srv *Server, target string) *httptest.ResponseRecorder {
 	t.Helper()
-	req := httptest.NewRequest("GET", target, nil)
+	req := httptest.NewRequest(http.MethodGet, target, nil)
 	req.Header.Set("User-Agent", "Mozilla/5.0")
 	rr := httptest.NewRecorder()
 	srv.router.ServeHTTP(rr, req)
@@ -149,7 +149,7 @@ func TestUIAssets(t *testing.T) {
 
 		for name, contentType := range tests {
 			target := strings.TrimSuffix(prefix, "/") + "/ui/" + name
-			req := httptest.NewRequest("GET", target, nil)
+			req := httptest.NewRequest(http.MethodGet, target, nil)
 			rr := httptest.NewRecorder()
 			srv.router.ServeHTTP(rr, req)
 
@@ -174,7 +174,7 @@ func TestIndexUIPath(t *testing.T) {
 
 	dir := t.TempDir()
 	for name, title := range map[string]string{"index.html": "new", "vue.html": "old"} {
-		if err := os.WriteFile(filepath.Join(dir, name), []byte("<title>"+title+"</title>"), 0o644); err != nil {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte("<title>"+title+"</title>"), 0o600); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -192,9 +192,10 @@ func TestIndexUIPath(t *testing.T) {
 }
 
 func testIndexUIPath(t *testing.T, name string) {
+	t.Helper()
 	dir := t.TempDir()
 	custom := `<html><title>{{.Title}}</title><script src="https://cdn.example.com/app.js"></script>{{.Prefix}}</html>`
-	if err := os.WriteFile(filepath.Join(dir, name), []byte(custom), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, name), []byte(custom), 0o600); err != nil {
 		t.Fatal(err)
 	}
 

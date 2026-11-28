@@ -9,7 +9,7 @@ import (
 )
 
 func TestEnvHandler(t *testing.T) {
-	req, err := http.NewRequest("GET", "/api/env", nil)
+	req, err := http.NewRequest(http.MethodGet, "/api/env", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -36,7 +36,7 @@ func TestEnvHandler(t *testing.T) {
 func TestEnvHandler_Actual(t *testing.T) {
 	t.Setenv("PODINFO_CACHE_PASSWORD", "s3cret-value")
 	srv := NewMockServer()
-	req, _ := http.NewRequest("GET", "/env", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/env", nil)
 	rr := httptest.NewRecorder()
 	http.HandlerFunc(srv.envHandler).ServeHTTP(rr, req)
 

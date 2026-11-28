@@ -63,11 +63,11 @@ func (p *prometheusMiddleware) Handler(next http.Handler) http.Handler {
 // route path template, else the request URI.
 func (p *prometheusMiddleware) getRouteName(r *http.Request) string {
 	if mux.CurrentRoute(r) != nil {
-		if name := mux.CurrentRoute(r).GetName(); len(name) > 0 {
+		if name := mux.CurrentRoute(r).GetName(); name != "" {
 			return urlToLabel(name)
 		}
 		if path, err := mux.CurrentRoute(r).GetPathTemplate(); err == nil {
-			if len(path) > 0 {
+			if path != "" {
 				return urlToLabel(path)
 			}
 		}

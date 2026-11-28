@@ -67,5 +67,5 @@ func (s *Server) storeReadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	setRawResponseHeaders(w)
-	w.Write(content)
+	_, _ = w.Write(content) //nolint:gosec // the raw response headers stop browsers from rendering it
 }

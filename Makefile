@@ -5,7 +5,7 @@ NAME:=podinfo
 DOCKER_REPOSITORY:=stefanprodan
 DOCKER_IMAGE_NAME:=$(DOCKER_REPOSITORY)/$(NAME)
 GIT_COMMIT:=$(shell git describe --dirty --always)
-VERSION:=$(shell grep 'VERSION' pkg/version/version.go | awk '{ print $$4 }' | tr -d '"')
+VERSION:=$(shell grep '^var VERSION' pkg/version/version.go | awk '{ print $$4 }' | tr -d '"')
 EXTRA_RUN_ARGS?=
 
 # Recipes run in bash and stop when a command or a piped command fails.
@@ -45,7 +45,11 @@ test: tidy fmt vet ## Run all unit tests.
 	go test ./... -coverprofile cover.out
 
 .PHONY: lint
-lint: lint-ui lint-proto ## Run all linters.
+lint: lint-go lint-ui lint-proto ## Run all linters.
+
+.PHONY: lint-go
+lint-go: golangci-lint ## Lint the Go code with golangci-lint.
+	$(GOLANGCI_LINT) run
 
 .PHONY: lint-ui
 lint-ui: ## Lint the web UI with Biome.
@@ -143,6 +147,18 @@ prep-release: ## Create the release PR for TAG (defaults to the next minor).
 release: ## Tag the current version and push the tag.
 	git tag -s -m $(VERSION) $(VERSION)
 	git push origin $(VERSION)
+
+##@ Dependencies
+
+LOCALBIN ?= $(CURDIR)/bin
+GOLANGCI_LINT_VERSION ?= $(shell cat .golangci-lint-version)
+GOLANGCI_LINT = $(LOCALBIN)/golangci-lint-$(GOLANGCI_LINT_VERSION)
+
+.PHONY: golangci-lint
+golangci-lint: $(GOLANGCI_LINT) ## Download golangci-lint locally if necessary.
+$(GOLANGCI_LINT):
+	GOBIN=$(LOCALBIN) go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
+	mv $(LOCALBIN)/golangci-lint $(GOLANGCI_LINT)
 
 ##@ General
 

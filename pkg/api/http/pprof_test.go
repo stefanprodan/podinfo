@@ -28,7 +28,7 @@ func TestDebugEndpoints(t *testing.T) {
 	ports := map[string]http.Handler{"main": srv.router, "metrics": srv.metricsServer().Handler}
 	for port, h := range ports {
 		for p, want := range cases {
-			req := httptest.NewRequest("GET", p, nil)
+			req := httptest.NewRequest(http.MethodGet, p, nil)
 			rr := httptest.NewRecorder()
 			h.ServeHTTP(rr, req)
 			if rr.Code != want {
@@ -49,7 +49,7 @@ func TestMetricsServerAddr(t *testing.T) {
 
 func TestMetricsServerTimeout(t *testing.T) {
 	srv := NewMockServer()
-	if got, want := srv.metricsServer().ReadHeaderTimeout, srv.config.HttpServerTimeout; got != want {
+	if got, want := srv.metricsServer().ReadHeaderTimeout, srv.config.HTTPServerTimeout; got != want {
 		t.Errorf("metrics server ReadHeaderTimeout = %s, want %s", got, want)
 	}
 }
@@ -65,7 +65,11 @@ func TestMetricsServerBindError(t *testing.T) {
 	srv := NewMockServer()
 	srv.logger = zap.New(core, zap.WithFatalHook(zapcore.WriteThenGoexit))
 	srv.config.Host = "127.0.0.1"
-	srv.config.PortMetrics = ln.Addr().(*net.TCPAddr).Port
+	addr, ok := ln.Addr().(*net.TCPAddr)
+	if !ok {
+		t.Fatalf("listener address is %T, want *net.TCPAddr", ln.Addr())
+	}
+	srv.config.PortMetrics = addr.Port
 
 	done := make(chan struct{})
 	go func() {

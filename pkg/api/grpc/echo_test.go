@@ -241,7 +241,7 @@ func TestGrpcEchoBackendURL(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() { conn.Close() })
+	t.Cleanup(func() { _ = conn.Close() })
 
 	res, err := echov1.NewEchoServiceClient(conn).Echo(context.Background(), &echov1.EchoRequest{Body: "ping"})
 	if err != nil {
@@ -357,7 +357,7 @@ func TestGrpcEchoBackendChain(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() { conn.Close() })
+	t.Cleanup(func() { _ = conn.Close() })
 
 	// The middle server answers with the body and the leaf response, over the 10 MiB request limit.
 	body := strings.Repeat("a", 6<<20)

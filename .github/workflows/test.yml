@@ -50,8 +50,12 @@ jobs:
             echo 'run make test and commit changes'
             exit 1
           fi
-      - name: Run linters
-        run: make lint
+      - name: Lint Go
+        uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
+        with:
+          version-file: .golangci-lint-version
+      - name: Lint UI and protos
+        run: make lint-ui lint-proto
       - name: Check generated files
         run: make gen && git diff --exit-code && test -z "$(git status --porcelain)"
       - name: Validate Helm chart

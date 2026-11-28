@@ -14,14 +14,14 @@ func TestRequestBodySizeLimit(t *testing.T) {
 	srv := NewMockServer()
 	srv.router.HandleFunc("/echo", srv.echoHandler)
 
-	within := httptest.NewRequest("POST", "/echo", bytes.NewReader(make([]byte, 1024)))
+	within := httptest.NewRequest(http.MethodPost, "/echo", bytes.NewReader(make([]byte, 1024)))
 	rr := httptest.NewRecorder()
 	srv.router.ServeHTTP(rr, within)
 	if rr.Code != http.StatusAccepted {
 		t.Errorf("within-limit body: got status %d want %d", rr.Code, http.StatusAccepted)
 	}
 
-	over := httptest.NewRequest("POST", "/echo", bytes.NewReader(make([]byte, maxRequestBodySize+1)))
+	over := httptest.NewRequest(http.MethodPost, "/echo", bytes.NewReader(make([]byte, maxRequestBodySize+1)))
 	rr = httptest.NewRecorder()
 	srv.router.ServeHTTP(rr, over)
 

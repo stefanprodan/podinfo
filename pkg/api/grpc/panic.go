@@ -9,13 +9,13 @@ import (
 	"go.uber.org/zap"
 )
 
-type PanicServer struct {
+type panicServer struct {
 	pb.UnimplementedPanicServiceServer
 	config *Config
 	logger *zap.Logger
 }
 
-func (s *PanicServer) Panic(ctx context.Context, req *pb.PanicRequest) (*pb.PanicResponse, error) {
+func (s *panicServer) Panic(ctx context.Context, _ *pb.PanicRequest) (*pb.PanicResponse, error) {
 	s.logger.Info("Panic command received", telemetry.Context(ctx))
 	os.Exit(225)
 	return &pb.PanicResponse{}, nil

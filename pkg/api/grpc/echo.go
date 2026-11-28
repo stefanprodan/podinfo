@@ -31,11 +31,11 @@ type echoBackend struct {
 // Echo returns the body and calls Echo on every backend concurrently,
 // reporting their responses in --grpc-backend-url order.
 func (s *echoServer) Echo(ctx context.Context, req *echov1.EchoRequest) (*echov1.EchoResponse, error) {
-	if err := checkBodySize(len(req.Body)); err != nil {
+	if err := checkBodySize(len(req.GetBody())); err != nil {
 		return nil, err
 	}
-	s.logger.Debug("received message body from client", bodyField("body", req.Body), telemetry.Context(ctx))
-	res := &echov1.EchoResponse{Body: req.Body}
+	s.logger.Debug("received message body from client", bodyField("body", req.GetBody()), telemetry.Context(ctx))
+	res := &echov1.EchoResponse{Body: req.GetBody()}
 	if len(s.backends) == 0 {
 		return res, nil
 	}
@@ -58,7 +58,7 @@ func (s *echoServer) Echo(ctx context.Context, req *echov1.EchoRequest) (*echov1
 		br := &echov1.BackendResponse{Url: b.url}
 		res.BackendResponses[i] = br
 		wg.Go(func() {
-			r, err := b.client.Echo(callCtx, &echov1.EchoRequest{Body: req.Body})
+			r, err := b.client.Echo(callCtx, &echov1.EchoRequest{Body: req.GetBody()})
 			if err != nil {
 				if ctx.Err() == nil {
 					s.logger.Error("backend call failed", zap.Error(err), zap.String("url", b.url), telemetry.Context(ctx))

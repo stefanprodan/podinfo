@@ -302,7 +302,7 @@ func readFiles(dir string, names []string) (map[string][]byte, error) {
 		if !info.Mode().IsRegular() {
 			continue
 		}
-		data, err := os.ReadFile(path)
+		data, err := os.ReadFile(path) //nolint:gosec // the watched directory and file names come from the config
 		if err != nil {
 			return nil, err
 		}

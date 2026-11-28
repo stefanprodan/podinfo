@@ -66,7 +66,7 @@ func contentSecurityPolicy(logo string) string {
 // @Router / [get]
 // @Success 200 {string} string "HTML page"
 // @Failure 500 {string} string "rendering the page failed"
-func (s *Server) indexHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) indexHandler(w http.ResponseWriter, _ *http.Request) {
 	data := struct {
 		Title  string
 		Logo   string

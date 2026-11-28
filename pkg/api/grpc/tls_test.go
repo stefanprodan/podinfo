@@ -275,7 +275,7 @@ func echoedSPIFFEIDs(t *testing.T, address string, creds credentials.TransportCr
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() { conn.Close() })
+	t.Cleanup(func() { _ = conn.Close() })
 
 	ctx, cancel := context.WithTimeout(context.Background(), waitTimeout)
 	t.Cleanup(cancel)
@@ -285,7 +285,7 @@ func echoedSPIFFEIDs(t *testing.T, address string, creds credentials.TransportCr
 	if err != nil {
 		t.Fatalf("Header: %v", err)
 	}
-	for _, h := range headerRes.Headers {
+	for _, h := range headerRes.GetHeaders() {
 		if v, ok := strings.CutPrefix(h, "x-spiffe-id="); ok {
 			header = append(header, v)
 		}
@@ -295,7 +295,7 @@ func echoedSPIFFEIDs(t *testing.T, address string, creds credentials.TransportCr
 	if err != nil {
 		t.Fatalf("Pod: %v", err)
 	}
-	return header, podRes.Headers["x-spiffe-id"].GetValues()
+	return header, podRes.GetHeaders()["x-spiffe-id"].GetValues()
 }
 
 func TestGrpcSPIFFEMTLS_PeerID(t *testing.T) {

@@ -20,7 +20,7 @@ func TestStoreReadHandler_ContentType(t *testing.T) {
 	srv := NewMockServer()
 	srv.store = store.New(dataDir, telemetry.Tracer())
 
-	writeReq, err := http.NewRequest("POST", "/store", strings.NewReader("<html><script>alert(1)</script></html>"))
+	writeReq, err := http.NewRequest(http.MethodPost, "/store", strings.NewReader("<html><script>alert(1)</script></html>"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -32,7 +32,7 @@ func TestStoreReadHandler_ContentType(t *testing.T) {
 	}
 
 	hash := store.Hash([]byte("<html><script>alert(1)</script></html>"))
-	readReq, err := http.NewRequest("GET", "/store/"+hash, nil)
+	readReq, err := http.NewRequest(http.MethodGet, "/store/"+hash, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -70,7 +70,7 @@ func TestStoreReadHandler_PathTraversal(t *testing.T) {
 	}
 
 	for _, tp := range traversalPaths {
-		req, err := http.NewRequest("GET", "/store/"+tp, nil)
+		req, err := http.NewRequest(http.MethodGet, "/store/"+tp, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -90,7 +90,7 @@ func TestStoreWriteHandler(t *testing.T) {
 	srv.store = store.New(t.TempDir(), telemetry.Tracer())
 
 	payload := "hello world"
-	req, _ := http.NewRequest("POST", "/store", strings.NewReader(payload))
+	req, _ := http.NewRequest(http.MethodPost, "/store", strings.NewReader(payload))
 	rr := httptest.NewRecorder()
 	http.HandlerFunc(srv.storeWriteHandler).ServeHTTP(rr, req)
 
@@ -99,7 +99,9 @@ func TestStoreWriteHandler(t *testing.T) {
 	}
 
 	var result map[string]string
-	json.Unmarshal(rr.Body.Bytes(), &result)
+	if err := json.Unmarshal(rr.Body.Bytes(), &result); err != nil {
+		t.Fatal(err)
+	}
 	if result["hash"] != store.Hash([]byte(payload)) {
 		t.Errorf("hash = %q, want %q", result["hash"], store.Hash([]byte(payload)))
 	}
@@ -109,7 +111,7 @@ func TestStoreWriteHandler_InvalidPath(t *testing.T) {
 	srv := NewMockServer()
 	srv.store = store.New("/nonexistent/path/that/does/not/exist", telemetry.Tracer())
 
-	req, _ := http.NewRequest("POST", "/store", strings.NewReader("data"))
+	req, _ := http.NewRequest(http.MethodPost, "/store", strings.NewReader("data"))
 	rr := httptest.NewRecorder()
 	http.HandlerFunc(srv.storeWriteHandler).ServeHTTP(rr, req)
 
@@ -123,7 +125,7 @@ func TestStoreReadHandler_NotFound(t *testing.T) {
 	srv.store = store.New(t.TempDir(), telemetry.Tracer())
 	srv.router.HandleFunc("/store/{hash}", srv.storeReadHandler)
 
-	req, _ := http.NewRequest("GET", "/store/aabbccddee11223344556677889900aabbccddee", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/store/aabbccddee11223344556677889900aabbccddee", nil)
 	rr := httptest.NewRecorder()
 	srv.router.ServeHTTP(rr, req)
 
@@ -135,7 +137,7 @@ func TestStoreReadHandler_NotFound(t *testing.T) {
 func TestStoreReadHandler_ReadError(t *testing.T) {
 	dataDir := t.TempDir()
 	hash := strings.Repeat("b", 40)
-	if err := os.Mkdir(filepath.Join(dataDir, hash), 0755); err != nil {
+	if err := os.Mkdir(filepath.Join(dataDir, hash), 0o750); err != nil {
 		t.Fatal(err)
 	}
 	srv := NewMockServer()
@@ -143,7 +145,7 @@ func TestStoreReadHandler_ReadError(t *testing.T) {
 	srv.router.HandleFunc("/store/{hash}", srv.storeReadHandler)
 
 	rr := httptest.NewRecorder()
-	srv.router.ServeHTTP(rr, httptest.NewRequest("GET", "/store/"+hash, nil))
+	srv.router.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/store/"+hash, nil))
 
 	if rr.Code != http.StatusInternalServerError || !strings.Contains(rr.Body.String(), "reading file failed") {
 		t.Errorf("got %d %s, want %d with reading file failed", rr.Code, rr.Body.String(), http.StatusInternalServerError)

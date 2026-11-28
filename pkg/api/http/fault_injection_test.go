@@ -5,16 +5,15 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
-	"sync/atomic"
 	"testing"
 )
 
 func TestFaultInjection_EnableDisable(t *testing.T) {
-	defer atomic.StoreInt32(&faultInjection, 0)
+	defer faultInjection.Store(0)
 	srv := NewMockServer()
 
 	rr := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/fault_injection/enable", nil)
+	req, _ := http.NewRequest(http.MethodPost, "/fault_injection/enable", nil)
 	http.HandlerFunc(srv.enableFaultInjectionHandler).ServeHTTP(rr, req)
 	if rr.Code != http.StatusAccepted {
 		t.Fatalf("enable: got %d want %d", rr.Code, http.StatusAccepted)
@@ -25,12 +24,12 @@ func TestFaultInjection_EnableDisable(t *testing.T) {
 	if !strings.Contains(rr.Body.String(), `"enabled"`) {
 		t.Errorf("enable: expected enabled in body, got: %s", rr.Body.String())
 	}
-	if atomic.LoadInt32(&faultInjection) != 1 {
+	if faultInjection.Load() != 1 {
 		t.Fatalf("faultInjection flag not set after enable")
 	}
 
 	rr = httptest.NewRecorder()
-	req, _ = http.NewRequest("POST", "/fault_injection/disable", nil)
+	req, _ = http.NewRequest(http.MethodPost, "/fault_injection/disable", nil)
 	http.HandlerFunc(srv.disableFaultInjectionHandler).ServeHTTP(rr, req)
 	if rr.Code != http.StatusAccepted {
 		t.Fatalf("disable: got %d want %d", rr.Code, http.StatusAccepted)
@@ -41,17 +40,17 @@ func TestFaultInjection_EnableDisable(t *testing.T) {
 	if !strings.Contains(rr.Body.String(), `"disabled"`) {
 		t.Errorf("disable: expected disabled in body, got: %s", rr.Body.String())
 	}
-	if atomic.LoadInt32(&faultInjection) != 0 {
+	if faultInjection.Load() != 0 {
 		t.Fatalf("faultInjection flag not cleared after disable")
 	}
 }
 
 func TestFaultInjection_StatusHandler(t *testing.T) {
-	defer atomic.StoreInt32(&faultInjection, 0)
+	defer faultInjection.Store(0)
 	srv := NewMockServer()
 
 	rr := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/fault_injection/status", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/fault_injection/status", nil)
 	http.HandlerFunc(srv.faultInjectionStatusHandler).ServeHTTP(rr, req)
 	if rr.Code != http.StatusOK {
 		t.Fatalf("status: got %d want %d", rr.Code, http.StatusOK)
@@ -60,7 +59,7 @@ func TestFaultInjection_StatusHandler(t *testing.T) {
 		t.Errorf("expected disabled in body, got: %s", rr.Body.String())
 	}
 
-	atomic.StoreInt32(&faultInjection, 1)
+	faultInjection.Store(1)
 	rr = httptest.NewRecorder()
 	http.HandlerFunc(srv.faultInjectionStatusHandler).ServeHTTP(rr, req)
 	if !strings.Contains(rr.Body.String(), "enabled") {
@@ -69,9 +68,9 @@ func TestFaultInjection_StatusHandler(t *testing.T) {
 }
 
 func TestFaultInjectionMiddleware(t *testing.T) {
-	ok := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ok := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("ok"))
+		_, _ = w.Write([]byte("ok"))
 	})
 	h := faultInjectionMiddleware(ok)
 
@@ -94,13 +93,13 @@ func TestFaultInjectionMiddleware(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.injected {
-				atomic.StoreInt32(&faultInjection, 1)
+				faultInjection.Store(1)
 			} else {
-				atomic.StoreInt32(&faultInjection, 0)
+				faultInjection.Store(0)
 			}
-			defer atomic.StoreInt32(&faultInjection, 0)
+			defer faultInjection.Store(0)
 
-			req, _ := http.NewRequest("GET", tc.path, nil)
+			req, _ := http.NewRequest(http.MethodGet, tc.path, nil)
 			rr := httptest.NewRecorder()
 			h.ServeHTTP(rr, req)
 			if rr.Code != tc.wantStatus {
@@ -111,9 +110,9 @@ func TestFaultInjectionMiddleware(t *testing.T) {
 }
 
 func TestFaultInjectionMiddleware_Response(t *testing.T) {
-	defer atomic.StoreInt32(&faultInjection, 0)
-	atomic.StoreInt32(&faultInjection, 1)
-	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	defer faultInjection.Store(0)
+	faultInjection.Store(1)
+	next := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
 
@@ -123,7 +122,7 @@ func TestFaultInjectionMiddleware_Response(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			rr := httptest.NewRecorder()
-			h.ServeHTTP(rr, httptest.NewRequest("GET", "/version", nil))
+			h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/version", nil))
 
 			if rr.Code != http.StatusInternalServerError {
 				t.Errorf("got status %d, want %d", rr.Code, http.StatusInternalServerError)

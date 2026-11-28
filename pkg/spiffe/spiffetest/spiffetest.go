@@ -114,7 +114,7 @@ func SocketPath(t *testing.T) string {
 	if len(os.TempDir()) > 60 {
 		base = "/tmp"
 	}
-	dir, err := os.MkdirTemp(base, "podinfo-spiffe")
+	dir, err := os.MkdirTemp(base, "podinfo-spiffe") //nolint:usetesting // t.TempDir paths can exceed the unix socket path limit
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -136,7 +136,7 @@ func StartWorkloadAPI(t *testing.T, socketPath string, ca *CA, svid *x509svid.SV
 		Bundle:      ca.cert.Raw,
 	}}}}
 
-	ln, err := net.Listen("unix", socketPath)
+	ln, err := (&net.ListenConfig{}).Listen(t.Context(), "unix", socketPath)
 	if err != nil {
 		t.Fatal(err)
 	}

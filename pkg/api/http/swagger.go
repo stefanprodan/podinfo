@@ -45,9 +45,9 @@ func newSwaggerDocs(prefix string) (*swaggerDocs, error) {
 	return &swaggerDocs{spec: doc, ui: assets}, nil
 }
 
-func (s *Server) swaggerHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) swaggerHandler(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.Write(s.swagger.spec)
+	_, _ = w.Write(s.swagger.spec)
 }
 
 func (s *Server) swaggerUIHandler() http.Handler {
