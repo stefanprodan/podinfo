@@ -1,3 +1,6 @@
+// Copyright 2026 Stefan Prodan.
+// SPDX-License-Identifier: Apache-2.0
+
 // Package keypair serves a TLS certificate and key from a directory and
 // reloads them when they are rotated.
 //

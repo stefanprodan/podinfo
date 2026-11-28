@@ -1,3 +1,6 @@
+// Copyright 2026 Stefan Prodan.
+// SPDX-License-Identifier: Apache-2.0
+
 // Command podinfo is a small web service for testing and demoing Kubernetes
 // deployments, service meshes and delivery tooling.
 //

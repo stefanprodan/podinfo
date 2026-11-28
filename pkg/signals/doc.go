@@ -1,3 +1,6 @@
+// Copyright 2026 Stefan Prodan.
+// SPDX-License-Identifier: Apache-2.0
+
 // Package signals handles termination signals and the graceful shutdown of
 // the podinfo servers.
 //

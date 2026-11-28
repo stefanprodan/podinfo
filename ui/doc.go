@@ -1,3 +1,6 @@
+// Copyright 2026 Stefan Prodan.
+// SPDX-License-Identifier: Apache-2.0
+
 // Package ui embeds the podinfo web UI: the index.html page template, its
 // static assets and the Swagger UI.
 //

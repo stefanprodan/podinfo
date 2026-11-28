@@ -1,3 +1,6 @@
+// Copyright 2026 Stefan Prodan.
+// SPDX-License-Identifier: Apache-2.0
+
 // Package http implements the podinfo HTTP server.
 //
 // Server routes the API with gorilla/mux: pod information (/api/info,

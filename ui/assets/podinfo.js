@@ -1,3 +1,6 @@
+// Copyright 2026 Stefan Prodan.
+// SPDX-License-Identifier: Apache-2.0
+
 const POLL_MS = 2000;
 const TIMEOUT_MS = 1500;
 const WINDOW = 30;

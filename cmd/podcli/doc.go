@@ -1,3 +1,6 @@
+// Copyright 2026 Stefan Prodan.
+// SPDX-License-Identifier: Apache-2.0
+
 // Command podcli is the client that ships in the podinfo container image.
 //
 // The check subcommands (http, tcp, grpc, cert and ws) exit non-zero when the

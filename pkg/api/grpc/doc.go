@@ -1,3 +1,6 @@
+// Copyright 2026 Stefan Prodan.
+// SPDX-License-Identifier: Apache-2.0
+
 // Package grpc implements the podinfo gRPC server.
 //
 // Server registers the services generated under the v1 subpackages (Info,

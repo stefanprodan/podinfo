@@ -1,3 +1,6 @@
+// Copyright 2026 Stefan Prodan.
+// SPDX-License-Identifier: Apache-2.0
+
 // Package environ returns the process environment and request headers with
 // credentials masked, for the endpoints that echo them back.
 //

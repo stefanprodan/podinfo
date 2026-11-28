@@ -1,3 +1,6 @@
+# Copyright 2018 Stefan Prodan.
+# SPDX-License-Identifier: Apache-2.0
+
 # Makefile for building, testing and releasing podinfo.
 
 TAG?=latest

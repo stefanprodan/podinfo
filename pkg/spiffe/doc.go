@@ -1,3 +1,6 @@
+// Copyright 2026 Stefan Prodan.
+// SPDX-License-Identifier: Apache-2.0
+
 // Package spiffe shares an X.509 SVID from the SPIFFE Workload API between
 // the podinfo servers.
 //
