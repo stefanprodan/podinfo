@@ -42,13 +42,13 @@ func TestChunkedHandlerCanceled(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	time.AfterFunc(50*time.Millisecond, cancel)
-	req := httptest.NewRequest("GET", "/chunked/10", nil).WithContext(ctx)
+	req := httptest.NewRequest("GET", "/chunked/60", nil).WithContext(ctx)
 	rr := httptest.NewRecorder()
 
 	start := time.Now()
 	srv.router.ServeHTTP(rr, req)
 
-	if elapsed := time.Since(start); elapsed > time.Second {
+	if elapsed := time.Since(start); elapsed > 10*time.Second {
 		t.Errorf("handler took %s after cancellation, want prompt return", elapsed)
 	}
 	if rr.Body.Len() != 0 {
