@@ -60,7 +60,7 @@ func main() {
 	fs.String("ui-logo", "", "UI logo URL, defaults to the embedded image")
 	fs.String("ui-color", "#1f4e8c", "UI color")
 	fs.String("ui-message", "greetings from podinfo", "UI message")
-	fs.Bool("h2c", false, "allow upgrading to H2C")
+	fs.Bool("h2c", false, "serve HTTP/2 without TLS (h2c) on the HTTP port")
 	fs.Bool("random-delay", false, "between 0 and 5 seconds random delay by default")
 	fs.String("random-delay-unit", "s", "either s(seconds) or ms(milliseconds")
 	fs.Int("random-delay-min", 0, "min for random delay: 0 by default")
