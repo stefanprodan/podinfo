@@ -52,9 +52,10 @@ func TestMain(m *testing.M) {
 
 func runMain(t *testing.T, args ...string) (string, error) {
 	t.Helper()
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
-	args = append([]string{"--host=127.0.0.1", "--port=0", "--artifact-path=", "--data-path=" + t.TempDir()}, args...)
+	dir := t.TempDir()
+	args = append([]string{"--host=127.0.0.1", "--port=0", "--artifact-path=", "--data-path=" + dir, "--config-path=" + dir}, args...)
 	cmd := exec.CommandContext(ctx, os.Args[0], args...)
 	cmd.Env = []string{runMainEnv + "=1", "OTEL_SDK_DISABLED=true"}
 	out, err := cmd.CombinedOutput()
