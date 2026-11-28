@@ -104,7 +104,7 @@ func metricsEnabled() bool {
 }
 
 func TestSetupSignals(t *testing.T) {
-	const endpoint = "http://127.0.0.1:4318"
+	endpoint := newCollector(t).URL
 	tests := []struct {
 		name        string
 		env         map[string]string
@@ -249,7 +249,7 @@ func TestSetupInvalidProtocol(t *testing.T) {
 	for _, key := range []string{"OTEL_EXPORTER_OTLP_PROTOCOL", "OTEL_EXPORTER_OTLP_LOGS_PROTOCOL", "OTEL_EXPORTER_OTLP_METRICS_PROTOCOL"} {
 		t.Run(key, func(t *testing.T) {
 			resetGlobals(t)
-			setEnv(t, map[string]string{"OTEL_EXPORTER_OTLP_ENDPOINT": "http://127.0.0.1:4318", key: "thrift"})
+			setEnv(t, map[string]string{"OTEL_EXPORTER_OTLP_ENDPOINT": newCollector(t).URL, key: "thrift"})
 
 			tel, err := setup(t, "")
 			if err == nil {
