@@ -21,6 +21,9 @@ type storeServer struct {
 }
 
 func (s *storeServer) Write(ctx context.Context, req *storev1.WriteRequest) (*storev1.WriteResponse, error) {
+	if err := checkBodySize(len(req.GetContent())); err != nil {
+		return nil, err
+	}
 	hash, err := s.store.Write(ctx, req.GetContent())
 	if err != nil {
 		s.logger.Warn("writing file failed", zap.Error(err), telemetry.Context(ctx))

@@ -28,6 +28,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type StoreServiceClient interface {
 	// Writes the content to --data-path in a file named by its SHA1 hash.
+	// Returns ResourceExhausted for content over 10 MiB.
 	Write(ctx context.Context, in *WriteRequest, opts ...grpc.CallOption) (*WriteResponse, error)
 	// Returns InvalidArgument for a hash that is not a lowercase SHA1 hex digest
 	// and NotFound when no file has that hash.
@@ -67,6 +68,7 @@ func (c *storeServiceClient) Read(ctx context.Context, in *ReadRequest, opts ...
 // for forward compatibility.
 type StoreServiceServer interface {
 	// Writes the content to --data-path in a file named by its SHA1 hash.
+	// Returns ResourceExhausted for content over 10 MiB.
 	Write(context.Context, *WriteRequest) (*WriteResponse, error)
 	// Returns InvalidArgument for a hash that is not a lowercase SHA1 hex digest
 	// and NotFound when no file has that hash.

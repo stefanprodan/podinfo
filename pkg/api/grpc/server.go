@@ -4,7 +4,6 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"math"
 	"net"
 	"net/url"
 	"strconv"
@@ -33,6 +32,7 @@ import (
 	storev1 "github.com/stefanprodan/podinfo/pkg/api/grpc/store/v1"
 	tokenv1 "github.com/stefanprodan/podinfo/pkg/api/grpc/token/v1"
 	versionv1 "github.com/stefanprodan/podinfo/pkg/api/grpc/version/v1"
+	"github.com/stefanprodan/podinfo/pkg/api/limits"
 	"github.com/stefanprodan/podinfo/pkg/keypair"
 	"github.com/stefanprodan/podinfo/pkg/spiffe"
 	"github.com/stefanprodan/podinfo/pkg/store"
@@ -214,13 +214,12 @@ func (s *Server) dialBackend(backend string) (*grpc.ClientConn, error) {
 		return nil, err
 	}
 	// The dns scheme keeps hosts named like a resolver (dns, unix) from
-	// being parsed as one. A backend with backends answers with more than
-	// the request body, so the response size is not limited.
+	// being parsed as one.
 	return grpc.NewClient("dns:///"+u.Host,
 		grpc.WithTransportCredentials(creds),
 		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
 		grpc.WithConnectParams(backendConnectParams),
-		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(math.MaxInt32)))
+		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(limits.MaxBackendResponseSize)))
 }
 
 // backendConnectParams caps the reconnect backoff at 5s instead of the

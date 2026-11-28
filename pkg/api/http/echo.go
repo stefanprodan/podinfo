@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"sync"
 
+	"github.com/stefanprodan/podinfo/pkg/api/limits"
 	"github.com/stefanprodan/podinfo/pkg/telemetry"
 	"github.com/stefanprodan/podinfo/pkg/version"
 	"go.opentelemetry.io/otel/attribute"
@@ -82,8 +83,10 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 				resp, err := client.Do(backendReq)
 				if err != nil {
 					err = redactURLError(err, display)
-					s.logger.Error("backend call failed", zap.Error(err), zap.String("url", display), telemetry.Context(r.Context()))
-					span.RecordError(errBackendCall, urlAttr)
+					if r.Context().Err() == nil {
+						s.logger.Error("backend call failed", zap.Error(err), zap.String("url", display), telemetry.Context(r.Context()))
+						span.RecordError(errBackendCall, urlAttr)
+					}
 					result[index] = fmt.Sprintf("backend %v call failed %v", display, err)
 					return
 				}
@@ -98,28 +101,39 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 				}
 
 				// forward the received body
-				rbody, err := io.ReadAll(resp.Body)
+				rbody, err := io.ReadAll(io.LimitReader(resp.Body, limits.MaxBackendResponseSize+1))
+				if err == nil && len(rbody) > limits.MaxBackendResponseSize {
+					err = errBackendTooLarge
+				}
 				if err != nil {
-					s.logger.Error(
-						"reading the backend request body failed",
-						zap.Error(err),
-						zap.String("url", display),
-						telemetry.Context(r.Context()))
-					span.RecordError(errBackendRead, urlAttr)
+					if r.Context().Err() == nil {
+						s.logger.Error(
+							"reading the backend request body failed",
+							zap.Error(err),
+							zap.String("url", display),
+							telemetry.Context(r.Context()))
+						span.RecordError(errBackendRead, urlAttr)
+					}
 					result[index] = fmt.Sprintf("backend %v call failed %v", display, err)
 					return
 				}
 
-				s.logger.Debug(
-					"payload received from backend",
-					zap.String("response", string(rbody)),
-					zap.String("url", display),
-					telemetry.Context(r.Context()))
+				if ce := s.logger.Check(zap.DebugLevel, "payload received from backend"); ce != nil {
+					fields := []zap.Field{zap.Int("size", len(rbody)), zap.String("url", display), telemetry.Context(r.Context())}
+					if len(rbody) <= maxLoggedPayloadSize {
+						fields = append(fields, zap.String("response", string(rbody)))
+					}
+					ce.Write(fields...)
+				}
 
 				result[index] = string(rbody)
 			}(i, b)
 		}
 		wg.Wait()
+		if r.Context().Err() != nil {
+			s.ErrorResponse(w, r, "client closed request", statusClientClosedRequest)
+			return
+		}
 
 		w.Header().Set("X-Color", s.config.UIColor)
 		s.JSONResponse(w, r, result)
@@ -134,9 +148,10 @@ func (s *Server) echoHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 var (
-	errBackendCall = errors.New("backend call failed")
-	errBackendRead = errors.New("reading the backend response failed")
-	errInvalidURL  = errors.New("invalid URL")
+	errBackendCall     = errors.New("backend call failed")
+	errBackendRead     = errors.New("reading the backend response failed")
+	errBackendTooLarge = errors.New("response body too large")
+	errInvalidURL      = errors.New("invalid URL")
 )
 
 // backendURL returns the URL without userinfo, query and fragment, the form
@@ -172,8 +187,8 @@ func redactURLError(err error, display string) error {
 	return &url.Error{Op: ue.Op, URL: display, Err: ue.Err}
 }
 
-// maxLoggedPayloadSize is the largest request body logged by logPayload.
-const maxLoggedPayloadSize = 64 << 10 // 64 KiB
+// maxLoggedPayloadSize is the largest payload logged at debug level.
+const maxLoggedPayloadSize = limits.MaxLoggedPayloadSize
 
 // logPayload logs the request body at debug level. JSON bodies are embedded
 // as JSON objects in the log line, other bodies as strings. Bodies over

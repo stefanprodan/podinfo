@@ -13,8 +13,10 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	storev1 "github.com/stefanprodan/podinfo/pkg/api/grpc/store/v1"
+	"github.com/stefanprodan/podinfo/pkg/api/limits"
 	"github.com/stefanprodan/podinfo/pkg/store"
 )
 
@@ -89,9 +91,14 @@ func TestGrpcStoreWriteMaxSize(t *testing.T) {
 	storev1.RegisterStoreServiceServer(srv, &storeServer{store: store.New(t.TempDir(), noop.NewTracerProvider().Tracer("test")), logger: s.logger})
 	client := storev1.NewStoreServiceClient(newBufconnClient(t, srv))
 
-	if _, err := client.Write(context.Background(), &storev1.WriteRequest{Content: make([]byte, 10<<20)}); err != nil {
+	if _, err := client.Write(context.Background(), &storev1.WriteRequest{Content: make([]byte, limits.MaxBodySize)}); err != nil {
 		t.Fatalf("Write of 10 MiB returned error %v", err)
 	}
-	_, err := client.Write(context.Background(), &storev1.WriteRequest{Content: make([]byte, maxRecvMsgSize)})
+	_, err := client.Write(context.Background(), &storev1.WriteRequest{Content: make([]byte, limits.MaxBodySize+1)})
 	wantCode(t, "Write over the limit", err, codes.ResourceExhausted)
+	if msg := status.Convert(err).Message(); msg != "request body too large" {
+		t.Errorf("Write returned message %q, want %q", msg, "request body too large")
+	}
+	_, err = client.Write(context.Background(), &storev1.WriteRequest{Content: make([]byte, maxRecvMsgSize)})
+	wantCode(t, "Write over the message limit", err, codes.ResourceExhausted)
 }

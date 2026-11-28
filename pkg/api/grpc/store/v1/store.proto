@@ -6,6 +6,7 @@ option go_package = "github.com/stefanprodan/podinfo/pkg/api/grpc/store/v1;store
 
 service StoreService {
   // Writes the content to --data-path in a file named by its SHA1 hash.
+  // Returns ResourceExhausted for content over 10 MiB.
   rpc Write(WriteRequest) returns (WriteResponse) {}
   // Returns InvalidArgument for a hash that is not a lowercase SHA1 hex digest
   // and NotFound when no file has that hash.

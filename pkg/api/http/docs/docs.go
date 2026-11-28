@@ -178,6 +178,12 @@ const docTemplate = `{
                             "type": "string"
                         }
                     },
+                    "400": {
+                        "description": "key too long",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorMessage"
+                        }
+                    },
                     "404": {
                         "description": "key not found"
                     },
@@ -221,7 +227,7 @@ const docTemplate = `{
                         "description": "Accepted"
                     },
                     "400": {
-                        "description": "invalid request body",
+                        "description": "invalid request body or key too long",
                         "schema": {
                             "$ref": "#/definitions/http.ErrorMessage"
                         }
@@ -270,6 +276,12 @@ const docTemplate = `{
                 "responses": {
                     "202": {
                         "description": "Accepted"
+                    },
+                    "400": {
+                        "description": "key too long",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorMessage"
+                        }
                     },
                     "500": {
                         "description": "cache delete failed",

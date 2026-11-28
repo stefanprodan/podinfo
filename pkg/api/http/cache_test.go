@@ -26,7 +26,10 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
+	"github.com/stefanprodan/podinfo/pkg/api/limits"
 	"github.com/stefanprodan/podinfo/pkg/spiffe/spiffetest"
 	"github.com/stefanprodan/podinfo/pkg/version"
 )
@@ -511,6 +514,46 @@ func TestServerCache(t *testing.T) {
 	}
 	if got, err := srv.Cache().Get(t.Context(), "key1").Result(); err != nil || got != "value1" {
 		t.Errorf("Get returned %q, %v, want %q", got, err, "value1")
+	}
+}
+
+func TestCacheHandlers_KeyTooLong(t *testing.T) {
+	m := miniredis.RunT(t)
+	srv := newCacheMockServer(t, &Config{CacheServer: "redis://" + m.Addr()})
+
+	key := strings.Repeat("k", limits.MaxCacheKeySize)
+	rr := httptest.NewRecorder()
+	srv.router.ServeHTTP(rr, httptest.NewRequest("POST", "/cache/"+key, strings.NewReader("value1")))
+	if rr.Code != http.StatusAccepted || !m.Exists(key) {
+		t.Errorf("POST with a %d byte key returned %d", len(key), rr.Code)
+	}
+
+	for _, method := range []string{"POST", "GET", "DELETE"} {
+		rr := httptest.NewRecorder()
+		srv.router.ServeHTTP(rr, httptest.NewRequest(method, "/cache/"+key+"k", strings.NewReader("value1")))
+		if rr.Code != http.StatusBadRequest || !strings.Contains(rr.Body.String(), "key too long") {
+			t.Errorf("%s returned %d %s, want 400 key too long", method, rr.Code, rr.Body.String())
+		}
+	}
+}
+
+func TestCacheHandlers_ClientGone(t *testing.T) {
+	m := miniredis.RunT(t)
+	logs, observed := observer.New(zapcore.WarnLevel)
+	srv := newCacheMockServer(t, &Config{CacheServer: "redis://" + m.Addr()})
+	srv.logger = zap.New(logs)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	for _, method := range []string{"POST", "GET", "DELETE"} {
+		rr := httptest.NewRecorder()
+		srv.router.ServeHTTP(rr, httptest.NewRequest(method, "/cache/key1", strings.NewReader("value1")).WithContext(ctx))
+		if rr.Code != statusClientClosedRequest {
+			t.Errorf("%s returned %d, want %d", method, rr.Code, statusClientClosedRequest)
+		}
+	}
+	if n := observed.Len(); n != 0 {
+		t.Errorf("got %d warnings for canceled requests: %v", n, observed.All())
 	}
 }
 

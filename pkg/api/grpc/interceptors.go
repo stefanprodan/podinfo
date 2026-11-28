@@ -13,6 +13,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/stefanprodan/podinfo/pkg/api/limits"
 	"github.com/stefanprodan/podinfo/pkg/telemetry"
 )
 
@@ -84,9 +85,19 @@ func (s *Server) streamRecoveryInterceptor(srv any, ss grpc.ServerStream, info *
 	return handler(srv, ss)
 }
 
-// maxRecvMsgSize applies to all services. It matches the 10 MiB HTTP body
-// limit (maxRequestBodySize in pkg/api/http) plus room for the key and framing.
-const maxRecvMsgSize = 10<<20 + 1<<10
+// maxRecvMsgSize applies to all services. It leaves room for the largest
+// body with the longest cache key and the message framing; the handlers
+// enforce the exact limits.
+const maxRecvMsgSize = limits.MaxBodySize + limits.MaxCacheKeySize + 1<<10
+
+// checkBodySize returns ResourceExhausted for a body over limits.MaxBodySize,
+// which the HTTP API rejects with 413.
+func checkBodySize(size int) error {
+	if size > limits.MaxBodySize {
+		return status.Error(codes.ResourceExhausted, "request body too large")
+	}
+	return nil
+}
 
 func (s *Server) serverOptions(m *metrics) []grpc.ServerOption {
 	return []grpc.ServerOption{

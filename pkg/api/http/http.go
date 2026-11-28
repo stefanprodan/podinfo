@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"net/http"
 
+	"github.com/stefanprodan/podinfo/pkg/api/limits"
 	"github.com/stefanprodan/podinfo/pkg/telemetry"
 	"github.com/stefanprodan/podinfo/pkg/version"
 	"go.opentelemetry.io/otel/trace"
@@ -17,7 +18,7 @@ import (
 // maxRequestBodySize caps how much of a request body the body-reading handlers
 // buffer into memory. Without this bound an unauthenticated client can POST an
 // arbitrarily large body and exhaust process memory (and, for /store, disk).
-const maxRequestBodySize = 10 << 20 // 10 MiB
+const maxRequestBodySize = limits.MaxBodySize
 
 func randomErrorMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

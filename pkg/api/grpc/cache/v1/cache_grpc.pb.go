@@ -29,11 +29,11 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
 // All RPCs return Unavailable when podinfo runs without --cache-server
-// and InvalidArgument for an empty key.
+// and InvalidArgument for an empty key, a key over 1 KiB or a key with a slash.
 type CacheServiceClient interface {
 	// Returns NotFound when the key does not exist.
 	Get(ctx context.Context, in *GetRequest, opts ...grpc.CallOption) (*GetResponse, error)
-	// Saves the value without expiry.
+	// Saves the value without expiry. Returns ResourceExhausted for a value over 10 MiB.
 	Set(ctx context.Context, in *SetRequest, opts ...grpc.CallOption) (*SetResponse, error)
 	// Succeeds when the key does not exist.
 	Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error)
@@ -82,11 +82,11 @@ func (c *cacheServiceClient) Delete(ctx context.Context, in *DeleteRequest, opts
 // for forward compatibility.
 //
 // All RPCs return Unavailable when podinfo runs without --cache-server
-// and InvalidArgument for an empty key.
+// and InvalidArgument for an empty key, a key over 1 KiB or a key with a slash.
 type CacheServiceServer interface {
 	// Returns NotFound when the key does not exist.
 	Get(context.Context, *GetRequest) (*GetResponse, error)
-	// Saves the value without expiry.
+	// Saves the value without expiry. Returns ResourceExhausted for a value over 10 MiB.
 	Set(context.Context, *SetRequest) (*SetResponse, error)
 	// Succeeds when the key does not exist.
 	Delete(context.Context, *DeleteRequest) (*DeleteResponse, error)

@@ -7,8 +7,10 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 
 	echov1 "github.com/stefanprodan/podinfo/pkg/api/grpc/echo/v1"
+	"github.com/stefanprodan/podinfo/pkg/api/limits"
 	"github.com/stefanprodan/podinfo/pkg/telemetry"
 	"github.com/stefanprodan/podinfo/pkg/version"
 )
@@ -29,7 +31,10 @@ type echoBackend struct {
 // Echo returns the body and calls Echo on every backend concurrently,
 // reporting their responses in --grpc-backend-url order.
 func (s *echoServer) Echo(ctx context.Context, req *echov1.EchoRequest) (*echov1.EchoResponse, error) {
-	s.logger.Debug("received message body from client", zap.String("body", req.Body), telemetry.Context(ctx))
+	if err := checkBodySize(len(req.Body)); err != nil {
+		return nil, err
+	}
+	s.logger.Debug("received message body from client", bodyField("body", req.Body), telemetry.Context(ctx))
 	res := &echov1.EchoResponse{Body: req.Body}
 	if len(s.backends) == 0 {
 		return res, nil
@@ -55,19 +60,33 @@ func (s *echoServer) Echo(ctx context.Context, req *echov1.EchoRequest) (*echov1
 		wg.Go(func() {
 			r, err := b.client.Echo(callCtx, &echov1.EchoRequest{Body: req.Body})
 			if err != nil {
-				s.logger.Error("backend call failed", zap.Error(err), zap.String("url", b.url), telemetry.Context(ctx))
-				span.RecordError(err)
+				if ctx.Err() == nil {
+					s.logger.Error("backend call failed", zap.Error(err), zap.String("url", b.url), telemetry.Context(ctx))
+					span.RecordError(err)
+				}
 				br.Error = err.Error()
 				return
 			}
 			s.logger.Debug(
 				"payload received from backend",
-				zap.String("response", r.GetBody()),
+				bodyField("response", r.GetBody()),
 				zap.String("url", b.url),
 				telemetry.Context(ctx))
 			br.Body = r.GetBody()
 		})
 	}
 	wg.Wait()
+	if ctx.Err() != nil {
+		return nil, status.FromContextError(ctx.Err()).Err()
+	}
 	return res, nil
+}
+
+// bodyField returns the body as a log field, or only its size when it is
+// over limits.MaxLoggedPayloadSize.
+func bodyField(key, body string) zap.Field {
+	if len(body) > limits.MaxLoggedPayloadSize {
+		return zap.Int(key+"_size", len(body))
+	}
+	return zap.String(key, body)
 }

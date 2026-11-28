@@ -3,9 +3,12 @@ package grpc
 import (
 	"bytes"
 	"context"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/alicebob/miniredis/v2"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -13,6 +16,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	cachev1 "github.com/stefanprodan/podinfo/pkg/api/grpc/cache/v1"
+	"github.com/stefanprodan/podinfo/pkg/api/limits"
 )
 
 func newCacheClient(t *testing.T, cache redis.UniversalClient) cachev1.CacheServiceClient {
@@ -97,6 +101,72 @@ func TestGrpcCache_Errors(t *testing.T) {
 		wantCode(t, "Set", err, codes.InvalidArgument)
 		_, err = client.Delete(ctx, &cachev1.DeleteRequest{})
 		wantCode(t, "Delete", err, codes.InvalidArgument)
+	})
+
+	t.Run("key too long", func(t *testing.T) {
+		m, cache := newMiniredisClient(t)
+		client := newCacheClient(t, cache)
+		key := strings.Repeat("k", limits.MaxCacheKeySize)
+		if _, err := client.Set(ctx, &cachev1.SetRequest{Key: key}); err != nil || !m.Exists(key) {
+			t.Errorf("Set with a %d byte key returned %v", len(key), err)
+		}
+		key += "k"
+		_, err := client.Get(ctx, &cachev1.GetRequest{Key: key})
+		wantCode(t, "Get", err, codes.InvalidArgument)
+		_, err = client.Set(ctx, &cachev1.SetRequest{Key: key})
+		wantCode(t, "Set", err, codes.InvalidArgument)
+		_, err = client.Delete(ctx, &cachev1.DeleteRequest{Key: key})
+		wantCode(t, "Delete", err, codes.InvalidArgument)
+	})
+
+	t.Run("key with a slash", func(t *testing.T) {
+		m, cache := newMiniredisClient(t)
+		client := newCacheClient(t, cache)
+		_, err := client.Get(ctx, &cachev1.GetRequest{Key: "users/42"})
+		wantCode(t, "Get", err, codes.InvalidArgument)
+		_, err = client.Set(ctx, &cachev1.SetRequest{Key: "users/42"})
+		wantCode(t, "Set", err, codes.InvalidArgument)
+		_, err = client.Delete(ctx, &cachev1.DeleteRequest{Key: "users/42"})
+		wantCode(t, "Delete", err, codes.InvalidArgument)
+		if m.Exists("users/42") {
+			t.Error("Set saved a key with a slash")
+		}
+	})
+
+	t.Run("value size", func(t *testing.T) {
+		_, cache := newMiniredisClient(t)
+		s := &Server{config: &Config{}, logger: zap.NewNop()}
+		srv := grpc.NewServer(s.serverOptions(newMetrics(prometheus.NewRegistry()))...)
+		cachev1.RegisterCacheServiceServer(srv, &cacheServer{cache: cache, logger: s.logger})
+		client := cachev1.NewCacheServiceClient(newBufconnClient(t, srv))
+		req := &cachev1.SetRequest{Key: strings.Repeat("k", limits.MaxCacheKeySize), Value: make([]byte, limits.MaxBodySize)}
+		if _, err := client.Set(ctx, req); err != nil {
+			t.Errorf("Set with the longest key and the largest value returned %v", err)
+		}
+		req.Value = append(req.Value, 0)
+		_, err := client.Set(ctx, req)
+		wantCode(t, "Set", err, codes.ResourceExhausted)
+		if msg := status.Convert(err).Message(); msg != "request body too large" {
+			t.Errorf("Set returned message %q, want %q", msg, "request body too large")
+		}
+	})
+
+	t.Run("client gone", func(t *testing.T) {
+		_, cache := newMiniredisClient(t)
+		s := &cacheServer{cache: cache, logger: zap.NewNop()}
+		canceled, cancel := context.WithCancel(ctx)
+		cancel()
+		_, err := s.Get(canceled, &cachev1.GetRequest{Key: "key1"})
+		wantCode(t, "Get", err, codes.Canceled)
+		_, err = s.Set(canceled, &cachev1.SetRequest{Key: "key1"})
+		wantCode(t, "Set", err, codes.Canceled)
+		_, err = s.Delete(canceled, &cachev1.DeleteRequest{Key: "key1"})
+		wantCode(t, "Delete", err, codes.Canceled)
+
+		expired, cancel := context.WithDeadline(ctx, time.Now().Add(-time.Second))
+		defer cancel()
+		_, err = s.Get(expired, &cachev1.GetRequest{Key: "key1"})
+		wantCode(t, "Get", err, codes.DeadlineExceeded)
 	})
 
 	t.Run("cache error", func(t *testing.T) {

@@ -14,11 +14,16 @@ import (
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 
 	echov1 "github.com/stefanprodan/podinfo/pkg/api/grpc/echo/v1"
+	"github.com/stefanprodan/podinfo/pkg/api/limits"
 	"github.com/stefanprodan/podinfo/pkg/spiffe"
 	"github.com/stefanprodan/podinfo/pkg/spiffe/spiffetest"
 	"github.com/stefanprodan/podinfo/pkg/version"
@@ -77,6 +82,16 @@ func TestGrpcEcho(t *testing.T) {
 	}
 	if len(res.GetBackendResponses()) != 0 {
 		t.Errorf("got backend responses %v without backends", res.GetBackendResponses())
+	}
+}
+
+func TestGrpcEchoBodyTooLarge(t *testing.T) {
+	client := newEchoClient(t, 0)
+
+	_, err := client.Echo(context.Background(), &echov1.EchoRequest{Body: strings.Repeat("a", limits.MaxBodySize+1)})
+	wantCode(t, "Echo", err, codes.ResourceExhausted)
+	if msg := status.Convert(err).Message(); msg != "request body too large" {
+		t.Errorf("Echo returned message %q, want %q", msg, "request body too large")
 	}
 }
 
@@ -139,6 +154,56 @@ func TestGrpcEchoBackends_Timeout(t *testing.T) {
 	responses := res.GetBackendResponses()
 	if len(responses) != 1 || !strings.Contains(responses[0].GetError(), "code = DeadlineExceeded") {
 		t.Errorf("backend responses %v, want one DeadlineExceeded error", responses)
+	}
+}
+
+func TestGrpcEchoBackends_ClientGone(t *testing.T) {
+	logs, observed := observer.New(zapcore.ErrorLevel)
+	s := &echoServer{
+		config:   &Config{},
+		logger:   zap.New(logs),
+		backends: []echoBackend{newEchoBackend(t, "backend:9999", &fakeEchoBackend{})},
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	_, err := s.Echo(ctx, &echov1.EchoRequest{Body: "ping"})
+	wantCode(t, "Echo", err, codes.Canceled)
+	if n := observed.Len(); n != 0 {
+		t.Errorf("got %d errors for a canceled request: %v", n, observed.All())
+	}
+}
+
+// largeEchoBackend answers with a body one byte over the backend response limit.
+type largeEchoBackend struct {
+	echov1.UnimplementedEchoServiceServer
+}
+
+func (largeEchoBackend) Echo(context.Context, *echov1.EchoRequest) (*echov1.EchoResponse, error) {
+	return &echov1.EchoResponse{Body: strings.Repeat("a", limits.MaxBackendResponseSize+1)}, nil
+}
+
+func TestGrpcEchoBackendResponseTooLarge(t *testing.T) {
+	ln := listen(t)
+	backend := grpc.NewServer()
+	echov1.RegisterEchoServiceServer(backend, largeEchoBackend{})
+	go func() { _ = backend.Serve(ln) }()
+	t.Cleanup(backend.Stop)
+
+	s := NewServer(&Config{BackendURL: []string{"grpc://" + ln.Addr().String()}}, zap.NewNop())
+	if err := s.dialBackends(); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = s.Close() })
+	srv, _ := s.newServer()
+
+	res, err := echov1.NewEchoServiceClient(newBufconnClient(t, srv)).Echo(context.Background(), &echov1.EchoRequest{Body: "ping"})
+	if err != nil {
+		t.Fatalf("Echo returned error %v", err)
+	}
+	responses := res.GetBackendResponses()
+	if len(responses) != 1 || responses[0].GetBody() != "" || !strings.Contains(responses[0].GetError(), "code = ResourceExhausted") {
+		t.Errorf("got %d backend responses with error %q, want one ResourceExhausted error", len(responses), responses[0].GetError())
 	}
 }
 
