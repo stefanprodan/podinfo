@@ -1,5 +1,5 @@
 # Default values for podinfo.
-# The "@schema" comments feed values.schema.json, regenerate it with "make chart-schema".
+# The "@schema" comments feed values.schema.json, regenerate it with "make gen-chart-schema".
 
 nameOverride: ""
 fullnameOverride: ""

@@ -3,6 +3,6 @@
 //
 // pkg/api/http renders the template, serves the assets under /ui/ and the
 // swagger directory under /swagger/. The Swagger UI bundle and stylesheet in
-// swagger/dist are vendored by make swagger-ui. The demo directory, a fake
-// API used by make ui-demo, is not embedded.
+// swagger/dist are vendored by make vendor-swagger-ui. The demo directory, a fake
+// API used by make run-ui-demo, is not embedded.
 package ui

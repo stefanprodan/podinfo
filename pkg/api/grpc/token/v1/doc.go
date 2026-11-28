@@ -1,4 +1,4 @@
 // Package tokenv1 contains the protobuf messages and gRPC stubs of the
 // TokenService that issues and validates JWT tokens. The Go files are
-// generated from token.proto with make proto.
+// generated from token.proto with make gen-proto.
 package tokenv1

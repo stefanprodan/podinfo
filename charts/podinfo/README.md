@@ -206,7 +206,7 @@ $ helm upgrade -i my-release oci://ghcr.io/stefanprodan/charts/podinfo -f values
 
 The values are validated against `values.schema.json` on install, upgrade, lint and template:
 an unknown key inside a values block or a value of the wrong type fails the command.
-The schema is generated from `values.yaml` and its `@schema` comments with `make chart-schema`.
+The schema is generated from `values.yaml` and its `@schema` comments with `make gen-chart-schema`.
 
 `values-prod.yaml` holds the production overrides (autoscaling, Redis and memory limits) and is applied
 over the defaults with `-f values-prod.yaml`.
