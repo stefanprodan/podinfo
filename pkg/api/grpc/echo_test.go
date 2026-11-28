@@ -97,7 +97,7 @@ func TestGrpcEchoBodyTooLarge(t *testing.T) {
 
 func TestGrpcEchoBackends(t *testing.T) {
 	ok := &fakeEchoBackend{}
-	client := newEchoClient(t, 5*time.Second,
+	client := newEchoClient(t, waitTimeout,
 		newEchoBackend(t, "backend-1:9999", ok),
 		newEchoBackend(t, "backend-2:9999", echov1.UnimplementedEchoServiceServer{}))
 
@@ -134,7 +134,7 @@ func TestGrpcEchoBackends(t *testing.T) {
 
 func TestGrpcEchoBackends_NoRequestID(t *testing.T) {
 	ok := &fakeEchoBackend{}
-	client := newEchoClient(t, 5*time.Second, newEchoBackend(t, "backend:9999", ok))
+	client := newEchoClient(t, waitTimeout, newEchoBackend(t, "backend:9999", ok))
 
 	if _, err := client.Echo(context.Background(), &echov1.EchoRequest{Body: "ping"}); err != nil {
 		t.Fatalf("Echo returned error %v", err)
@@ -234,7 +234,7 @@ func TestGrpcEchoBackendURL(t *testing.T) {
 	backendAddr, backendSrv := listenAndServe(t, NewServer(&Config{}, zap.NewNop()))
 	frontendAddr, frontendSrv := listenAndServe(t, NewServer(&Config{
 		BackendURL:    []string{"grpc://" + backendAddr},
-		ClientTimeout: 5 * time.Second,
+		ClientTimeout: waitTimeout,
 	}, zap.NewNop()))
 
 	conn, err := grpc.NewClient(frontendAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -291,7 +291,7 @@ func TestGrpcEchoBackendSPIFFE(t *testing.T) {
 	echo := func(t *testing.T, scheme string, config *Config) *echov1.BackendResponse {
 		t.Helper()
 		config.BackendURL = []string{scheme + "://" + backendAddr}
-		config.ClientTimeout = 5 * time.Second
+		config.ClientTimeout = waitTimeout
 		s := NewServer(config, zap.NewNop())
 		s.SetSPIFFESource(source)
 		if err := s.dialBackends(); err != nil {

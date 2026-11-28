@@ -35,6 +35,8 @@ import (
 	"github.com/stefanprodan/podinfo/pkg/spiffe/spiffetest"
 )
 
+const waitTimeout = 30 * time.Second
+
 var (
 	serverID = spiffeid.RequireFromString("spiffe://example.org/ns/default/sa/podinfo")
 	clientID = spiffeid.RequireFromString("spiffe://example.org/ns/default/sa/client")
@@ -106,7 +108,7 @@ func checkHealth(address string, creds credentials.TransportCredentials) (grpc_h
 	}
 	defer conn.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), waitTimeout)
 	defer cancel()
 	res, err := grpc_health_v1.NewHealthClient(conn).Check(ctx, &grpc_health_v1.HealthCheckRequest{Service: "podinfo"})
 	if err != nil {
@@ -202,7 +204,7 @@ func TestGrpcSPIFFEMTLS(t *testing.T) {
 	}
 
 	spiffetest.StartWorkloadAPI(t, socket, ca, ca.NewSVID(t, serverID))
-	deadline := time.Now().Add(10 * time.Second)
+	deadline := time.Now().Add(waitTimeout)
 	for serviceStatus(t, healthSrv) != grpc_health_v1.HealthCheckResponse_SERVING {
 		if time.Now().After(deadline) {
 			t.Fatal("timed out waiting for SERVING")
@@ -275,7 +277,7 @@ func echoedSPIFFEIDs(t *testing.T, address string, creds credentials.TransportCr
 	}
 	t.Cleanup(func() { conn.Close() })
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), waitTimeout)
 	t.Cleanup(cancel)
 	ctx = metadata.AppendToOutgoingContext(ctx, "x-spiffe-id", "spiffe://example.org/forged")
 

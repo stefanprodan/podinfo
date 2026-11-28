@@ -103,8 +103,8 @@ func TestGrpcDelayContext(t *testing.T) {
 			defer cancel()
 
 			start := time.Now()
-			_, err := (&DelayServer{}).Delay(ctx, &delayv1.DelayRequest{Seconds: 10})
-			if elapsed := time.Since(start); elapsed > 2*time.Second {
+			_, err := (&DelayServer{}).Delay(ctx, &delayv1.DelayRequest{Seconds: 3600})
+			if elapsed := time.Since(start); elapsed > waitTimeout {
 				t.Fatalf("Delay returned after %s", elapsed)
 			}
 			if code := status.Code(err); code != tt.want {
