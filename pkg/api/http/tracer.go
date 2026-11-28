@@ -1,3 +1,6 @@
+// Copyright 2021 Stefan Prodan.
+// SPDX-License-Identifier: Apache-2.0
+
 package http
 
 import (

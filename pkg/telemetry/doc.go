@@ -1,3 +1,6 @@
+// Copyright 2026 Stefan Prodan.
+// SPDX-License-Identifier: Apache-2.0
+
 // Package telemetry sets up OpenTelemetry traces, metrics and logs for
 // podinfo and ties them to its zap logs and Prometheus metrics.
 //

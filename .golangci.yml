@@ -103,6 +103,9 @@ linters:
         - name: error-strings
         - name: errorf
         - name: exported
+        - name: file-header
+          arguments:
+            - "SPDX-License-Identifier: Apache-2.0"
         - name: identical-branches
         - name: if-return
         - name: import-shadowing

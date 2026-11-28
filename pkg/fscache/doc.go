@@ -1,3 +1,6 @@
+// Copyright 2026 Stefan Prodan.
+// SPDX-License-Identifier: Apache-2.0
+
 // Package fscache keeps an in-memory snapshot of the files in a directory and
 // refreshes it when they change.
 //

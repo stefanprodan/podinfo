@@ -1,3 +1,6 @@
+// Copyright 2019 Stefan Prodan.
+// SPDX-License-Identifier: Apache-2.0
+
 package grpc
 
 import (

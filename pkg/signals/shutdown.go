@@ -1,3 +1,6 @@
+// Copyright 2022 Stefan Prodan.
+// SPDX-License-Identifier: Apache-2.0
+
 package signals
 
 import (

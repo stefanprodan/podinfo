@@ -1,3 +1,6 @@
+// Copyright 2026 Stefan Prodan.
+// SPDX-License-Identifier: Apache-2.0
+
 // Package store keeps content-addressed files in a directory, each named by
 // the SHA1 hash of its content.
 //
