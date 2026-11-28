@@ -55,7 +55,7 @@ The following tables lists the configurable parameters of the podinfo chart and 
 | Parameter                                      | Default                        | Description                                                                                        |
 |------------------------------------------------|--------------------------------|----------------------------------------------------------------------------------------------------|
 | `replicaCount`                                 | `1`                            | Desired number of pods                                                                             |
-| `logLevel`                                     | `info`                         | Log level: `debug`, `info`, `warn`, `error`                                                        |
+| `logLevel`                                     | `info`                         | Log level: `debug`, `info`, `warn`, `error`, `fatal`, `panic`                                      |
 | `backend`                                      | `None`                         | Echo backend URL                                                                                   |
 | `backends`                                     | `[]`                           | Array of echo backend URLs                                                                         |
 | `grpcBackends`                                 | `[]`                           | Array of gRPC echo backend URLs, `grpc://host:port` or `grpcs://host:port` for TLS                 |
@@ -103,7 +103,7 @@ The following tables lists the configurable parameters of the podinfo chart and 
 | `service.externalTrafficPolicy`                | `None`                         | External traffic policy for LoadBalance service                                                    |
 | `service.annotations`                          | `{}`                           | Annotations of the Kubernetes Service                                                               |
 | `service.hostPort`                             | `None`                         | Bind the HTTP port to this host port                                                                |
-| `h2c.enabled`                                  | `false`                        | Allow upgrading to h2c (non-TLS version of HTTP/2)                                                 |
+| `h2c.enabled`                                  | `false`                        | Serve HTTP/2 without TLS (h2c) on the HTTP port                                                     |
 | `tls.enabled`                                  | `false`                        | Serve HTTPS on a second port with the certificate from `tls.secretName`                             |
 | `tls.secretName`                               | `None`                         | `kubernetes.io/tls` Secret with the certificate key pair, reloaded on rotation                      |
 | `tls.certPath`                                 | `/data/cert`                   | Path where the certificate key pair is mounted                                                      |
@@ -148,7 +148,7 @@ The following tables lists the configurable parameters of the podinfo chart and 
 | `ingress.className`                            | `""`                           | Use ingressClassName                                                                               |
 | `ingress.additionalLabels`                     | `{}`                           | Add additional labels to the ingress                                                               |
 | `ingress.annotations`                          | `{}`                           | Ingress annotations                                                                                |
-| `ingress.hosts`                                | `[{host: podinfo.local, paths: [/]}]` | Ingress accepted hosts                                                                              |
+| `ingress.hosts`                                | `[{host: podinfo.local, paths: [{path: /, pathType: ImplementationSpecific}]}]` | Ingress accepted hosts                                                                              |
 | `ingress.tls`                                  | `[]`                           | Ingress TLS configuration                                                                          |
 | `httpRoute.enabled`                            | `false`                        | Enables Gateway API HTTPRoute                                                                      |
 | `httpRoute.additionalLabels`                   | `{}`                           | Add additional labels to the HTTPRoute                                                             |
@@ -200,6 +200,13 @@ Alternatively, a YAML file that specifies the values for the above parameters ca
 ```console
 $ helm upgrade -i my-release oci://ghcr.io/stefanprodan/charts/podinfo -f values.yaml
 ```
+
+The values are validated against `values.schema.json` on install, upgrade, lint and template:
+an unknown key inside a values block or a value of the wrong type fails the command.
+The schema is generated from `values.yaml` and its `@schema` comments with `make chart-schema`.
+
+`values-prod.yaml` holds the production overrides (autoscaling, Redis and memory limits) and is applied
+over the defaults with `-f values-prod.yaml`.
 
 ## Cache
 
