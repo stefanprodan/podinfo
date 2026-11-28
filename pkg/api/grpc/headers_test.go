@@ -5,6 +5,8 @@ import (
 	"log"
 	"net"
 	"regexp"
+	"slices"
+	"strings"
 	"testing"
 
 	headerv1 "github.com/stefanprodan/podinfo/pkg/api/grpc/header/v1"
@@ -65,5 +67,37 @@ func TestGrpcHeader(t *testing.T) {
 	if !r.MatchString(res.String()) {
 		t.Fatalf("Returned unexpected body:\ngot \n%v \nwant \n%s",
 			res, expected)
+	}
+}
+
+func TestGrpcHeader_ForgedSPIFFEID(t *testing.T) {
+	lis := bufconn.Listen(1024 * 1024)
+	t.Cleanup(func() { lis.Close() })
+
+	srv := grpc.NewServer()
+	t.Cleanup(srv.Stop)
+	headerv1.RegisterHeaderServiceServer(srv, &HeaderServer{})
+	go func() { _ = srv.Serve(lis) }()
+
+	dialer := func(context.Context, string) (net.Conn, error) { return lis.Dial() }
+	conn, err := grpc.NewClient("passthrough:///bufnet", grpc.WithContextDialer(dialer), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		t.Fatalf("grpc.NewClient %v", err)
+	}
+	t.Cleanup(func() { conn.Close() })
+
+	ctx := metadata.AppendToOutgoingContext(context.Background(), "x-test", "podinfo", "x-spiffe-id", "spiffe://example.org/forged")
+	res, err := headerv1.NewHeaderServiceClient(conn).Header(ctx, &headerv1.HeaderRequest{})
+	if err != nil {
+		t.Fatalf("Header: %v", err)
+	}
+
+	if !slices.Contains(res.Headers, "x-test=podinfo") {
+		t.Errorf("headers = %v, want x-test=podinfo", res.Headers)
+	}
+	for _, h := range res.Headers {
+		if strings.HasPrefix(h, "x-spiffe-id=") {
+			t.Errorf("client-supplied x-spiffe-id echoed: %s", h)
+		}
 	}
 }

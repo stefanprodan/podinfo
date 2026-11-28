@@ -87,7 +87,7 @@ func (s *Server) SetKeyPair(kp *keypair.KeyPair) {
 }
 
 // SetCache serves the cache service with the given client, or reports the
-// cache offline when it is nil. The caller closes it after the server stops.
+// cache not configured when it is nil. The caller closes it after the server stops.
 func (s *Server) SetCache(client redis.UniversalClient) {
 	s.cache = client
 }

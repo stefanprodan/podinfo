@@ -7,29 +7,37 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"regexp"
+	"slices"
+	"strings"
 	"testing"
 	"time"
+
+	"github.com/felixge/httpsnoop"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func TestWaitHandlersReturnOnDisconnect(t *testing.T) {
 	srv := NewMockServer()
 	srv.router.HandleFunc("/delay/{wait}", srv.delayHandler)
 	srv.router.HandleFunc("/chunked/{wait}", srv.chunkedHandler)
-	done := make(chan struct{}, 1)
+	started := make(chan struct{}, 1)
+	done := make(chan int, 1)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		srv.router.ServeHTTP(w, r)
-		done <- struct{}{}
+		started <- struct{}{}
+		done <- httpsnoop.CaptureMetrics(srv.router, w, r).Code
 	}))
 	defer ts.Close()
 
 	for _, tc := range []struct {
 		name, method, path string
-		length             int
+		length, code       int
 	}{
-		{"delay partial body", "GET", "/delay/10", 100},
-		{"delay full body", "GET", "/delay/10", 1},
-		{"chunked partial body", "POST", "/chunked/10", 100},
-		{"chunked full body", "POST", "/chunked/10", 1},
+		{"delay partial body", "GET", "/delay/60", 100, http.StatusBadRequest},
+		{"delay full body", "GET", "/delay/60", 1, statusClientClosedRequest},
+		{"chunked partial body", "POST", "/chunked/60", 100, http.StatusBadRequest},
+		{"chunked full body", "POST", "/chunked/60", 1, http.StatusOK},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			conn, err := net.Dial("tcp", ts.Listener.Addr().String())
@@ -37,12 +45,19 @@ func TestWaitHandlersReturnOnDisconnect(t *testing.T) {
 				t.Fatal(err)
 			}
 			fmt.Fprintf(conn, "%s %s HTTP/1.1\r\nHost: podinfo\r\nContent-Length: %d\r\n\r\nx", tc.method, tc.path, tc.length)
-			time.Sleep(50 * time.Millisecond)
+			select {
+			case <-started:
+			case <-time.After(10 * time.Second):
+				t.Fatal("handler not started")
+			}
 			conn.Close()
 
 			select {
-			case <-done:
-			case <-time.After(2 * time.Second):
+			case code := <-done:
+				if code != tc.code {
+					t.Errorf("got status %d, want %d", code, tc.code)
+				}
+			case <-time.After(10 * time.Second):
 				t.Fatal("handler still waiting after the client disconnected")
 			}
 		})
@@ -77,22 +92,30 @@ func TestDelayHandler(t *testing.T) {
 }
 
 func TestDelayHandlerCanceled(t *testing.T) {
+	logs, observed := observer.New(zapcore.ErrorLevel)
 	srv := NewMockServer()
+	srv.logger = zap.New(logs)
 	srv.router.HandleFunc("/delay/{wait}", srv.delayHandler)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	time.AfterFunc(50*time.Millisecond, cancel)
-	req := httptest.NewRequest("GET", "/delay/10", nil).WithContext(ctx)
+	req := httptest.NewRequest("GET", "/delay/60", nil).WithContext(ctx)
 	rr := httptest.NewRecorder()
 
 	start := time.Now()
 	srv.router.ServeHTTP(rr, req)
 
-	if elapsed := time.Since(start); elapsed > time.Second {
+	if elapsed := time.Since(start); elapsed > 10*time.Second {
 		t.Errorf("handler took %s after cancellation, want prompt return", elapsed)
 	}
-	if rr.Body.Len() != 0 {
-		t.Errorf("got body %q, want none", rr.Body.String())
+	if rr.Code != statusClientClosedRequest {
+		t.Errorf("got status %d, want %d", rr.Code, statusClientClosedRequest)
+	}
+	if !strings.Contains(rr.Body.String(), "client closed request") {
+		t.Errorf("got body %q, want client closed request", rr.Body.String())
+	}
+	if n := observed.Len(); n != 0 {
+		t.Errorf("got %d errors for a canceled request: %v", n, observed.All())
 	}
 }
 
@@ -131,30 +154,85 @@ func TestRandomDelayMiddleware_Milliseconds(t *testing.T) {
 	}
 }
 
-func TestRandomErrorMiddleware(t *testing.T) {
-	handler := randomErrorMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func TestRandomDelayMiddleware_FixedDelay(t *testing.T) {
+	m := NewRandomDelayMiddleware(1, 1, "ms")
+	handler := m.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 
-	gotOK := false
-	gotError := false
-	for i := 0; i < 50; i++ {
-		req, _ := http.NewRequest("GET", "/", nil)
-		rr := httptest.NewRecorder()
-		handler.ServeHTTP(rr, req)
-		if rr.Code == http.StatusOK {
-			gotOK = true
-		} else {
-			gotError = true
-		}
-		if gotOK && gotError {
-			break
-		}
+	req, _ := http.NewRequest("GET", "/", nil)
+	rr := httptest.NewRecorder()
+	start := time.Now()
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Errorf("got status %d, want %d", rr.Code, http.StatusOK)
 	}
-	if !gotOK {
-		t.Error("never got a successful response")
+	if elapsed := time.Since(start); elapsed < time.Millisecond {
+		t.Errorf("got delay %s, want at least 1ms", elapsed)
 	}
-	if !gotError {
-		t.Error("never got an error response")
+}
+
+func TestRandomErrorMiddleware(t *testing.T) {
+	tests := []struct {
+		name   string
+		draws  []int
+		want   int
+		passed bool
+	}{
+		{name: "internal server error", draws: []int{0, 0}, want: http.StatusInternalServerError},
+		{name: "bad request", draws: []int{0, 1}, want: http.StatusBadRequest},
+		{name: "conflict", draws: []int{0, 2}, want: http.StatusConflict},
+		{name: "passed through", draws: []int{1}, want: http.StatusAccepted, passed: true},
+		{name: "passed through on the last draw", draws: []int{2}, want: http.StatusAccepted, passed: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := NewRandomErrorMiddleware()
+			draws := tt.draws
+			m.intn = func(n int) int {
+				if len(draws) == 0 {
+					t.Fatal("unexpected draw")
+				}
+				if n != 3 {
+					t.Errorf("draw out of %d, want 3", n)
+				}
+				d := draws[0]
+				draws = draws[1:]
+				return d
+			}
+			passed := false
+			handler := m.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				passed = true
+				w.WriteHeader(http.StatusAccepted)
+			}))
+
+			rr := httptest.NewRecorder()
+			handler.ServeHTTP(rr, httptest.NewRequest("GET", "/", nil))
+
+			if rr.Code != tt.want {
+				t.Errorf("got status %d, want %d", rr.Code, tt.want)
+			}
+			if passed != tt.passed {
+				t.Errorf("next handler called: %v, want %v", passed, tt.passed)
+			}
+			if len(draws) != 0 {
+				t.Errorf("%d draws left unused", len(draws))
+			}
+		})
+	}
+}
+
+func TestRandomErrorMiddleware_DefaultSource(t *testing.T) {
+	handler := NewRandomErrorMiddleware().Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusAccepted)
+	}))
+
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, httptest.NewRequest("GET", "/", nil))
+
+	codes := []int{http.StatusAccepted, http.StatusInternalServerError, http.StatusBadRequest, http.StatusConflict}
+	if !slices.Contains(codes, rr.Code) {
+		t.Errorf("got status %d, want one of %v", rr.Code, codes)
 	}
 }

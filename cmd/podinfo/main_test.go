@@ -11,12 +11,16 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"os/exec"
 	"regexp"
 	"slices"
+	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/log"
@@ -29,8 +33,89 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/stefanprodan/podinfo/pkg/api/grpc"
+	podinfohttp "github.com/stefanprodan/podinfo/pkg/api/http"
 	"github.com/stefanprodan/podinfo/pkg/telemetry"
 )
+
+const runMainEnv = "TEST_RUN_MAIN"
+
+// TestMain runs main in place of the tests when the test binary is executed
+// by runMain.
+func TestMain(m *testing.M) {
+	if os.Getenv(runMainEnv) == "1" {
+		main()
+		return
+	}
+	os.Exit(m.Run())
+}
+
+func runMain(t *testing.T, args ...string) (string, error) {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+	dir := t.TempDir()
+	args = append([]string{"--host=127.0.0.1", "--port=0", "--artifact-path=", "--data-path=" + dir, "--config-path=" + dir}, args...)
+	cmd := exec.CommandContext(ctx, os.Args[0], args...)
+	cmd.Env = []string{runMainEnv + "=1", "OTEL_SDK_DISABLED=true"}
+	out, err := cmd.CombinedOutput()
+	return string(out), err
+}
+
+func TestGRPCTLSRequiresPort(t *testing.T) {
+	out, err := runMain(t, "--grpc-tls")
+	if exitErr, ok := errors.AsType[*exec.ExitError](err); !ok || exitErr.ExitCode() != 1 {
+		t.Errorf("got error %v, want exit code 1", err)
+	}
+	if want := "--grpc-tls requires --grpc-port"; !strings.Contains(out, want) {
+		t.Errorf("got output %q, want %q", out, want)
+	}
+}
+
+func TestResetInvalidPorts(t *testing.T) {
+	viper.Reset()
+	t.Cleanup(viper.Reset)
+	t.Setenv("PODINFO_PORT", "tcp://10.0.0.1:9898")
+	t.Setenv("PODINFO_SECURE_PORT", "9899")
+	t.Setenv("PODINFO_GRPC_PORT", "tcp://10.0.0.1:9999")
+	t.Setenv("PODINFO_PORT_METRICS", "tcp://10.0.0.1:9797")
+
+	fs := pflag.NewFlagSet("test", pflag.ContinueOnError)
+	fs.Int("port", 9898, "")
+	fs.Int("secure-port", 0, "")
+	fs.Int("grpc-port", 0, "")
+	fs.Int("port-metrics", 0, "")
+	if err := fs.Parse([]string{"--port-metrics=9797"}); err != nil {
+		t.Fatal(err)
+	}
+	viper.BindPFlags(fs)
+	viper.SetEnvPrefix("PODINFO")
+	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
+	viper.AutomaticEnv()
+
+	resetInvalidPorts(fs, "port", "secure-port", "grpc-port", "port-metrics")
+
+	var grpcCfg grpc.Config
+	if err := viper.Unmarshal(&grpcCfg); err != nil {
+		t.Fatal(err)
+	}
+	var srvCfg podinfohttp.Config
+	if err := viper.Unmarshal(&srvCfg); err != nil {
+		t.Fatal(err)
+	}
+	if srvCfg.Port != "9898" {
+		t.Errorf("port: got %q, want 9898", srvCfg.Port)
+	}
+	if srvCfg.SecurePort != "9899" {
+		t.Errorf("secure-port: got %q, want 9899", srvCfg.SecurePort)
+	}
+	if grpcCfg.Port != 0 {
+		t.Errorf("grpc-port: got %d, want 0", grpcCfg.Port)
+	}
+	if srvCfg.PortMetrics != 9797 {
+		t.Errorf("port-metrics: got %d, want 9797", srvCfg.PortMetrics)
+	}
+}
 
 func TestParseLevel(t *testing.T) {
 	for _, level := range []string{"debug", "info", "warn", "error", "fatal", "panic"} {
@@ -250,7 +335,7 @@ func TestWithTelemetryFatal(t *testing.T) {
 	t.Cleanup(func() { _ = tel.Shutdown(context.Background()) })
 	var codes []int
 	logger, out := captureStderr(t, func() *zap.Logger {
-		return withTelemetry(mustParseLevel(t, "info"), tel, time.Second, func(code int) { codes = append(codes, code) })
+		return withTelemetry(mustParseLevel(t, "info"), tel, time.Minute, func(code int) { codes = append(codes, code) })
 	})
 
 	logger.Fatal("fatal")

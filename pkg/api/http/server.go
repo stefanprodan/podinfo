@@ -249,7 +249,7 @@ func (s *Server) registerMiddlewares() {
 		s.router.Use(randomDelayer.Handler)
 	}
 	if s.config.RandomError {
-		s.router.Use(randomErrorMiddleware)
+		s.router.Use(NewRandomErrorMiddleware().Handler)
 	}
 }
 
@@ -373,14 +373,17 @@ func (s *Server) startSecureServer() *http.Server {
 
 func (s *Server) startMetricsServer() {
 	if s.config.PortMetrics > 0 {
-		s.metricsServer().ListenAndServe()
+		if err := s.metricsServer().ListenAndServe(); err != http.ErrServerClosed {
+			s.logger.Fatal("metrics server crashed", zap.Error(err))
+		}
 	}
 }
 
 func (s *Server) metricsServer() *http.Server {
 	return &http.Server{
-		Addr:    fmt.Sprintf("%s:%v", s.config.Host, s.config.PortMetrics),
-		Handler: s.metricsMux(),
+		Addr:              fmt.Sprintf("%s:%v", s.config.Host, s.config.PortMetrics),
+		ReadHeaderTimeout: s.config.HttpServerTimeout,
+		Handler:           s.metricsMux(),
 	}
 }
 

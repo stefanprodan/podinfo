@@ -79,12 +79,12 @@ func TestGrpcCache(t *testing.T) {
 func TestGrpcCache_Errors(t *testing.T) {
 	ctx := context.Background()
 
-	t.Run("offline", func(t *testing.T) {
+	t.Run("not configured", func(t *testing.T) {
 		client := newCacheClient(t, nil)
 		_, err := client.Get(ctx, &cachev1.GetRequest{Key: "key1"})
 		wantCode(t, "Get", err, codes.Unavailable)
-		if msg := status.Convert(err).Message(); msg != "cache server is offline" {
-			t.Errorf("Get returned message %q, want %q", msg, "cache server is offline")
+		if msg := status.Convert(err).Message(); msg != "cache server not configured" {
+			t.Errorf("Get returned message %q, want %q", msg, "cache server not configured")
 		}
 		_, err = client.Set(ctx, &cachev1.SetRequest{Key: "key1"})
 		wantCode(t, "Set", err, codes.Unavailable)

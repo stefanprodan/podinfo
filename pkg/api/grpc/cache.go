@@ -21,11 +21,11 @@ type cacheServer struct {
 	logger *zap.Logger
 }
 
-var errCacheOffline = status.Error(codes.Unavailable, "cache server is offline")
+var errCacheNotConfigured = status.Error(codes.Unavailable, "cache server not configured")
 
 func (s *cacheServer) validate(key string) error {
 	if s.cache == nil {
-		return errCacheOffline
+		return errCacheNotConfigured
 	}
 	if key == "" {
 		return status.Error(codes.InvalidArgument, "key is required")

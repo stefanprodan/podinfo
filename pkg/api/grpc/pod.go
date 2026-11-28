@@ -21,9 +21,9 @@ type podServer struct {
 func (s *podServer) Pod(ctx context.Context, _ *pb.PodRequest) (*pb.PodResponse, error) {
 	headers := map[string]*pb.Values{}
 	md, _ := metadata.FromIncomingContext(ctx)
-	for name, values := range environ.RedactHeaders(md) {
-		// pseudo-headers are not request headers, and a client-supplied SPIFFE ID is never echoed
-		if strings.HasPrefix(name, ":") || name == "x-spiffe-id" {
+	for name, values := range echoedMetadata(ctx, md) {
+		// pseudo-headers are not request headers
+		if strings.HasPrefix(name, ":") {
 			continue
 		}
 		headers[name] = &pb.Values{Values: values}

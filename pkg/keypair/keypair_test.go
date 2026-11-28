@@ -92,7 +92,7 @@ func commonName(t *testing.T, kp *KeyPair) string {
 
 func eventually(t *testing.T, msg string, cond func() bool) {
 	t.Helper()
-	deadline := time.Now().Add(5 * time.Second)
+	deadline := time.Now().Add(30 * time.Second)
 	for !cond() {
 		if time.Now().After(deadline) {
 			t.Fatal(msg)

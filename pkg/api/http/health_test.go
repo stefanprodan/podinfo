@@ -9,6 +9,8 @@ import (
 )
 
 func TestHealthzHandler(t *testing.T) {
+	atomic.StoreInt32(&healthy, 0)
+
 	req, err := http.NewRequest("GET", "/healthz", nil)
 	if err != nil {
 		t.Fatal(err)
@@ -28,6 +30,8 @@ func TestHealthzHandler(t *testing.T) {
 }
 
 func TestReadyzHandler(t *testing.T) {
+	atomic.StoreInt32(&ready, 0)
+
 	req, err := http.NewRequest("GET", "/readyz", nil)
 	if err != nil {
 		t.Fatal(err)

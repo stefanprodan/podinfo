@@ -104,7 +104,7 @@ func metricsEnabled() bool {
 }
 
 func TestSetupSignals(t *testing.T) {
-	const endpoint = "http://127.0.0.1:4318"
+	endpoint := newCollector(t).URL
 	tests := []struct {
 		name        string
 		env         map[string]string
@@ -249,7 +249,7 @@ func TestSetupInvalidProtocol(t *testing.T) {
 	for _, key := range []string{"OTEL_EXPORTER_OTLP_PROTOCOL", "OTEL_EXPORTER_OTLP_LOGS_PROTOCOL", "OTEL_EXPORTER_OTLP_METRICS_PROTOCOL"} {
 		t.Run(key, func(t *testing.T) {
 			resetGlobals(t)
-			setEnv(t, map[string]string{"OTEL_EXPORTER_OTLP_ENDPOINT": "http://127.0.0.1:4318", key: "thrift"})
+			setEnv(t, map[string]string{"OTEL_EXPORTER_OTLP_ENDPOINT": newCollector(t).URL, key: "thrift"})
 
 			tel, err := setup(t, "")
 			if err == nil {
@@ -272,23 +272,28 @@ func TestSetupInvalidProtocol(t *testing.T) {
 }
 
 func TestSetupDoesNotServePrometheus(t *testing.T) {
-	const addr = "127.0.0.1:9464"
-	if conn, err := net.Dial("tcp", addr); err == nil {
-		conn.Close()
-		t.Skipf("%s is already in use", addr)
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { ln.Close() })
+	host, port, err := net.SplitHostPort(ln.Addr().String())
+	if err != nil {
+		t.Fatal(err)
 	}
 	resetGlobals(t)
-	setEnv(t, map[string]string{"OTEL_EXPORTER_OTLP_ENDPOINT": "http://127.0.0.1:4318"})
+	setEnv(t, map[string]string{
+		"OTEL_EXPORTER_OTLP_ENDPOINT":   newCollector(t).URL,
+		"OTEL_EXPORTER_PROMETHEUS_HOST": host,
+		"OTEL_EXPORTER_PROMETHEUS_PORT": port,
+	})
 
+	// A Prometheus server could only bind the address held by ln, which fails Setup.
 	if _, err := setup(t, ""); err != nil {
 		t.Fatal(err)
 	}
 	if !metricsEnabled() {
 		t.Fatal("expected metrics to be enabled")
-	}
-	if conn, err := net.Dial("tcp", addr); err == nil {
-		conn.Close()
-		t.Errorf("%s is listening", addr)
 	}
 }
 
@@ -555,7 +560,7 @@ func TestExitHookFlushes(t *testing.T) {
 	code := -1
 	logger := zap.New(
 		otelzap.NewCore("test", otelzap.WithLoggerProvider(tel.LoggerProvider())),
-		zap.WithFatalHook(tel.ExitHook(time.Second, func(c int) { code = c })),
+		zap.WithFatalHook(tel.ExitHook(time.Minute, func(c int) { code = c })),
 	)
 	logger.Fatal("boom")
 

@@ -27,6 +27,7 @@ type Watcher struct {
 	names    []string
 	debounce time.Duration
 	resync   time.Duration
+	resyncC  <-chan time.Time
 
 	fsw     *fsnotify.Watcher
 	watched bool
@@ -135,8 +136,12 @@ func (w *Watcher) Close() error {
 func (w *Watcher) run() {
 	defer close(w.done)
 
-	resync := time.NewTicker(w.resync)
-	defer resync.Stop()
+	resyncC := w.resyncC
+	if resyncC == nil {
+		resync := time.NewTicker(w.resync)
+		defer resync.Stop()
+		resyncC = resync.C
+	}
 	debounce := time.NewTimer(w.debounce)
 	debounce.Stop()
 	defer debounce.Stop()
@@ -174,7 +179,7 @@ func (w *Watcher) run() {
 		case <-debounce.C:
 			pending = time.Time{}
 			w.reload()
-		case <-resync.C:
+		case <-resyncC:
 			w.reload()
 		}
 	}

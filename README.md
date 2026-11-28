@@ -80,9 +80,9 @@ gRPC API:
 * `/cache.v1.CacheService/Delete` deletes the key from Redis or Valkey
 * `/delay.v1.DelayService/Delay` returns a successful response after the given seconds in the body of gRPC request
 * `/env.v1.EnvService/Env` returns environment variables as a JSON array, with secret values masked
-* `/header.v1.HeaderService/Header` returns the headers present in the gRPC request, with credential values masked. Any custom header can also be given as a part of request and that can be returned using this API
+* `/header.v1.HeaderService/Header` returns the headers present in the gRPC request, with credential values masked, plus `x-spiffe-id` for SPIFFE mTLS clients. Any custom header can also be given as a part of request and that can be returned using this API
 * `/info.v1.InfoService/Info` returns the runtime information
-* `/pod.v1.PodService/Pod` returns the runtime information, the environment variables and the request metadata of one pod, with secret values masked
+* `/pod.v1.PodService/Pod` returns the runtime information, the environment variables and the request metadata of one pod, with secret values masked, plus `x-spiffe-id` for SPIFFE mTLS clients
 * `/panic.v1.PanicService/Panic` crashes the process with gRPC status code as '1 CANCELLED'
 * `/status.v1.StatusService/Status` returns the gRPC Status code given in the request body
 * `/store.v1.StoreService/Write` writes the content to disk at /data/hash and returns the SHA1 hash of the content

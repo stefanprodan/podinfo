@@ -1,6 +1,7 @@
 package http
 
 import (
+	"io"
 	"net/http"
 	"strings"
 	"sync/atomic"
@@ -30,10 +31,17 @@ func faultInjectionExcluded(p string) bool {
 	return false
 }
 
+func writeInjectedFault(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.WriteHeader(http.StatusInternalServerError)
+	io.WriteString(w, `{"status":"fault injection enabled"}`+"\n")
+}
+
 func faultInjectionMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if atomic.LoadInt32(&faultInjection) == 1 && !faultInjectionExcluded(r.URL.Path) {
-			http.Error(w, `{"status":"fault injection enabled"}`, http.StatusInternalServerError)
+			writeInjectedFault(w)
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -55,7 +63,7 @@ func (s *Server) faultInjectionMiddleware(next http.Handler) http.Handler {
 			}
 		}
 		if atomic.LoadInt32(&faultInjection) == 1 && !faultInjectionExcluded(p) {
-			http.Error(w, `{"status":"fault injection enabled"}`, http.StatusInternalServerError)
+			writeInjectedFault(w)
 			return
 		}
 		next.ServeHTTP(w, r)

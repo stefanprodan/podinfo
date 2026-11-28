@@ -90,6 +90,13 @@ func TestGrpcTokenValidate(t *testing.T) {
 		return sign(jwt.SigningMethodHS256, []byte(key), issuer, expiresAt)
 	}
 	future := time.Now().Add(time.Minute)
+	noExpiry, err := jwt.NewWithClaims(jwt.SigningMethodHS256, &jwtCustomClaims{
+		"test",
+		jwt.RegisteredClaims{Issuer: "podinfo"},
+	}).SignedString([]byte(secret))
+	if err != nil {
+		t.Fatalf("signing token: %v", err)
+	}
 
 	tests := []struct {
 		name          string
@@ -104,6 +111,7 @@ func TestGrpcTokenValidate(t *testing.T) {
 		{name: "malformed header", authorization: []string{hmac(secret, "podinfo", future)}, want: codes.Unauthenticated},
 		{name: "expired", authorization: []string{"Bearer " + hmac(secret, "podinfo", time.Now().Add(-time.Minute))}, want: codes.Unauthenticated},
 		{name: "bad signature", authorization: []string{"Bearer " + hmac("other-secret", "podinfo", future)}, want: codes.Unauthenticated},
+		{name: "no expiry", authorization: []string{"Bearer " + noExpiry}, want: codes.Unauthenticated, wantMsg: "token expiry required"},
 		{name: "wrong issuer", authorization: []string{"Bearer " + hmac(secret, "other", future)}, want: codes.Unauthenticated},
 		{name: "non-HMAC signing method", authorization: []string{"Bearer " + sign(jwt.SigningMethodNone, jwt.UnsafeAllowNoneSignatureType, "podinfo", future)}, want: codes.Unauthenticated, wantMsg: "invalid signing method"},
 	}

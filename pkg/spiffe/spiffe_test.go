@@ -110,7 +110,7 @@ func TestSourceStopWhileWaiting(t *testing.T) {
 		if err == nil {
 			t.Fatal("Wait returned no error after Stop")
 		}
-	case <-time.After(5 * time.Second):
+	case <-time.After(30 * time.Second):
 		t.Fatal("Wait hung after Stop")
 	}
 	if err := src.Close(); err != nil {

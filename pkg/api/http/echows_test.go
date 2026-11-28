@@ -104,7 +104,14 @@ func (w failingHijacker) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	return failingConn{Conn: conn, fail: w.fail}, brw, nil
 }
 
-func wsGoroutines() int {
+// goroutineID returns the ID of the calling goroutine.
+func goroutineID() string {
+	buf := make([]byte, 64)
+	return strings.Fields(string(buf[:runtime.Stack(buf, false)]))[1]
+}
+
+// startedBy counts the goroutines running fn that the goroutine with the given ID started.
+func startedBy(id, fn string) int {
 	buf := make([]byte, 1<<20)
 	for {
 		n := runtime.Stack(buf, true)
@@ -116,8 +123,7 @@ func wsGoroutines() int {
 	}
 	var count int
 	for _, g := range strings.Split(string(buf), "\n\n") {
-		if strings.Contains(g, "(*Server).echoWsHandler") || strings.Contains(g, "(*Server).sendHostWs") ||
-			strings.Contains(g, "(*Server).writeWs") {
+		if strings.Contains(g, fn) && strings.Contains(g, " in goroutine "+id+"\n") {
 			count++
 		}
 	}
@@ -127,7 +133,11 @@ func wsGoroutines() int {
 func TestEchoWsWriterFailureReleasesHandler(t *testing.T) {
 	srv := NewMockServer()
 	var fail atomic.Bool
+	handler := make(chan string, 1)
+	returned := make(chan struct{})
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer close(returned)
+		handler <- goroutineID()
 		srv.echoWsHandler(failingHijacker{ResponseWriter: w, fail: &fail}, r)
 	}))
 	defer server.Close()
@@ -144,18 +154,21 @@ func TestEchoWsWriterFailureReleasesHandler(t *testing.T) {
 	if _, _, err := ws.ReadMessage(); err != nil {
 		t.Fatalf("read failed: %v", err)
 	}
-	if n := wsGoroutines(); n == 0 {
-		t.Fatal("no websocket goroutines running")
+	id := <-handler
+	started := func() int {
+		return startedBy(id, "(*Server).writeWs(") + startedBy(id, "(*Server).sendHostWs(")
 	}
+	waitFor(t, "the websocket goroutines to start", func() bool { return started() == 2 })
 
 	fail.Store(true)
-	deadline := time.Now().Add(3 * time.Second)
-	for time.Now().Before(deadline) {
-		if wsGoroutines() == 0 {
-			return
+	waitFor(t, "the handler to return after the writer failed", func() bool {
+		select {
+		case <-returned:
+			return true
+		default:
+			_ = ws.WriteMessage(websocket.TextMessage, []byte("ping"))
+			return false
 		}
-		_ = ws.WriteMessage(websocket.TextMessage, []byte("ping"))
-		time.Sleep(10 * time.Millisecond)
-	}
-	t.Fatalf("%d websocket goroutines still running after the writer failed", wsGoroutines())
+	})
+	waitFor(t, "the websocket goroutines to stop", func() bool { return started() == 0 })
 }

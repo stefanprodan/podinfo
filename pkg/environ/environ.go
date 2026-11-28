@@ -3,14 +3,37 @@ package environ
 import (
 	"os"
 	"regexp"
+	"slices"
 	"strings"
 )
 
 const redacted = "[REDACTED]"
 
-var sensitiveNames = []string{"PASS", "SECRET", "TOKEN", "KEY", "CREDENTIAL", "AUTH", "PRIVATE"}
+var (
+	sensitiveNames = []string{
+		"PASS", "SECRET", "TOKEN", "KEY", "CREDENTIAL", "AUTH", "PRIVATE",
+		"COOKIE", "JWT", "DSN", "SIGNATURE", "ASSERTION",
+	}
+	// sensitiveSuffixes match the end of a name only: MYSQL_PWD is a password,
+	// PWD and OLDPWD are directories.
+	sensitiveSuffixes = []string{"_HEADERS", "_PWD"}
+	// sensitiveParams are the URL query parameters masked on top of the names above.
+	sensitiveParams = []string{"PWD", "SIG"}
+)
 
-var urlScheme = regexp.MustCompile(`[a-zA-Z][a-zA-Z0-9+.-]*://`)
+const sensitiveHeaderPrefix = "X-AMZN-OIDC-"
+
+var (
+	// urlScheme matches the scheme of a URL, up to and including "://".
+	urlScheme = regexp.MustCompile(`[a-zA-Z][a-zA-Z0-9+.-]*://`)
+	// queryParam matches a URL query parameter with its leading '?' or '&'.
+	queryParam = regexp.MustCompile(`[?&][^=&#\s]+=[^&#\s]*`)
+	// passwordPair matches the password of a key=value connection string;
+	// the value may be quoted.
+	passwordPair = regexp.MustCompile(`(?i)((?:password|passwd|pwd)=)(?:'[^']*'|"[^"]*"|[^\s;&]*)`)
+	// portEnd matches what follows the colon of a host:port, up to the end of the port.
+	portEnd = regexp.MustCompile(`^\d*[/?#,;\s]`)
+)
 
 // Redacted returns the process environment with secret values masked.
 func Redacted() []string {
@@ -23,18 +46,19 @@ func RedactedMap() map[string]string {
 }
 
 // RedactHeaders returns a copy of the HTTP headers or gRPC metadata with the
-// values of credential headers and cookies masked, and URL passwords hidden.
+// values of credential headers and cookies masked, and the secrets of URLs
+// and connection strings hidden.
 func RedactHeaders(headers map[string][]string) map[string][]string {
 	out := make(map[string][]string, len(headers))
 	for name, values := range headers {
 		pseudo := strings.HasPrefix(name, ":")
-		if !pseudo && (isSensitive(name) || strings.Contains(strings.ToUpper(name), "COOKIE")) {
+		if !pseudo && isSensitiveHeader(name) {
 			out[name] = []string{redacted}
 			continue
 		}
 		masked := make([]string, len(values))
 		for i, v := range values {
-			masked[i] = redactURLs(v)
+			masked[i] = redactValue(v)
 		}
 		out[name] = masked
 	}
@@ -60,7 +84,7 @@ func redact(env []string) []string {
 		case isSensitive(name):
 			out[i] = name + "=" + redacted
 		default:
-			out[i] = name + "=" + redactURLs(value)
+			out[i] = name + "=" + redactValue(value)
 		}
 	}
 	return out
@@ -68,8 +92,10 @@ func redact(env []string) []string {
 
 func isSensitive(name string) bool {
 	name = strings.ToUpper(name)
-	if strings.HasSuffix(name, "_HEADERS") {
-		return true
+	for _, s := range sensitiveSuffixes {
+		if strings.HasSuffix(name, s) {
+			return true
+		}
 	}
 	for _, s := range sensitiveNames {
 		if strings.Contains(name, s) {
@@ -79,39 +105,88 @@ func isSensitive(name string) bool {
 	return false
 }
 
-// redactURLs masks the userinfo password of every URL in the value. Each URL
-// runs until the next scheme, so lists, embedded URLs and passwords holding
-// commas or '@' are all covered.
-func redactURLs(value string) string {
-	starts := urlScheme.FindAllStringIndex(value, -1)
-	if starts == nil {
-		return value
-	}
-	var b strings.Builder
-	b.WriteString(value[:starts[0][0]])
-	for i, loc := range starts {
-		end := len(value)
-		if i+1 < len(starts) {
-			end = starts[i+1][0]
+func isSensitiveHeader(name string) bool {
+	return isSensitive(name) || strings.HasPrefix(strings.ToUpper(name), sensitiveHeaderPrefix)
+}
+
+func isSensitiveParam(name string) bool {
+	return isSensitive(name) || slices.Contains(sensitiveParams, strings.ToUpper(name))
+}
+
+// redactValue masks the secrets inside a value: the userinfo of URLs, the
+// sensitive query parameters and the passwords of key=value pairs.
+func redactValue(value string) string {
+	value = redactURLs(value)
+	value = queryParam.ReplaceAllStringFunc(value, func(param string) string {
+		eq := strings.Index(param, "=")
+		if !isSensitiveParam(param[1:eq]) {
+			return param
 		}
-		b.WriteString(value[loc[0]:loc[1]])
-		b.WriteString(redactUserinfo(value[loc[1]:end]))
+		return param[:eq+1] + redacted
+	})
+	return passwordPair.ReplaceAllString(value, "${1}"+redacted)
+}
+
+// redactURLs masks the userinfo secret of every URL in the value, so lists
+// and embedded URLs are covered.
+func redactURLs(value string) string {
+	var b strings.Builder
+	for {
+		loc := urlScheme.FindStringIndex(value)
+		if loc == nil {
+			break
+		}
+		masked, n := redactUserinfo(value[loc[1]:])
+		b.WriteString(value[:loc[1]])
+		b.WriteString(masked)
+		value = value[loc[1]+n:]
 	}
+	b.WriteString(value)
 	return b.String()
 }
 
-func redactUserinfo(rest string) string {
-	token, tail := rest, ""
-	if i := strings.IndexAny(rest, " \t"); i >= 0 {
-		token, tail = rest[:i], rest[i:]
+// redactUserinfo returns the masked userinfo that starts the rest of a URL
+// and the length of the userinfo it replaces. A username without a password
+// is masked as a whole, since it is a token in that shape.
+func redactUserinfo(rest string) (string, int) {
+	if colon := strings.IndexAny(rest, ":/ \t"); colon >= 0 && rest[colon] == ':' {
+		if at := passwordEnd(rest, colon); at >= 0 {
+			return rest[:colon+1] + redacted, at
+		}
 	}
-	at := strings.LastIndex(token, "@")
-	if at < 0 {
-		return rest
+	authority := rest
+	if i := strings.IndexAny(rest, "/?# \t"); i >= 0 {
+		authority = rest[:i]
 	}
-	user, _, ok := strings.Cut(token[:at], ":")
-	if !ok || strings.Contains(user, "/") {
-		return rest
+	if at := strings.LastIndex(authority, "@"); at >= 0 {
+		return redacted, at
 	}
-	return user + ":" + redacted + token[at:] + tail
+	return "", 0
+}
+
+// passwordEnd returns the index of the '@' that ends the password starting
+// after the colon, or -1 without one. The password runs to the last '@' ahead
+// of the next whitespace or URL, so it may hold '@', '/' and commas. It holds
+// whitespace or "://" only when the colon is not followed by a port, which
+// tells a password from the next entry of a URL list.
+func passwordEnd(rest string, colon int) int {
+	first := strings.Index(rest[colon:], "@")
+	if first < 0 {
+		return -1
+	}
+	first += colon
+	gap := rest[colon+1 : first]
+	if strings.ContainsAny(gap, " \t") || urlScheme.MatchString(gap) {
+		if portEnd.MatchString(gap) || strings.HasPrefix(rest, "[") {
+			return -1
+		}
+	}
+	end := len(rest)
+	if i := strings.IndexAny(rest[first:], " \t"); i >= 0 {
+		end = first + i
+	}
+	if loc := urlScheme.FindStringIndex(rest[first:end]); loc != nil {
+		end = first + loc[0]
+	}
+	return strings.LastIndex(rest[:end], "@")
 }

@@ -30,18 +30,19 @@ var (
 	foreignID = spiffeid.RequireFromString("spiffe://evil.org/ns/default/sa/attacker")
 )
 
-func freePort(t *testing.T) string {
+// listen returns a listener on a free loopback port, closed at the end of the test.
+func listen(t *testing.T) net.Listener {
 	t.Helper()
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer ln.Close()
-	return strconv.Itoa(ln.Addr().(*net.TCPAddr).Port)
+	t.Cleanup(func() { _ = ln.Close() })
+	return ln
 }
 
 // newSPIFFEServer returns a mock server with SPIFFE enabled on socketPath
-// and a free secure port. The global ready state is reset for the test.
+// and a secure port that is already open. The global ready state is reset for the test.
 func newSPIFFEServer(t *testing.T, socketPath string, authorized ...string) *Server {
 	t.Helper()
 	return newSPIFFEServerWithConfig(t, socketPath, func(c *Config) {
@@ -55,7 +56,8 @@ func newSPIFFEServerWithConfig(t *testing.T, socketPath string, configure func(*
 	t.Helper()
 	srv := NewMockServer()
 	srv.config.Host = "127.0.0.1"
-	srv.config.SecurePort = freePort(t)
+	ln := listen(t)
+	srv.config.SecurePort = strconv.Itoa(ln.Addr().(*net.TCPAddr).Port)
 	srv.config.SPIFFEEndpointSocket = "unix://" + socketPath
 	configure(srv.config)
 
@@ -63,6 +65,7 @@ func newSPIFFEServerWithConfig(t *testing.T, socketPath string, configure func(*
 	if err != nil {
 		t.Fatal(err)
 	}
+	st.listen = func(string, string) (net.Listener, error) { return ln, nil }
 	srv.spiffe = st
 
 	srv.setupHandler()

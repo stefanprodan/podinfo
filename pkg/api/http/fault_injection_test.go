@@ -1,6 +1,7 @@
 package http
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -104,6 +105,38 @@ func TestFaultInjectionMiddleware(t *testing.T) {
 			h.ServeHTTP(rr, req)
 			if rr.Code != tc.wantStatus {
 				t.Fatalf("path %s: got %d want %d", tc.path, rr.Code, tc.wantStatus)
+			}
+		})
+	}
+}
+
+func TestFaultInjectionMiddleware_Response(t *testing.T) {
+	defer atomic.StoreInt32(&faultInjection, 0)
+	atomic.StoreInt32(&faultInjection, 1)
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	for name, h := range map[string]http.Handler{
+		"function": faultInjectionMiddleware(next),
+		"method":   NewMockServer().faultInjectionMiddleware(next),
+	} {
+		t.Run(name, func(t *testing.T) {
+			rr := httptest.NewRecorder()
+			h.ServeHTTP(rr, httptest.NewRequest("GET", "/version", nil))
+
+			if rr.Code != http.StatusInternalServerError {
+				t.Errorf("got status %d, want %d", rr.Code, http.StatusInternalServerError)
+			}
+			if ct := rr.Header().Get("Content-Type"); ct != "application/json; charset=utf-8" {
+				t.Errorf("got Content-Type %q, want application/json; charset=utf-8", ct)
+			}
+			var body map[string]string
+			if err := json.Unmarshal(rr.Body.Bytes(), &body); err != nil {
+				t.Fatalf("body %q is not JSON: %v", rr.Body.String(), err)
+			}
+			if body["status"] != "fault injection enabled" {
+				t.Errorf("got body %v, want status fault injection enabled", body)
 			}
 		})
 	}

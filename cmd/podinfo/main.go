@@ -60,7 +60,7 @@ func main() {
 	fs.String("ui-logo", "", "UI logo URL, defaults to the embedded image")
 	fs.String("ui-color", "#1f4e8c", "UI color")
 	fs.String("ui-message", "greetings from podinfo", "UI message")
-	fs.Bool("h2c", false, "allow upgrading to H2C")
+	fs.Bool("h2c", false, "serve HTTP/2 without TLS (h2c) on the HTTP port")
 	fs.Bool("random-delay", false, "between 0 and 5 seconds random delay by default")
 	fs.String("random-delay-unit", "s", "either s(seconds) or ms(milliseconds")
 	fs.Int("random-delay-min", 0, "min for random delay: 0 by default")
@@ -152,19 +152,12 @@ func main() {
 	// start stress tests if any
 	beginStressTest(viper.GetInt("stress-cpu"), viper.GetInt("stress-memory"), logger)
 
-	// validate port
-	if _, err := strconv.Atoi(viper.GetString("port")); err != nil {
-		port, _ := fs.GetInt("port")
-		viper.Set("port", strconv.Itoa(port))
-	}
-
-	// validate secure port
-	if _, err := strconv.Atoi(viper.GetString("secure-port")); err != nil {
-		securePort, _ := fs.GetInt("secure-port")
-		viper.Set("secure-port", strconv.Itoa(securePort))
-	}
+	resetInvalidPorts(fs, "port", "secure-port", "grpc-port", "port-metrics")
 
 	// validate random delay options
+	if viper.GetInt("random-delay-min") < 0 || viper.GetInt("random-delay-max") < 0 {
+		logger.Panic("`--random-delay-min` and `--random-delay-max` should not be negative")
+	}
 	if viper.GetInt("random-delay-max") < viper.GetInt("random-delay-min") {
 		logger.Panic("`--random-delay-max` should be greater than `--random-delay-min`")
 	}
@@ -223,6 +216,9 @@ func main() {
 	if grpcCfg.Port == 0 && len(grpcCfg.BackendURL) > 0 {
 		logger.Fatal("--grpc-backend-url requires --grpc-port")
 	}
+	if grpcCfg.Port == 0 && grpcCfg.TLS {
+		logger.Fatal("--grpc-tls requires --grpc-port")
+	}
 	if grpcCfg.Port > 0 {
 		grpcSrv = grpc.NewServer(&grpcCfg, logger)
 		grpcSrv.SetSPIFFESource(srv.SPIFFESource())
@@ -253,6 +249,18 @@ func main() {
 	if keyPair != nil {
 		if err := keyPair.Close(); err != nil {
 			logger.Warn("closing the TLS key pair watcher failed", zap.Error(err))
+		}
+	}
+}
+
+// resetInvalidPorts restores the flag value of the ports that are not
+// integers, as Kubernetes service links set variables such as
+// PODINFO_GRPC_PORT=tcp://10.0.0.1:9999 for a Service named podinfo-grpc.
+func resetInvalidPorts(fs *pflag.FlagSet, names ...string) {
+	for _, name := range names {
+		if _, err := strconv.Atoi(viper.GetString(name)); err != nil {
+			port, _ := fs.GetInt(name)
+			viper.Set(name, strconv.Itoa(port))
 		}
 	}
 }

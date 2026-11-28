@@ -26,8 +26,9 @@ import (
 
 func TestGraceful(t *testing.T) {
 	const (
-		drainDelay      = 500 * time.Millisecond
-		shutdownTimeout = 500 * time.Millisecond
+		drainDelay      = time.Minute
+		shutdownTimeout = 200 * time.Millisecond
+		hangTimeout     = 30 * time.Second
 	)
 
 	delayStarted := make(chan struct{})
@@ -69,18 +70,20 @@ func TestGraceful(t *testing.T) {
 		t.Fatalf("net.Listen %v", err)
 	}
 	httpStarted := make(chan struct{})
+	httpShutdown := make(chan struct{})
 	httpSrv := &http.Server{Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		close(httpStarted)
-		time.Sleep(700 * time.Millisecond)
+		<-httpShutdown
 		_, _ = io.WriteString(w, "ok")
 	})}
+	httpSrv.RegisterOnShutdown(func() { close(httpShutdown) })
 	go func() {
 		_ = httpSrv.Serve(httpLis)
 	}()
 
 	delayErr := make(chan error, 1)
 	go func() {
-		_, err := delayv1.NewDelayServiceClient(conn).Delay(context.Background(), &delayv1.DelayRequest{Seconds: 30})
+		_, err := delayv1.NewDelayServiceClient(conn).Delay(context.Background(), &delayv1.DelayRequest{Seconds: 3600})
 		delayErr <- err
 	}()
 	httpResult := make(chan error, 1)
@@ -97,50 +100,62 @@ func TestGraceful(t *testing.T) {
 
 	select {
 	case <-delayStarted:
-	case <-time.After(5 * time.Second):
+	case <-time.After(hangTimeout):
 		t.Fatal("Delay call did not reach the server")
 	}
 	select {
 	case <-httpStarted:
-	case <-time.After(5 * time.Second):
+	case <-time.After(hangTimeout):
 		t.Fatal("HTTP request did not reach the server")
 	}
 
 	sd := NewShutdown(shutdownTimeout, drainDelay, zap.NewNop())
+	draining := make(chan time.Duration)
+	drained := make(chan struct{})
+	sd.sleep = func(d time.Duration) {
+		draining <- d
+		<-drained
+	}
 	stopCh := make(chan struct{})
 	close(stopCh)
 	var healthy, ready int32 = 1, 1
 
 	done := make(chan struct{})
-	start := time.Now()
 	go func() {
 		sd.Graceful(stopCh, httpSrv, nil, grpcSrv, healthSrv, &healthy, &ready)
 		close(done)
 	}()
 
-	drainCheck := start.Add(drainDelay / 2)
-	waitNotServing(t, healthClient, "", drainCheck)
-	waitNotServing(t, healthClient, "podinfo", drainCheck)
 	select {
-	case <-done:
-		t.Fatal("Graceful returned before the drain delay")
-	default:
+	case d := <-draining:
+		if d != drainDelay {
+			t.Errorf("Graceful drains for %s, want %s", d, drainDelay)
+		}
+	case <-time.After(hangTimeout):
+		t.Fatal("Graceful did not start draining")
 	}
 	if atomic.LoadInt32(&healthy) != 0 || atomic.LoadInt32(&ready) != 0 {
 		t.Errorf("healthy=%d ready=%d, want 0", atomic.LoadInt32(&healthy), atomic.LoadInt32(&ready))
 	}
+	checkNotServing(t, healthClient, "")
+	checkNotServing(t, healthClient, "podinfo")
+	select {
+	case <-httpShutdown:
+		t.Error("HTTP server shut down before the drain delay")
+	case err := <-delayErr:
+		t.Errorf("in-flight Delay returned before the drain delay: %v", err)
+	default:
+	}
 
+	start := time.Now()
+	close(drained)
 	select {
 	case <-done:
-	case <-time.After(5 * time.Second):
+	case <-time.After(hangTimeout):
 		t.Fatal("Graceful did not return")
 	}
-	elapsed := time.Since(start)
-	if elapsed < drainDelay+shutdownTimeout {
-		t.Errorf("Graceful returned after %s, want >= %s", elapsed, drainDelay+shutdownTimeout)
-	}
-	if elapsed > drainDelay+shutdownTimeout+time.Second {
-		t.Errorf("Graceful returned after %s, want ~%s", elapsed, drainDelay+shutdownTimeout)
+	if elapsed := time.Since(start); elapsed < shutdownTimeout {
+		t.Errorf("Graceful returned %s after the drain delay, want >= %s", elapsed, shutdownTimeout)
 	}
 
 	select {
@@ -148,7 +163,7 @@ func TestGraceful(t *testing.T) {
 		if status.Code(err) != codes.Unavailable {
 			t.Errorf("Delay returned %s, want %s", status.Code(err), codes.Unavailable)
 		}
-	case <-time.After(5 * time.Second):
+	case <-time.After(hangTimeout):
 		t.Error("in-flight Delay was not interrupted")
 	}
 
@@ -157,23 +172,19 @@ func TestGraceful(t *testing.T) {
 		if err != nil {
 			t.Errorf("in-flight HTTP request failed: %v", err)
 		}
-	case <-time.After(5 * time.Second):
+	case <-time.After(hangTimeout):
 		t.Error("in-flight HTTP request did not complete")
 	}
 }
 
-func waitNotServing(t *testing.T, client grpc_health_v1.HealthClient, service string, deadline time.Time) {
+func checkNotServing(t *testing.T, client grpc_health_v1.HealthClient, service string) {
 	t.Helper()
 
-	for {
-		res, err := client.Check(context.Background(), &grpc_health_v1.HealthCheckRequest{Service: service})
-		if err == nil && res.GetStatus() == grpc_health_v1.HealthCheckResponse_NOT_SERVING {
-			return
-		}
-		if time.Now().After(deadline) {
-			break
-		}
-		time.Sleep(20 * time.Millisecond)
+	res, err := client.Check(context.Background(), &grpc_health_v1.HealthCheckRequest{Service: service})
+	if err != nil {
+		t.Fatalf("Check(%q) %v", service, err)
 	}
-	t.Fatalf("Check(%q) is not NOT_SERVING", service)
+	if res.GetStatus() != grpc_health_v1.HealthCheckResponse_NOT_SERVING {
+		t.Errorf("Check(%q) is %s, want NOT_SERVING", service, res.GetStatus())
+	}
 }

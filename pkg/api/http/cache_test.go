@@ -11,7 +11,6 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"runtime"
 	"slices"
 	"strings"
 	"sync"
@@ -42,8 +41,8 @@ func TestCacheWriteHandler_NoCache(t *testing.T) {
 	rr := httptest.NewRecorder()
 	srv.router.ServeHTTP(rr, req)
 
-	if !strings.Contains(rr.Body.String(), "cache server is offline") {
-		t.Errorf("expected offline error, got: %s", rr.Body.String())
+	if !strings.Contains(rr.Body.String(), "cache server not configured") {
+		t.Errorf("expected not configured error, got: %s", rr.Body.String())
 	}
 }
 
@@ -55,8 +54,8 @@ func TestCacheDeleteHandler_NoCache(t *testing.T) {
 	rr := httptest.NewRecorder()
 	srv.router.ServeHTTP(rr, req)
 
-	if !strings.Contains(rr.Body.String(), "cache server is offline") {
-		t.Errorf("expected offline error, got: %s", rr.Body.String())
+	if !strings.Contains(rr.Body.String(), "cache server not configured") {
+		t.Errorf("expected not configured error, got: %s", rr.Body.String())
 	}
 }
 
@@ -68,8 +67,8 @@ func TestCacheReadHandler_NoCache(t *testing.T) {
 	rr := httptest.NewRecorder()
 	srv.router.ServeHTTP(rr, req)
 
-	if !strings.Contains(rr.Body.String(), "cache server is offline") {
-		t.Errorf("expected offline error, got: %s", rr.Body.String())
+	if !strings.Contains(rr.Body.String(), "cache server not configured") {
+		t.Errorf("expected not configured error, got: %s", rr.Body.String())
 	}
 }
 
@@ -180,7 +179,6 @@ func TestCacheMTLS(t *testing.T) {
 			dir := t.TempDir()
 			writeClientPair(t, dir, first)
 			srv := newCacheMockServer(t, &Config{CacheServer: "rediss://" + m.Addr(), CacheCluster: cluster, CacheCAFile: caFile, CacheCertPath: dir})
-			t.Cleanup(func() { close(srv.cacheClosed) })
 			if rr := serveCache(srv, "POST", "value1"); rr.Code != http.StatusAccepted {
 				t.Fatalf("POST returned %d, want %d", rr.Code, http.StatusAccepted)
 			}
@@ -192,7 +190,6 @@ func TestCacheMTLS(t *testing.T) {
 			}
 
 			anonymous := newCacheMockServer(t, &Config{CacheServer: "rediss://" + m.Addr(), CacheCluster: cluster, CacheCAFile: caFile})
-			t.Cleanup(func() { close(anonymous.cacheClosed) })
 			if rr := serveCache(anonymous, "POST", "value1"); rr.Code != http.StatusInternalServerError {
 				t.Errorf("POST without a client certificate returned %d, want %d", rr.Code, http.StatusInternalServerError)
 			}
@@ -262,24 +259,19 @@ func TestCloseReleasesCache(t *testing.T) {
 func TestCloseReleasesCacheKeyPair(t *testing.T) {
 	dir := t.TempDir()
 	writeClientPair(t, dir, spiffetest.NewCA(t))
-	watchers := func() int {
-		buf := make([]byte, 1<<20)
-		return strings.Count(string(buf[:runtime.Stack(buf, true)]), "fscache.(*Watcher).run(")
-	}
-	before := watchers()
+	id := goroutineID()
+	watchers := func() int { return startedBy(id, "fscache.(*Watcher).run(") }
 
 	srv, err := NewServer(&Config{CacheServer: "rediss://cache:6379", CacheCertPath: dir}, NewMockServer().logger)
 	if err != nil {
 		t.Fatalf("NewServer returned %v", err)
 	}
-	if n := watchers(); n != before+1 {
-		t.Fatalf("%d key pair watchers are running, want %d", n, before+1)
-	}
+	waitFor(t, "the key pair watcher to start", func() bool { return watchers() == 1 })
 
 	if err := srv.Close(); err != nil {
 		t.Fatalf("Close returned %v", err)
 	}
-	waitFor(t, "the key pair watcher to stop", func() bool { return watchers() == before })
+	waitFor(t, "the key pair watcher to stop", func() bool { return watchers() == 0 })
 }
 
 func TestNewCacheOptions(t *testing.T) {
@@ -328,6 +320,11 @@ func TestNewCacheOptions(t *testing.T) {
 			name:   "cluster seed nodes",
 			config: Config{CacheServer: "redis://node-0:6379?addr=node-1:6379&addr=node-2:6379"},
 			want:   redis.UniversalOptions{Addrs: []string{"node-0:6379", "node-1:6379", "node-2:6379"}},
+		},
+		{
+			name:   "IPv6 seed nodes",
+			config: Config{CacheServer: "redis://[fd00::1]:6379?addr=[fd00::2]:6379&addr=%5Bfd00::3%5D:6380"},
+			want:   redis.UniversalOptions{Addrs: []string{"[fd00::1]:6379", "[fd00::2]:6379", "[fd00::3]:6380"}},
 		},
 		{
 			name:   "cluster configuration endpoint",
@@ -439,6 +436,13 @@ func TestNewCacheOptions_Invalid(t *testing.T) {
 		"bare address":                {CacheServer: "cache:6379"},
 		"unknown parameter":           {CacheServer: "redis://cache:6379?dial_timeout=1s"},
 		"bad addr parameter":          {CacheServer: "redis://cache:6379?addr=node-1"},
+		"addr without host":           {CacheServer: "redis://cache:6379?addr=:6379"},
+		"addr port not numeric":       {CacheServer: "redis://cache:6379?addr=node-1:abc"},
+		"addr port zero":              {CacheServer: "redis://cache:6379?addr=node-1:0"},
+		"addr port out of range":      {CacheServer: "redis://cache:6379?addr=node-1:65536"},
+		"addr IPv6 without brackets":  {CacheServer: "redis://cache:6379?addr=fd00::2:6379"},
+		"semicolon separator":         {CacheServer: "redis://node-0:6379?addr=node-1:6379;addr=node-2:6379"},
+		"bad query escape":            {CacheServer: "redis://cache:6379?addr=node-1:6379&x=secret%ZZ"},
 		"bad database":                {CacheServer: "redis://cache:6379/db"},
 		"cluster database":            {CacheServer: "redis://cache:6379/1", CacheCluster: true},
 		"cluster and sentinel":        {CacheServer: "redis://cache:6379", CacheCluster: true, CacheSentinelPrimary: "primary"},
@@ -465,6 +469,29 @@ func TestNewCacheOptions_Invalid(t *testing.T) {
 	}
 }
 
+func TestNewCacheOptions_InvalidURLHidesPassword(t *testing.T) {
+	tests := []string{
+		"redis://user:s3cr3t/abc@host:6379",
+		"redis://user:s3%ZZcr3t@host",
+		"redis://user:s3cr3t@host:port",
+		"redis://host:6379?addr=node-1:6379&password=s3%ZZcr3t",
+		"redis://host:6379?addr=node-1:6379;password=s3cr3t",
+	}
+	for _, server := range tests {
+		t.Run(server, func(t *testing.T) {
+			_, _, err := newCacheOptions(&Config{CacheServer: server}, zap.NewNop())
+			if err == nil {
+				t.Fatal("newCacheOptions returned no error")
+			}
+			for _, part := range []string{"s3", "cr3t", "ZZ", "abc"} {
+				if strings.Contains(err.Error(), part) {
+					t.Errorf("error %q quotes %q from the URL", err, part)
+				}
+			}
+		})
+	}
+}
+
 func TestNewServer_CacheMode(t *testing.T) {
 	tests := map[string]struct {
 		config  Config
@@ -481,7 +508,7 @@ func TestNewServer_CacheMode(t *testing.T) {
 			if err != nil {
 				t.Fatalf("NewServer returned %v", err)
 			}
-			defer srv.cache.Close()
+			defer srv.Close()
 			if _, ok := srv.cache.(*redis.ClusterClient); ok != tt.cluster {
 				t.Errorf("cluster client is %v, want %v", ok, tt.cluster)
 			}
@@ -569,7 +596,14 @@ func newCacheMockServer(t *testing.T, config *Config) *Server {
 	srv := NewMockServer()
 	srv.config.Hostname = config.Hostname
 	srv.openCache(opts)
-	t.Cleanup(func() { srv.cache.Close() })
+	t.Cleanup(func() {
+		srv.cache.Close()
+		select {
+		case <-srv.cacheClosed:
+		default:
+			close(srv.cacheClosed)
+		}
+	})
 	srv.router.HandleFunc("/cache/{key}", srv.cacheWriteHandler).Methods("POST")
 	srv.router.HandleFunc("/cache/{key}", srv.cacheDeleteHandler).Methods("DELETE")
 	srv.router.HandleFunc("/cache/{key}", srv.cacheReadHandler).Methods("GET")
@@ -620,7 +654,7 @@ func TestCacheTracing(t *testing.T) {
 			}
 			srv := newInstrumentedServer("/")
 			srv.openCache(opts)
-			t.Cleanup(func() { srv.cache.Close() })
+			t.Cleanup(func() { _ = srv.Close() })
 
 			rr := httptest.NewRecorder()
 			srv.handler.ServeHTTP(rr, httptest.NewRequest("POST", "/cache/key1", strings.NewReader(payload)))
@@ -695,7 +729,6 @@ func TestCacheHandshake(t *testing.T) {
 				return false
 			})
 			srv := newCacheMockServer(t, &Config{CacheServer: "redis://" + m.Addr(), CacheCluster: cluster})
-			t.Cleanup(func() { close(srv.cacheClosed) })
 
 			if rr := serveCache(srv, "POST", "value1"); rr.Code != http.StatusAccepted {
 				t.Fatalf("POST returned %d, want %d", rr.Code, http.StatusAccepted)
